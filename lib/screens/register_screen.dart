@@ -33,26 +33,35 @@ class _RegisterScreenState extends State<RegisterScreen> {
     if (_formKey.currentState!.validate()) {
       setState(() => _isLoading = true);
 
-      final url = Uri.parse('${AppConfig.baseUrl}/auth/register');
-      final response = await http.post(
-        url,
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({
-          'first_name': _firstNameController.text,
-          'last_name': _lastNameController.text,
-          'email': _emailController.text,
-          'password': _passwordController.text,
-          'role': 'farmer',
-        }),
-      );
+      try {
+        final url = Uri.parse('${AppConfig.baseUrl}/auth/register');
+        final response = await http.post(
+          url,
+          headers: {'Content-Type': 'application/json'},
+          body: jsonEncode({
+            'first_name': _firstNameController.text,
+            'last_name': _lastNameController.text,
+            'email': _emailController.text,
+            'password': _passwordController.text,
+            'role': 'farmer',
+          }),
+        );
 
-      setState(() => _isLoading = false);
+        if (!mounted) return;
 
-      if (response.statusCode == 200 || response.statusCode == 201) {
-        _showMessage('Registration Successful! Please login.', Colors.green);
-        Navigator.pop(context);
-      } else {
-        _showMessage('Registration failed. Try a different email.', Colors.red);
+        setState(() => _isLoading = false);
+
+        if (response.statusCode == 200 || response.statusCode == 201) {
+          _showMessage('Registration Successful! Please login.', Colors.green);
+          Navigator.pop(context);
+        } else {
+          _showMessage('Registration failed. Try a different email.', Colors.red);
+        }
+      } catch (e) {
+        if (mounted) {
+          setState(() => _isLoading = false);
+          _showMessage('Error: ${e.toString()}', Colors.red);
+        }
       }
     }
   }

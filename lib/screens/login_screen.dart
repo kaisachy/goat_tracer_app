@@ -32,12 +32,6 @@ class _LoginScreenState extends State<LoginScreen> {
 
       try {
         final url = Uri.parse('${AppConfig.baseUrl}/auth/login');
-        debugPrint("Login URL: $url");
-        debugPrint("Request payload: ${jsonEncode({
-          'email': _emailController.text,
-          'password': _passwordController.text,
-        })}");
-
         final response = await http.post(
           url,
           headers: {'Content-Type': 'application/json'},
@@ -47,14 +41,15 @@ class _LoginScreenState extends State<LoginScreen> {
           }),
         );
 
-        debugPrint("Response status: ${response.statusCode}");
-        debugPrint("Response body: ${response.body}");
+        if (!mounted) return; // Exit if widget is no longer in tree
 
         if (response.statusCode == 200) {
           final data = jsonDecode(response.body);
 
           if (data['success'] == true) {
             await SecureStorageService().saveToken(data['token']);
+
+            if (!mounted) return; // Check again after async call
             _showMessage('Login Successful!', Colors.green);
 
             Navigator.pushReplacement(
@@ -70,10 +65,13 @@ class _LoginScreenState extends State<LoginScreen> {
           _showMessage('Server error: ${response.statusCode}', Colors.red);
         }
       } catch (e) {
-        _showMessage('Connection error: ${e.toString()}', Colors.red);
-        debugPrint("Login error: $e");
+        if (mounted) {
+          _showMessage('Connection error: ${e.toString()}', Colors.red);
+        }
       } finally {
-        setState(() => _isLoading = false);
+        if (mounted) {
+          setState(() => _isLoading = false);
+        }
       }
     }
   }
