@@ -1,10 +1,16 @@
 import 'package:flutter/material.dart';
 
 class AppColors {
-  static const Color primary = Color(0xFF1A237E);
-  static const Color accent = Color(0xFFFFC107);
-  static const Color background = Color(0xFFF5F5F5);
-  static const Color textPrimary = Color(0xFF212121);
-  static const Color textSecondary = Color(0xFF757575);
+  static const Color lightGreen = Color(0xFF9ACD66);   // Light Green
+  static const Color vibrantGreen = Color(0xFF00A460); // Vibrant Green
+  static const Color darkGreen = Color(0xFF006630);    // Deep Forest Green
+  static const Color gold = Color(0xFFDEB700);         // Golden Yellow
+
+  // Suggested main roles
+  static const Color primary = darkGreen;
+  static const Color accent = gold;
+  static const Color background = lightGreen;
   static const Color cardBackground = Colors.white;
+  static const Color textPrimary = Color(0xFF1B1B1B);
+  static const Color textSecondary = Color(0xFF444444);
 }
