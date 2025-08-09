@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:cattle_tracer_app/screens/nav/cattle/widgets/details/detail_cattle_tab_content.dart' as details_tab;
+import 'package:cattle_tracer_app/screens/nav/cattle/widgets/details/detail_cattle_tabs.dart';
+import 'package:cattle_tracer_app/screens/nav/cattle/widgets/events/event_cattle_tab_content.dart' as events_tab;
 import 'package:cattle_tracer_app/models/cattle.dart';
 import 'package:cattle_tracer_app/constants/app_colors.dart';
 import 'package:cattle_tracer_app/screens/nav/cattle/cattle_event_form_screen.dart';
-import 'package:cattle_tracer_app/screens/nav/cattle/cattle_detail_form_screen.dart';
-import 'package:cattle_tracer_app/screens/nav/cattle/widgets/detail_cattle_app_bar.dart';
-import 'package:cattle_tracer_app/screens/nav/cattle/widgets/detail_cattle_tabs.dart';
-import 'package:cattle_tracer_app/screens/nav/cattle/widgets/detail_cattle_tab_content.dart' as details_tab;
-import 'package:cattle_tracer_app/screens/nav/cattle/widgets/event_cattle_tab_content.dart' as events_tab;
+import 'package:cattle_tracer_app/screens/nav/cattle/cattle_form_screen.dart';
+import 'package:cattle_tracer_app/screens/nav/cattle/widgets/details/detail_cattle_app_bar.dart';
 import 'package:cattle_tracer_app/services/cattle/cattle_service.dart';
 
 class CattleDetailScreen extends StatefulWidget {

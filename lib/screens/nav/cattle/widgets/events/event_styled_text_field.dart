@@ -1,7 +1,8 @@
 // lib/screens/nav/cattle/widgets/event_styled_text_field.dart
 
 import 'package:flutter/material.dart';
-import '../../../../constants/app_colors.dart';
+
+import '../../../../../constants/app_colors.dart';
 
 class EventStyledTextField extends StatelessWidget {
   final String label;

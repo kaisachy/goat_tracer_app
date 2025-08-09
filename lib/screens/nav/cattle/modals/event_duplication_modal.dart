@@ -24,7 +24,7 @@ class _EventDuplicationModalState extends State<EventDuplicationModal> {
 
   List<Cattle> _allCattle = [];
   List<Cattle> _availableCattle = [];
-  Set<String> _selectedCattleTags = <String>{};
+  final Set<String> _selectedCattleTags = <String>{};
   bool _isLoading = true;
   bool _isDuplicating = false;
   bool _selectAll = false;
@@ -58,19 +58,45 @@ class _EventDuplicationModalState extends State<EventDuplicationModal> {
 
       final allCattle = await CattleService.getAllCattle();
       final originalEventType = widget.originalEvent['event_type']?.toString().toLowerCase() ?? '';
+      final originalCattleTag = widget.originalEvent['cattle_tag']?.toString() ?? '';
 
-      // Filter cattle based on event type and gender compatibility
+      print('Debug: Loading cattle for event type: $originalEventType');
+      print('Debug: Total cattle loaded: ${allCattle.length}');
+
+      // Filter cattle based on event type, gender, classification, and status
       final availableCattle = allCattle.where((cattle) {
-        if (cattle.status.toLowerCase() != 'active') return false;
+        // Check if cattle is active
+        if (cattle.status.toLowerCase() != 'active') {
+          print('Debug: Skipping ${cattle.tagNo} - status: ${cattle.status}');
+          return false;
+        }
 
         // Skip the original cattle
-        if (cattle.tagNo == widget.originalEvent['cattle_tag']) return false;
+        if (cattle.tagNo.trim().toLowerCase() == originalCattleTag.trim().toLowerCase()) {
+          print('Debug: Skipping ${cattle.tagNo} - original cattle');
+          return false;
+        }
 
-        return _isEventTypeValidForGender(originalEventType, cattle.gender);
+        // Check gender compatibility
+        if (!_isEventTypeValidForGender(originalEventType, cattle.gender)) {
+          print('Debug: Skipping ${cattle.tagNo} - gender incompatible: ${cattle.gender}');
+          return false;
+        }
+
+        // Check classification compatibility for breeding events
+        if (!_isEventTypeValidForClassification(originalEventType, cattle.classification)) {
+          print('Debug: Skipping ${cattle.tagNo} - classification incompatible: ${cattle.classification}');
+          return false;
+        }
+
+        print('Debug: Including ${cattle.tagNo} - gender: ${cattle.gender}, classification: ${cattle.classification}');
+        return true;
       }).toList();
 
       // Sort cattle by tag number
       availableCattle.sort((a, b) => a.tagNo.compareTo(b.tagNo));
+
+      print('Debug: Available cattle after filtering: ${availableCattle.length}');
 
       setState(() {
         _allCattle = availableCattle;
@@ -78,6 +104,7 @@ class _EventDuplicationModalState extends State<EventDuplicationModal> {
         _isLoading = false;
       });
     } catch (e) {
+      print('Debug: Error loading cattle: $e');
       setState(() => _isLoading = false);
       if (mounted) {
         _showErrorSnackBar('Failed to load cattle: $e');
@@ -98,6 +125,30 @@ class _EventDuplicationModalState extends State<EventDuplicationModal> {
       case 'hoof trimming':
         return true; // Valid for both genders
       default:
+        return true;
+    }
+  }
+
+  bool _isEventTypeValidForClassification(String eventType, String classification) {
+    final classificationLower = classification.toLowerCase();
+
+    switch (eventType) {
+      case 'breeding':
+      // For breeding events, only allow Bull, Growers, Heifer, Cow
+        final allowedClassifications = ['bull', 'growers', 'heifer', 'cow'];
+        return allowedClassifications.contains(classificationLower);
+
+      case 'dry off':
+      // Dry off is typically for cows and heifers
+        final allowedForDryOff = ['heifer', 'cow'];
+        return allowedForDryOff.contains(classificationLower);
+
+      case 'treated':
+      case 'vaccinated':
+      case 'deworming':
+      case 'hoof trimming':
+      default:
+      // Other events are valid for all classifications
         return true;
     }
   }
@@ -238,6 +289,7 @@ class _EventDuplicationModalState extends State<EventDuplicationModal> {
         } catch (e) {
           failedCount++;
           failedTags.add(cattleTag);
+          print('Debug: Error duplicating event for $cattleTag: $e');
         }
       }
 
@@ -253,6 +305,7 @@ class _EventDuplicationModalState extends State<EventDuplicationModal> {
         }
       }
     } catch (e) {
+      print('Debug: Error in _duplicateEvents: $e');
       if (mounted) {
         _showErrorSnackBar('Error duplicating events: $e');
       }
@@ -287,10 +340,15 @@ class _EventDuplicationModalState extends State<EventDuplicationModal> {
     );
   }
 
-  String _getEventTypeDisplayName(String eventType) {
-    return eventType.split(' ').map((word) =>
-    word.isNotEmpty ? word[0].toUpperCase() + word.substring(1).toLowerCase() : word
-    ).join(' ');
+  String _getEventDescription(String eventType) {
+    switch (eventType.toLowerCase()) {
+      case 'breeding':
+        return 'Only showing Bull, Growers, Heifer, and Cow classifications';
+      case 'dry off':
+        return 'Only showing female cattle (Heifer, Cow)';
+      default:
+        return 'Showing all compatible cattle';
+    }
   }
 
   @override
@@ -334,13 +392,6 @@ class _EventDuplicationModalState extends State<EventDuplicationModal> {
                             fontSize: 20,
                             fontWeight: FontWeight.bold,
                             color: AppColors.textPrimary,
-                          ),
-                        ),
-                        Text(
-                          'Copy "${_getEventTypeDisplayName(eventType)}" to other cattle',
-                          style: TextStyle(
-                            fontSize: 14,
-                            color: Colors.grey.shade600,
                           ),
                         ),
                       ],
@@ -458,7 +509,7 @@ class _EventDuplicationModalState extends State<EventDuplicationModal> {
                     Icon(Icons.info_outline, color: AppColors.vibrantGreen, size: 16),
                     const SizedBox(width: 8),
                     Text(
-                      '${_selectedCattleTags.length} cattle selected',
+                      '${_selectedCattleTags.length} of ${_availableCattle.length} cattle selected',
                       style: const TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.w500,
@@ -491,11 +542,21 @@ class _EventDuplicationModalState extends State<EventDuplicationModal> {
                       const SizedBox(height: 16),
                       Text(
                         _searchQuery.isEmpty
-                            ? 'No available cattle found'
+                            ? 'No compatible cattle found'
                             : 'No cattle match your search',
                         style: TextStyle(
                           fontSize: 16,
                           color: Colors.grey.shade600,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        _getEventDescription(eventType),
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Colors.grey.shade500,
+                          fontStyle: FontStyle.italic,
                         ),
                       ),
                     ],
@@ -597,21 +658,15 @@ class _EventDuplicationModalState extends State<EventDuplicationModal> {
                         ),
                         elevation: 2,
                       ),
+                      // Use a conditional expression to show either the loading indicator or the text
                       child: _isDuplicating
-                          ? const Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          SizedBox(
-                            width: 20,
-                            height: 20,
-                            child: CircularProgressIndicator(
-                              color: Colors.white,
-                              strokeWidth: 2,
-                            ),
-                          ),
-                          SizedBox(width: 8),
-                          Text('Duplicating...'),
-                        ],
+                          ? const SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(
+                          color: Colors.white,
+                          strokeWidth: 2,
+                        ),
                       )
                           : Text(
                         'Duplicate (${_selectedCattleTags.length})',

@@ -2,7 +2,7 @@ import 'package:cattle_tracer_app/screens/nav/cattle/widgets/cattle_search_filte
 import 'package:flutter/material.dart';
 import 'package:cattle_tracer_app/models/cattle.dart';
 import 'package:cattle_tracer_app/services/cattle/cattle_service.dart';
-import 'package:cattle_tracer_app/screens/nav/cattle/cattle_detail_form_screen.dart';
+import 'package:cattle_tracer_app/screens/nav/cattle/cattle_form_screen.dart';
 import 'package:cattle_tracer_app/screens/nav/cattle/cattle_detail_screen.dart';
 import 'package:cattle_tracer_app/constants/app_colors.dart';
 import 'package:intl/intl.dart';

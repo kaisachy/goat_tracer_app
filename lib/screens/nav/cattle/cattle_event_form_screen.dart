@@ -1,6 +1,7 @@
 // lib/screens/nav/cattle/cattle_event_form_screen.dart
-// Modified to only execute calf operations after successful event creation/update
 
+import 'package:cattle_tracer_app/screens/nav/cattle/widgets/events/event_specific_fields.dart';
+import 'package:cattle_tracer_app/screens/nav/cattle/widgets/events/event_type_dropdown.dart';
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import '../../../models/cattle.dart';
@@ -8,10 +9,8 @@ import '../../../services/cattle/cattle_event_service.dart';
 import '../../../services/cattle/cattle_service.dart';
 import '../../../constants/app_colors.dart';
 import 'modals/calf_registration_dialog.dart';
-import 'widgets/event_cattle_info_card.dart';
-import 'widgets/event_type_dropdown.dart';
-import 'widgets/event_specific_fields.dart';
-import 'widgets/event_notes_section.dart';
+import 'widgets/events/event_cattle_info_card.dart';
+import 'widgets/events/event_notes_section.dart';
 import 'modals/event_success_dialog.dart';
 import 'modals/event_delete_confirmation_dialog.dart';
 
@@ -538,9 +537,11 @@ class _CattleEventFormScreenState extends State<CattleEventFormScreen>
       }
 
       if (eventSuccess) {
-        // Event saved successfully, now execute calf operations if needed
+        // Event saved successfully, now handle specific event types
         if (selectedEventType.toLowerCase() == 'gives birth') {
           await _handleGivesBirthEvent();
+        } else if (selectedEventType.toLowerCase() == 'breeding') {
+          await _handleBreedingEvent();
         }
 
         if (context.mounted) {
@@ -561,6 +562,121 @@ class _CattleEventFormScreenState extends State<CattleEventFormScreen>
     } finally {
       if (mounted) {
         setState(() => _isLoading = false);
+      }
+    }
+  }
+
+  bool _shouldShowReturnToHeatField() {
+    return _cattleDetails?.gender.toLowerCase() == 'female' &&
+        selectedEventType.toLowerCase() == 'breeding';
+  }
+
+  Future<void> _handleBreedingEvent() async {
+    try {
+      bool cowStatusUpdated = false;
+      bool bullStatusUpdated = false;
+      bool bullEventCreated = false;
+      String cowStatus = '';
+      String bullStatus = '';
+      String bullEventStatus = '';
+
+      // Update cow (mother) status to Breeding
+      if (_cattleDetails != null) {
+        final cowUpdateData = Map<String, dynamic>.from(_cattleDetails!.toJson());
+        cowUpdateData['status'] = 'Breeding';
+        cowStatusUpdated = await CattleService.updateCattleInformation(cowUpdateData);
+        cowStatus = cowStatusUpdated
+            ? 'Cow ${_cattleDetails!.tagNo} status updated to Breeding'
+            : 'Failed to update cow ${_cattleDetails!.tagNo} status';
+      }
+
+      // Get bull information and create corresponding event
+      final bullTag = _controllers['bull_tag']?.text ?? '';
+      if (bullTag.isNotEmpty) {
+        try {
+          final bull = await CattleService.getCattleByTag(bullTag);
+          if (bull != null) {
+            // Update bull status to Breeding
+            final bullUpdateData = Map<String, dynamic>.from(bull.toJson());
+            bullUpdateData['status'] = 'Breeding';
+            bullStatusUpdated = await CattleService.updateCattleInformation(bullUpdateData);
+            bullStatus = bullStatusUpdated
+                ? 'Bull $bullTag status updated to Breeding'
+                : 'Failed to update bull $bullTag status';
+
+            // Create breeding event for the bull
+            final bullEventData = {
+              'cattle_tag': bullTag,
+              'bull_tag': null, // Bull doesn't need its own bull_tag
+              'calf_tag': null, // No calf tag for bull's breeding event
+              'event_type': 'Breeding',
+              'event_date': _controllers['event_date']!.text,
+              'sickness_symptoms': '',
+              'diagnosis': '',
+              'technician': _controllers['technician']!.text,
+              'medicine_given': '',
+              'weighed_result': null,
+              'breeding_date': _controllers['event_date']!.text, // Same as event_date for consistency
+              'notes': 'Breeding with cow ${_cattleDetails?.tagNo ?? 'Unknown'}${_controllers['notes']!.text.isNotEmpty ? '. Additional notes: ${_controllers['notes']!.text}' : ''}',
+            };
+
+            bullEventCreated = await CattleEventService.storeCattleEvent(bullEventData);
+            bullEventStatus = bullEventCreated
+                ? 'Breeding event created for bull $bullTag'
+                : 'Failed to create breeding event for bull $bullTag';
+          } else {
+            bullStatus = 'Bull $bullTag not found in database';
+            bullEventStatus = 'Cannot create event for non-existent bull';
+          }
+        } catch (e) {
+          bullStatus = 'Error updating bull $bullTag status: $e';
+          bullEventStatus = 'Error creating bull breeding event: $e';
+        }
+      } else {
+        bullStatus = 'No bull tag found for breeding event';
+        bullEventStatus = 'No bull tag available for event creation';
+      }
+
+      // Log the results for debugging
+      print('Breeding event results:');
+      print('- Cow: $cowStatus');
+      print('- Bull Status: $bullStatus');
+      print('- Bull Event: $bullEventStatus');
+
+      // Optional: Show a snackbar with summary if needed
+      if (mounted && (cowStatusUpdated || bullStatusUpdated || bullEventCreated)) {
+        if (bullEventCreated) {
+        }
+
+        // You can uncomment this if you want to show success feedback
+        /*
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(successMessage),
+          backgroundColor: Colors.green[600],
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+          duration: const Duration(seconds: 3),
+        ),
+      );
+      */
+      }
+
+    } catch (e) {
+      // Log any errors that occur during the process
+      print('Error in _handleBreedingEvent: $e');
+
+      // Optional: Show error message to user
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Warning: Some breeding event operations may have failed'),
+            backgroundColor: Colors.orange[600],
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+            duration: const Duration(seconds: 3),
+          ),
+        );
       }
     }
   }
@@ -673,6 +789,7 @@ class _CattleEventFormScreenState extends State<CattleEventFormScreen>
                               cattleTag: widget.cattleTag,
                               temporaryCalfData: _temporaryCalfData,
                               onEditCalfPressed: _openCalfRegistrationDialog,
+                              showReturnToHeat: _shouldShowReturnToHeatField(),
                             ),
 
                             // Notes Section

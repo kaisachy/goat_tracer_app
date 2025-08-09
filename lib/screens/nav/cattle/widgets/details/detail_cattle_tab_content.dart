@@ -4,7 +4,7 @@ import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:cattle_tracer_app/models/cattle.dart';
 import 'package:cattle_tracer_app/constants/app_colors.dart';
 import 'package:cattle_tracer_app/screens/nav/cattle/modals/photo_options_modal.dart';
-import 'package:cattle_tracer_app/screens/nav/cattle/widgets/detail_cattle_info_cards.dart';
+import 'package:cattle_tracer_app/screens/nav/cattle/widgets/details/detail_cattle_info_cards.dart';
 import 'package:cattle_tracer_app/utils/cattle_detail_utils.dart';
 
 class CattleDetailsTabContent extends StatelessWidget {

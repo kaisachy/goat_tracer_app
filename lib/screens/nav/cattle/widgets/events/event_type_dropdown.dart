@@ -2,9 +2,10 @@
 
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
-import '../../../../models/cattle.dart';
-import '../../../../constants/app_colors.dart';
-import '../../../../utils/event_type_utils.dart';
+import '../../../../../constants/app_colors.dart';
+import '../../../../../models/cattle.dart';
+import '../../../../../utils/event_type_utils.dart';
+
 
 class EventTypeDropdown extends StatefulWidget {
   final Cattle? cattleDetails;

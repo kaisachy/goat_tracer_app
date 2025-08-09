@@ -3,9 +3,9 @@ import 'package:flutter/material.dart';
 import 'package:cattle_tracer_app/models/cattle.dart';
 import 'package:cattle_tracer_app/constants/app_colors.dart';
 import 'package:cattle_tracer_app/services/cattle/cattle_event_service.dart';
-import 'package:cattle_tracer_app/screens/nav/cattle/widgets/event_search_filter_bar.dart';
-import '../cattle_event_form_screen.dart';
-import '../modals/event_duplication_modal.dart';
+import 'package:cattle_tracer_app/screens/nav/cattle/widgets/events/event_search_filter_bar.dart';
+import '../../cattle_event_form_screen.dart';
+import '../../modals/event_duplication_modal.dart';
 
 class EventCattleTabContent extends StatefulWidget {
   final Cattle cattle;
@@ -38,7 +38,7 @@ class _EventCattleTabContentState extends State<EventCattleTabContent> {
     ];
 
     final maleEventTypes = [
-      'All', 'Treated', 'Weighed', 'Vaccinated', 'Deworming',
+      'All', 'Treated', 'Breeding', 'Weighed', 'Vaccinated', 'Deworming',
       'Hoof Trimming', 'Castrated', 'Weaned', 'Other',
     ];
 
@@ -72,8 +72,11 @@ class _EventCattleTabContentState extends State<EventCattleTabContent> {
           widget.cattle.tagNo.trim().toLowerCase()
       ).toList();
 
+      // Remove duplicates and delete them from database
+      final uniqueEvents = await _removeDuplicateEventsFromDB(cattleEvents);
+
       // Sort events by date to find the latest one
-      cattleEvents.sort((a, b) {
+      uniqueEvents.sort((a, b) {
         final dateA = DateTime.tryParse(a['event_date'] ?? '1900-01-01') ?? DateTime(1900);
         final dateB = DateTime.tryParse(b['event_date'] ?? '1900-01-01') ?? DateTime(1900);
         return dateB.compareTo(dateA); // Descending order (latest first)
@@ -81,7 +84,7 @@ class _EventCattleTabContentState extends State<EventCattleTabContent> {
 
       if (mounted) {
         setState(() {
-          events = cattleEvents;
+          events = uniqueEvents;
           isLoading = false;
           error = null;
 
@@ -99,6 +102,187 @@ class _EventCattleTabContentState extends State<EventCattleTabContent> {
         });
       }
     }
+  }
+
+// Helper method to remove duplicate events and delete them from database
+  Future<List<Map<String, dynamic>>> _removeDuplicateEventsFromDB(List<Map<String, dynamic>> events) async {
+    final List<Map<String, dynamic>> uniqueEvents = [];
+    final List<Map<String, dynamic>> duplicatesToDelete = [];
+    int deletedCount = 0;
+
+    for (final event in events) {
+      final existingEventIndex = uniqueEvents.indexWhere((existingEvent) =>
+          _areEventsIdentical(event, existingEvent));
+
+      if (existingEventIndex == -1) {
+        // No duplicate found, add to unique events
+        uniqueEvents.add(event);
+      } else {
+        // Duplicate found - decide which one to keep and which to delete
+        final existingEvent = uniqueEvents[existingEventIndex];
+        final currentEventDate = DateTime.tryParse(event['event_date'] ?? '1900-01-01') ?? DateTime(1900);
+        final existingEventDate = DateTime.tryParse(existingEvent['event_date'] ?? '1900-01-01') ?? DateTime(1900);
+
+        // Keep the more recent event, or the one with higher ID if dates are same
+        if (currentEventDate.isAfter(existingEventDate) ||
+            (currentEventDate == existingEventDate && (event['id'] ?? 0) > (existingEvent['id'] ?? 0))) {
+          // Current event is newer/better, replace existing and mark old for deletion
+          duplicatesToDelete.add(existingEvent);
+          uniqueEvents[existingEventIndex] = event;
+        } else {
+          // Existing event is newer/better, mark current for deletion
+          duplicatesToDelete.add(event);
+        }
+      }
+    }
+
+    // Delete duplicates from database
+    if (duplicatesToDelete.isNotEmpty) {
+      try {
+        for (final duplicate in duplicatesToDelete) {
+          final eventId = duplicate['id'];
+          if (eventId != null) {
+            final success = await CattleEventService.deleteCattleEvent(eventId);
+            if (success) {
+              deletedCount++;
+            } else {
+              print('Failed to delete duplicate event with ID: $eventId');
+            }
+          }
+        }
+
+        // Show notification about deleted duplicates
+        if (mounted && deletedCount > 0) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Removed $deletedCount duplicate event${deletedCount > 1 ? 's' : ''} from database'),
+              backgroundColor: Colors.orange.shade600,
+              behavior: SnackBarBehavior.floating,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              duration: const Duration(seconds: 4),
+            ),
+          );
+        }
+      } catch (e) {
+        print('Error deleting duplicate events: $e');
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Warning: Some duplicate events could not be removed from database'),
+              backgroundColor: Colors.orange.shade600,
+              behavior: SnackBarBehavior.floating,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            ),
+          );
+        }
+      }
+    }
+
+    return uniqueEvents;
+  }
+
+// Helper method to check if two events are identical
+  bool _areEventsIdentical(Map<String, dynamic> event1, Map<String, dynamic> event2) {
+    // Get the event type to determine which fields to compare
+    final eventType1 = (event1['event_type'] ?? '').toString().toLowerCase();
+    final eventType2 = (event2['event_type'] ?? '').toString().toLowerCase();
+
+    // If event types are different, they're not identical
+    if (eventType1 != eventType2) return false;
+
+    // Compare basic fields that are always relevant
+    if (!_compareFieldValues(event1['event_date'], event2['event_date'])) return false;
+    if (!_compareFieldValues(event1['cattle_tag'], event2['cattle_tag'])) return false;
+    if (!_compareFieldValues(event1['notes'], event2['notes'])) return false;
+
+    // Compare event-specific fields based on event type
+    switch (eventType1) {
+      case 'dry off':
+      // Only basic fields matter for dry off
+        return true;
+
+      case 'treated':
+        return _compareFieldValues(event1['sickness_symptoms'], event2['sickness_symptoms']) &&
+            _compareFieldValues(event1['diagnosis'], event2['diagnosis']) &&
+            _compareFieldValues(event1['technician'], event2['technician']) &&
+            _compareFieldValues(event1['medicine_given'], event2['medicine_given']);
+
+      case 'breeding':
+        return _compareFieldValues(event1['semen_used'], event2['semen_used']) &&
+            _compareFieldValues(event1['technician'], event2['technician']) &&
+            _compareFieldValues(event1['estimated_return_date'], event2['estimated_return_date']);
+
+      case 'weighed':
+        return _compareFieldValues(event1['weighed_result'], event2['weighed_result']);
+
+      case 'gives birth':
+        return _compareFieldValues(event1['bull_tag'], event2['bull_tag']) &&
+            _compareFieldValues(event1['calf_tag'], event2['calf_tag']);
+
+      case 'vaccinated':
+        return _compareFieldValues(event1['medicine_given'], event2['medicine_given']) &&
+            _compareFieldValues(event1['technician'], event2['technician']);
+
+      case 'pregnant':
+        return _compareFieldValues(event1['breeding_date'], event2['breeding_date']) &&
+            _compareFieldValues(event1['expected_delivery_date'], event2['expected_delivery_date']) &&
+            _compareFieldValues(event1['bull_tag'], event2['bull_tag']);
+
+      case 'aborted pregnancy':
+      // Only basic fields matter for aborted pregnancy
+        return true;
+
+      case 'deworming':
+        return _compareFieldValues(event1['medicine_given'], event2['medicine_given']);
+
+      case 'hoof trimming':
+      // Only basic fields matter for hoof trimming
+        return true;
+
+      case 'castrated':
+        return _compareFieldValues(event1['technician'], event2['technician']);
+
+      case 'weaned':
+      // Only basic fields matter for weaned
+        return true;
+
+      case 'other':
+      default:
+      // For 'other' events, compare all potentially relevant fields
+        return _compareFieldValues(event1['bull_tag'], event2['bull_tag']) &&
+            _compareFieldValues(event1['calf_tag'], event2['calf_tag']) &&
+            _compareFieldValues(event1['technician'], event2['technician']) &&
+            _compareFieldValues(event1['sickness_symptoms'], event2['sickness_symptoms']) &&
+            _compareFieldValues(event1['diagnosis'], event2['diagnosis']) &&
+            _compareFieldValues(event1['medicine_given'], event2['medicine_given']) &&
+            _compareFieldValues(event1['semen_used'], event2['semen_used']) &&
+            _compareFieldValues(event1['estimated_return_date'], event2['estimated_return_date']) &&
+            _compareFieldValues(event1['weighed_result'], event2['weighed_result']) &&
+            _compareFieldValues(event1['breeding_date'], event2['breeding_date']) &&
+            _compareFieldValues(event1['expected_delivery_date'], event2['expected_delivery_date']);
+    }
+  }
+
+// Helper method to compare field values, treating null, empty, and 'N/A' as equivalent
+  bool _compareFieldValues(dynamic value1, dynamic value2) {
+    final normalizedValue1 = _normalizeFieldValue(value1);
+    final normalizedValue2 = _normalizeFieldValue(value2);
+
+    return normalizedValue1 == normalizedValue2;
+  }
+
+// Helper method to normalize field values for comparison
+  String? _normalizeFieldValue(dynamic value) {
+    if (value == null) return null;
+
+    final stringValue = value.toString().trim();
+
+    // Treat empty strings and 'N/A' as null
+    if (stringValue.isEmpty || stringValue.toLowerCase() == 'n/a') {
+      return null;
+    }
+
+    return stringValue.toLowerCase();
   }
 
   Future<void> _refreshEvents() async => await _loadCattleEvents();
@@ -122,7 +306,7 @@ class _EventCattleTabContentState extends State<EventCattleTabContent> {
       final validEventTypes = gender == 'female'
           ? ['dry off', 'treated', 'breeding', 'weighed', 'gives birth', 'vaccinated',
         'pregnant', 'aborted pregnancy', 'deworming', 'hoof trimming', 'other']
-          : ['treated', 'weighed', 'vaccinated', 'deworming', 'hoof trimming',
+          : ['treated', 'breeding', 'weighed', 'vaccinated', 'deworming', 'hoof trimming',
         'castrated', 'weaned','other'];
 
       final matchesGender = validEventTypes.contains(type);
@@ -844,6 +1028,13 @@ class _EventCattleTabContentState extends State<EventCattleTabContent> {
           relevantDetails['Technician'] = event['technician'].toString();
         }
         if (event['estimated_return_date'] != null && event['estimated_return_date'].toString().isNotEmpty && event['estimated_return_date'] != 'N/A') {
+          relevantDetails['Est. Return to Heat'] = _formatDate(event['estimated_return_date']);
+        }
+
+        final cattleGender = widget.cattle.gender.toLowerCase();
+        if (cattleGender == 'male') {
+          relevantDetails['Est. Return to Heat'] = 'Not Applicable';
+        } else if (event['estimated_return_date'] != null && event['estimated_return_date'].toString().isNotEmpty && event['estimated_return_date'] != 'N/A') {
           relevantDetails['Est. Return to Heat'] = _formatDate(event['estimated_return_date']);
         }
         break;
