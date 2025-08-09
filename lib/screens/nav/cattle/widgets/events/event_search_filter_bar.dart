@@ -216,7 +216,7 @@ class _EventSearchFilterBarState extends State<EventSearchFilterBar> {
             padding: EdgeInsets.all(isNarrow ? 6 : 8),
           )
               : null,
-          hintText: isNarrow ? 'Search events...' : 'Search events, notes, diagnosis...',
+          hintText: isNarrow ? 'Search event...' : 'Search event, notes, diagnosis...',
           hintStyle: TextStyle(
             color: Colors.grey.shade500,
             fontSize: isNarrow ? 12 : 13,

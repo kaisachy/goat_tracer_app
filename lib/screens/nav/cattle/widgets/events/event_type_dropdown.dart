@@ -192,13 +192,13 @@ class EventTypeDropdownState extends State<EventTypeDropdown> {
                       width: 32,
                       height: 32,
                       decoration: BoxDecoration(
-                        color: EventTypeUtils.getEventTypeColor(type).withOpacity(0.1),
+                        color: EventTypeUtils.getEventColor(type).withOpacity(0.1),
                         borderRadius: BorderRadius.circular(8),
                       ),
                       child: Icon(
-                        EventTypeUtils.getEventTypeIcon(type),
+                        EventTypeUtils.getEventIcon(type),
                         size: 16,
-                        color: EventTypeUtils.getEventTypeColor(type),
+                        color: EventTypeUtils.getEventColor(type),
                       ),
                     ),
                     const SizedBox(width: 12),
@@ -258,16 +258,16 @@ class EventTypeDropdownState extends State<EventTypeDropdown> {
                 padding: const EdgeInsets.all(8),
                 child: Container(
                   decoration: BoxDecoration(
-                    color: EventTypeUtils.getEventTypeColor(widget.selectedEventType).withOpacity(0.1),
+                    color: EventTypeUtils.getEventColor(widget.selectedEventType).withOpacity(0.1),
                     borderRadius: BorderRadius.circular(6),
                   ),
                   child: Icon(
                     widget.selectedEventType == 'Select type of event'
                         ? Icons.event_note
-                        : EventTypeUtils.getEventTypeIcon(widget.selectedEventType),
+                        : EventTypeUtils.getEventIcon(widget.selectedEventType),
                     color: widget.selectedEventType == 'Select type of event'
                         ? AppColors.lightGreen
-                        : EventTypeUtils.getEventTypeColor(widget.selectedEventType),
+                        : EventTypeUtils.getEventColor(widget.selectedEventType),
                     size: 18,
                   ),
                 ),

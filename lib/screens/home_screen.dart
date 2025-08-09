@@ -8,6 +8,10 @@ import 'login_screen.dart';
 import 'nav/cattle/cattle_screen.dart';
 import 'nav/dashboard/dashboard_screen.dart';
 import 'nav/profile/profile_screen.dart';
+import 'nav/milk/milk_screen.dart';
+import 'nav/schedule/schedule_screen.dart';
+import 'nav/setting/setting_screen.dart';
+import 'nav/event/event_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   final String userEmail;
@@ -34,7 +38,11 @@ class _HomeScreenState extends State<HomeScreen> {
     _pages = [
       DashboardScreen(),
       const CattleScreen(),
+      EventScreen(),
+      MilkScreen(),
+      ScheduleScreen(),
       ProfileScreen(userEmail: widget.userEmail),
+      SettingScreen(),
     ];
     _loadProfileData();
   }
@@ -111,7 +119,15 @@ class _HomeScreenState extends State<HomeScreen> {
       case 1:
         return 'My Cattle';
       case 2:
+        return 'Events';
+      case 3:
+        return 'Milk Production';
+      case 4:
+        return 'Schedule';
+      case 5:
         return 'User Profile';
+      case 6:
+        return 'Settings';
       default:
         return 'Cattle Tracer';
     }
@@ -139,10 +155,34 @@ class _HomeScreenState extends State<HomeScreen> {
                   onTap: () => _onNavItemTapped(1),
                 ),
                 _buildDrawerItem(
-                  icon: Icons.person_rounded,
-                  text: 'Profile',
+                  icon: Icons.event_note_rounded,
+                  text: 'Events',
                   index: 2,
                   onTap: () => _onNavItemTapped(2),
+                ),
+                _buildDrawerItem(
+                  icon: Icons.opacity_rounded,
+                  text: 'Milk Production',
+                  index: 3,
+                  onTap: () => _onNavItemTapped(3),
+                ),
+                _buildDrawerItem(
+                  icon: Icons.schedule_rounded,
+                  text: 'Schedule',
+                  index: 4,
+                  onTap: () => _onNavItemTapped(4),
+                ),
+                _buildDrawerItem(
+                  icon: Icons.person_rounded,
+                  text: 'Profile',
+                  index: 5,
+                  onTap: () => _onNavItemTapped(5),
+                ),
+                _buildDrawerItem(
+                  icon: Icons.settings_rounded,
+                  text: 'Settings',
+                  index: 6,
+                  onTap: () => _onNavItemTapped(6),
                 ),
               ],
             ),

@@ -157,14 +157,14 @@ class EventSpecificFieldsState extends State<EventSpecificFields> {
         _newCalfData!['pendingOperation'] != null;
   }
 
-  // Method to calculate return to heat date for breeding events
+  // Method to calculate return to heat date for breeding event
   void calculateAndDisplayReturnToHeatDate(DateTime eventDate) {
     if (widget.selectedEventType.toLowerCase() == 'breeding') {
       _breedingFieldsKey.currentState?.calculateAndDisplayReturnToHeatDate(eventDate);
     }
   }
 
-  // Method to calculate delivery date for pregnant events
+  // Method to calculate delivery date for pregnant event
   void calculateAndDisplayDeliveryDate(DateTime breedingDate) {
     if (widget.selectedEventType.toLowerCase() == 'pregnant') {
       _pregnantFieldsKey.currentState?.calculateAndDisplayDeliveryDate(breedingDate);
@@ -212,12 +212,12 @@ class EventSpecificFieldsState extends State<EventSpecificFields> {
                   Container(
                     padding: const EdgeInsets.all(8),
                     decoration: BoxDecoration(
-                      color: EventTypeUtils.getEventTypeColor(widget.selectedEventType).withOpacity(0.15),
+                      color: EventTypeUtils.getEventColor(widget.selectedEventType).withOpacity(0.15),
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Icon(
                       FontAwesomeIcons.clipboardList,
-                      color: EventTypeUtils.getEventTypeColor(widget.selectedEventType),
+                      color: EventTypeUtils.getEventColor(widget.selectedEventType),
                       size: 18,
                     ),
                   ),

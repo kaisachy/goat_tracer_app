@@ -1,29 +1,23 @@
-// lib/screens/nav/cattle/widgets/event_cattle_tab_content.dart
+// lib/screens/nav/event/events_screen.dart
 import 'package:flutter/material.dart';
-import 'package:cattle_tracer_app/models/cattle.dart';
 import 'package:cattle_tracer_app/constants/app_colors.dart';
 import 'package:cattle_tracer_app/services/cattle/cattle_event_service.dart';
 import 'package:cattle_tracer_app/screens/nav/cattle/widgets/events/event_search_filter_bar.dart';
-import '../../cattle_event_form_screen.dart';
-import '../../modals/event_duplication_modal.dart';
+import 'package:cattle_tracer_app/screens/nav/cattle/cattle_event_form_screen.dart';
+import 'package:cattle_tracer_app/screens/nav/cattle/modals/event_duplication_modal.dart';
 import 'package:cattle_tracer_app/utils/event_type_utils.dart';
+import '../../../models/cattle.dart';
+import 'cattle_selection_modal.dart';
 
-class EventCattleTabContent extends StatefulWidget {
-  final Cattle cattle;
-  final VoidCallback onAddEvent;
-
-  const EventCattleTabContent({
-    super.key,
-    required this.cattle,
-    required this.onAddEvent,
-  });
+class EventScreen extends StatefulWidget {
+  const EventScreen({super.key});
 
   @override
-  State<EventCattleTabContent> createState() => _EventCattleTabContentState();
+  State<EventScreen> createState() => _EventScreenState();
 }
 
-class _EventCattleTabContentState extends State<EventCattleTabContent> {
-  List<Map<String, dynamic>> events = [];
+class _EventScreenState extends State<EventScreen> {
+  List<Map<String, dynamic>> allEvents = [];
   bool isLoading = true;
   String? error;
 
@@ -31,21 +25,13 @@ class _EventCattleTabContentState extends State<EventCattleTabContent> {
   String selectedEventType = 'All';
   Set<int> expandedCards = <int>{};
 
+  // All possible event types
   List<String> get eventTypes {
-    final femaleEventTypes = [
+    return [
       'All', 'Dry off', 'Treated', 'Breeding', 'Weighed', 'Gives Birth',
       'Vaccinated', 'Pregnant', 'Aborted Pregnancy', 'Deworming',
-      'Hoof Trimming', 'Other',
-    ];
-
-    final maleEventTypes = [
-      'All', 'Treated', 'Breeding', 'Weighed', 'Vaccinated', 'Deworming',
       'Hoof Trimming', 'Castrated', 'Weaned', 'Other',
     ];
-
-    // Check cattle gender and return appropriate event types
-    final gender = widget.cattle.gender.toLowerCase();
-    return gender == 'female' ? femaleEventTypes : maleEventTypes;
   }
 
   // List of event types that can be duplicated
@@ -61,22 +47,18 @@ class _EventCattleTabContentState extends State<EventCattleTabContent> {
   @override
   void initState() {
     super.initState();
-    _loadCattleEvents();
+    _loadAllCattleEvents();
   }
 
-  Future<void> _loadCattleEvents() async {
+  Future<void> _loadAllCattleEvents() async {
     try {
       setState(() => isLoading = true);
-      final allEvents = await CattleEventService.getCattleEvent();
-      final cattleEvents = allEvents.where((event) =>
-      (event['cattle_tag']?.toString().trim().toLowerCase() ?? '') ==
-          widget.cattle.tagNo.trim().toLowerCase()
-      ).toList();
+      final events = await CattleEventService.getCattleEvent();
 
       // Remove duplicates and delete them from database
-      final uniqueEvents = await _removeDuplicateEventsFromDB(cattleEvents);
+      final uniqueEvents = await _removeDuplicateEventsFromDB(events);
 
-      // Sort event by date to find the latest one
+      // Sort events by date to show latest first
       uniqueEvents.sort((a, b) {
         final dateA = DateTime.tryParse(a['event_date'] ?? '1900-01-01') ?? DateTime(1900);
         final dateB = DateTime.tryParse(b['event_date'] ?? '1900-01-01') ?? DateTime(1900);
@@ -85,12 +67,12 @@ class _EventCattleTabContentState extends State<EventCattleTabContent> {
 
       if (mounted) {
         setState(() {
-          events = uniqueEvents;
+          allEvents = uniqueEvents;
           isLoading = false;
           error = null;
 
           // Auto-expand the latest event (index 0 after sorting)
-          if (events.isNotEmpty) {
+          if (allEvents.isNotEmpty) {
             expandedCards.add(0);
           }
         });
@@ -98,14 +80,14 @@ class _EventCattleTabContentState extends State<EventCattleTabContent> {
     } catch (e) {
       if (mounted) {
         setState(() {
-          error = 'Failed to load event: $e';
+          error = 'Failed to load events: $e';
           isLoading = false;
         });
       }
     }
   }
 
-// Helper method to remove duplicate event and delete them from database
+  // Helper method to remove duplicate events and delete them from database
   Future<List<Map<String, dynamic>>> _removeDuplicateEventsFromDB(List<Map<String, dynamic>> events) async {
     final List<Map<String, dynamic>> uniqueEvents = [];
     final List<Map<String, dynamic>> duplicatesToDelete = [];
@@ -116,7 +98,7 @@ class _EventCattleTabContentState extends State<EventCattleTabContent> {
           _areEventsIdentical(event, existingEvent));
 
       if (existingEventIndex == -1) {
-        // No duplicate found, add to unique event
+        // No duplicate found, add to unique events
         uniqueEvents.add(event);
       } else {
         // Duplicate found - decide which one to keep and which to delete
@@ -165,11 +147,11 @@ class _EventCattleTabContentState extends State<EventCattleTabContent> {
           );
         }
       } catch (e) {
-        print('Error deleting duplicate event: $e');
+        print('Error deleting duplicate events: $e');
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('Warning: Some duplicate event could not be removed from database'),
+              content: Text('Warning: Some duplicate events could not be removed from database'),
               backgroundColor: Colors.orange.shade600,
               behavior: SnackBarBehavior.floating,
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -182,7 +164,7 @@ class _EventCattleTabContentState extends State<EventCattleTabContent> {
     return uniqueEvents;
   }
 
-// Helper method to check if two event are identical
+  // Helper method to check if two events are identical
   bool _areEventsIdentical(Map<String, dynamic> event1, Map<String, dynamic> event2) {
     // Get the event type to determine which fields to compare
     final eventType1 = (event1['event_type'] ?? '').toString().toLowerCase();
@@ -199,7 +181,9 @@ class _EventCattleTabContentState extends State<EventCattleTabContent> {
     // Compare event-specific fields based on event type
     switch (eventType1) {
       case 'dry off':
-      // Only basic fields matter for dry off
+      case 'aborted pregnancy':
+      case 'hoof trimming':
+      case 'weaned':
         return true;
 
       case 'treated':
@@ -229,27 +213,15 @@ class _EventCattleTabContentState extends State<EventCattleTabContent> {
             _compareFieldValues(event1['expected_delivery_date'], event2['expected_delivery_date']) &&
             _compareFieldValues(event1['bull_tag'], event2['bull_tag']);
 
-      case 'aborted pregnancy':
-      // Only basic fields matter for aborted pregnancy
-        return true;
-
       case 'deworming':
         return _compareFieldValues(event1['medicine_given'], event2['medicine_given']);
-
-      case 'hoof trimming':
-      // Only basic fields matter for hoof trimming
-        return true;
 
       case 'castrated':
         return _compareFieldValues(event1['technician'], event2['technician']);
 
-      case 'weaned':
-      // Only basic fields matter for weaned
-        return true;
-
       case 'other':
       default:
-      // For 'other' event, compare all potentially relevant fields
+      // For 'other' events, compare all potentially relevant fields
         return _compareFieldValues(event1['bull_tag'], event2['bull_tag']) &&
             _compareFieldValues(event1['calf_tag'], event2['calf_tag']) &&
             _compareFieldValues(event1['technician'], event2['technician']) &&
@@ -264,55 +236,42 @@ class _EventCattleTabContentState extends State<EventCattleTabContent> {
     }
   }
 
-// Helper method to compare field values, treating null, empty, and 'N/A' as equivalent
+  // Helper method to compare field values, treating null, empty, and 'N/A' as equivalent
   bool _compareFieldValues(dynamic value1, dynamic value2) {
     final normalizedValue1 = _normalizeFieldValue(value1);
     final normalizedValue2 = _normalizeFieldValue(value2);
-
     return normalizedValue1 == normalizedValue2;
   }
 
-// Helper method to normalize field values for comparison
+  // Helper method to normalize field values for comparison
   String? _normalizeFieldValue(dynamic value) {
     if (value == null) return null;
-
     final stringValue = value.toString().trim();
-
-    // Treat empty strings and 'N/A' as null
     if (stringValue.isEmpty || stringValue.toLowerCase() == 'n/a') {
       return null;
     }
-
     return stringValue.toLowerCase();
   }
 
-  Future<void> _refreshEvents() async => await _loadCattleEvents();
+  Future<void> _refreshEvents() async => await _loadAllCattleEvents();
 
   List<Map<String, dynamic>> get _filteredEvents {
-    return events.where((event) {
+    return allEvents.where((event) {
       final type = (event['event_type'] ?? '').toString().toLowerCase();
       final notes = (event['notes'] ?? '').toString().toLowerCase();
       final diagnosis = (event['diagnosis'] ?? '').toString().toLowerCase();
+      final cattleTag = (event['cattle_tag'] ?? '').toString().toLowerCase();
       final query = searchQuery.toLowerCase();
 
       final matchesSearch = type.contains(query) ||
           notes.contains(query) ||
-          diagnosis.contains(query);
+          diagnosis.contains(query) ||
+          cattleTag.contains(query);
 
       final matchesFilter = selectedEventType == 'All' ||
           type == selectedEventType.toLowerCase();
 
-      // Additional filter: only show event that are valid for the cattle's gender
-      final gender = widget.cattle.gender.toLowerCase();
-      final validEventTypes = gender == 'female'
-          ? ['dry off', 'treated', 'breeding', 'weighed', 'gives birth', 'vaccinated',
-        'pregnant', 'aborted pregnancy', 'deworming', 'hoof trimming', 'other']
-          : ['treated', 'breeding', 'weighed', 'vaccinated', 'deworming', 'hoof trimming',
-        'castrated', 'weaned','other'];
-
-      final matchesGender = validEventTypes.contains(type);
-
-      return matchesSearch && matchesFilter && matchesGender;
+      return matchesSearch && matchesFilter;
     }).toList();
   }
 
@@ -411,7 +370,6 @@ class _EventCattleTabContentState extends State<EventCattleTabContent> {
         },
       );
 
-      // If duplication was successful, refresh the event list
       if (result == true) {
         await _refreshEvents();
       }
@@ -459,12 +417,11 @@ class _EventCattleTabContentState extends State<EventCattleTabContent> {
         MaterialPageRoute(
           builder: (context) => CattleEventFormScreen(
             event: cattleEvent,
-            cattleTag: widget.cattle.tagNo,
+            cattleTag: event['cattle_tag']?.toString() ?? '',
           ),
         ),
       );
 
-      // If edit was successful, refresh the event list
       if (result == true) {
         await _refreshEvents();
         if (mounted) {
@@ -521,7 +478,7 @@ class _EventCattleTabContentState extends State<EventCattleTabContent> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      '${event['event_type']}',
+                      '${event['event_type']} - ${event['cattle_tag']}',
                       style: const TextStyle(fontWeight: FontWeight.bold),
                     ),
                     Text(
@@ -565,7 +522,6 @@ class _EventCattleTabContentState extends State<EventCattleTabContent> {
 
   void _performDelete(Map<String, dynamic> event) async {
     try {
-      // Show loading indicator
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -584,23 +540,19 @@ class _EventCattleTabContentState extends State<EventCattleTabContent> {
               ],
             ),
             backgroundColor: Colors.orange.shade600,
-            duration: const Duration(seconds: 10), // Longer duration for loading
+            duration: const Duration(seconds: 10),
           ),
         );
       }
 
-      // Call the delete API
       final success = await CattleEventService.deleteCattleEvent(event['id']);
 
-      // Clear any existing snackbars
       if (mounted) {
         ScaffoldMessenger.of(context).clearSnackBars();
       }
 
       if (success) {
-        // Refresh the event list
         await _refreshEvents();
-
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
@@ -624,12 +576,8 @@ class _EventCattleTabContentState extends State<EventCattleTabContent> {
         }
       }
     } catch (e) {
-      // Clear loading snackbar
       if (mounted) {
         ScaffoldMessenger.of(context).clearSnackBars();
-      }
-
-      if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Error deleting event: $e'),
@@ -642,57 +590,151 @@ class _EventCattleTabContentState extends State<EventCattleTabContent> {
     }
   }
 
+// Replace your existing _onAddEvent method with this updated version
+  void _onAddEvent() async {
+    try {
+      // First, show cattle selection modal
+      final selectedCattleTag = await showDialog<String>(
+        context: context,
+        barrierDismissible: false,
+        builder: (BuildContext context) {
+          return const CattleSelectionModal();
+        },
+      );
+
+      // If user cancelled or no cattle was selected, return
+      if (selectedCattleTag == null) return;
+
+      // Navigate to the event form with the selected cattle tag
+      final result = await Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => CattleEventFormScreen(
+            cattleTag: selectedCattleTag,
+          ),
+        ),
+      );
+
+      // Handle the result from the form
+      if (result == true && mounted) {
+        await _refreshEvents();
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Row(
+              children: [
+                const Icon(Icons.check_circle_rounded, color: Colors.white, size: 20),
+                const SizedBox(width: 12),
+                const Text('Event added successfully!'),
+              ],
+            ),
+            backgroundColor: AppColors.vibrantGreen,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+            duration: const Duration(seconds: 3),
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Row(
+              children: [
+                const Icon(Icons.error_rounded, color: Colors.white, size: 20),
+                const SizedBox(width: 12),
+                Expanded(child: Text('Error adding event: $e')),
+              ],
+            ),
+            backgroundColor: Colors.red,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+            duration: const Duration(seconds: 4),
+          ),
+        );
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        children: [
-          EventSearchFilterBar(
-            initialSearchQuery: searchQuery,
-            initialEventType: selectedEventType,
-            eventTypes: eventTypes,
-            onSearchChanged: _onSearchChanged,
-            onFilterChanged: _onFilterChanged,
-            onClearFilter: _onClearFilter,
-          ),
-          const SizedBox(height: 16),
-          _buildEventsSummary(),
-          const SizedBox(height: 16),
-          Expanded(
-            child: RefreshIndicator(
-              onRefresh: _refreshEvents,
-              color: AppColors.vibrantGreen,
-              child: isLoading
-                  ? const Center(child: CircularProgressIndicator(color: AppColors.vibrantGreen))
-                  : error != null
-                  ? _buildErrorState()
-                  : _filteredEvents.isEmpty
-                  ? _buildEmptyState()
-                  : ListView.separated(
-                physics: const AlwaysScrollableScrollPhysics(),
-                padding: const EdgeInsets.only(bottom: 20),
-                itemCount: _filteredEvents.length,
-                separatorBuilder: (context, index) => const SizedBox(height: 12),
-                itemBuilder: (context, index) => _buildEventAccordion(_filteredEvents[index], index),
+    return Scaffold(
+      backgroundColor: Colors.grey.shade50,
+      body: Container(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          children: [
+            EventSearchFilterBar(
+              initialSearchQuery: searchQuery,
+              initialEventType: selectedEventType,
+              eventTypes: eventTypes,
+              onSearchChanged: _onSearchChanged,
+              onFilterChanged: _onFilterChanged,
+              onClearFilter: _onClearFilter,
+            ),
+            const SizedBox(height: 16),
+            _buildEventsSummary(),
+            const SizedBox(height: 16),
+            Expanded(
+              child: RefreshIndicator(
+                onRefresh: _refreshEvents,
+                color: AppColors.vibrantGreen,
+                child: isLoading
+                    ? const Center(child: CircularProgressIndicator(color: AppColors.vibrantGreen))
+                    : error != null
+                    ? _buildErrorState()
+                    : _filteredEvents.isEmpty
+                    ? _buildEmptyState()
+                    : ListView.separated(
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  padding: const EdgeInsets.only(bottom: 20),
+                  itemCount: _filteredEvents.length,
+                  separatorBuilder: (context, index) => const SizedBox(height: 12),
+                  itemBuilder: (context, index) => _buildEventAccordion(_filteredEvents[index], index),
+                ),
               ),
             ),
+          ],
+        ),
+      ),
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: _onAddEvent,
+        backgroundColor: AppColors.vibrantGreen,
+        foregroundColor: Colors.white,
+        elevation: 4,
+        icon: const Icon(Icons.add_rounded),
+        label: const Text(
+          'Add Event',
+          style: TextStyle(
+            fontWeight: FontWeight.w600,
           ),
-        ],
+        ),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+        ),
       ),
     );
   }
 
   Widget _buildEventsSummary() {
-    if (events.isEmpty) return const SizedBox.shrink();
+    if (allEvents.isEmpty) return const SizedBox.shrink();
 
-    final totalEvents = events.length;
+    final totalEvents = allEvents.length;
     final filteredCount = _filteredEvents.length;
-    final recentEvent = events.isNotEmpty
-        ? events.reduce((a, b) =>
+    final recentEvent = allEvents.isNotEmpty
+        ? allEvents.reduce((a, b) =>
     DateTime.parse(a['event_date'] ?? '1900-01-01')
         .isAfter(DateTime.parse(b['event_date'] ?? '1900-01-01')) ? a : b)
         : null;
+
+    // Get unique cattle count
+    final uniqueCattleTags = allEvents
+        .map((event) => event['cattle_tag']?.toString() ?? '')
+        .where((tag) => tag.isNotEmpty)
+        .toSet();
 
     return Container(
       padding: const EdgeInsets.all(16),
@@ -775,6 +817,7 @@ class _EventCattleTabContentState extends State<EventCattleTabContent> {
   Widget _buildEventAccordion(Map<String, dynamic> event, int index) {
     final eventType = event['event_type'] ?? 'Unknown';
     final eventDate = event['event_date'];
+    final cattleTag = event['cattle_tag']?.toString() ?? 'Unknown';
     final eventColor = EventTypeUtils.getEventColor(eventType);
     final details = _getEventDetails(event);
     final isExpanded = expandedCards.contains(index);
@@ -836,14 +879,36 @@ class _EventCattleTabContentState extends State<EventCattleTabContent> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
-                          eventType.toUpperCase(),
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                            color: eventColor,
-                            letterSpacing: 0.5,
-                          ),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: Text(
+                                eventType.toUpperCase(),
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.bold,
+                                  color: eventColor,
+                                  letterSpacing: 0.5,
+                                ),
+                              ),
+                            ),
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                              decoration: BoxDecoration(
+                                color: AppColors.primary.withOpacity(0.1),
+                                borderRadius: BorderRadius.circular(12),
+                                border: Border.all(color: AppColors.primary.withOpacity(0.3)),
+                              ),
+                              child: Text(
+                                cattleTag,
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w600,
+                                  color: AppColors.primary,
+                                ),
+                              ),
+                            ),
+                          ],
                         ),
                         const SizedBox(height: 4),
                         Row(
@@ -1003,7 +1068,10 @@ class _EventCattleTabContentState extends State<EventCattleTabContent> {
     // Add event-specific fields based on event type
     switch (eventType) {
       case 'dry off':
-      // No additional fields for dry off
+      case 'aborted pregnancy':
+      case 'hoof trimming':
+      case 'weaned':
+      // No additional fields for these event types
         break;
 
       case 'treated':
@@ -1029,13 +1097,6 @@ class _EventCattleTabContentState extends State<EventCattleTabContent> {
           relevantDetails['Technician'] = event['technician'].toString();
         }
         if (event['estimated_return_date'] != null && event['estimated_return_date'].toString().isNotEmpty && event['estimated_return_date'] != 'N/A') {
-          relevantDetails['Est. Return to Heat'] = _formatDate(event['estimated_return_date']);
-        }
-
-        final cattleGender = widget.cattle.gender.toLowerCase();
-        if (cattleGender == 'male') {
-          relevantDetails['Est. Return to Heat'] = 'Not Applicable';
-        } else if (event['estimated_return_date'] != null && event['estimated_return_date'].toString().isNotEmpty && event['estimated_return_date'] != 'N/A') {
           relevantDetails['Est. Return to Heat'] = _formatDate(event['estimated_return_date']);
         }
         break;
@@ -1076,18 +1137,10 @@ class _EventCattleTabContentState extends State<EventCattleTabContent> {
         }
         break;
 
-      case 'aborted pregnancy':
-      // No additional fields for aborted pregnancy
-        break;
-
       case 'deworming':
         if (event['medicine_given'] != null && event['medicine_given'].toString().isNotEmpty && event['medicine_given'] != 'N/A') {
           relevantDetails['Deworming Medicine'] = event['medicine_given'].toString();
         }
-        break;
-
-      case 'hoof trimming':
-      // No additional fields for hoof trimming
         break;
 
       case 'castrated':
@@ -1096,13 +1149,9 @@ class _EventCattleTabContentState extends State<EventCattleTabContent> {
         }
         break;
 
-      case 'weaned':
-      // No additional fields for weaned
-        break;
-
       case 'other':
       default:
-      // For 'other' event, show all available fields that have data
+      // For 'other' events, show all available fields that have data
         if (event['bull_tag'] != null && event['bull_tag'].toString().isNotEmpty && event['bull_tag'] != 'N/A') {
           relevantDetails['Bull Tag'] = event['bull_tag'].toString();
         }
@@ -1175,7 +1224,7 @@ class _EventCattleTabContentState extends State<EventCattleTabContent> {
               Text(
                 isFiltering
                     ? 'Try adjusting your search or filter\nto find what you\'re looking for.'
-                    : 'Events for this cattle will appear here.\nTap "Add Event" to get started.',
+                    : 'No cattle events have been recorded yet.\nTap "Add Event" to get started.',
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   fontSize: 16,
@@ -1186,7 +1235,7 @@ class _EventCattleTabContentState extends State<EventCattleTabContent> {
               if (!isFiltering) ...[
                 const SizedBox(height: 32),
                 ElevatedButton.icon(
-                  onPressed: widget.onAddEvent,
+                  onPressed: _onAddEvent,
                   icon: const Icon(Icons.add_rounded),
                   label: const Text('Add First Event'),
                   style: ElevatedButton.styleFrom(

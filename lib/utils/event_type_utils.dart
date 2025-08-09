@@ -54,7 +54,7 @@ class EventTypeUtils {
     }
   }
 
-  static IconData getEventTypeIcon(String eventType) {
+  static IconData getEventIcon(String eventType) {
     switch (eventType.toLowerCase()) {
       case 'breeding':
         return FontAwesomeIcons.heart;
@@ -89,7 +89,7 @@ class EventTypeUtils {
     }
   }
 
-  static Color getEventTypeColor(String eventType) {
+  static Color getEventColor(String eventType) {
     switch (eventType.toLowerCase()) {
       case 'breeding': return Colors.pink.shade400;
       case 'weighed': return Colors.orange.shade500;
@@ -106,6 +106,18 @@ class EventTypeUtils {
       case 'other': return Colors.blueGrey.shade400;
       case 'loading cattle information...': return Colors.grey.shade400;
       default: return AppColors.lightGreen;
+    }
+  }
+
+  String formatDate(String? dateString) {
+    if (dateString == null || dateString.isEmpty) return 'N/A';
+    try {
+      final date = DateTime.parse(dateString);
+      final months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+        'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+      return '${date.day} ${months[date.month - 1]} ${date.year}';
+    } catch (e) {
+      return dateString;
     }
   }
 }

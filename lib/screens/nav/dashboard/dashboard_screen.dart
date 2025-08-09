@@ -582,7 +582,7 @@ class _DashboardScreenState extends State<DashboardScreen>
                     ),
                     const SizedBox(height: 12),
                     Text(
-                      'No recent events',
+                      'No recent event',
                       style: TextStyle(
                         color: Colors.grey.shade600,
                         fontSize: 16,

@@ -83,7 +83,7 @@ class _EventDuplicationModalState extends State<EventDuplicationModal> {
           return false;
         }
 
-        // Check classification compatibility for breeding events
+        // Check classification compatibility for breeding event
         if (!_isEventTypeValidForClassification(originalEventType, cattle.classification)) {
           print('Debug: Skipping ${cattle.tagNo} - classification incompatible: ${cattle.classification}');
           return false;
@@ -134,7 +134,7 @@ class _EventDuplicationModalState extends State<EventDuplicationModal> {
 
     switch (eventType) {
       case 'breeding':
-      // For breeding events, only allow Bull, Growers, Heifer, Cow
+      // For breeding event, only allow Bull, Growers, Heifer, Cow
         final allowedClassifications = ['bull', 'growers', 'heifer', 'cow'];
         return allowedClassifications.contains(classificationLower);
 
@@ -148,7 +148,7 @@ class _EventDuplicationModalState extends State<EventDuplicationModal> {
       case 'deworming':
       case 'hoof trimming':
       default:
-      // Other events are valid for all classifications
+      // Other event are valid for all classifications
         return true;
     }
   }
@@ -307,7 +307,7 @@ class _EventDuplicationModalState extends State<EventDuplicationModal> {
     } catch (e) {
       print('Debug: Error in _duplicateEvents: $e');
       if (mounted) {
-        _showErrorSnackBar('Error duplicating events: $e');
+        _showErrorSnackBar('Error duplicating event: $e');
       }
     } finally {
       if (mounted) {
