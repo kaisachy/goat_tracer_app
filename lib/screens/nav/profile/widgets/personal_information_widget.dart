@@ -2,6 +2,8 @@
 import 'package:flutter/material.dart';
 import 'package:cattle_tracer_app/screens/nav/profile/modals/personal_information_modal.dart';
 
+import '../../../../constants/app_colors.dart';
+
 class PersonalInformationWidget extends StatelessWidget {
   final bool isEditingMode;
   final VoidCallback onRefresh;
@@ -28,10 +30,10 @@ class PersonalInformationWidget extends StatelessWidget {
                 width: 48,
                 height: 48,
                 decoration: BoxDecoration(
-                  color: Colors.blue[600],
+                  color: AppColors.lightGreen.withOpacity(0.2),
                   borderRadius: BorderRadius.circular(12),
                 ),
-                child: const Icon(Icons.person, color: Colors.white, size: 24),
+                child: const Icon(Icons.person, color: AppColors.primary, size: 24),
               ),
               const SizedBox(width: 16),
               Expanded(

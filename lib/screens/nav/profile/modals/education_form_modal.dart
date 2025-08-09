@@ -1,6 +1,7 @@
 // lib/screens/nav/profile/modals/education_form_modal.dart
 import 'package:flutter/material.dart';
 import 'package:cattle_tracer_app/services/profile/educational_background_service.dart';
+import '../../../../constants/app_colors.dart';
 
 class EducationFormModal extends StatefulWidget {
   final String level;
@@ -24,6 +25,7 @@ class _EducationFormModalState extends State<EducationFormModal> {
   late TextEditingController courseController;
   late TextEditingController yearController;
   late TextEditingController honorsController;
+  bool isLoading = false;
 
   @override
   void initState() {
@@ -57,73 +59,290 @@ class _EducationFormModalState extends State<EducationFormModal> {
   Widget build(BuildContext context) {
     final bool isExistingRecord = widget.eduMap?['id'] != null;
 
-    return Padding(
-      padding: EdgeInsets.only(
-        bottom: MediaQuery.of(context).viewInsets.bottom + 20,
-        left: 16,
-        right: 16,
-        top: 20,
+    return Container(
+      decoration: const BoxDecoration(
+        color: AppColors.cardBackground,
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
-      child: SingleChildScrollView(
-        child: Form(
-          key: formKey,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    'Edit ${widget.level} Education',
-                    style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+      child: Padding(
+        padding: EdgeInsets.only(
+          bottom: MediaQuery.of(context).viewInsets.bottom + 20,
+          left: 20,
+          right: 20,
+          top: 20,
+        ),
+        child: SingleChildScrollView(
+          child: Form(
+            key: formKey,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Header Section
+                Container(
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            '${isExistingRecord ? 'Edit' : 'Add'} ${widget.level}',
+                            style: const TextStyle(
+                              fontSize: 24,
+                              fontWeight: FontWeight.bold,
+                              color: AppColors.textPrimary,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            'Educational Background',
+                            style: TextStyle(
+                              fontSize: 16,
+                              color: AppColors.textSecondary,
+                              fontWeight: FontWeight.w400,
+                            ),
+                          ),
+                        ],
+                      ),
+                      if (isExistingRecord)
+                        Container(
+                          decoration: BoxDecoration(
+                            color: Colors.red.shade50,
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: IconButton(
+                            icon: Icon(
+                              Icons.delete_outline,
+                              color: Colors.red.shade600,
+                              size: 24,
+                            ),
+                            onPressed: () => _showDeleteConfirmation(context),
+                            tooltip: 'Delete Record',
+                          ),
+                        ),
+                    ],
                   ),
-                  if (isExistingRecord)
-                    IconButton(
-                      icon: const Icon(Icons.delete, color: Colors.red),
-                      onPressed: () => _showDeleteConfirmation(context),
-                    ),
-                ],
-              ),
-              const SizedBox(height: 16),
-              TextFormField(
-                controller: schoolController,
-                decoration: const InputDecoration(labelText: 'School'),
-              ),
-              TextFormField(
-                controller: courseController,
-                decoration: const InputDecoration(labelText: 'Course'),
-              ),
-              TextFormField(
-                controller: yearController,
-                decoration: const InputDecoration(labelText: 'Year Graduated'),
-                keyboardType: TextInputType.number,
-                validator: (value) {
-                  if (value != null && value.isNotEmpty) {
-                    final year = int.tryParse(value);
-                    if (year == null) return 'Enter a valid year';
-                    if (year < 1900 || year > DateTime.now().year + 5) {
-                      return 'Enter a valid year between 1900-${DateTime.now().year + 5}';
-                    }
-                  }
-                  return null;
-                },
-              ),
-              TextFormField(
-                controller: honorsController,
-                decoration: const InputDecoration(labelText: 'Honors'),
-              ),
-              const SizedBox(height: 20),
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  onPressed: _saveEducation,
-                  child: const Text('Save'),
                 ),
-              ),
-            ],
+
+                // Divider
+                Container(
+                  height: 1,
+                  margin: const EdgeInsets.symmetric(vertical: 16),
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [
+                        AppColors.lightGreen.withOpacity(0.3),
+                        AppColors.vibrantGreen.withOpacity(0.3),
+                        AppColors.lightGreen.withOpacity(0.3),
+                      ],
+                    ),
+                  ),
+                ),
+
+                const SizedBox(height: 8),
+
+                // Form Fields
+                _buildTextField(
+                  controller: schoolController,
+                  label: 'School/Institution',
+                  icon: Icons.school_outlined,
+                  hint: 'Enter your school or institution name',
+                ),
+
+                const SizedBox(height: 20),
+
+                _buildTextField(
+                  controller: courseController,
+                  label: 'Course/Program',
+                  icon: Icons.menu_book_outlined,
+                  hint: 'Enter your course or program',
+                ),
+
+                const SizedBox(height: 20),
+
+                _buildTextField(
+                  controller: yearController,
+                  label: 'Year Graduated',
+                  icon: Icons.calendar_today_outlined,
+                  hint: 'e.g., 2023',
+                  keyboardType: TextInputType.number,
+                  validator: (value) {
+                    if (value != null && value.isNotEmpty) {
+                      final year = int.tryParse(value);
+                      if (year == null) return 'Enter a valid year';
+                      if (year < 1900 || year > DateTime.now().year + 5) {
+                        return 'Enter a valid year between 1900-${DateTime.now().year + 5}';
+                      }
+                    }
+                    return null;
+                  },
+                ),
+
+                const SizedBox(height: 20),
+
+                _buildTextField(
+                  controller: honorsController,
+                  label: 'Honors & Awards',
+                  icon: Icons.emoji_events_outlined,
+                  hint: 'Any honors, awards, or distinctions',
+                  maxLines: 2,
+                ),
+
+                const SizedBox(height: 32),
+
+                // Action Buttons
+                Row(
+                  children: [
+                    Expanded(
+                      child: OutlinedButton(
+                        onPressed: isLoading ? null : () => Navigator.pop(context),
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: AppColors.textSecondary,
+                          side: BorderSide(color: AppColors.textSecondary.withOpacity(0.3)),
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                        child: const Text(
+                          'Cancel',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      flex: 2,
+                      child: ElevatedButton(
+                        onPressed: isLoading ? null : _saveEducation,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.primary,
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          elevation: 2,
+                          shadowColor: AppColors.primary.withOpacity(0.3),
+                        ),
+                        child: isLoading
+                            ? const SizedBox(
+                          height: 20,
+                          width: 20,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                          ),
+                        )
+                            : const Text(
+                          'Save Education',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+
+                const SizedBox(height: 8),
+              ],
+            ),
           ),
         ),
       ),
+    );
+  }
+
+  Widget _buildTextField({
+    required TextEditingController controller,
+    required String label,
+    required IconData icon,
+    String? hint,
+    TextInputType? keyboardType,
+    String? Function(String?)? validator,
+    int maxLines = 1,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: const TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.w600,
+            color: AppColors.textPrimary,
+          ),
+        ),
+        const SizedBox(height: 8),
+        TextFormField(
+          controller: controller,
+          keyboardType: keyboardType,
+          validator: validator,
+          maxLines: maxLines,
+          style: const TextStyle(
+            fontSize: 16,
+            color: AppColors.textPrimary,
+          ),
+          decoration: InputDecoration(
+            hintText: hint,
+            hintStyle: TextStyle(
+              color: AppColors.textSecondary.withOpacity(0.6),
+              fontSize: 15,
+            ),
+            prefixIcon: Icon(
+              icon,
+              color: AppColors.vibrantGreen,
+              size: 22,
+            ),
+            filled: true,
+            fillColor: AppColors.pageBackground,
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(
+                color: AppColors.textSecondary.withOpacity(0.1),
+              ),
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(
+                color: AppColors.textSecondary.withOpacity(0.1),
+              ),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: const BorderSide(
+                color: AppColors.vibrantGreen,
+                width: 2,
+              ),
+            ),
+            errorBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: const BorderSide(
+                color: Colors.red,
+                width: 1,
+              ),
+            ),
+            focusedErrorBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: const BorderSide(
+                color: Colors.red,
+                width: 2,
+              ),
+            ),
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 16,
+              vertical: 16,
+            ),
+          ),
+        ),
+      ],
     );
   }
 
@@ -132,21 +351,69 @@ class _EducationFormModalState extends State<EducationFormModal> {
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
-          title: const Text('Delete Education Record'),
-          content: Text('Are you sure you want to delete your ${widget.level} education record?'),
+          backgroundColor: AppColors.cardBackground,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+          title: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: Colors.red.shade50,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Icon(
+                  Icons.warning_outlined,
+                  color: Colors.red.shade600,
+                  size: 24,
+                ),
+              ),
+              const SizedBox(width: 12),
+              const Text(
+                'Delete Record',
+                style: TextStyle(
+                  color: AppColors.textPrimary,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ],
+          ),
+          content: Text(
+            'Are you sure you want to delete your ${widget.level} education record? This action cannot be undone.',
+            style: const TextStyle(
+              color: AppColors.textSecondary,
+              fontSize: 16,
+            ),
+          ),
           actions: [
             TextButton(
               onPressed: () => Navigator.of(context).pop(),
-              child: const Text('Cancel'),
+              style: TextButton.styleFrom(
+                foregroundColor: AppColors.textSecondary,
+              ),
+              child: const Text(
+                'Cancel',
+                style: TextStyle(fontWeight: FontWeight.w600),
+              ),
             ),
-            TextButton(
+            ElevatedButton(
               onPressed: () async {
                 Navigator.of(context).pop(); // Close dialog
                 Navigator.of(context).pop(); // Close form modal
                 await _deleteEducation();
               },
-              style: TextButton.styleFrom(foregroundColor: Colors.red),
-              child: const Text('Delete'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.red.shade600,
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+              ),
+              child: const Text(
+                'Delete',
+                style: TextStyle(fontWeight: FontWeight.w600),
+              ),
             ),
           ],
         );
@@ -158,15 +425,38 @@ class _EducationFormModalState extends State<EducationFormModal> {
     final id = widget.eduMap?['id'];
     if (id == null) return;
 
+    setState(() => isLoading = true);
+
     final success = await EducationalBackgroundService.deleteEducationalBackground(id);
 
     if (mounted) {
+      setState(() => isLoading = false);
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(success
-              ? 'Education record deleted successfully!'
-              : 'Failed to delete record. Please try again.'),
-          backgroundColor: success ? Colors.green : Colors.red,
+          content: Row(
+            children: [
+              Icon(
+                success ? Icons.check_circle : Icons.error,
+                color: Colors.white,
+                size: 20,
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  success
+                      ? 'Education record deleted successfully!'
+                      : 'Failed to delete record. Please try again.',
+                  style: const TextStyle(fontSize: 16),
+                ),
+              ),
+            ],
+          ),
+          backgroundColor: success ? AppColors.vibrantGreen : Colors.red.shade600,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(8),
+          ),
+          margin: const EdgeInsets.all(16),
         ),
       );
 
@@ -189,13 +479,34 @@ class _EducationFormModalState extends State<EducationFormModal> {
         if (context.mounted) {
           Navigator.pop(context);
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('No data to save.'),
+            SnackBar(
+              content: Row(
+                children: [
+                  Icon(
+                    Icons.info_outline,
+                    color: Colors.white,
+                    size: 20,
+                  ),
+                  const SizedBox(width: 12),
+                  const Text(
+                    'No data to save.',
+                    style: TextStyle(fontSize: 16),
+                  ),
+                ],
+              ),
+              backgroundColor: AppColors.textSecondary,
+              behavior: SnackBarBehavior.floating,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+              margin: const EdgeInsets.all(16),
             ),
           );
         }
         return;
       }
+
+      setState(() => isLoading = true);
 
       // Prepare data - only include year if it's valid and non-zero
       final Map<String, dynamic> updateData = {
@@ -222,13 +533,34 @@ class _EducationFormModalState extends State<EducationFormModal> {
       }
 
       if (context.mounted) {
+        setState(() => isLoading = false);
         Navigator.pop(context);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(success
-                ? 'Education saved successfully!'
-                : 'Save failed. Please try again.'),
-            backgroundColor: success ? Colors.green : Colors.red,
+            content: Row(
+              children: [
+                Icon(
+                  success ? Icons.check_circle : Icons.error,
+                  color: Colors.white,
+                  size: 20,
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    success
+                        ? 'Education saved successfully!'
+                        : 'Save failed. Please try again.',
+                    style: const TextStyle(fontSize: 16),
+                  ),
+                ),
+              ],
+            ),
+            backgroundColor: success ? AppColors.vibrantGreen : Colors.red.shade600,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(8),
+            ),
+            margin: const EdgeInsets.all(16),
           ),
         );
         if (success) widget.onSaveSuccess();

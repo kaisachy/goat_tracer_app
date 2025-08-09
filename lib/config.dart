@@ -4,6 +4,6 @@
 
 
 class AppConfig {
-  static const String baseUrl = 'http://192.168.254.113/backend-api/public';
+  static const String baseUrl = 'http://192.168.254.104/backend-api/public';
 }
 

@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:cattle_tracer_app/services/profile/trainings_seminars_service.dart';
 import 'package:cattle_tracer_app/screens/nav/profile/modals/trainings_seminars_form_modal.dart';
 
+import '../../../../constants/app_colors.dart';
+
 class TrainingsSeminarsModal extends StatefulWidget {
   final bool isEditingMode;
   final VoidCallback onSaveSuccess;
@@ -97,8 +99,8 @@ class _TrainingsSeminarsModalState extends State<TrainingsSeminarsModal> {
                       margin: const EdgeInsets.only(bottom: 12),
                       child: ListTile(
                         leading: CircleAvatar(
-                          backgroundColor: Colors.orange[600],
-                          child: const Icon(Icons.workspace_premium, color: Colors.white),
+                          backgroundColor: AppColors.lightGreen.withOpacity(0.2),
+                          child: const Icon(Icons.workspace_premium, color: AppColors.primary),
                         ),
                         title: Text(
                           training['title'] ?? 'No Title',
@@ -141,17 +143,17 @@ class _TrainingsSeminarsModalState extends State<TrainingsSeminarsModal> {
                             mainAxisAlignment: MainAxisAlignment.end,
                             children: [
                               IconButton(
-                                icon: const Icon(Icons.edit),
+                                icon: const Icon(Icons.delete, color: Colors.red),
+                                tooltip: 'Delete',
+                                onPressed: () => _deleteTraining(training, index),
+                              ),
+                              IconButton(
+                                icon: const Icon(Icons.edit, color: Colors.green),
                                 tooltip: 'Edit',
                                 onPressed: () {
                                   Navigator.pop(context);
                                   _showTrainingFormModal(trainingMap: training);
                                 },
-                              ),
-                              IconButton(
-                                icon: const Icon(Icons.delete, color: Colors.red),
-                                tooltip: 'Delete',
-                                onPressed: () => _deleteTraining(training, index),
                               ),
                             ],
                           ),

@@ -9,8 +9,11 @@ class AppColors {
   // Suggested main roles
   static const Color primary = darkGreen;
   static const Color accent = gold;
-  static const Color background = lightGreen;
+
+  // A lighter, less distracting background is often better for the main scaffold
+  static const Color pageBackground = Color(0xFFFDFDFD);
   static const Color cardBackground = Colors.white;
+
   static const Color textPrimary = Color(0xFF1B1B1B);
   static const Color textSecondary = Color(0xFF444444);
 }

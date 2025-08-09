@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:cattle_tracer_app/services/profile/trainings_seminars_service.dart';
 import 'package:cattle_tracer_app/screens/nav/profile/modals/trainings_seminars_modal.dart';
 
+import '../../../../constants/app_colors.dart';
+
 class TrainingsSeminarsWidget extends StatelessWidget {
   final bool isEditingMode;
   final VoidCallback onRefresh;
@@ -34,10 +36,10 @@ class TrainingsSeminarsWidget extends StatelessWidget {
                     width: 48,
                     height: 48,
                     decoration: BoxDecoration(
-                      color: Colors.orange[600],
+                      color: AppColors.lightGreen.withOpacity(0.2),
                       borderRadius: BorderRadius.circular(12),
                     ),
-                    child: const Icon(Icons.workspace_premium, color: Colors.white, size: 24),
+                    child: const Icon(Icons.workspace_premium, color: AppColors.primary, size: 24),
                   ),
                   const SizedBox(width: 16),
                   Expanded(

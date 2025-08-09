@@ -1,4 +1,3 @@
-// lib/models/user.dart
 class User {
   final int id;
   final String firstName;
@@ -6,6 +5,7 @@ class User {
   final String email;
   final String role;
   final bool emailVerified;
+  final DateTime createdAt;
 
   User({
     required this.id,
@@ -14,16 +14,18 @@ class User {
     required this.email,
     required this.role,
     required this.emailVerified,
+    required this.createdAt,
   });
 
   factory User.fromJson(Map<String, dynamic> json) {
     return User(
-      id: json['id'] as int,
-      firstName: json['first_name'] as String,
-      lastName: json['last_name'] as String,
-      email: json['email'] as String,
-      role: json['role'] as String,
-      emailVerified: json['email_verified'] == 1 || json['email_verified'] == true,
+      id: json['id'],
+      firstName: json['first_name'],
+      lastName: json['last_name'],
+      email: json['email'],
+      role: json['role'],
+      emailVerified: json['email_verified'] == 1,
+      createdAt: DateTime.parse(json['created_at']),
     );
   }
 
@@ -35,6 +37,7 @@ class User {
       'email': email,
       'role': role,
       'email_verified': emailVerified ? 1 : 0,
+      'created_at': createdAt.toIso8601String(),
     };
   }
 }

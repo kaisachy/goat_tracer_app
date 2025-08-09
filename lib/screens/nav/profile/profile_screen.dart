@@ -1,19 +1,20 @@
 // lib/screens/nav/profile/profile_screen.dart
 import 'dart:developer';
-import 'package:flutter/material.dart';
 import 'dart:async';
+import 'dart:convert';
+import 'dart:io';
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:cattle_tracer_app/services/profile/personal_information_service.dart';
 import 'package:cattle_tracer_app/services/profile/farm_details_service.dart';
 import 'package:cattle_tracer_app/constants/app_colors.dart';
-import 'dart:convert';
-import 'dart:io';
-import 'package:image_picker/image_picker.dart';
-
-// Import widgets
 import 'package:cattle_tracer_app/screens/nav/profile/widgets/personal_information_widget.dart';
 import 'package:cattle_tracer_app/screens/nav/profile/widgets/farm_details_widget.dart';
 import 'package:cattle_tracer_app/screens/nav/profile/widgets/educational_background_widget.dart';
 import 'package:cattle_tracer_app/screens/nav/profile/widgets/trainings_seminars_widget.dart';
+import 'package:cattle_tracer_app/screens/nav/profile/user_account_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
   final String userEmail;
@@ -24,16 +25,83 @@ class ProfileScreen extends StatefulWidget {
   State<ProfileScreen> createState() => _ProfileScreenState();
 }
 
-class _ProfileScreenState extends State<ProfileScreen> {
+class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateMixin {
   late Future<Map<String, dynamic>?> farmerProfileFuture;
   late Future<Map<String, dynamic>?> farmDetailsFuture;
   bool isEditingMode = false;
   XFile? _imageFile;
+  late AnimationController _editModeController;
+  late AnimationController _headerController;
+  late AnimationController _cardController;
+  late Animation<double> _editModeAnimation;
+  late Animation<double> _headerAnimation;
+  late Animation<double> _cardAnimation;
+  final ScrollController _scrollController = ScrollController();
+  bool _isHeaderCollapsed = false;
 
   @override
   void initState() {
     super.initState();
     _loadData();
+    _initializeAnimations();
+    _scrollController.addListener(_handleScroll);
+  }
+
+  void _initializeAnimations() {
+    _editModeController = AnimationController(
+      duration: const Duration(milliseconds: 400),
+      vsync: this,
+    );
+
+    _headerController = AnimationController(
+      duration: const Duration(milliseconds: 600),
+      vsync: this,
+    );
+
+    _cardController = AnimationController(
+      duration: const Duration(milliseconds: 800),
+      vsync: this,
+    );
+
+    _editModeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(parent: _editModeController, curve: Curves.elasticOut),
+    );
+
+    _headerAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(parent: _headerController, curve: Curves.easeOutBack),
+    );
+
+    _cardAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(parent: _cardController, curve: Curves.easeOutQuart),
+    );
+
+    // Start animations
+    _headerController.forward();
+    Future.delayed(const Duration(milliseconds: 200), () {
+      _cardController.forward();
+    });
+  }
+
+  void _handleScroll() {
+    const double threshold = 100.0;
+    bool shouldCollapse = _scrollController.offset > threshold;
+
+    if (shouldCollapse != _isHeaderCollapsed) {
+      setState(() {
+        _isHeaderCollapsed = shouldCollapse;
+      });
+      HapticFeedback.lightImpact();
+    }
+  }
+
+  @override
+  void dispose() {
+    _editModeController.dispose();
+    _headerController.dispose();
+    _cardController.dispose();
+    _scrollController.removeListener(_handleScroll);
+    _scrollController.dispose();
+    super.dispose();
   }
 
   void _loadData() {
@@ -44,136 +112,466 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   Future<void> _handleRefresh() async {
-    _loadData();
-    await Future.wait([farmerProfileFuture, farmDetailsFuture]);
+    HapticFeedback.lightImpact();
+    final newFarmerFuture = PersonalInformationService.getPersonalInformation();
+    final newFarmFuture = FarmDetailsService.getFarmDetails();
+    if (mounted) {
+      setState(() {
+        farmerProfileFuture = newFarmerFuture;
+        farmDetailsFuture = newFarmFuture;
+      });
+    }
+    await newFarmerFuture;
+    await newFarmFuture;
   }
 
   void _toggleEditMode() async {
+    HapticFeedback.mediumImpact();
+
     if (isEditingMode) {
       bool saveSuccess = true;
 
       if (_imageFile != null) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Uploading farmer-profile picture...')),
-        );
+        _showModernLoadingDialog('Uploading profile picture...');
         saveSuccess = await PersonalInformationService.updateProfilePicture(_imageFile!);
+        if (mounted) {
+          Navigator.of(context, rootNavigator: true).pop();
+        }
       }
 
       if (saveSuccess) {
-        setState(() {
-          isEditingMode = false;
-          _imageFile = null;
-        });
-        _handleRefresh();
         if (mounted) {
-          ScaffoldMessenger.of(context).hideCurrentSnackBar();
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Profile updated successfully!')),
-          );
+          setState(() {
+            isEditingMode = false;
+            _imageFile = null;
+          });
         }
-      } else {
+        _editModeController.reverse();
+        await _handleRefresh();
         if (mounted) {
-          ScaffoldMessenger.of(context).hideCurrentSnackBar();
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Failed to update picture. Please try again.')),
-          );
+          _showModernSnackBar('Profile updated successfully!', isSuccess: true);
         }
+      } else if (mounted) {
+        _showModernSnackBar('Failed to update picture. Please try again.', isSuccess: false);
       }
     } else {
-      setState(() {
-        isEditingMode = true;
-      });
-    }
-  }
-
-  // --- IMAGE HELPER METHODS ---
-
-  Future<void> _pickImage(ImageSource source) async {
-    try {
-      final ImagePicker picker = ImagePicker();
-      final XFile? pickedFile = await picker.pickImage(source: source);
-
-      if (pickedFile != null) {
-        setState(() {
-          _imageFile = pickedFile;
-        });
-      } else {
-        log('No image selected.');
-      }
-    } catch (e, stackTrace) {
-      log('Failed to pick image: $e', stackTrace: stackTrace);
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to pick image: $e')),
-        );
+        setState(() {
+          isEditingMode = true;
+        });
       }
+      _editModeController.forward();
     }
   }
 
-  Future<void> _deleteImage() async {
-    bool success = await PersonalInformationService.deleteProfilePicture();
-    if (success) {
-      setState(() {
-        _imageFile = null;
-      });
-      _handleRefresh();
-    }
-  }
-
-  void _showImageSourceActionSheet(BuildContext context, bool hasExistingPicture) {
-    showModalBottomSheet(
+  void _showModernLoadingDialog(String message) {
+    showDialog(
       context: context,
+      barrierDismissible: false,
+      barrierColor: Colors.black54,
       builder: (BuildContext context) {
-        return SafeArea(
-          child: Wrap(
-            children: <Widget>[
-              ListTile(
-                leading: const Icon(Icons.photo_library),
-                title: const Text('Photo Library'),
-                onTap: () async {
-                  Navigator.of(context).pop();
-                  await _pickImage(ImageSource.gallery);
-                },
-              ),
-              ListTile(
-                leading: const Icon(Icons.camera_alt),
-                title: const Text('Camera'),
-                onTap: () async {
-                  Navigator.of(context).pop();
-                  await _pickImage(ImageSource.camera);
-                },
-              ),
-              if (hasExistingPicture || _imageFile != null)
-                ListTile(
-                  leading: Icon(Icons.delete, color: Colors.red[700]),
-                  title: Text('Delete Photo', style: TextStyle(color: Colors.red[700])),
-                  onTap: () {
-                    Navigator.of(context).pop();
-                    _deleteImage();
-                  },
+        return Dialog(
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+          child: Container(
+            padding: const EdgeInsets.all(32),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(24),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.1),
+                  blurRadius: 20,
+                  offset: const Offset(0, 10),
                 ),
-              ListTile(
-                leading: const Icon(Icons.cancel),
-                title: const Text('Cancel'),
-                onTap: () {
-                  Navigator.of(context).pop();
-                },
-              ),
-            ],
+              ],
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: AppColors.primary.withOpacity(0.1),
+                    shape: BoxShape.circle,
+                  ),
+                  child: CircularProgressIndicator(
+                    color: AppColors.primary,
+                    strokeWidth: 3,
+                  ),
+                ),
+                const SizedBox(height: 24),
+                Text(
+                  message,
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w500,
+                    color: Colors.black87,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+              ],
+            ),
           ),
         );
       },
     );
   }
 
-  // Profile Header Widget
-  Widget _buildProfileHeader(Map<String, dynamic>? profile, Map<String, dynamic>? farmDetails) {
-    final primaryColor = AppColors.primary;
-    final primaryWithOpacity = primaryColor.withOpacity(0.7);
-    final white02 = const Color.fromRGBO(255, 255, 255, 0.2);
-    final white01 = const Color.fromRGBO(255, 255, 255, 0.1);
-    final white09 = const Color.fromRGBO(255, 255, 255, 0.9);
+  void _showModernSnackBar(String message, {required bool isSuccess}) {
+    if (!mounted) return;
 
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Container(
+          padding: const EdgeInsets.symmetric(vertical: 4),
+          child: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.2),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(
+                  isSuccess ? Icons.check_circle_outline : Icons.error_outline,
+                  color: Colors.white,
+                  size: 20,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  message,
+                  style: const TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+        backgroundColor: isSuccess ? Colors.green[600] : Colors.red[600],
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        margin: const EdgeInsets.all(16),
+        elevation: 8,
+        duration: const Duration(seconds: 3),
+      ),
+    );
+  }
+
+  Future<void> _pickImage(ImageSource source) async {
+    try {
+      final ImagePicker picker = ImagePicker();
+      final XFile? pickedFile = await picker.pickImage(
+        source: source,
+        maxWidth: 1024,
+        maxHeight: 1024,
+        imageQuality: 85,
+      );
+
+      if (pickedFile != null) {
+        if (mounted) {
+          setState(() {
+            _imageFile = pickedFile;
+          });
+        }
+        if (mounted) {
+          _showModernSnackBar('Image selected successfully!', isSuccess: true);
+        }
+      }
+    } catch (e, stackTrace) {
+      log('Failed to pick image: $e', stackTrace: stackTrace);
+      if (mounted) {
+        _showModernSnackBar('Failed to pick image: $e', isSuccess: false);
+      }
+    }
+  }
+
+  Future<void> _deleteImage() async {
+    bool? confirmDelete = await _showModernConfirmationDialog(
+      'Delete Profile Picture',
+      'Are you sure you want to delete your profile picture?',
+      'Delete',
+      Colors.red,
+    );
+
+    if (confirmDelete == true) {
+      bool success = await PersonalInformationService.deleteProfilePicture();
+      if (success) {
+        if (mounted) {
+          setState(() {
+            _imageFile = null;
+          });
+        }
+        await _handleRefresh();
+        if (mounted) {
+          _showModernSnackBar('Profile picture deleted successfully!', isSuccess: true);
+        }
+      } else if (mounted) {
+        _showModernSnackBar('Failed to delete profile picture.', isSuccess: false);
+      }
+    }
+  }
+
+  Future<bool?> _showModernConfirmationDialog(
+      String title, String content, String actionText, Color actionColor) {
+    return showDialog<bool>(
+      context: context,
+      barrierColor: Colors.black54,
+      builder: (BuildContext context) {
+        return Dialog(
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+          child: Container(
+            padding: const EdgeInsets.all(24),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(20),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.1),
+                  blurRadius: 20,
+                  offset: const Offset(0, 10),
+                ),
+              ],
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: actionColor.withOpacity(0.1),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(Icons.warning_amber_rounded, color: actionColor, size: 32),
+                ),
+                const SizedBox(height: 20),
+                Text(
+                  title,
+                  style: const TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.black87,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  content,
+                  style: TextStyle(
+                    fontSize: 16,
+                    color: Colors.grey[600],
+                    height: 1.4,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 24),
+                Row(
+                  children: [
+                    Expanded(
+                      child: TextButton(
+                        style: TextButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            side: BorderSide(color: Colors.grey[300]!),
+                          ),
+                        ),
+                        child: const Text(
+                          'Cancel',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                            color: Colors.black54,
+                          ),
+                        ),
+                        onPressed: () => Navigator.of(context).pop(false),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: actionColor,
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          elevation: 0,
+                        ),
+                        child: Text(
+                          actionText,
+                          style: const TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        onPressed: () => Navigator.of(context).pop(true),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  void _showModernImagePicker(BuildContext context, bool hasExistingPicture) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (BuildContext context) {
+        return Container(
+          decoration: const BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.only(
+              topLeft: Radius.circular(28),
+              topRight: Radius.circular(28),
+            ),
+          ),
+          child: SafeArea(
+            child: Padding(
+              padding: const EdgeInsets.all(24),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    height: 4,
+                    width: 50,
+                    decoration: BoxDecoration(
+                      color: Colors.grey[300],
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+                  Text(
+                    'Update Profile Picture',
+                    style: TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.grey[800],
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+                  _buildModernImageOption(
+                    icon: Icons.photo_library_outlined,
+                    title: 'Photo Library',
+                    subtitle: 'Choose from your photos',
+                    color: Colors.blue,
+                    onTap: () async {
+                      Navigator.of(context).pop();
+                      await _pickImage(ImageSource.gallery);
+                    },
+                  ),
+                  const SizedBox(height: 16),
+                  _buildModernImageOption(
+                    icon: Icons.camera_alt_outlined,
+                    title: 'Camera',
+                    subtitle: 'Take a new photo',
+                    color: Colors.green,
+                    onTap: () async {
+                      Navigator.of(context).pop();
+                      await _pickImage(ImageSource.camera);
+                    },
+                  ),
+                  if (hasExistingPicture || _imageFile != null) ...[
+                    const SizedBox(height: 16),
+                    _buildModernImageOption(
+                      icon: Icons.delete_outline,
+                      title: 'Delete Photo',
+                      subtitle: 'Remove current picture',
+                      color: Colors.red,
+                      onTap: () {
+                        Navigator.of(context).pop();
+                        _deleteImage();
+                      },
+                    ),
+                  ],
+                  const SizedBox(height: 24),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildModernImageOption({
+    required IconData icon,
+    required String title,
+    required String subtitle,
+    required Color color,
+    required VoidCallback onTap,
+  }) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(16),
+        onTap: onTap,
+        child: Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: color.withOpacity(0.05),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: color.withOpacity(0.1)),
+          ),
+          child: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: color.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Icon(icon, color: color, size: 24),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      style: TextStyle(
+                        fontWeight: FontWeight.w600,
+                        fontSize: 16,
+                        color: Colors.grey[800],
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      subtitle,
+                      style: TextStyle(
+                        color: Colors.grey[600],
+                        fontSize: 14,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Icon(
+                Icons.arrow_forward_ios,
+                color: Colors.grey[400],
+                size: 16,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildModernProfileHeader(Map<String, dynamic>? profile, Map<String, dynamic>? farmDetails) {
     final hasProfilePicture = profile?['profile_picture'] != null && profile!['profile_picture'].isNotEmpty;
 
     ImageProvider? backgroundImage;
@@ -183,187 +581,331 @@ class _ProfileScreenState extends State<ProfileScreen> {
       backgroundImage = MemoryImage(base64Decode(profile['profile_picture']));
     }
 
-    return Container(
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [primaryColor, primaryWithOpacity],
-        ),
-        borderRadius: const BorderRadius.only(
-          bottomLeft: Radius.circular(24),
-          bottomRight: Radius.circular(24),
-        ),
-      ),
-      child: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            children: [
-              // Header with edit button
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
+    return AnimatedBuilder(
+      animation: _headerAnimation,
+      builder: (context, child) {
+        // Clamp the opacity value to ensure it's between 0.0 and 1.0
+        final clampedOpacity = _headerAnimation.value.clamp(0.0, 1.0);
+
+        return Transform.translate(
+          offset: Offset(0, 50 * (1 - _headerAnimation.value)),
+          child: Opacity(
+            opacity: clampedOpacity,
+            child: Container(
+              margin: const EdgeInsets.all(20),
+              padding: const EdgeInsets.all(24),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [
+                    AppColors.primary,
+                    AppColors.primary.withOpacity(0.8),
+                  ],
+                ),
+                borderRadius: BorderRadius.circular(24),
+                boxShadow: [
+                  BoxShadow(
+                    color: AppColors.primary.withOpacity(0.3),
+                    blurRadius: 20,
+                    offset: const Offset(0, 8),
+                  ),
+                ],
+              ),
+              child: Column(
                 children: [
-                  // Profile info with flexible space
-                  Expanded(
-                    child: Row(
-                      children: [
-                        Stack(
-                          children: [
-                            CircleAvatar(
-                              radius: 32,
-                              backgroundColor: white02,
-                              backgroundImage: backgroundImage,
-                              child: backgroundImage == null
-                                  ? const Icon(Icons.person, size: 32, color: Colors.white)
-                                  : null,
-                            ),
-                            if (isEditingMode)
-                              Positioned(
-                                bottom: 0,
-                                right: -4,
-                                child: GestureDetector(
-                                  onTap: () => _showImageSourceActionSheet(context, hasProfilePicture),
-                                  child: Container(
-                                    padding: const EdgeInsets.all(4),
-                                    decoration: BoxDecoration(
-                                      color: AppColors.primary,
-                                      shape: BoxShape.circle,
-                                      border: Border.all(color: Colors.white, width: 2),
-                                    ),
-                                    child: const Icon(Icons.camera_alt, color: Colors.white, size: 16),
+                  Row(
+                    children: [
+                      // Enhanced Profile Picture
+                      Stack(
+                        children: [
+                          Hero(
+                            tag: 'profile_avatar',
+                            child: Container(
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                border: Border.all(color: Colors.white, width: 4),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.black.withOpacity(0.2),
+                                    blurRadius: 15,
+                                    offset: const Offset(0, 8),
                                   ),
-                                ),
+                                ],
                               ),
-                          ],
-                        ),
-                        const SizedBox(width: 16),
-                        Flexible(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                '${profile?['first_name'] ?? 'Unknown'} ${profile?['last_name'] ?? 'User'}',
+                              child: CircleAvatar(
+                                radius: 42,
+                                backgroundColor: Colors.white.withOpacity(0.2),
+                                backgroundImage: backgroundImage,
+                                child: backgroundImage == null
+                                    ? const Icon(Icons.person_rounded, size: 42, color: Colors.white)
+                                    : null,
+                              ),
+                            ),
+                          ),
+                          if (isEditingMode)
+                            Positioned(
+                              bottom: 2,
+                              right: 2,
+                              child: AnimatedBuilder(
+                                animation: _editModeAnimation,
+                                builder: (context, child) {
+                                  // Clamp the scale value
+                                  final clampedScale = _editModeAnimation.value.clamp(0.0, 1.0);
+
+                                  return Transform.scale(
+                                    scale: clampedScale,
+                                    child: GestureDetector(
+                                      onTap: () => _showModernImagePicker(context, hasProfilePicture),
+                                      child: Container(
+                                        padding: const EdgeInsets.all(8),
+                                        decoration: BoxDecoration(
+                                          color: Colors.white,
+                                          shape: BoxShape.circle,
+                                          boxShadow: [
+                                            BoxShadow(
+                                              color: Colors.black.withOpacity(0.2),
+                                              blurRadius: 8,
+                                              offset: const Offset(0, 2),
+                                            ),
+                                          ],
+                                        ),
+                                        child: Icon(
+                                          Icons.camera_alt_rounded,
+                                          color: AppColors.primary,
+                                          size: 18,
+                                        ),
+                                      ),
+                                    ),
+                                  );
+                                },
+                              ),
+                            ),
+                        ],
+                      ),
+                      const SizedBox(width: 20),
+                      // Profile Info
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              '${profile?['first_name'] ?? 'Unknown'} ${profile?['last_name'] ?? 'User'}',
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 24,
+                                fontWeight: FontWeight.bold,
+                                letterSpacing: 0.5,
+                              ),
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                            const SizedBox(height: 8),
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                              decoration: BoxDecoration(
+                                color: Colors.white.withOpacity(0.2),
+                                borderRadius: BorderRadius.circular(20),
+                              ),
+                              child: Text(
+                                farmDetails?['farm_name'] ?? 'No Farm Name',
                                 style: const TextStyle(
                                   color: Colors.white,
-                                  fontSize: 24,
-                                  fontWeight: FontWeight.bold,
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w500,
                                 ),
-                                overflow: TextOverflow.ellipsis,
                                 maxLines: 1,
-                              ),
-                              Text(
-                                farmDetails?['farm_name'] ?? 'No Farm Name',
-                                style: TextStyle(
-                                  color: white09,
-                                  fontSize: 16,
-                                ),
                                 overflow: TextOverflow.ellipsis,
-                                maxLines: 1,
                               ),
-                            ],
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 24),
+                  // Action Buttons
+                  Row(
+                    children: [
+                      Expanded(
+                        child: _buildModernActionButton(
+                          icon: Icons.settings_rounded,
+                          label: 'Settings',
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => const UserAccountScreen(),
+                              ),
+                            );
+                          },
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: _buildModernActionButton(
+                          icon: isEditingMode ? Icons.check_rounded : Icons.edit_rounded,
+                          label: isEditingMode ? 'Save' : 'Edit',
+                          isPrimary: true,
+                          onTap: _toggleEditMode,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 20),
+                  // Stats Cards
+                  IntrinsicHeight(
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        Expanded(
+                          child: _buildModernStatsCard(
+                            icon: Icons.location_on_rounded,
+                            title: 'Address',
+                            value: '${profile?['barangay'] ?? 'N/A'}, ${profile?['municipality'] ?? 'N/A'}, ${profile?['province'] ?? 'N/A'}',
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: _buildModernStatsCard(
+                            icon: FontAwesomeIcons.expand,
+                            title: 'Farm Size',
+                            value: '${farmDetails?['farm_land_area'] ?? 'N/A'} hectares',
                           ),
                         ),
                       ],
                     ),
-                  ),
-                  // Edit button
-                  Container(
-                    decoration: BoxDecoration(
-                      color: white02,
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: IconButton(
-                      onPressed: _toggleEditMode,
-                      icon: Icon(
-                        isEditingMode ? Icons.check : Icons.edit,
-                        color: Colors.white,
-                      ),
-                    ),
-                  ),
+                  )
                 ],
               ),
-              const SizedBox(height: 24),
-              // Quick info cards
-              Row(
-                children: [
-                  Expanded(
-                    child: Container(
-                      padding: const EdgeInsets.all(16),
-                      decoration: BoxDecoration(
-                        color: white01,
-                        borderRadius: BorderRadius.circular(16),
-                        border: Border.all(color: white02),
-                      ),
-                      child: Column(
-                        children: [
-                          Row(
-                            children: [
-                              const Icon(Icons.location_on, color: Colors.white, size: 16),
-                              const SizedBox(width: 8),
-                              const Text(
-                                'Address',
-                                style: TextStyle(
-                                  color: Colors.white,
-                                  fontWeight: FontWeight.w500,
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 8),
-                          Text(
-                            '${profile?['barangay'] ?? 'N/A'}, ${profile?['municipality'] ?? 'N/A'}',
-                            style: TextStyle(
-                              color: white09,
-                              fontSize: 14,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Container(
-                      padding: const EdgeInsets.all(16),
-                      decoration: BoxDecoration(
-                        color: white01,
-                        borderRadius: BorderRadius.circular(16),
-                        border: Border.all(color: white02),
-                      ),
-                      child: Column(
-                        children: [
-                          Row(
-                            children: [
-                              const Icon(Icons.agriculture, color: Colors.white, size: 16),
-                              const SizedBox(width: 8),
-                              const Text(
-                                'Farm Size',
-                                style: TextStyle(
-                                  color: Colors.white,
-                                  fontWeight: FontWeight.w500,
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 8),
-                          Text(
-                            '${farmDetails?['farm_land_area'] ?? 'N/A'} hectares',
-                            style: TextStyle(
-                              color: white09,
-                              fontSize: 14,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildModernActionButton({
+    required IconData icon,
+    required String label,
+    required VoidCallback onTap,
+    bool isPrimary = false,
+  }) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(16),
+        onTap: onTap,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
+          padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+          decoration: BoxDecoration(
+            color: isPrimary
+                ? (isEditingMode ? Colors.green.withOpacity(0.2) : Colors.white.withOpacity(0.2))
+                : Colors.white.withOpacity(0.1),
+            borderRadius: BorderRadius.circular(16),
+            border: isPrimary && isEditingMode
+                ? Border.all(color: Colors.green, width: 1.5)
+                : Border.all(color: Colors.white.withOpacity(0.3)),
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(icon, color: Colors.white, size: 20),
+              const SizedBox(width: 8),
+              Text(
+                label,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.w600,
+                  fontSize: 14,
+                ),
               ),
             ],
           ),
         ),
       ),
+    );
+  }
+
+  Widget _buildModernStatsCard({
+    required IconData icon,
+    required String title,
+    required String value,
+  }) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.white.withOpacity(0.2)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(icon, color: Colors.white, size: 20),
+          const SizedBox(height: 8),
+          Text(
+            title,
+            style: TextStyle(
+              color: Colors.white.withOpacity(0.8),
+              fontSize: 12,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            value,
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 14,
+              fontWeight: FontWeight.bold,
+            ),
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildModernSectionCard(Widget child, int index) {
+    return AnimatedBuilder(
+      animation: _cardAnimation,
+      builder: (context, _) {
+        final delay = index * 0.1;
+        final animationValue = Curves.easeOutQuart.transform(
+          (_cardAnimation.value - delay).clamp(0.0, 1.0) / (1.0 - delay),
+        );
+
+        // Clamp the opacity value
+        final clampedOpacity = animationValue.clamp(0.0, 1.0);
+
+        return Transform.translate(
+          offset: Offset(0, 30 * (1 - animationValue)),
+          child: Opacity(
+            opacity: clampedOpacity,
+            child: Container(
+              margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(20),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.05),
+                    blurRadius: 10,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
+              ),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(20),
+                child: child,
+              ),
+            ),
+          ),
+        );
+      },
     );
   }
 
@@ -382,44 +924,77 @@ class _ProfileScreenState extends State<ProfileScreen> {
               builder: (context, farmSnapshot) {
                 if (profileSnapshot.connectionState == ConnectionState.waiting ||
                     farmSnapshot.connectionState == ConnectionState.waiting) {
-                  return const Center(child: CircularProgressIndicator());
+                  return Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(20),
+                          decoration: BoxDecoration(
+                            color: AppColors.primary.withOpacity(0.1),
+                            shape: BoxShape.circle,
+                          ),
+                          child: CircularProgressIndicator(
+                            color: AppColors.primary,
+                            strokeWidth: 3,
+                          ),
+                        ),
+                        const SizedBox(height: 24),
+                        Text(
+                          'Loading your profile...',
+                          style: TextStyle(
+                            color: Colors.grey[600],
+                            fontSize: 16,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
                 }
 
                 final profile = profileSnapshot.data;
                 final farmDetails = farmSnapshot.data;
 
                 return CustomScrollView(
+                  controller: _scrollController,
                   slivers: [
                     SliverToBoxAdapter(
-                      child: _buildProfileHeader(profile, farmDetails),
+                      child: _buildModernProfileHeader(profile, farmDetails),
                     ),
-                    SliverPadding(
-                      padding: const EdgeInsets.all(20),
-                      sliver: SliverList(
-                        delegate: SliverChildListDelegate([
-                          // Section Cards using refactored widgets
+                    SliverList(
+                      delegate: SliverChildListDelegate([
+                        const SizedBox(height: 8),
+                        _buildModernSectionCard(
                           PersonalInformationWidget(
                             isEditingMode: isEditingMode,
                             onRefresh: _handleRefresh,
                           ),
-                          const SizedBox(height: 16),
+                          0,
+                        ),
+                        _buildModernSectionCard(
                           FarmDetailsWidget(
                             isEditingMode: isEditingMode,
                             onRefresh: _handleRefresh,
                           ),
-                          const SizedBox(height: 16),
+                          1,
+                        ),
+                        _buildModernSectionCard(
                           EducationalBackgroundWidget(
                             isEditingMode: isEditingMode,
                             onRefresh: _handleRefresh,
                           ),
-                          const SizedBox(height: 16),
+                          2,
+                        ),
+                        _buildModernSectionCard(
                           TrainingsSeminarsWidget(
                             isEditingMode: isEditingMode,
                             onRefresh: _handleRefresh,
                           ),
-                          const SizedBox(height: 32),
-                        ]),
-                      ),
+                          3,
+                        ),
+                        const SizedBox(height: 100), // Extra space for floating elements
+                      ]),
                     ),
                   ],
                 );
@@ -428,30 +1003,70 @@ class _ProfileScreenState extends State<ProfileScreen> {
           },
         ),
       ),
-      // Edit mode indicator
-      floatingActionButton: isEditingMode
-          ? Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        decoration: BoxDecoration(
-          color: Colors.amber[600],
-          borderRadius: BorderRadius.circular(24),
-        ),
-        child: const Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(Icons.edit, color: Colors.white, size: 16),
-            SizedBox(width: 8),
-            Text(
-              'Edit Mode Active',
-              style: TextStyle(
-                color: Colors.white,
-                fontWeight: FontWeight.w500,
+      // Enhanced floating edit mode indicator
+      floatingActionButton: AnimatedBuilder(
+        animation: _editModeAnimation,
+        builder: (context, child) {
+          // Clamp the animation value
+          final clampedValue = _editModeAnimation.value.clamp(0.0, 1.0);
+
+          return isEditingMode
+              ? SlideTransition(
+            position: Tween<Offset>(
+              begin: const Offset(0, 2),
+              end: Offset.zero,
+            ).animate(CurvedAnimation(
+              parent: _editModeController,
+              curve: Curves.elasticOut,
+            )),
+            child: Transform.scale(
+              scale: clampedValue,
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+                decoration: BoxDecoration(
+                  color: Colors.amber[400],
+                  borderRadius: BorderRadius.circular(30),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.amber.withOpacity(0.4),
+                      blurRadius: 15,
+                      offset: const Offset(0, 8),
+                    ),
+                  ],
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(4),
+                      decoration: const BoxDecoration(
+                        color: Colors.white24,
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(
+                        Icons.edit_rounded,
+                        color: Colors.white,
+                        size: 16,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    const Text(
+                      'Edit Mode Active',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
+                        letterSpacing: 0.5,
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
-          ],
-        ),
-      )
-          : null,
+          )
+              : const SizedBox.shrink();
+        },
+      ),
       floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
     );
   }

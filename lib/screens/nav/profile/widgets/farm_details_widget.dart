@@ -2,6 +2,9 @@
 import 'package:flutter/material.dart';
 import 'package:cattle_tracer_app/services/profile/farm_details_service.dart';
 import 'package:cattle_tracer_app/screens/nav/profile/modals/farm_details_modal.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+
+import '../../../../constants/app_colors.dart';
 
 class FarmDetailsWidget extends StatelessWidget {
   final bool isEditingMode;
@@ -34,10 +37,10 @@ class FarmDetailsWidget extends StatelessWidget {
                     width: 48,
                     height: 48,
                     decoration: BoxDecoration(
-                      color: Colors.green[600],
+                      color: AppColors.lightGreen.withOpacity(0.2),
                       borderRadius: BorderRadius.circular(12),
                     ),
-                    child: const Icon(Icons.grass, color: Colors.white, size: 24),
+                    child: const Icon(FontAwesomeIcons.seedling, color: AppColors.primary, size: 24),
                   ),
                   const SizedBox(width: 16),
                   Expanded(

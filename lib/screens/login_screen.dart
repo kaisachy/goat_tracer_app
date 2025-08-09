@@ -1,6 +1,8 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:http/http.dart' as http;
+import '../constants/app_colors.dart';
 import 'register_screen.dart';
 import '../config.dart';
 import 'home_screen.dart';
@@ -18,6 +20,7 @@ class _LoginScreenState extends State<LoginScreen> {
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
   bool _isLoading = false;
+  bool _isPasswordVisible = false; // To toggle password visibility
 
   @override
   void dispose() {
@@ -27,6 +30,9 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   Future<void> _loginUser() async {
+    // Hide keyboard
+    FocusScope.of(context).unfocus();
+
     if (_formKey.currentState!.validate()) {
       setState(() => _isLoading = true);
 
@@ -36,12 +42,12 @@ class _LoginScreenState extends State<LoginScreen> {
           url,
           headers: {'Content-Type': 'application/json'},
           body: jsonEncode({
-            'email': _emailController.text,
+            'email': _emailController.text.trim(), // Use trim
             'password': _passwordController.text,
           }),
         );
 
-        if (!mounted) return; // Exit if widget is no longer in tree
+        if (!mounted) return;
 
         if (response.statusCode == 200) {
           final data = jsonDecode(response.body);
@@ -49,24 +55,27 @@ class _LoginScreenState extends State<LoginScreen> {
           if (data['success'] == true) {
             await SecureStorageService().saveToken(data['token']);
 
-            if (!mounted) return; // Check again after async call
-            _showMessage('Login Successful!', Colors.green);
+            if (!mounted) return;
+            // SnackBar is shown before navigating
+            _showMessage('Login Successful!', AppColors.vibrantGreen);
 
-            Navigator.pushReplacement(
+            Navigator.pushAndRemoveUntil(
               context,
               MaterialPageRoute(
-                builder: (_) => HomeScreen(userEmail: _emailController.text),
+                builder: (_) => HomeScreen(userEmail: _emailController.text.trim()),
               ),
+                  (route) => false, // Removes all previous routes
             );
           } else {
-            _showMessage(data['message'] ?? 'Login failed', Colors.red);
+            _showMessage(data['message'] ?? 'Invalid credentials', Colors.red);
           }
         } else {
-          _showMessage('Server error: ${response.statusCode}', Colors.red);
+          final data = jsonDecode(response.body);
+          _showMessage(data['message'] ?? 'Server error: ${response.statusCode}', Colors.red);
         }
       } catch (e) {
         if (mounted) {
-          _showMessage('Connection error: ${e.toString()}', Colors.red);
+          _showMessage('Connection error. Please try again.', Colors.red);
         }
       } finally {
         if (mounted) {
@@ -83,7 +92,7 @@ class _LoginScreenState extends State<LoginScreen> {
         backgroundColor: color,
         behavior: SnackBarBehavior.floating,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-        margin: const EdgeInsets.all(10),
+        margin: const EdgeInsets.all(16),
       ),
     );
   }
@@ -91,53 +100,96 @@ class _LoginScreenState extends State<LoginScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      // Set a clean background color
+      backgroundColor: Colors.white,
       appBar: AppBar(
-        title: const Text(''),
-        centerTitle: true,
-        shape: const RoundedRectangleBorder(
-          borderRadius: BorderRadius.vertical(bottom: Radius.circular(20)),
-        ),
+        // Make AppBar transparent for a modern look
+        backgroundColor: Colors.transparent,
+        elevation: 0,
       ),
-      body: Center(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(24.0),
-          child: Form(
-            key: _formKey,
-            child: Column(
-              children: [
-                Icon(Icons.grass, size: 100, color: Theme.of(context).primaryColor),
-                const SizedBox(height: 30),
-                Text('Welcome to Cattle Connect', style: Theme.of(context).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold)),
-                const SizedBox(height: 30),
-                TextFormField(
-                  controller: _emailController,
-                  keyboardType: TextInputType.emailAddress,
-                  decoration: _inputDecoration('Email', 'Enter your email', Icons.email),
-                  validator: _validateEmail,
-                ),
-                const SizedBox(height: 20),
-                TextFormField(
-                  controller: _passwordController,
-                  obscureText: true,
-                  decoration: _inputDecoration('Password', 'Enter your password', Icons.lock),
-                  validator: _validatePassword,
-                ),
-                const SizedBox(height: 30),
-                _isLoading
-                    ? const CircularProgressIndicator()
-                    : ElevatedButton(
-                  onPressed: _loginUser,
-                  style: _buttonStyle(context),
-                  child: _buttonText('Login'),
-                ),
-                const SizedBox(height: 20),
-                TextButton(
-                  onPressed: () {
-                    Navigator.push(context, MaterialPageRoute(builder: (_) => const RegisterScreen()));
-                  },
-                  child: Text('Don\'t have an account? Register here', style: TextStyle(color: Theme.of(context).primaryColor)),
-                ),
-              ],
+      body: SafeArea(
+        child: Center(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.symmetric(horizontal: 24.0),
+            child: Form(
+              key: _formKey,
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  // Branded Icon using your AppColors
+                  Icon(FontAwesomeIcons.cow, size: 80, color: AppColors.primary),
+                  const SizedBox(height: 20),
+
+                  // Enhanced Welcome Text
+                  Text(
+                    'Welcome Back!',
+                    textAlign: TextAlign.center,
+                    style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                      fontWeight: FontWeight.bold,
+                      color: AppColors.textPrimary,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Sign in to your Cattle Connect account',
+                    textAlign: TextAlign.center,
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                      color: AppColors.textSecondary,
+                    ),
+                  ),
+                  const SizedBox(height: 40),
+
+                  // Email Field
+                  TextFormField(
+                    controller: _emailController,
+                    keyboardType: TextInputType.emailAddress,
+                    decoration: _inputDecoration('Email', Icons.email_outlined),
+                    validator: _validateEmail,
+                    textInputAction: TextInputAction.next,
+                  ),
+                  const SizedBox(height: 20),
+
+                  // Password Field
+                  TextFormField(
+                    controller: _passwordController,
+                    obscureText: !_isPasswordVisible,
+                    decoration: _inputDecoration(
+                      'Password',
+                      Icons.lock_outline,
+                      // Added suffix icon to toggle password visibility
+                      suffixIcon: IconButton(
+                        icon: Icon(
+                          _isPasswordVisible
+                              ? Icons.visibility_off_outlined
+                              : Icons.visibility_outlined,
+                          color: AppColors.textSecondary,
+                        ),
+                        onPressed: () {
+                          setState(() => _isPasswordVisible = !_isPasswordVisible);
+                        },
+                      ),
+                    ),
+                    validator: _validatePassword,
+                    textInputAction: TextInputAction.done,
+                    onFieldSubmitted: (_) => _loginUser(),
+                  ),
+                  const SizedBox(height: 40),
+
+                  // Login Button
+                  _isLoading
+                      ? const Center(child: CircularProgressIndicator())
+                      : ElevatedButton(
+                    onPressed: _loginUser,
+                    style: _buttonStyle(),
+                    child: _buttonText('LOGIN'),
+                  ),
+                  const SizedBox(height: 24),
+
+                  // Registration Link
+                  _buildRegisterLink(),
+                ],
+              ),
             ),
           ),
         ),
@@ -145,20 +197,35 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 
-  InputDecoration _inputDecoration(String label, String hint, IconData icon) {
+  // --- WIDGET HELPER METHODS ---
+
+  InputDecoration _inputDecoration(String label, IconData icon, {Widget? suffixIcon}) {
     return InputDecoration(
       labelText: label,
-      hintText: hint,
-      prefixIcon: Icon(icon),
-      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+      labelStyle: const TextStyle(color: AppColors.textSecondary),
+      prefixIcon: Icon(icon, color: AppColors.primary),
+      suffixIcon: suffixIcon,
       filled: true,
-      fillColor: Colors.grey[100],
+      fillColor: Colors.grey[50],
+      border: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: BorderSide.none,
+      ),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: BorderSide(color: Colors.grey.shade300),
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: const BorderSide(color: AppColors.primary, width: 2),
+      ),
     );
   }
 
   String? _validateEmail(String? value) {
-    if (value == null || value.isEmpty) return 'Please enter your email';
-    if (!RegExp(r'^[^@]+@[^@]+\.[^@]+').hasMatch(value)) return 'Please enter a valid email';
+    if (value == null || value.trim().isEmpty) return 'Please enter your email';
+    final emailRegex = RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$');
+    if (!emailRegex.hasMatch(value.trim())) return 'Please enter a valid email address';
     return null;
   }
 
@@ -168,16 +235,51 @@ class _LoginScreenState extends State<LoginScreen> {
     return null;
   }
 
-  ButtonStyle _buttonStyle(BuildContext context) {
+  ButtonStyle _buttonStyle() {
     return ElevatedButton.styleFrom(
-      backgroundColor: Theme.of(context).primaryColor,
-      padding: const EdgeInsets.symmetric(horizontal: 50, vertical: 15),
+      backgroundColor: AppColors.primary,
+      foregroundColor: Colors.white,
+      padding: const EdgeInsets.symmetric(vertical: 16),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       elevation: 5,
+      shadowColor: AppColors.primary.withOpacity(0.4),
     );
   }
 
   Text _buttonText(String text) {
-    return Text(text, style: Theme.of(context).textTheme.titleLarge?.copyWith(color: Colors.white));
+    return Text(
+      text,
+      style: const TextStyle(
+        fontSize: 16,
+        fontWeight: FontWeight.bold,
+      ),
+    );
+  }
+
+  Widget _buildRegisterLink() {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        const Text("Don't have an account?", style: TextStyle(color: AppColors.textSecondary)),
+        TextButton(
+          onPressed: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const RegisterScreen()),
+            );
+          },
+          style: TextButton.styleFrom(
+            padding: const EdgeInsets.symmetric(horizontal: 4),
+          ),
+          child: const Text(
+            'Register here',
+            style: TextStyle(
+              color: AppColors.primary,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+        ),
+      ],
+    );
   }
 }

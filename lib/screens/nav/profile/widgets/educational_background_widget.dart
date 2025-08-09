@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:cattle_tracer_app/services/profile/educational_background_service.dart';
 import 'package:cattle_tracer_app/screens/nav/profile/modals/educational_background_modal.dart';
 
+import '../../../../constants/app_colors.dart';
+
 class EducationalBackgroundWidget extends StatelessWidget {
   final bool isEditingMode;
   final VoidCallback onRefresh;
@@ -32,10 +34,10 @@ class EducationalBackgroundWidget extends StatelessWidget {
                     width: 48,
                     height: 48,
                     decoration: BoxDecoration(
-                      color: Colors.purple[600],
+                      color: AppColors.lightGreen.withOpacity(0.2),
                       borderRadius: BorderRadius.circular(12),
                     ),
-                    child: const Icon(Icons.school, color: Colors.white, size: 24),
+                    child: const Icon(Icons.school, color: AppColors.primary, size: 24),
                   ),
                   const SizedBox(width: 16),
                   Expanded(

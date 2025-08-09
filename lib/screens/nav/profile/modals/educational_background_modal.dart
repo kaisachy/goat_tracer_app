@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:cattle_tracer_app/services/profile/educational_background_service.dart';
 import 'package:cattle_tracer_app/screens/nav/profile/modals/education_form_modal.dart';
 
+import '../../../../constants/app_colors.dart';
+
 class EducationalBackgroundModal extends StatefulWidget {
   final bool isEditingMode;
   final VoidCallback onSaveSuccess;
@@ -72,8 +74,8 @@ class _EducationalBackgroundModalState extends State<EducationalBackgroundModal>
                       margin: const EdgeInsets.only(bottom: 12),
                       child: ListTile(
                         leading: CircleAvatar(
-                          backgroundColor: Colors.purple[600],
-                          child: const Icon(Icons.school, color: Colors.white),
+                          backgroundColor: AppColors.lightGreen.withOpacity(0.2),
+                          child: const Icon(Icons.school, color: AppColors.primary),
                         ),
                         title: Text(level, style: const TextStyle(fontWeight: FontWeight.w600)),
                         subtitle: eduMap.isNotEmpty
@@ -98,7 +100,7 @@ class _EducationalBackgroundModalState extends State<EducationalBackgroundModal>
                               ),
                             // MODIFIED: Edit icon is now second
                             IconButton(
-                              icon: Icon(Icons.edit, color: Colors.blue[600]),
+                              icon: const Icon(Icons.edit, color: Colors.green),
                               onPressed: () {
                                 // Pop this modal before showing the form modal
                                 Navigator.pop(context);
