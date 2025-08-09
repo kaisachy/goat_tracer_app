@@ -56,7 +56,7 @@ class _CattleSelectionModalState extends State<CattleSelectionModal> {
         filteredCattle = allCattle.where((cattle) {
           // Fix: Use the correct property name from your Cattle model
           // Replace 'tagNo' with whatever your actual property name is
-          final tagNo = (cattle.tagNo ?? '').toLowerCase(); // Assuming your property is 'tagNo'
+          final tagNo = (cattle.tagNo).toLowerCase(); // Assuming your property is 'tagNo'
           final breed = (cattle.breed ?? '').toLowerCase();
           final searchLower = query.toLowerCase();
           return tagNo.contains(searchLower) || breed.contains(searchLower);
@@ -350,7 +350,7 @@ class _CattleSelectionModalState extends State<CattleSelectionModal> {
                 children: [
                   Text(
                     // Fix: Use the correct property name
-                    cattle.tagNo ?? 'Unknown', // Assuming your property is 'tagNo'
+                    cattle.tagNo, // Assuming your property is 'tagNo'
                     style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.bold,

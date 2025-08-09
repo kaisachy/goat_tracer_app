@@ -731,7 +731,7 @@ class _EventScreenState extends State<EventScreen> {
         : null;
 
     // Get unique cattle count
-    final uniqueCattleTags = allEvents
+    final _ = allEvents
         .map((event) => event['cattle_tag']?.toString() ?? '')
         .where((tag) => tag.isNotEmpty)
         .toSet();
