@@ -542,6 +542,8 @@ class _CattleEventFormScreenState extends State<CattleEventFormScreen>
           await _handleGivesBirthEvent();
         } else if (selectedEventType.toLowerCase() == 'breeding') {
           await _handleBreedingEvent();
+        }else if (selectedEventType.toLowerCase() == 'pregnant') {
+          await _handlePregnantEvent();
         }
 
         if (context.mounted) {
@@ -671,6 +673,57 @@ class _CattleEventFormScreenState extends State<CattleEventFormScreen>
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Warning: Some breeding event operations may have failed'),
+            backgroundColor: Colors.orange[600],
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+            duration: const Duration(seconds: 3),
+          ),
+        );
+      }
+    }
+  }
+
+
+  Future<void> _handlePregnantEvent() async {
+    try {
+      bool cowStatusUpdated = false;
+      String cowStatus = '';
+
+      // Update cow (mother) status to Pregnant
+      if (_cattleDetails != null) {
+        final cowUpdateData = Map<String, dynamic>.from(_cattleDetails!.toJson());
+        cowUpdateData['status'] = 'Pregnant';
+        cowStatusUpdated = await CattleService.updateCattleInformation(cowUpdateData);
+        cowStatus = cowStatusUpdated
+            ? 'Cow ${_cattleDetails!.tagNo} status updated to Pregnant'
+            : 'Failed to update cow ${_cattleDetails!.tagNo} status to Pregnant';
+      }
+
+      // Log the result for debugging
+      print('Pregnant event result: $cowStatus');
+
+      // Optional: Show success feedback to user
+      if (mounted && cowStatusUpdated) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Cattle status updated to Pregnant'),
+            backgroundColor: Colors.green[600],
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+            duration: const Duration(seconds: 2),
+          ),
+        );
+      }
+
+    } catch (e) {
+      // Log any errors that occur during the process
+      print('Error in _handlePregnantEvent: $e');
+
+      // Optional: Show error message to user
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Warning: Failed to update cattle status to Pregnant'),
             backgroundColor: Colors.orange[600],
             behavior: SnackBarBehavior.floating,
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
