@@ -6,9 +6,6 @@ class Farmer {
   final String gender;
   final String maritalStatus;
   final String contactNumber;
-  final String province;
-  final String municipality;
-  final String barangay;
 
   Farmer({
     required this.id,
@@ -18,9 +15,6 @@ class Farmer {
     required this.gender,
     required this.maritalStatus,
     required this.contactNumber,
-    required this.province,
-    required this.municipality,
-    required this.barangay,
   });
 
   factory Farmer.fromJson(Map<String, dynamic> json) {
@@ -32,9 +26,6 @@ class Farmer {
       gender: json['gender'],
       maritalStatus: json['marital_status'],
       contactNumber: json['contact_number'],
-      province: json['province'],
-      municipality: json['municipality'],
-      barangay: json['barangay'],
     );
   }
 }
@@ -47,6 +38,7 @@ class FarmDetail {
   final String farmClassification;
   final double farmLandArea;
   final String cooperativeAffiliation;
+  final String farmLocation;
 
   FarmDetail({
     required this.id,
@@ -56,6 +48,7 @@ class FarmDetail {
     required this.farmClassification,
     required this.farmLandArea,
     required this.cooperativeAffiliation,
+    required this.farmLocation,
   });
 
   factory FarmDetail.fromJson(Map<String, dynamic> json) {
@@ -67,6 +60,7 @@ class FarmDetail {
       farmClassification: json['farm_classification'],
       farmLandArea: (json['farm_land_area'] as num).toDouble(),
       cooperativeAffiliation: json['cooperative_affiliation'],
+      farmLocation: json['farm_location'],
     );
   }
 }

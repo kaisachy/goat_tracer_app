@@ -126,10 +126,6 @@ class _PersonalInformationModalState extends State<PersonalInformationModal> wit
     birthdateController.text = data?['birthdate'] ?? '';
     statusController.text = data?['marital_status'] ?? '';
     contactController.text = data?['contact_number'] ?? '';
-    provinceController.text = data?['province'] ?? '';
-    muniController.text = data?['municipality'] ?? '';
-    brgyController.text = data?['barangay'] ?? '';
-
     _selectedGender = data?['gender'];
     _selectedStatus = data?['marital_status'];
   }
@@ -373,40 +369,6 @@ class _PersonalInformationModalState extends State<PersonalInformationModal> wit
                   ],
                 ],
               ),
-              const SizedBox(height: 24),
-              _buildSection(
-                title: 'Address Information',
-                icon: Icons.location_on_outlined,
-                children: [
-                  if (widget.isEditingMode) ...[
-                    _buildTextField(
-                      controller: provinceController,
-                      label: 'Province',
-                      icon: Icons.map_rounded,
-                      validator: (value) => value?.isEmpty == true ? 'Province is required' : null,
-                    ),
-                    const SizedBox(height: 16),
-                    _buildTextField(
-                      controller: muniController,
-                      label: 'Municipality',
-                      icon: Icons.location_city_rounded,
-                      validator: (value) => value?.isEmpty == true ? 'Municipality is required' : null,
-                    ),
-                    const SizedBox(height: 16),
-                    _buildTextField(
-                      controller: brgyController,
-                      label: 'Barangay',
-                      icon: Icons.home_rounded,
-                      validator: (value) => value?.isEmpty == true ? 'Barangay is required' : null,
-                    ),
-                  ] else ...[
-                    _buildModernInfoTile('Province', _personalInformation?['province'] ?? 'N/A', Icons.map_rounded),
-                    _buildModernInfoTile('Municipality', _personalInformation?['municipality'] ?? 'N/A', Icons.location_city_rounded),
-                    _buildModernInfoTile('Barangay', _personalInformation?['barangay'] ?? 'N/A', Icons.home_rounded),
-                  ],
-                ],
-              ),
-              const SizedBox(height: 32),
             ],
           ),
         ),
@@ -716,9 +678,6 @@ class _PersonalInformationModalState extends State<PersonalInformationModal> wit
         'birthdate': birthdateController.text.trim(),
         'marital_status': statusController.text.trim(),
         'contact_number': contactController.text.trim(),
-        'province': provinceController.text.trim(),
-        'municipality': muniController.text.trim(),
-        'barangay': brgyController.text.trim(),
       };
 
       bool success;

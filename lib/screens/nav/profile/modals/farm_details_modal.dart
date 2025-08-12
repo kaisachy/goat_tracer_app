@@ -27,6 +27,7 @@ class _FarmDetailsModalState extends State<FarmDetailsModal> {
   late TextEditingController farmClassificationController;
   late TextEditingController farmAreaController;
   late TextEditingController coopController;
+  late TextEditingController farmLocationController;
   bool _isLoading = false;
 
   @override
@@ -38,6 +39,7 @@ class _FarmDetailsModalState extends State<FarmDetailsModal> {
     farmClassificationController = TextEditingController(text: farm?['farm_classification'] ?? '');
     farmAreaController = TextEditingController(text: farm?['farm_land_area']?.toString() ?? '');
     coopController = TextEditingController(text: farm?['cooperative_affiliation'] ?? '');
+    farmLocationController = TextEditingController(text: farm?['farm_location'] ?? '');
   }
 
   @override
@@ -47,6 +49,7 @@ class _FarmDetailsModalState extends State<FarmDetailsModal> {
     farmClassificationController.dispose();
     farmAreaController.dispose();
     coopController.dispose();
+    farmLocationController.dispose();
     super.dispose();
   }
 
@@ -236,7 +239,7 @@ class _FarmDetailsModalState extends State<FarmDetailsModal> {
         _buildStyledTextField(
           controller: farmClassificationController,
           label: 'Farm Classification',
-          icon: FontAwesomeIcons.tags,
+          icon: FontAwesomeIcons.shapes,
         ),
         const SizedBox(height: 20),
 
@@ -261,6 +264,13 @@ class _FarmDetailsModalState extends State<FarmDetailsModal> {
           controller: coopController,
           label: 'Cooperative Affiliation',
           icon: FontAwesomeIcons.handshake,
+        ),
+        const SizedBox(height: 20),
+
+        _buildStyledTextField(
+          controller: farmLocationController,
+          label: 'Farm Location',
+          icon: FontAwesomeIcons.mapLocation,
         ),
         const SizedBox(height: 32),
       ],
@@ -358,6 +368,9 @@ class _FarmDetailsModalState extends State<FarmDetailsModal> {
         const SizedBox(height: 16),
 
         _buildInfoCard('Cooperative Affiliation', widget.farmDetails?['cooperative_affiliation'] ?? 'N/A', FontAwesomeIcons.handshake),
+        const SizedBox(height: 16),
+
+        _buildInfoCard('Farm Location', widget.farmDetails?['farm_location'] ?? 'N/A', FontAwesomeIcons.mapLocation),
         const SizedBox(height: 24),
       ],
     );
@@ -432,6 +445,7 @@ class _FarmDetailsModalState extends State<FarmDetailsModal> {
         'farm_classification': farmClassificationController.text,
         'farm_land_area': farmAreaController.text,
         'cooperative_affiliation': coopController.text,
+        'farm_location': farmLocationController.text,
       };
 
       bool success = false;

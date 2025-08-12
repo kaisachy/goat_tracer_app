@@ -565,8 +565,10 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
     );
   }
 
-  Widget _buildModernProfileHeader(Map<String, dynamic>? profile, Map<String, dynamic>? farmDetails) {
-    final hasProfilePicture = profile?['profile_picture'] != null && profile!['profile_picture'].isNotEmpty;
+  Widget _buildModernProfileHeader(
+      Map<String, dynamic>? profile, Map<String, dynamic>? farmDetails) {
+    final hasProfilePicture =
+        profile?['profile_picture'] != null && profile!['profile_picture'].isNotEmpty;
 
     ImageProvider? backgroundImage;
     if (_imageFile != null) {
@@ -596,187 +598,187 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Header Section with Edit Button
-          Stack(
+      // Header Section with Edit Button
+      Stack(
+      children: [
+      Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Profile Picture Section
+          Column(
             children: [
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
+              Stack(
                 children: [
-                  // Profile Picture Section
-                  Column(
-                    children: [
-                      Stack(
-                        children: [
-                          Container(
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              border: Border.all(
-                                color: AppColors.primary.withOpacity(0.2),
-                                width: 2,
-                              ),
-                            ),
-                            child: CircleAvatar(
-                              radius: 40,
-                              backgroundColor: Colors.grey.shade100,
-                              backgroundImage: backgroundImage,
-                              child: backgroundImage == null
-                                  ? Icon(
-                                Icons.person_rounded,
-                                size: 40,
-                                color: Colors.grey.shade400,
-                              )
-                                  : null,
-                            ),
-                          ),
-                          if (isEditingMode)
-                            Positioned(
-                              bottom: 0,
-                              right: 0,
-                              child: GestureDetector(
-                                onTap: () => _showModernImagePicker(context, hasProfilePicture),
-                                child: Container(
-                                  padding: const EdgeInsets.all(6),
-                                  decoration: BoxDecoration(
-                                    color: AppColors.primary,
-                                    shape: BoxShape.circle,
-                                    boxShadow: [
-                                      BoxShadow(
-                                        color: Colors.black.withOpacity(0.1),
-                                        blurRadius: 4,
-                                        offset: const Offset(0, 2),
-                                      ),
-                                    ],
-                                  ),
-                                  child: const Icon(
-                                    Icons.camera_alt_rounded,
-                                    color: Colors.white,
-                                    size: 16,
-                                  ),
-                                ),
-                              ),
-                            ),
-                        ],
+                  Container(
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      border: Border.all(
+                        color: AppColors.primary.withOpacity(0.2),
+                        width: 2,
                       ),
-                    ],
+                    ),
+                    child: CircleAvatar(
+                      radius: 40,
+                      backgroundColor: Colors.grey.shade100,
+                      backgroundImage: backgroundImage,
+                      child: backgroundImage == null
+                          ? Icon(
+                        Icons.person_rounded,
+                        size: 40,
+                        color: Colors.grey.shade400,
+                      )
+                          : null,
+                    ),
                   ),
-                  const SizedBox(width: 20),
-
-                  // Profile Info Section
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        // Name
-                        Text(
-                          '${profile?['first_name'] ?? 'Unknown'} ${profile?['last_name'] ?? 'User'}',
-                          style: TextStyle(
-                            color: Colors.grey.shade800,
-                            fontSize: 22,
-                            fontWeight: FontWeight.bold,
-                            height: 1.2,
-                          ),
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                        const SizedBox(height: 8),
-
-                        // Farm Name Badge
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  if (isEditingMode)
+                    Positioned(
+                      bottom: 0,
+                      right: 0,
+                      child: GestureDetector(
+                        onTap: () => _showModernImagePicker(context, hasProfilePicture),
+                        child: Container(
+                          padding: const EdgeInsets.all(6),
                           decoration: BoxDecoration(
-                            color: AppColors.primary.withOpacity(0.1),
-                            borderRadius: BorderRadius.circular(12),
-                            border: Border.all(
-                              color: AppColors.primary.withOpacity(0.2),
-                              width: 1,
-                            ),
-                          ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Icon(
-                                Icons.agriculture_rounded,
-                                size: 14,
-                                color: AppColors.primary,
-                              ),
-                              const SizedBox(width: 6),
-                              Flexible(
-                                child: Text(
-                                  farmDetails?['farm_name'] ?? 'No Farm Name',
-                                  style: TextStyle(
-                                    color: AppColors.primary,
-                                    fontSize: 13,
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                ),
+                            color: AppColors.primary,
+                            shape: BoxShape.circle,
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withOpacity(0.1),
+                                blurRadius: 4,
+                                offset: const Offset(0, 2),
                               ),
                             ],
                           ),
+                          child: const Icon(
+                            Icons.camera_alt_rounded,
+                            color: Colors.white,
+                            size: 16,
+                          ),
                         ),
-                      ],
+                      ),
                     ),
-                  ),
                 ],
-              ),
-
-              // Edit Button in Top Right
-              Positioned(
-                top: 0,
-                right: 0,
-                child: GestureDetector(
-                  onTap: _toggleEditMode,
-                  child: Container(
-                    padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      color: isEditingMode ? Colors.green : AppColors.primary,
-                      borderRadius: BorderRadius.circular(8),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withOpacity(0.1),
-                          blurRadius: 4,
-                          offset: const Offset(0, 2),
-                        ),
-                      ],
-                    ),
-                    child: Icon(
-                      isEditingMode ? Icons.check_rounded : Icons.edit_rounded,
-                      color: Colors.white,
-                      size: 20,
-                    ),
-                  ),
-                ),
               ),
             ],
           ),
+          const SizedBox(width: 20),
 
-          const SizedBox(height: 24),
+          // Profile Info Section
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Name
+                Text(
+                  '${profile?['first_name'] ?? 'Unknown'} ${profile?['last_name'] ?? 'User'}',
+                  style: TextStyle(
+                    color: Colors.grey.shade800,
+                    fontSize: 22,
+                    fontWeight: FontWeight.bold,
+                    height: 1.2,
+                  ),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                const SizedBox(height: 8),
 
-          // Information Cards Section
-          Row(
-            children: [
-              Expanded(
-                child: _buildInfoCard(
-                  icon: Icons.location_on_outlined,
-                  iconColor: Colors.green,
-                  title: 'Address',
-                  value: _formatAddress(profile),
+                // Farm Name Badge
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: AppColors.primary.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: AppColors.primary.withOpacity(0.2),
+                      width: 1,
+                    ),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        Icons.agriculture_rounded,
+                        size: 14,
+                        color: AppColors.primary,
+                      ),
+                      const SizedBox(width: 6),
+                      Flexible(
+                        child: Text(
+                          farmDetails?['farm_name'] ?? 'No Farm Name',
+                          style: TextStyle(
+                            color: AppColors.primary,
+                            fontSize: 13,
+                            fontWeight: FontWeight.w600,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: _buildInfoCard(
-                  icon: Icons.landscape_outlined,
-                  iconColor: Colors.green,
-                  title: 'Farm Size',
-                  value: _formatFarmSize(farmDetails),
-                ),
-              ),
-            ],
+              ],
+            ),
           ),
         ],
       ),
+
+      // Edit Button in Top Right
+      Positioned(
+        top: 0,
+        right: 0,
+      child: GestureDetector(
+      onTap: _toggleEditMode,
+        child: Container(
+          padding: const EdgeInsets.all(8),
+          decoration: BoxDecoration(
+            color: isEditingMode ? Colors.green : AppColors.primary,
+            borderRadius: BorderRadius.circular(8),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.1),
+                blurRadius: 4,
+                offset: const Offset(0, 2),
+              ),
+            ],
+          ),
+          child: Icon(
+            isEditingMode ? Icons.check_rounded : Icons.edit_rounded,
+            color: Colors.white,
+            size: 20,
+          ),
+        ),
+      ),
+    ),
+    ],
+    ),
+
+    const SizedBox(height: 24),
+
+    // Information Cards Section
+    Row(
+    children: [
+    Expanded(
+    child: _buildInfoCard(
+    icon: Icons.location_on_outlined,
+    iconColor: Colors.green,
+    title: 'Farm Location',
+    value: _formatFarmLocation(farmDetails),
+    ),
+    ),
+    const SizedBox(width: 12),
+    Expanded(
+    child: _buildInfoCard(
+    icon: Icons.landscape_outlined,
+    iconColor: Colors.green,
+    title: 'Farm Size',
+    value: _formatFarmSize(farmDetails),
+    ),
+    ),
+    ],
+    ),
+    ],
+    ),
     );
   }
 
@@ -842,16 +844,12 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
     );
   }
 
-  String _formatAddress(Map<String, dynamic>? profile) {
-    final barangay = profile?['barangay'] ?? '';
-    final municipality = profile?['municipality'] ?? '';
-    final province = profile?['province'] ?? '';
-
-    final parts = [barangay, municipality, province]
-        .where((part) => part.isNotEmpty)
-        .toList();
-
-    return parts.isEmpty ? 'No address provided' : parts.join(', ');
+  String _formatFarmLocation(Map<String, dynamic>? farmDetails) {
+    final farmLocation = farmDetails?['farm_location'];
+    if (farmLocation == null || farmLocation.toString().isEmpty) {
+      return 'Location not specified';
+    }
+    return farmLocation.toString();
   }
 
   String _formatFarmSize(Map<String, dynamic>? farmDetails) {
