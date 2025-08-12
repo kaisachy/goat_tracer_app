@@ -39,8 +39,8 @@ class _HomeScreenState extends State<HomeScreen> {
       DashboardScreen(),
       const CattleScreen(),
       EventScreen(),
-      MilkScreen(),
       ScheduleScreen(),
+      MilkScreen(),
       ProfileScreen(userEmail: widget.userEmail),
       SettingScreen(),
     ];
@@ -121,9 +121,9 @@ class _HomeScreenState extends State<HomeScreen> {
       case 2:
         return 'Events';
       case 3:
-        return 'Milk Production';
-      case 4:
         return 'Schedule';
+      case 4:
+        return 'Milk Production';
       case 5:
         return 'User Profile';
       case 6:
@@ -161,14 +161,14 @@ class _HomeScreenState extends State<HomeScreen> {
                   onTap: () => _onNavItemTapped(2),
                 ),
                 _buildDrawerItem(
-                  icon: Icons.opacity_rounded,
-                  text: 'Milk Production',
+                  icon: Icons.schedule_rounded,
+                  text: 'Schedule',
                   index: 3,
                   onTap: () => _onNavItemTapped(3),
                 ),
                 _buildDrawerItem(
-                  icon: Icons.schedule_rounded,
-                  text: 'Schedule',
+                  icon: Icons.opacity_rounded,
+                  text: 'Milk Production',
                   index: 4,
                   onTap: () => _onNavItemTapped(4),
                 ),

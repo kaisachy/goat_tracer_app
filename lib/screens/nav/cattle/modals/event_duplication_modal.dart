@@ -296,8 +296,7 @@ class _EventDuplicationModalState extends State<EventDuplicationModal> {
       if (mounted) {
         if (successCount > 0) {
           _showSuccessSnackBar(
-              'Successfully duplicated event to $successCount cattle' +
-                  (failedCount > 0 ? '. Failed for $failedCount cattle: ${failedTags.join(', ')}' : '.')
+              'Successfully duplicated event to $successCount cattle${failedCount > 0 ? '. Failed for $failedCount cattle: ${failedTags.join(', ')}' : '.'}'
           );
           Navigator.of(context).pop(true); // Return true to indicate success
         } else {

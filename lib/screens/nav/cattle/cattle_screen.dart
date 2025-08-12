@@ -260,6 +260,90 @@ class _CattleScreenState extends State<CattleScreen>
     );
   }
 
+  Widget _buildCattleOptionsMenu(Cattle cattle) {
+    return PopupMenuButton<String>(
+      icon: Icon(
+        Icons.more_vert,
+        color: AppColors.textSecondary.withOpacity(0.8),
+        size: 20,
+      ),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+      ),
+      elevation: 8,
+      offset: const Offset(0, 10),
+      color: Colors.white,
+      shadowColor: Colors.black26,
+      itemBuilder: (BuildContext context) => [
+        PopupMenuItem<String>(
+          value: 'edit',
+          child: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: AppColors.primary.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Icon(
+                  Icons.edit,
+                  color: AppColors.primary,
+                  size: 16,
+                ),
+              ),
+              const SizedBox(width: 12),
+              const Text(
+                'Edit Cattle',
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ],
+          ),
+        ),
+        PopupMenuItem<String>(
+          value: 'delete',
+          child: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: Colors.red.shade50,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Icon(
+                  Icons.delete,
+                  color: Colors.red.shade600,
+                  size: 16,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Text(
+                'Delete Cattle',
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w500,
+                  color: Colors.red.shade600,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+      onSelected: (String value) {
+        switch (value) {
+          case 'edit':
+            _navigateToForm(cattle: cattle);
+            break;
+          case 'delete':
+            _confirmDelete(cattle.id, cattle.tagNo);
+            break;
+        }
+      },
+    );
+  }
+
   Widget _buildCattleCard(Cattle cattle, int index) {
     return FadeTransition(
       opacity: _fadeAnimation,
@@ -413,6 +497,8 @@ class _CattleScreenState extends State<CattleScreen>
                             ],
                           ),
                         ),
+                        // Replace the edit/delete buttons with options menu
+                        _buildCattleOptionsMenu(cattle),
                       ],
                     ),
                     const SizedBox(height: 12),
@@ -442,33 +528,6 @@ class _CattleScreenState extends State<CattleScreen>
                             ),
                           ),
                         ],
-                        const Spacer(),
-                        Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            IconButton(
-                              icon: Icon(Icons.edit, color: AppColors.primary, size: 20),
-                              onPressed: () => _navigateToForm(cattle: cattle),
-                              style: IconButton.styleFrom(
-                                backgroundColor: AppColors.primary.withOpacity(0.1),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(8),
-                                ),
-                              ),
-                            ),
-                            const SizedBox(width: 8),
-                            IconButton(
-                              icon: Icon(Icons.delete, color: Colors.red.shade600, size: 20),
-                              onPressed: () => _confirmDelete(cattle.id, cattle.tagNo),
-                              style: IconButton.styleFrom(
-                                backgroundColor: Colors.red.shade50,
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(8),
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
                       ],
                     ),
                   ],

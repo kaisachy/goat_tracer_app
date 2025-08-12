@@ -383,6 +383,56 @@ class _CattleEventFormScreenState extends State<CattleEventFormScreen>
     }
   }
 
+  Future<void> _handleCastratedEvent() async {
+    try {
+      bool cattleClassificationUpdated = false;
+      String cattleStatus = '';
+
+      // Update cattle classification to Steer
+      if (_cattleDetails != null) {
+        final cattleUpdateData = Map<String, dynamic>.from(_cattleDetails!.toJson());
+        cattleUpdateData['classification'] = 'Steer';
+        cattleClassificationUpdated = await CattleService.updateCattleInformation(cattleUpdateData);
+        cattleStatus = cattleClassificationUpdated
+            ? 'Cattle ${_cattleDetails!.tagNo} classification updated to Steer'
+            : 'Failed to update cattle ${_cattleDetails!.tagNo} classification to Steer';
+      }
+
+      // Log the result for debugging
+      print('Castrated event result: $cattleStatus');
+
+      // Optional: Show success feedback to user
+      if (mounted && cattleClassificationUpdated) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Cattle classification updated to Steer'),
+            backgroundColor: Colors.green[600],
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+            duration: const Duration(seconds: 2),
+          ),
+        );
+      }
+
+    } catch (e) {
+      // Log any errors that occur during the process
+      print('Error in _handleCastratedEvent: $e');
+
+      // Optional: Show error message to user
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Warning: Failed to update cattle classification to Steer'),
+            backgroundColor: Colors.orange[600],
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+            duration: const Duration(seconds: 3),
+          ),
+        );
+      }
+    }
+  }
+
   Future<void> _openCalfRegistrationDialog() async {
     final motherTag = widget.cattleTag ?? '';
     final fatherTag = _controllers['bull_tag']?.text ?? '';
@@ -527,7 +577,6 @@ class _CattleEventFormScreenState extends State<CattleEventFormScreen>
         'notes': _controllers['notes']!.text,
       };
 
-      // First, try to save the event
       bool eventSuccess;
       if (isEditing) {
         data['id'] = widget.event!.id;
@@ -544,6 +593,8 @@ class _CattleEventFormScreenState extends State<CattleEventFormScreen>
           await _handleBreedingEvent();
         }else if (selectedEventType.toLowerCase() == 'pregnant') {
           await _handlePregnantEvent();
+        }else if (selectedEventType.toLowerCase() == 'castrated') {
+          await _handleCastratedEvent();
         }
 
         if (context.mounted) {

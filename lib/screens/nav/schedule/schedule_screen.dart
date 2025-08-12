@@ -1,657 +1,388 @@
+import 'package:cattle_tracer_app/screens/nav/schedule/widgets/schedule_content_widget.dart';
+import 'package:cattle_tracer_app/screens/nav/schedule/widgets/schedule_header_widget.dart';
+import 'package:cattle_tracer_app/screens/nav/schedule/widgets/schedule_stats_row_widget.dart';
+import 'package:cattle_tracer_app/screens/nav/schedule/widgets/schedule_tab_bar_widget.dart';
 import 'package:flutter/material.dart';
-import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import '../../../constants/app_colors.dart';
+import '../../../models/schedule.dart';
+import '../../../services/schedule/schedule_service.dart';
+import '../../../utils/schedule_utils.dart';
+import 'cattle_schedule_form.dart';
+import 'modals/schedule_details_dialog_modal.dart';
+
 
 class ScheduleScreen extends StatefulWidget {
+  const ScheduleScreen({super.key});
+
   @override
   State<ScheduleScreen> createState() => _ScheduleScreenState();
 }
 
 class _ScheduleScreenState extends State<ScheduleScreen> with TickerProviderStateMixin {
-  late TabController _tabController;
-  DateTime _selectedDate = DateTime.now();
-  String _selectedView = 'Week';
+  List<Schedule> _schedules = [];
+  List<Schedule> _filteredSchedules = [];
+  List<Schedule> _todaysSchedules = [];
+  bool _isLoading = true;
+  String _searchQuery = '';
+  ScheduleFilter _selectedFilter = ScheduleFilter.all;
+  final ScheduleSort _selectedSort = ScheduleSort.dateTimeAsc;
 
-  // Sample schedule data - replace with actual data from your service
-  final List<Map<String, dynamic>> _sampleSchedule = [
-    {
-      'id': 1,
-      'title': 'Vaccination - Bella',
-      'cattleId': 'COW001',
-      'cattleName': 'Bella',
-      'type': 'Vaccination',
-      'date': DateTime.now().add(Duration(hours: 2)),
-      'duration': 30,
-      'priority': 'High',
-      'status': 'Scheduled',
-      'veterinarian': 'Dr. Smith',
-      'notes': 'Annual FMD vaccination',
-    },
-    {
-      'id': 2,
-      'title': 'Breeding Check - Luna',
-      'cattleId': 'COW002',
-      'cattleName': 'Luna',
-      'type': 'Breeding',
-      'date': DateTime.now().add(Duration(days: 1, hours: 10)),
-      'duration': 45,
-      'priority': 'Medium',
-      'status': 'Scheduled',
-      'veterinarian': 'Dr. Johnson',
-      'notes': 'Pregnancy confirmation',
-    },
-    {
-      'id': 3,
-      'title': 'Feed Delivery',
-      'type': 'Feed',
-      'date': DateTime.now().add(Duration(days: 2)),
-      'duration': 60,
-      'priority': 'Low',
-      'status': 'Scheduled',
-      'notes': 'Monthly feed supply delivery',
-    },
-    {
-      'id': 4,
-      'title': 'Weight Check - All Cattle',
-      'type': 'Weigh',
-      'date': DateTime.now().add(Duration(days: 7)),
-      'duration': 120,
-      'priority': 'Medium',
-      'status': 'Scheduled',
-      'notes': 'Monthly weight monitoring for all cattle',
-    },
-  ];
+  final TextEditingController _searchController = TextEditingController();
+  late TabController _tabController;
+
+  // Tab indices
+  static const int _allTab = 0;
+  static const int _todayTab = 1;
+  static const int _upcomingTab = 2;
+  static const int _overdueTab = 3;
+  static const int _completedTab = 4;
+
+  // Cache for tab counts - Initialize with zeros
+  Map<String, int> _tabCounts = {
+    'all': 0,
+    'today': 0,
+    'upcoming': 0,
+    'overdue': 0,
+    'completed': 0,
+  };
 
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 3, vsync: this);
+    _tabController = TabController(length: 5, vsync: this);
+    _tabController.addListener(_onTabChanged);
+
+    // Load schedules immediately
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _loadSchedules();
+    });
   }
 
   @override
   void dispose() {
+    _searchController.dispose();
     _tabController.dispose();
     super.dispose();
+  }
+
+  void _onTabChanged() {
+    if (_tabController.indexIsChanging) return;
+
+    setState(() {
+      switch (_tabController.index) {
+        case _allTab:
+          _selectedFilter = ScheduleFilter.all;
+          break;
+        case _todayTab:
+          _selectedFilter = ScheduleFilter.all; // Will be filtered separately for today
+          break;
+        case _upcomingTab:
+          _selectedFilter = ScheduleFilter.upcoming;
+          break;
+        case _overdueTab:
+          _selectedFilter = ScheduleFilter.overdue;
+          break;
+        case _completedTab:
+          _selectedFilter = ScheduleFilter.completed;
+          break;
+      }
+    });
+    _applyFilters();
+  }
+
+  Future<void> _loadSchedules() async {
+    setState(() => _isLoading = true);
+
+    try {
+      final schedules = await ScheduleService.getSchedules();
+
+      // Process data
+      _schedules = schedules;
+      _loadTodaysSchedules();
+
+      // Calculate new counts
+      final stats = ScheduleStats.getStatusCounts(_schedules);
+      final newTabCounts = {
+        'all': _schedules.length,
+        'today': _todaysSchedules.length,
+        'upcoming': stats['upcoming'] ?? 0,
+        'overdue': stats['overdue'] ?? 0,
+        'completed': stats['completed'] ?? 0,
+      };
+
+      // Update state with all data
+      setState(() {
+        _tabCounts = newTabCounts;
+        _isLoading = false;
+      });
+
+      // Apply filters after state is updated
+      _applyFilters();
+
+    } catch (e) {
+      setState(() => _isLoading = false);
+      _showSnackBar('Error loading schedules: ${e.toString()}', isError: true);
+    }
+  }
+
+  void _loadTodaysSchedules() {
+    // Get current Philippines time (UTC+8)
+    final now = DateTime.now().toUtc().add(const Duration(hours: 8));
+    final today = DateTime(now.year, now.month, now.day);
+
+    _todaysSchedules = _schedules.where((schedule) {
+      // Convert schedule time to Philippines time for comparison
+      final schedulePhTime = schedule.scheduleDateTime.toUtc().add(const Duration(hours: 8));
+      final scheduleDate = DateTime(schedulePhTime.year, schedulePhTime.month, schedulePhTime.day);
+      return scheduleDate == today;
+    }).toList();
+
+    _todaysSchedules.sort((a, b) => a.scheduleDateTime.compareTo(b.scheduleDateTime));
+  }
+
+  void _applyFilters() {
+    List<Schedule> filtered = _schedules;
+
+    // Apply search filter first
+    if (_searchQuery.isNotEmpty) {
+      filtered = filtered.where((schedule) {
+        final query = _searchQuery.toLowerCase();
+        return schedule.title.toLowerCase().contains(query) ||
+            schedule.type.toLowerCase().contains(query) ||
+            (schedule.cattleTag?.toLowerCase().contains(query) ?? false) ||
+            (schedule.veterinarian?.toLowerCase().contains(query) ?? false);
+      }).toList();
+    }
+
+    // Apply status filter based on current tab
+    if (_tabController.index == _todayTab) {
+      // For today tab, use today's schedules regardless of status
+      filtered = _todaysSchedules.where((schedule) {
+        if (_searchQuery.isNotEmpty) {
+          final query = _searchQuery.toLowerCase();
+          return schedule.title.toLowerCase().contains(query) ||
+              schedule.type.toLowerCase().contains(query) ||
+              (schedule.cattleTag?.toLowerCase().contains(query) ?? false) ||
+              (schedule.veterinarian?.toLowerCase().contains(query) ?? false);
+        }
+        return true;
+      }).toList();
+    } else {
+      // For other tabs, apply the appropriate filter
+      filtered = filtered.where((schedule) => _selectedFilter.matches(schedule)).toList();
+    }
+
+    // Sort the filtered results
+    filtered = _selectedSort.sort(filtered);
+
+    setState(() {
+      _filteredSchedules = filtered;
+    });
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.pageBackground,
-      body: Column(
-        children: [
-          _buildDateHeader(),
-          _buildViewSelector(),
-          _buildTabBar(),
-          Expanded(
-            child: TabBarView(
-              controller: _tabController,
-              children: [
-                _buildTodayTab(),
-                _buildUpcomingTab(),
-                _buildCalendarTab(),
-              ],
+      backgroundColor: Colors.grey[50],
+      body: NestedScrollView(
+        headerSliverBuilder: (context, innerBoxIsScrolled) => [
+          SliverToBoxAdapter(
+            child: ScheduleHeader(
+              searchController: _searchController,
+              onSearchChanged: (value) {
+                setState(() => _searchQuery = value);
+                _applyFilters();
+              },
+              onSearchClear: () {
+                _searchController.clear();
+                setState(() => _searchQuery = '');
+                _applyFilters();
+              },
+              child: ScheduleStatsRow(tabCounts: _tabCounts),
             ),
+          ),
+          SliverPersistentHeader(
+            delegate: ScheduleTabBarDelegate(
+              ScheduleTabBar(
+                key: ValueKey(_tabCounts.toString()), // Force rebuild when counts change
+                tabController: _tabController,
+                tabCounts: _tabCounts,
+              ),
+            ),
+            pinned: true,
           ),
         ],
-      ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () => _showAddScheduleDialog(),
-        backgroundColor: AppColors.primary,
-        foregroundColor: Colors.white,
-        icon: const Icon(Icons.add),
-        label: const Text('Add Task'),
-      ),
-    );
-  }
-
-  Widget _buildDateHeader() {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      color: Colors.white,
-      child: Row(
-        children: [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  _formatDateHeader(_selectedDate),
-                  style: const TextStyle(
-                    fontSize: 24,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                Text(
-                  '${_getTodayTasksCount()} tasks scheduled',
-                  style: TextStyle(
-                    color: Colors.grey.shade600,
-                    fontSize: 14,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          IconButton(
-            onPressed: () => _showDatePicker(),
-            icon: const Icon(Icons.calendar_today),
-            style: IconButton.styleFrom(
-              backgroundColor: AppColors.primary.withOpacity(0.1),
-              foregroundColor: AppColors.primary,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildViewSelector() {
-    final views = ['Day', 'Week', 'Month'];
-
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      child: Row(
-        children: views.map((view) {
-          final isSelected = _selectedView == view;
-          return Expanded(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 4),
-              child: ElevatedButton(
-                onPressed: () => setState(() => _selectedView = view),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: isSelected ? AppColors.primary : Colors.grey.shade200,
-                  foregroundColor: isSelected ? Colors.white : Colors.grey.shade700,
-                  elevation: isSelected ? 2 : 0,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                ),
-                child: Text(view),
-              ),
-            ),
-          );
-        }).toList(),
-      ),
-    );
-  }
-
-  Widget _buildTabBar() {
-    return Container(
-      color: Colors.white,
-      child: TabBar(
-        controller: _tabController,
-        labelColor: AppColors.primary,
-        unselectedLabelColor: Colors.grey,
-        indicatorColor: AppColors.primary,
-        tabs: const [
-          Tab(text: 'Today'),
-          Tab(text: 'Upcoming'),
-          Tab(text: 'Calendar'),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildTodayTab() {
-    final todayTasks = _sampleSchedule
-        .where((task) => _isToday(task['date']))
-        .toList();
-
-    if (todayTasks.isEmpty) {
-      return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            FaIcon(
-              FontAwesomeIcons.calendarCheck,
-              size: 64,
-              color: Colors.grey.shade400,
-            ),
-            const SizedBox(height: 16),
-            Text(
-              'No tasks scheduled for today',
-              style: TextStyle(
-                fontSize: 18,
-                color: Colors.grey.shade600,
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'Enjoy your free day!',
-              style: TextStyle(color: Colors.grey.shade500),
-            ),
-          ],
-        ),
-      );
-    }
-
-    return ListView.builder(
-      padding: const EdgeInsets.all(16),
-      itemCount: todayTasks.length,
-      itemBuilder: (context, index) {
-        final task = todayTasks[index];
-        return _buildTaskCard(task);
-      },
-    );
-  }
-
-  Widget _buildUpcomingTab() {
-    final upcomingTasks = _sampleSchedule
-        .where((task) => task['date'].isAfter(DateTime.now().add(Duration(days: 1))))
-        .toList();
-
-    upcomingTasks.sort((a, b) => a['date'].compareTo(b['date']));
-
-    return ListView.builder(
-      padding: const EdgeInsets.all(16),
-      itemCount: upcomingTasks.length,
-      itemBuilder: (context, index) {
-        final task = upcomingTasks[index];
-        return _buildTaskCard(task);
-      },
-    );
-  }
-
-  Widget _buildCalendarTab() {
-    return Padding(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        children: [
-          Card(
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                children: [
-                  const Text(
-                    'Calendar View',
-                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                  ),
-                  const SizedBox(height: 16),
-                  Container(
-                    height: 300,
-                    decoration: BoxDecoration(
-                      color: Colors.grey.shade100,
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: const Center(
-                      child: Text('Calendar widget will be displayed here'),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-          const SizedBox(height: 16),
-          Card(
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text(
-                    'Quick Stats',
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                  ),
-                  const SizedBox(height: 12),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceAround,
-                    children: [
-                      _buildQuickStat('Today', _getTodayTasksCount().toString()),
-                      _buildQuickStat('This Week', _getWeekTasksCount().toString()),
-                      _buildQuickStat('Overdue', '0'),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildTaskCard(Map<String, dynamic> task) {
-    return Card(
-      margin: const EdgeInsets.only(bottom: 12),
-      elevation: 2,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      child: InkWell(
-        onTap: () => _showTaskDetails(task),
-        borderRadius: BorderRadius.circular(12),
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  _buildTaskTypeIcon(task['type']),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          task['title'],
-                          style: const TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        if (task['cattleName'] != null)
-                          Text(
-                            '${task['cattleName']} (${task['cattleId']})',
-                            style: TextStyle(
-                              color: Colors.grey.shade600,
-                              fontSize: 14,
-                            ),
-                          ),
-                      ],
-                    ),
-                  ),
-                  _buildPriorityChip(task['priority']),
-                ],
-              ),
-              const SizedBox(height: 12),
-              Row(
-                children: [
-                  Icon(Icons.access_time, size: 16, color: Colors.grey.shade600),
-                  const SizedBox(width: 4),
-                  Text(
-                    _formatTaskTime(task['date']),
-                    style: TextStyle(color: Colors.grey.shade600),
-                  ),
-                  const SizedBox(width: 16),
-                  Icon(Icons.timer, size: 16, color: Colors.grey.shade600),
-                  const SizedBox(width: 4),
-                  Text(
-                    '${task['duration']} min',
-                    style: TextStyle(color: Colors.grey.shade600),
-                  ),
-                  const Spacer(),
-                  if (task['veterinarian'] != null)
-                    Row(
-                      children: [
-                        Icon(Icons.person, size: 16, color: Colors.grey.shade600),
-                        const SizedBox(width: 4),
-                        Text(
-                          task['veterinarian'],
-                          style: TextStyle(color: Colors.grey.shade600),
-                        ),
-                      ],
-                    ),
-                ],
-              ),
-              if (task['notes'] != null && task['notes'].isNotEmpty) ...[
-                const SizedBox(height: 8),
-                Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: Colors.grey.shade50,
-                    borderRadius: BorderRadius.circular(6),
-                  ),
-                  child: Text(
-                    task['notes'],
-                    style: TextStyle(
-                      color: Colors.grey.shade700,
-                      fontSize: 13,
-                    ),
-                  ),
-                ),
-              ],
-              const SizedBox(height: 12),
-              Row(
-                children: [
-                  Expanded(
-                    child: OutlinedButton.icon(
-                      onPressed: () => _markAsComplete(task),
-                      icon: const Icon(Icons.check, size: 16),
-                      label: const Text('Complete'),
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: Colors.green,
-                        side: const BorderSide(color: Colors.green),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: OutlinedButton.icon(
-                      onPressed: () => _rescheduleTask(task),
-                      icon: const Icon(Icons.schedule, size: 16),
-                      label: const Text('Reschedule'),
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: Colors.orange,
-                        side: const BorderSide(color: Colors.orange),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ),
+        body: ScheduleContent(
+          tabController: _tabController,
+          isLoading: _isLoading,
+          schedules: _schedules,
+          filteredSchedules: _filteredSchedules,
+          todaysSchedules: _todaysSchedules,
+          selectedFilter: _selectedFilter,
+          searchQuery: _searchQuery,
+          onRefresh: _loadSchedules,
+          onMenuAction: _handleMenuAction,
         ),
       ),
+      floatingActionButton: _buildFAB(),
     );
   }
 
-  Widget _buildTaskTypeIcon(String type) {
-    IconData icon;
-    Color color;
-
-    switch (type) {
-      case 'Vaccination':
-        icon = FontAwesomeIcons.syringe;
-        color = Colors.green;
-        break;
-      case 'Breeding':
-        icon = FontAwesomeIcons.heart;
-        color = Colors.red;
-        break;
-      case 'Feed':
-        icon = FontAwesomeIcons.seedling;
-        color = Colors.brown;
-        break;
-      case 'Weigh':
-        icon = FontAwesomeIcons.weight;
-        color = Colors.blue;
-        break;
-      case 'Treatment':
-        icon = FontAwesomeIcons.kitMedical;
-        color = Colors.orange;
-        break;
-      default:
-        icon = FontAwesomeIcons.calendar;
-        color = Colors.grey;
-    }
-
-    return Container(
-      padding: const EdgeInsets.all(8),
-      decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: FaIcon(icon, color: color, size: 20),
-    );
-  }
-
-  Widget _buildPriorityChip(String priority) {
-    Color color;
-    switch (priority) {
-      case 'High':
-        color = Colors.red;
-        break;
-      case 'Medium':
-        color = Colors.orange;
-        break;
-      case 'Low':
-        color = Colors.green;
-        break;
-      default:
-        color = Colors.grey;
-    }
-
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: color.withOpacity(0.3)),
-      ),
-      child: Text(
-        priority,
+  Widget _buildFAB() {
+    return FloatingActionButton.extended(
+      onPressed: _showCattleScheduleForm,
+      backgroundColor: AppColors.primary,
+      foregroundColor: Colors.white,
+      icon: const Icon(Icons.add, size: 20),
+      label: const Text(
+        'Add Schedule',
         style: TextStyle(
-          color: color,
-          fontSize: 12,
-          fontWeight: FontWeight.w500,
+          fontSize: 14,
+          fontWeight: FontWeight.w600,
+        ),
+      ),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+      ),
+      elevation: 4,
+    );
+  }
+
+  // Menu action handlers and other methods
+  void _handleMenuAction(String action, Schedule schedule) {
+    switch (action) {
+      case 'view':
+        _showScheduleDetails(schedule);
+        break;
+      case 'edit':
+        _showEditScheduleDialog(schedule);
+        break;
+      case 'complete':
+        _updateScheduleStatus(schedule, ScheduleStatus.completed);
+        break;
+      case 'cancel':
+        _updateScheduleStatus(schedule, ScheduleStatus.cancelled);
+        break;
+      case 'reschedule':
+        _updateScheduleStatus(schedule, ScheduleStatus.scheduled);
+        break;
+      case 'duplicate':
+        _duplicateSchedule(schedule);
+        break;
+      case 'delete':
+        _confirmDeleteSchedule(schedule);
+        break;
+    }
+  }
+
+  void _showCattleScheduleForm() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => CattleScheduleForm(
+          onScheduleAdded: _loadSchedules,
         ),
       ),
     );
   }
 
-  Widget _buildQuickStat(String label, String value) {
-    return Column(
-      children: [
-        Text(
-          value,
-          style: const TextStyle(
-            fontSize: 24,
-            fontWeight: FontWeight.bold,
-            color: AppColors.primary,
-          ),
+  void _showEditScheduleDialog(Schedule schedule) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => CattleScheduleForm(
+          onScheduleAdded: _loadSchedules,
+          scheduleToEdit: schedule,
         ),
-        Text(
-          label,
-          style: TextStyle(
-            fontSize: 12,
-            color: Colors.grey.shade600,
-          ),
-        ),
-      ],
+      ),
     );
   }
 
-  String _formatDateHeader(DateTime date) {
-    final weekdays = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-    final months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-
-    return '${weekdays[date.weekday % 7]}, ${months[date.month - 1]} ${date.day}';
-  }
-
-  String _formatTaskTime(DateTime date) {
-    final hour = date.hour;
-    final minute = date.minute;
-    final ampm = hour >= 12 ? 'PM' : 'AM';
-    final displayHour = hour > 12 ? hour - 12 : (hour == 0 ? 12 : hour);
-
-    return '${displayHour.toString().padLeft(2, '0')}:${minute.toString().padLeft(2, '0')} $ampm';
-  }
-
-  bool _isToday(DateTime date) {
-    final now = DateTime.now();
-    return date.year == now.year &&
-        date.month == now.month &&
-        date.day == now.day;
-  }
-
-  int _getTodayTasksCount() {
-    return _sampleSchedule.where((task) => _isToday(task['date'])).length;
-  }
-
-  int _getWeekTasksCount() {
-    final now = DateTime.now();
-    final weekStart = now.subtract(Duration(days: now.weekday % 7));
-    final weekEnd = weekStart.add(Duration(days: 6));
-
-    return _sampleSchedule.where((task) {
-      final taskDate = task['date'] as DateTime;
-      return taskDate.isAfter(weekStart) && taskDate.isBefore(weekEnd.add(Duration(days: 1)));
-    }).length;
-  }
-
-  void _showDatePicker() async {
-    final pickedDate = await showDatePicker(
+  void _showScheduleDetails(Schedule schedule) {
+    showDialog(
       context: context,
-      initialDate: _selectedDate,
-      firstDate: DateTime.now().subtract(Duration(days: 365)),
-      lastDate: DateTime.now().add(Duration(days: 365)),
+      builder: (context) => ScheduleDetailsDialog(schedule: schedule),
     );
+  }
 
-    if (pickedDate != null) {
-      setState(() => _selectedDate = pickedDate);
+  Future<void> _updateScheduleStatus(Schedule schedule, String newStatus) async {
+    try {
+      await ScheduleService.updateScheduleStatus(schedule.id!, newStatus);
+      _showSnackBar('Schedule ${newStatus.toLowerCase()} successfully');
+      _loadSchedules(); // This will refresh all data and update counts
+    } catch (e) {
+      _showSnackBar('Error updating schedule: ${e.toString()}', isError: true);
     }
   }
 
-  void _showTaskDetails(Map<String, dynamic> task) {
+  Future<void> _duplicateSchedule(Schedule schedule) async {
+    try {
+      final tomorrow = DateTime.now().add(const Duration(days: 1));
+      await ScheduleService.duplicateSchedule(schedule, tomorrow);
+      _showSnackBar('Schedule duplicated successfully');
+      _loadSchedules();
+    } catch (e) {
+      _showSnackBar('Error duplicating schedule: ${e.toString()}', isError: true);
+    }
+  }
+
+  void _confirmDeleteSchedule(Schedule schedule) {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text(task['title']),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            if (task['cattleName'] != null)
-              Text('Cattle: ${task['cattleName']} (${task['cattleId']})'),
-            const SizedBox(height: 8),
-            Text('Type: ${task['type']}'),
-            const SizedBox(height: 8),
-            Text('Date: ${_formatTaskTime(task['date'])}'),
-            const SizedBox(height: 8),
-            Text('Duration: ${task['duration']} minutes'),
-            const SizedBox(height: 8),
-            Text('Priority: ${task['priority']}'),
-            const SizedBox(height: 8),
-            Text('Status: ${task['status']}'),
-            if (task['veterinarian'] != null) ...[
-              const SizedBox(height: 8),
-              Text('Veterinarian: ${task['veterinarian']}'),
-            ],
-            if (task['notes'] != null && task['notes'].isNotEmpty) ...[
-              const SizedBox(height: 8),
-              Text('Notes: ${task['notes']}'),
-            ],
-          ],
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: const Text(
+          'Delete Schedule',
+          style: TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+        content: Text(
+          'Are you sure you want to delete "${schedule.title}"?',
+          style: const TextStyle(fontSize: 14),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('Close'),
+            child: Text(
+              'Cancel',
+              style: TextStyle(color: Colors.grey[600]),
+            ),
           ),
-          ElevatedButton(
+          TextButton(
             onPressed: () {
               Navigator.pop(context);
-              // Navigate to edit task
+              _deleteSchedule(schedule);
             },
-            child: const Text('Edit'),
+            child: const Text(
+              'Delete',
+              style: TextStyle(color: Colors.red),
+            ),
           ),
         ],
       ),
     );
   }
 
-  void _showAddScheduleDialog() {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Navigate to Add Schedule Task Screen'),
-        backgroundColor: AppColors.primary,
-      ),
-    );
+  Future<void> _deleteSchedule(Schedule schedule) async {
+    try {
+      await ScheduleService.deleteSchedule(schedule.id!);
+      _showSnackBar('Schedule deleted successfully');
+      _loadSchedules();
+    } catch (e) {
+      _showSnackBar('Error deleting schedule: ${e.toString()}', isError: true);
+    }
   }
 
-  void _markAsComplete(Map<String, dynamic> task) {
+  void _showSnackBar(String message, {bool isError = false}) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text('Task "${task['title']}" marked as complete'),
-        backgroundColor: Colors.green,
-      ),
-    );
-  }
-
-  void _rescheduleTask(Map<String, dynamic> task) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('Rescheduling "${task['title']}"'),
-        backgroundColor: Colors.orange,
+        content: Text(message),
+        backgroundColor: isError ? Colors.red[600] : Colors.green[600],
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        margin: const EdgeInsets.all(16),
       ),
     );
   }

@@ -287,8 +287,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
   String? _validateEmail(String? value) {
     if (value == null || value.trim().isEmpty) return 'Please enter your email';
     final emailRegex = RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$');
-    if (!emailRegex.hasMatch(value.trim()))
+    if (!emailRegex.hasMatch(value.trim())) {
       return 'Please enter a valid email address';
+    }
     return null;
   }
 

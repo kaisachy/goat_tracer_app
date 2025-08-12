@@ -1,4 +1,3 @@
-// lib/screens/nav/cattle/widgets/event_search_filter_bar.dart
 import 'package:flutter/material.dart';
 import 'package:cattle_tracer_app/constants/app_colors.dart';
 
@@ -50,7 +49,8 @@ class _EventSearchFilterBarState extends State<EventSearchFilterBar> {
           title: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(Icons.filter_list_rounded, color: AppColors.vibrantGreen, size: 20),
+              Icon(Icons.filter_list_rounded,
+                  color: AppColors.vibrantGreen, size: 20),
               const SizedBox(width: 8),
               const Expanded(
                 child: Text(
@@ -60,7 +60,8 @@ class _EventSearchFilterBarState extends State<EventSearchFilterBar> {
               ),
             ],
           ),
-          contentPadding: const EdgeInsets.symmetric(vertical: 16, horizontal: 8),
+          contentPadding:
+          const EdgeInsets.symmetric(vertical: 16, horizontal: 8),
           content: ConstrainedBox(
             constraints: BoxConstraints(
               maxHeight: MediaQuery.of(context).size.height * 0.5,
@@ -134,23 +135,8 @@ class _EventSearchFilterBarState extends State<EventSearchFilterBar> {
       builder: (context, constraints) {
         final isNarrow = constraints.maxWidth < 400;
 
-        return Container(
-          width: double.infinity,
-          padding: EdgeInsets.all(isNarrow ? 12 : 16),
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              colors: [
-                AppColors.lightGreen.withOpacity(0.1),
-                AppColors.vibrantGreen.withOpacity(0.05),
-              ],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-            ),
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: AppColors.lightGreen.withOpacity(0.2)),
-          ),
-          child: _buildInlineLayout(isNarrow),
-        );
+        // 🔧 MODIFIED: Removed the main Container and its decorations
+        return _buildInlineLayout(isNarrow);
       },
     );
   }
@@ -216,7 +202,8 @@ class _EventSearchFilterBarState extends State<EventSearchFilterBar> {
             padding: EdgeInsets.all(isNarrow ? 6 : 8),
           )
               : null,
-          hintText: isNarrow ? 'Search event...' : 'Search event, notes, diagnosis...',
+          hintText:
+          isNarrow ? 'Search event...' : 'Search event, notes, diagnosis...',
           hintStyle: TextStyle(
             color: Colors.grey.shade500,
             fontSize: isNarrow ? 12 : 13,
@@ -310,7 +297,9 @@ class _EventSearchFilterBarState extends State<EventSearchFilterBar> {
                     width: isNarrow ? 6 : 8,
                     height: isNarrow ? 6 : 8,
                     decoration: BoxDecoration(
-                      color: isFiltered ? Colors.white.withOpacity(0.8) : AppColors.vibrantGreen,
+                      color: isFiltered
+                          ? Colors.white.withOpacity(0.8)
+                          : AppColors.vibrantGreen,
                       shape: BoxShape.circle,
                     ),
                   ),

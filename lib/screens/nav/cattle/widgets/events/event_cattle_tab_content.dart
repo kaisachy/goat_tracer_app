@@ -645,7 +645,7 @@ class _EventCattleTabContentState extends State<EventCattleTabContent> {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.fromLTRB(16, 2, 16, 16),
       child: Column(
         children: [
           EventSearchFilterBar(
@@ -656,8 +656,6 @@ class _EventCattleTabContentState extends State<EventCattleTabContent> {
             onFilterChanged: _onFilterChanged,
             onClearFilter: _onClearFilter,
           ),
-          const SizedBox(height: 16),
-          _buildEventsSummary(),
           const SizedBox(height: 16),
           Expanded(
             child: RefreshIndicator(
@@ -678,65 +676,6 @@ class _EventCattleTabContentState extends State<EventCattleTabContent> {
               ),
             ),
           ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildEventsSummary() {
-    if (events.isEmpty) return const SizedBox.shrink();
-
-    final totalEvents = events.length;
-    final filteredCount = _filteredEvents.length;
-    final recentEvent = events.isNotEmpty
-        ? events.reduce((a, b) =>
-    DateTime.parse(a['event_date'] ?? '1900-01-01')
-        .isAfter(DateTime.parse(b['event_date'] ?? '1900-01-01')) ? a : b)
-        : null;
-
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Row(
-        children: [
-          Expanded(
-            child: _buildSummaryItem(
-              icon: Icons.event_note_rounded,
-              label: 'Total Events',
-              value: '$totalEvents',
-              color: AppColors.vibrantGreen,
-            ),
-          ),
-          Container(width: 1, height: 40, color: Colors.grey.shade200),
-          Expanded(
-            child: _buildSummaryItem(
-              icon: Icons.filter_list_rounded,
-              label: 'Showing',
-              value: '$filteredCount',
-              color: AppColors.lightGreen,
-            ),
-          ),
-          if (recentEvent != null) ...[
-            Container(width: 1, height: 40, color: Colors.grey.shade200),
-            Expanded(
-              child: _buildSummaryItem(
-                icon: Icons.schedule_rounded,
-                label: 'Latest',
-                value: _formatDate(recentEvent['event_date']),
-                color: Colors.blue.shade400,
-              ),
-            ),
-          ],
         ],
       ),
     );
@@ -867,23 +806,6 @@ class _EventCattleTabContentState extends State<EventCattleTabContent> {
                   Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      if (details.isNotEmpty)
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                          decoration: BoxDecoration(
-                            color: eventColor.withOpacity(0.1),
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: Text(
-                            '${details.length}',
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: eventColor,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ),
-                      const SizedBox(width: 8),
                       Builder(
                         builder: (context) => IconButton(
                           onPressed: () => _showEventMenu(context, event, index),
@@ -947,7 +869,7 @@ class _EventCattleTabContentState extends State<EventCattleTabContent> {
                         _buildDetailRow(detail.key, detail.value),
                       ],
                     );
-                  }).toList(),
+                  }),
                 ],
               ),
             )

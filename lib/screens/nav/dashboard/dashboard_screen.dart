@@ -569,7 +569,7 @@ class _DashboardScreenState extends State<DashboardScreen>
             ),
             const SizedBox(height: 20),
             if (recentEvents.isNotEmpty)
-              ...recentEvents.map((event) => _buildEventTile(event)).toList()
+              ...recentEvents.map((event) => _buildEventTile(event))
             else
               Container(
                 padding: const EdgeInsets.all(20),
@@ -746,7 +746,7 @@ class _DashboardScreenState extends State<DashboardScreen>
                     ],
                   ),
                 );
-              }).toList()
+              })
             else
               const Text(
                 'No event data available',

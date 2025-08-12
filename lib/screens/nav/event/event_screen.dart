@@ -932,23 +932,6 @@ class _EventScreenState extends State<EventScreen> {
                   Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      if (details.isNotEmpty)
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                          decoration: BoxDecoration(
-                            color: eventColor.withOpacity(0.1),
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: Text(
-                            '${details.length}',
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: eventColor,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ),
-                      const SizedBox(width: 8),
                       Builder(
                         builder: (context) => IconButton(
                           onPressed: () => _showEventMenu(context, event, index),
@@ -1012,7 +995,7 @@ class _EventScreenState extends State<EventScreen> {
                         _buildDetailRow(detail.key, detail.value),
                       ],
                     );
-                  }).toList(),
+                  }),
                 ],
               ),
             )

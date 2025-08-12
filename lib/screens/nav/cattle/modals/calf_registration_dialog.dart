@@ -190,9 +190,9 @@ class _CalfRegistrationDialogState extends State<CalfRegistrationDialog> {
     }
 
     // Add other nullable fields with defaults
-    baseData['weight'] = baseData['weight'] ?? null;
-    baseData['breed'] = baseData['breed'] ?? null;
-    baseData['group_name'] = baseData['group_name'] ?? null;
+    baseData['weight'] = baseData['weight'];
+    baseData['breed'] = baseData['breed'];
+    baseData['group_name'] = baseData['group_name'];
 
     // Add ID for updates - ensure it's properly typed
     if (widget.isEditMode && _existingCalfId != null) {

@@ -1,12 +1,12 @@
+import 'package:cattle_tracer_app/screens/nav/cattle/widgets/details/detail_cattle_hero_section.dart';
+import 'package:cattle_tracer_app/screens/nav/cattle/widgets/details/detail_cattle_tab_content.dart';
+import 'package:cattle_tracer_app/screens/nav/cattle/widgets/details/tab.dart';
+import 'package:cattle_tracer_app/screens/nav/cattle/widgets/events/event_cattle_tab_content.dart';
 import 'package:flutter/material.dart';
-import 'package:cattle_tracer_app/screens/nav/cattle/widgets/details/detail_cattle_tab_content.dart' as details_tab;
-import 'package:cattle_tracer_app/screens/nav/cattle/widgets/details/detail_cattle_tabs.dart';
-import 'package:cattle_tracer_app/screens/nav/cattle/widgets/events/event_cattle_tab_content.dart' as events_tab;
 import 'package:cattle_tracer_app/models/cattle.dart';
 import 'package:cattle_tracer_app/constants/app_colors.dart';
 import 'package:cattle_tracer_app/screens/nav/cattle/cattle_event_form_screen.dart';
 import 'package:cattle_tracer_app/screens/nav/cattle/cattle_form_screen.dart';
-import 'package:cattle_tracer_app/screens/nav/cattle/widgets/details/detail_cattle_app_bar.dart';
 import 'package:cattle_tracer_app/services/cattle/cattle_service.dart';
 
 class CattleDetailScreen extends StatefulWidget {
@@ -298,9 +298,9 @@ class _CattleDetailScreenState extends State<CattleDetailScreen>
       debugPrint('Error updating cattle image: $e');
       if (mounted) {
         _showEnhancedSnackBar(
-            'An error occurred while updating the photo',
-            Icons.error,
-            Colors.red
+          'An error occurred while updating the photo',
+          Icons.error,
+          Colors.red,
         );
       }
     } finally {
@@ -397,112 +397,127 @@ class _CattleDetailScreenState extends State<CattleDetailScreen>
         strokeWidth: 2.5,
         displacement: 60,
         child: Container(
-          decoration: BoxDecoration(
+          decoration: const BoxDecoration(
             gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
               colors: [
-                AppColors.lightGreen.withValues(alpha: 0.15),
+                AppColors.lightGreen,
                 Colors.white,
-                AppColors.vibrantGreen.withValues(alpha: 0.05),
               ],
-              stops: const [0.0, 0.6, 1.0],
+              stops: [0.0, 0.3],
             ),
           ),
-          child: Column(
-            children: [
-              DetailCattleAppBar(
-                cattle: _currentCattle,
-                onAddEvent: _navigateToAddEventForm,
-                onEditCattle: _navigateToEditCattle,
-                onCattleUpdated: _onCattleUpdated, // Pass the callback
+          child: CustomScrollView(
+            physics: const BouncingScrollPhysics(),
+            slivers: [
+              // Hero Section as a Sliver
+              SliverToBoxAdapter(
+                child: CattleHeroSection(
+                  cattle: _currentCattle,
+                  onImageUpdate: _updateCattleImage,
+                  onEditCattle: _navigateToEditCattle,
+                  onAddEvent: _navigateToAddEventForm,
+                  isUpdatingImage: _isUpdatingImage,
+                ),
               ),
 
               // Loading indicator when refreshing
               if (_isRefreshing)
-                SizedBox(
-                  height: 2,
-                  child: const LinearProgressIndicator(
-                    backgroundColor: Colors.transparent,
-                    valueColor: AlwaysStoppedAnimation<Color>(AppColors.vibrantGreen),
+                SliverToBoxAdapter(
+                  child: SizedBox(
+                    height: 2,
+                    child: LinearProgressIndicator(
+                      backgroundColor: Colors.white.withOpacity(0.5),
+                      valueColor: const AlwaysStoppedAnimation<Color>(AppColors.vibrantGreen),
+                    ),
                   ),
                 ),
 
-              CattleDetailTabs(controller: _tabController),
-
-              Expanded(
-                child: AnimatedBuilder(
-                  animation: _scaleAnimation,
-                  builder: (context, child) {
-                    return Transform.scale(
-                      scale: _scaleAnimation.value,
-                      child: TabBarView(
-                        controller: _tabController,
-                        physics: const BouncingScrollPhysics(),
-                        children: [
-                          // Details Tab with pull-to-refresh
-                          RefreshIndicator(
-                            onRefresh: _onPullToRefresh,
-                            color: AppColors.vibrantGreen,
-                            child: SingleChildScrollView(
-                              physics: const AlwaysScrollableScrollPhysics(),
-                              child: details_tab.CattleDetailsTabContent(
-                                cattle: _currentCattle,
-                                cattleImagePath: _currentCattle.cattlePicture,
-                                fadeAnimation: _fadeAnimation,
-                                slideAnimation: _slideAnimation,
-                                scaleAnimation: _scaleAnimation,
-                                onImageUpdate: _updateCattleImage,
-                                isUpdatingImage: _isUpdatingImage,
-                              ),
-                            ),
-                          ),
-
-                          // Events Tab with pull-to-refresh
-                          RefreshIndicator(
-                            onRefresh: _onPullToRefresh,
-                            color: AppColors.vibrantGreen,
-                            child: events_tab.EventCattleTabContent(
-                              cattle: _currentCattle,
-                              onAddEvent: _navigateToAddEventForm,
-                            ),
-                          ),
-                        ],
+              // Sticky Tab Bar
+              SliverPersistentHeader(
+                pinned: true,
+                delegate: _StickyTabBarDelegate(
+                  tabBar: Container(
+                    decoration: const BoxDecoration(
+                      color: Colors.white,
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black12,
+                          offset: Offset(0, 2),
+                          blurRadius: 4,
+                        ),
+                      ],
+                    ),
+                    child: FadeTransition(
+                      opacity: _fadeAnimation,
+                      child: SlideTransition(
+                        position: _slideAnimation,
+                        child: CattleDetailTabs(
+                          controller: _tabController,
+                          fadeAnimation: _fadeAnimation,
+                          slideAnimation: _slideAnimation,
+                          onCattleUpdated: _onCattleUpdated,
+                        ),
                       ),
-                    );
-                  },
+                    ),
+                  ),
+                ),
+              ),
+
+              // Tab Content
+              SliverFillRemaining(
+                child: TabBarView(
+                  controller: _tabController,
+                  physics: const BouncingScrollPhysics(),
+                  children: [
+                    // Details Tab content
+                    ScaleTransition(
+                      scale: _scaleAnimation,
+                      child: CattleDetailsTabContent(
+                        cattle: _currentCattle,
+                        fadeAnimation: _fadeAnimation,
+                        slideAnimation: _slideAnimation,
+                      ),
+                    ),
+
+                    // Events Tab content
+                    ScaleTransition(
+                      scale: _scaleAnimation,
+                      child: EventCattleTabContent(
+                        cattle: _currentCattle,
+                        onAddEvent: _navigateToAddEventForm,
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ],
           ),
         ),
       ),
-
-      // Floating refresh button (optional - for easy access)
-      floatingActionButton: _isRefreshing
-          ? null
-          : AnimatedOpacity(
-        opacity: _isRefreshing ? 0.0 : 1.0,
-        duration: const Duration(milliseconds: 300),
-        child: FloatingActionButton.small(
-          onPressed: _refreshCattleData,
-          backgroundColor: AppColors.vibrantGreen,
-          foregroundColor: Colors.white,
-          tooltip: 'Refresh Data',
-          elevation: 4,
-          child: _isRefreshing
-              ? const SizedBox(
-            width: 20,
-            height: 20,
-            child: CircularProgressIndicator(
-              strokeWidth: 2,
-              color: Colors.white,
-            ),
-          )
-              : const Icon(Icons.refresh, size: 20),
-        ),
-      ),
-      floatingActionButtonLocation: FloatingActionButtonLocation.miniEndFloat,
     );
+  }
+}
+
+class _StickyTabBarDelegate extends SliverPersistentHeaderDelegate {
+  final Widget tabBar;
+
+  _StickyTabBarDelegate({required this.tabBar});
+
+  @override
+  double get minExtent => 60.0; // Adjust based on your tab height
+
+  @override
+  double get maxExtent => 60.0; // Same as minExtent for consistent height
+
+  @override
+  Widget build(BuildContext context, double shrinkOffset, bool overlapsContent) {
+    return tabBar;
+  }
+
+  @override
+  bool shouldRebuild(covariant SliverPersistentHeaderDelegate oldDelegate) {
+    return false;
   }
 }
