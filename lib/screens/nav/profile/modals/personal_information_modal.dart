@@ -495,21 +495,6 @@ class _PersonalInformationModalState extends State<PersonalInformationModal> wit
     );
   }
 
-  Widget _buildTextField({
-    required TextEditingController controller,
-    required String label,
-    required IconData icon,
-    TextInputType? keyboardType,
-    String? Function(String?)? validator,
-  }) {
-    return TextFormField(
-      controller: controller,
-      decoration: _getInputDecoration(label, icon),
-      keyboardType: keyboardType,
-      validator: validator,
-    );
-  }
-
   InputDecoration _getInputDecoration(String label, IconData icon) {
     return InputDecoration(
       labelText: label,
