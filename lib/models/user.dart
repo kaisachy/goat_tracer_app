@@ -5,7 +5,11 @@ class User {
   final String email;
   final String role;
   final bool emailVerified;
+  final bool active;
   final DateTime createdAt;
+  final String? province;
+  final String? municipality;
+  final String? barangay;
 
   User({
     required this.id,
@@ -14,7 +18,11 @@ class User {
     required this.email,
     required this.role,
     required this.emailVerified,
+    required this.active,
     required this.createdAt,
+    this.province,
+    this.municipality,
+    this.barangay,
   });
 
   factory User.fromJson(Map<String, dynamic> json) {
@@ -25,7 +33,11 @@ class User {
       email: json['email'],
       role: json['role'],
       emailVerified: json['email_verified'] == 1,
+      active: json['active'] == 1,
       createdAt: DateTime.parse(json['created_at']),
+      province: json['province'],
+      municipality: json['municipality'],
+      barangay: json['barangay'],
     );
   }
 
@@ -37,7 +49,11 @@ class User {
       'email': email,
       'role': role,
       'email_verified': emailVerified ? 1 : 0,
+      'active': active ? 1 : 0,
       'created_at': createdAt.toIso8601String(),
+      'province': province,
+      'municipality': municipality,
+      'barangay': barangay,
     };
   }
 }

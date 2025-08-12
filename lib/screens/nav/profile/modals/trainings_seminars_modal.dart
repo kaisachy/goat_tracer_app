@@ -80,7 +80,7 @@ class _TrainingsSeminarsModalState extends State<TrainingsSeminarsModal> {
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Icon(Icons.school, size: 64, color: Colors.grey),
+                        Icon(Icons.workspace_premium, size: 64, color: Colors.grey),
                         SizedBox(height: 16),
                         Text('No trainings added yet'),
                       ],

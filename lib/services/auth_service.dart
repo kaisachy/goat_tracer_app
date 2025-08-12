@@ -12,6 +12,9 @@ class AuthService {
       String lastName,
       String email,
       String password,
+      String? province,
+      String? municipality,
+      String? barangay,
       ) async {
     try {
       final response = await http.post(
@@ -22,6 +25,9 @@ class AuthService {
           'last_name': lastName,
           'email': email,
           'password': password,
+          'province': province,
+          'municipality': municipality,
+          'barangay': barangay,
         }),
       );
 

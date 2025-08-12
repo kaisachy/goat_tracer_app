@@ -1,4 +1,3 @@
-// lib/services/user_service.dart
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import '../config.dart';
@@ -141,11 +140,22 @@ class UserService {
   }
 
   /// Updates a user's profile information.
-  Future<User> updateUser(int id, String firstName, String lastName, String email) async {
+  Future<User> updateUser(int id, String firstName, String lastName, String email,
+      {String? province, String? municipality, String? barangay}) async {
     final token = await _getToken();
     if (token == null) {
       throw Exception('Authentication required. Please login again.');
     }
+
+    final Map<String, dynamic> body = {
+      'first_name': firstName,
+      'last_name': lastName,
+      'email': email,
+    };
+
+    if (province != null) body['province'] = province;
+    if (municipality != null) body['municipality'] = municipality;
+    if (barangay != null) body['barangay'] = barangay;
 
     final response = await http.put(
       Uri.parse('$_baseUrl/users/$id'),
@@ -153,11 +163,7 @@ class UserService {
         'Content-Type': 'application/json; charset=UTF-8',
         'Authorization': 'Bearer $token',
       },
-      body: jsonEncode({
-        'first_name': firstName,
-        'last_name': lastName,
-        'email': email,
-      }),
+      body: jsonEncode(body),
     );
 
     if (response.statusCode == 200) {

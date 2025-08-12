@@ -129,6 +129,7 @@ class _CattleScheduleFormState extends State<CattleScheduleForm> {
           email: '',
           role: '',
           emailVerified: false,
+          active: false,
           createdAt: DateTime.now(),
         ),
       );
@@ -502,6 +503,7 @@ class _CattleScheduleFormState extends State<CattleScheduleForm> {
               email: '',
               role: '',
               emailVerified: false,
+              active: false,
               createdAt: DateTime.now(),
             ),
           );

@@ -21,9 +21,32 @@ class _RegisterScreenState extends State<RegisterScreen> {
   final TextEditingController _passwordController = TextEditingController();
   final TextEditingController _confirmPasswordController =
   TextEditingController();
+
   bool _isLoading = false;
   bool _isPasswordVisible = false;
   bool _isConfirmPasswordVisible = false;
+
+  // State variables for address fields
+  String? _selectedProvince;
+  String? _selectedMunicipality;
+  String? _selectedBarangay;
+
+  // Placeholder data for demonstration.
+  // You should replace this with a real API call to fetch your data.
+  final List<String> _provinces = ['Province A', 'Province B', 'Province C'];
+  final Map<String, List<String>> _municipalities = {
+    'Province A': ['Municipality A1', 'Municipality A2'],
+    'Province B': ['Municipality B1', 'Municipality B2'],
+    'Province C': ['Municipality C1', 'Municipality C2'],
+  };
+  final Map<String, List<String>> _barangays = {
+    'Municipality A1': ['Brgy A1-1', 'Brgy A1-2'],
+    'Municipality A2': ['Brgy A2-1', 'Brgy A2-2'],
+    'Municipality B1': ['Brgy B1-1', 'Brgy B1-2'],
+    'Municipality B2': ['Brgy B2-1', 'Brgy B2-2'],
+    'Municipality C1': ['Brgy C1-1', 'Brgy C1-2'],
+    'Municipality C2': ['Brgy C2-1', 'Brgy C2-2'],
+  };
 
   @override
   void dispose() {
@@ -40,6 +63,12 @@ class _RegisterScreenState extends State<RegisterScreen> {
     FocusScope.of(context).unfocus();
 
     if (_formKey.currentState!.validate()) {
+      // Additional validation for the required province field
+      if (_selectedProvince == null) {
+        _showMessage('Please select a province.', Colors.red);
+        return;
+      }
+
       setState(() => _isLoading = true);
 
       try {
@@ -53,11 +82,15 @@ class _RegisterScreenState extends State<RegisterScreen> {
             'email': _emailController.text.trim(),
             'password': _passwordController.text,
             'role': 'farmer', // Default role
+            'province': _selectedProvince,
+            'municipality': _selectedMunicipality,
+            'barangay': _selectedBarangay,
           }),
         );
 
         if (!mounted) return;
 
+        // Check if the response body is a valid JSON before decoding
         final data = jsonDecode(response.body);
 
         if (response.statusCode == 201) {
@@ -69,13 +102,27 @@ class _RegisterScreenState extends State<RegisterScreen> {
           }
         } else {
           // Use the error message from the server if available
+          final errorMessage = data['message'] ?? 'Registration failed. Status: ${response.statusCode}';
+          print('Server Error: $errorMessage');
           _showMessage(
-              data['message'] ?? 'Registration failed. Please try again.',
+              errorMessage,
               Colors.red);
         }
+      } on http.ClientException catch (e) {
+        if (mounted) {
+          print('Network Error: ${e.message}');
+          _showMessage('Network error: ${e.message}', Colors.red);
+        }
+      } on FormatException catch (e) {
+        if (mounted) {
+          print('JSON Parsing Error: $e');
+          _showMessage('Invalid response format from server. Please try again.', Colors.red);
+        }
+        print('Error parsing JSON response: $e');
       } catch (e) {
         if (mounted) {
-          _showMessage('Connection error. Please check your network.', Colors.red);
+          print('Unexpected Error: $e');
+          _showMessage('An unexpected error occurred: ${e.toString()}', Colors.red);
         }
       } finally {
         if (mounted) {
@@ -156,6 +203,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     textInputAction: TextInputAction.next,
                   ),
                   const SizedBox(height: 20),
+                  _buildAddressFields(),
+                  const SizedBox(height: 20),
                   _buildPasswordField(),
                   const SizedBox(height: 20),
                   _buildConfirmPasswordField(),
@@ -205,6 +254,77 @@ class _RegisterScreenState extends State<RegisterScreen> {
             value == null || value.trim().isEmpty ? 'Required' : null,
             textInputAction: TextInputAction.next,
           ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildAddressFields() {
+    return Column(
+      children: [
+        DropdownButtonFormField<String>(
+          value: _selectedProvince,
+          decoration: _inputDecoration('Province', Icons.location_city),
+          items: _provinces
+              .map((String value) => DropdownMenuItem<String>(
+            value: value,
+            child: Text(value),
+          ))
+              .toList(),
+          onChanged: (String? newValue) {
+            setState(() {
+              _selectedProvince = newValue;
+              // Reset municipalities and barangays when province changes
+              _selectedMunicipality = null;
+              _selectedBarangay = null;
+            });
+          },
+          validator: (value) => value == null ? 'Please select a province' : null,
+        ),
+        const SizedBox(height: 20),
+        DropdownButtonFormField<String>(
+          value: _selectedMunicipality,
+          decoration: _inputDecoration('Municipality', Icons.location_on),
+          items: _selectedProvince != null
+              ? _municipalities[_selectedProvince!]
+              ?.map((String value) => DropdownMenuItem<String>(
+            value: value,
+            child: Text(value),
+          ))
+              .toList()
+              : [],
+          onChanged: (String? newValue) {
+            setState(() {
+              _selectedMunicipality = newValue;
+              _selectedBarangay = null; // Reset barangay when municipality changes
+            });
+          },
+          validator: (value) {
+            // This is optional based on your backend logic
+            return null;
+          },
+        ),
+        const SizedBox(height: 20),
+        DropdownButtonFormField<String>(
+          value: _selectedBarangay,
+          decoration: _inputDecoration('Barangay', Icons.location_on_outlined),
+          items: _selectedMunicipality != null
+              ? _barangays[_selectedMunicipality!]
+              ?.map((String value) => DropdownMenuItem<String>(
+            value: value,
+            child: Text(value),
+          ))
+              .toList()
+              : [],
+          onChanged: (String? newValue) {
+            setState(() {
+              _selectedBarangay = newValue;
+            });
+          },
+          validator: (value) {
+            // This is optional based on your backend logic
+            return null;
+          },
         ),
       ],
     );

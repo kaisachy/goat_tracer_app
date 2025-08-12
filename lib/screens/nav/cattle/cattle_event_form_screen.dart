@@ -636,7 +636,6 @@ class _CattleEventFormScreenState extends State<CattleEventFormScreen>
       }
 
       bool eventSuccess;
-      String operation;
 
       try {
         if (isEditing) {
@@ -644,11 +643,9 @@ class _CattleEventFormScreenState extends State<CattleEventFormScreen>
             throw Exception('Event ID is required for editing');
           }
           data['id'] = widget.event!.id;
-          operation = 'update';
           print('Updating event with ID: ${widget.event!.id}');
           eventSuccess = await CattleEventService.updateCattleEvent(data);
         } else {
-          operation = 'create';
           print('Creating new event');
           eventSuccess = await CattleEventService.storeCattleEvent(data);
         }

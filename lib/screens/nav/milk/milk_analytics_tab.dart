@@ -100,50 +100,6 @@ class _MilkAnalyticsTabState extends State<MilkAnalyticsTab> with TickerProvider
     );
   }
 
-  Widget _buildStatCard(String title, String value, IconData icon, Color color) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.grey.withOpacity(0.1),
-            blurRadius: 4,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Column(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: color.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: FaIcon(icon, color: color, size: 20),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            value,
-            style: const TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          Text(
-            title,
-            style: TextStyle(
-              fontSize: 12,
-              color: Colors.grey.shade600,
-            ),
-            textAlign: TextAlign.center,
-          ),
-        ],
-      ),
-    );
-  }
 
   Widget _buildProductionTrendsCard() {
     return Container(
@@ -232,72 +188,6 @@ class _MilkAnalyticsTabState extends State<MilkAnalyticsTab> with TickerProvider
     );
   }
 
-  Widget _buildTopPerformersCard() {
-    final performers = _calculateTopPerformers();
-
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.grey.withOpacity(0.1),
-            blurRadius: 8,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              const FaIcon(FontAwesomeIcons.trophy, color: Colors.amber, size: 20),
-              const SizedBox(width: 8),
-              const Expanded(
-                child: Text(
-                  'Top Performers',
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-          SizedBox(
-            height: 280,
-            child: performers.isEmpty
-                ? Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(
-                    FontAwesomeIcons.trophy,
-                    size: 32,
-                    color: Colors.grey.shade400,
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    'No performers yet',
-                    style: TextStyle(
-                      color: Colors.grey.shade500,
-                      fontSize: 14,
-                    ),
-                  ),
-                ],
-              ),
-            )
-                : ListView.builder(
-              itemCount: math.min(5, performers.length),
-              itemBuilder: (context, index) {
-                return _buildPerformerItem(performers[index]);
-              },
-            ),
-          ),
-        ],
-      ),
-    );
-  }
 
   Widget _buildProductionAnalysisCard() {
     final analysis = _calculateProductionAnalysis();
@@ -378,164 +268,7 @@ class _MilkAnalyticsTabState extends State<MilkAnalyticsTab> with TickerProvider
     );
   }
 
-  Widget _buildPerformerItem(Map<String, dynamic> performer) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 8),
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [
-            _getRankColor(performer['rank']).withOpacity(0.1),
-            _getRankColor(performer['rank']).withOpacity(0.05),
-          ],
-          begin: Alignment.centerLeft,
-          end: Alignment.centerRight,
-        ),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: _getRankColor(performer['rank']).withOpacity(0.3),
-          width: 1,
-        ),
-      ),
-      child: Row(
-        children: [
-          // Rank badge
-          Container(
-            width: 36,
-            height: 36,
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [
-                  _getRankColor(performer['rank']),
-                  _getRankColor(performer['rank']).withOpacity(0.8),
-                ],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
-              borderRadius: BorderRadius.circular(18),
-              boxShadow: [
-                BoxShadow(
-                  color: _getRankColor(performer['rank']).withOpacity(0.3),
-                  blurRadius: 4,
-                  offset: const Offset(0, 2),
-                ),
-              ],
-            ),
-            child: Center(
-              child: performer['rank'] <= 3
-                  ? FaIcon(
-                performer['rank'] == 1
-                    ? FontAwesomeIcons.crown
-                    : performer['rank'] == 2
-                    ? FontAwesomeIcons.medal
-                    : FontAwesomeIcons.award,
-                color: Colors.white,
-                size: 16,
-              )
-                  : Text(
-                '${performer['rank']}',
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontWeight: FontWeight.bold,
-                  fontSize: 14,
-                ),
-              ),
-            ),
-          ),
-          const SizedBox(width: 12),
 
-          // Cattle info
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  performer['name'],
-                  style: TextStyle(
-                    fontWeight: FontWeight.w600,
-                    fontSize: 14,
-                    color: Colors.grey.shade800,
-                  ),
-                  overflow: TextOverflow.ellipsis,
-                  maxLines: 1,
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  'ID: ${performer['id']}',
-                  style: TextStyle(
-                    fontSize: 11,
-                    color: Colors.grey.shade600,
-                  ),
-                  overflow: TextOverflow.ellipsis,
-                  maxLines: 1,
-                ),
-              ],
-            ),
-          ),
-
-          const SizedBox(width: 8),
-
-          // Yield display
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-            decoration: BoxDecoration(
-              color: _getRankColor(performer['rank']).withOpacity(0.2),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  '${performer['yield'].toStringAsFixed(1)}L',
-                  style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 12,
-                    color: _getRankColor(performer['rank']),
-                  ),
-                ),
-                Text(
-                  'Total',
-                  style: TextStyle(
-                    fontSize: 9,
-                    color: _getRankColor(performer['rank']).withOpacity(0.7),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildQualityLegendItem(String quality, int count) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 2),
-      child: Row(
-        children: [
-          Container(
-            width: 12,
-            height: 12,
-            decoration: BoxDecoration(
-              color: _getQualityColor(quality),
-              borderRadius: BorderRadius.circular(6),
-            ),
-          ),
-          const SizedBox(width: 8),
-          Text(
-            'Grade $quality',
-            style: const TextStyle(fontSize: 12),
-          ),
-          const Spacer(),
-          Text(
-            '$count',
-            style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
-          ),
-        ],
-      ),
-    );
-  }
 
   Widget _buildAnalysisItem(String title, String value, String percentage, Color color) {
     return Container(
@@ -577,32 +310,6 @@ class _MilkAnalyticsTabState extends State<MilkAnalyticsTab> with TickerProvider
   }
 
 // Data calculation methods
-  Map<String, double> _calculateQuickStats() {
-    final totalProduction = widget.milkRecords.fold(
-      0.0,
-          (sum, record) => sum + (record.totalYield ?? 0),
-    );
-
-    final uniqueDays = widget.milkRecords
-        .map((r) => '${r.recordDate.year}-${r.recordDate.month}-${r.recordDate.day}')
-        .toSet()
-        .length;
-
-    final dailyAverage = uniqueDays > 0 ? totalProduction / uniqueDays : 0.0;
-
-    final activeCows = widget.milkRecords
-        .map((r) => r.cattleTag)
-        .where((tag) => tag != null)
-        .toSet()
-        .length
-        .toDouble(); // convert int → double
-
-    return {
-      'totalProduction': totalProduction,
-      'dailyAverage': dailyAverage,
-      'activeCows': activeCows,
-    };
-  }
 
   List<ChartDataPoint> _getChartData() {
     final now = DateTime.now();
@@ -624,39 +331,6 @@ class _MilkAnalyticsTabState extends State<MilkAnalyticsTab> with TickerProvider
       ..sort((a, b) => a.dateLabel.compareTo(b.dateLabel));
   }
 
-  List<Map<String, dynamic>> _calculateTopPerformers() {
-    final Map<String, double> cattleTotals = {};
-
-    for (final record in widget.milkRecords) {
-      final tag = record.cattleTag ?? 'Unknown';
-      cattleTotals[tag] = (cattleTotals[tag] ?? 0) + (record.totalYield ?? 0);
-    }
-
-    final sorted = cattleTotals.entries.toList()
-      ..sort((a, b) => b.value.compareTo(a.value));
-
-    return sorted.asMap().entries.map((entry) {
-      final cattle = widget.allCattle.firstWhere(
-            (c) => c.tagNo == entry.value.key,
-        orElse: () => Cattle(
-          id: 0,
-          tagNo: entry.value.key,
-          name: 'Unknown',
-          gender: 'Unknown',
-          classification: 'Unknown',
-          status: 'Unknown',
-          source: 'Unknown',
-        ),
-      );
-
-      return {
-        'rank': entry.key + 1,
-        'name': cattle.name ?? 'Unknown',
-        'id': entry.value.key,
-        'yield': entry.value.value,
-      };
-    }).toList();
-  }
 
   Map<String, dynamic> _calculateProductionAnalysis() {
     final morningTotal = widget.milkRecords.fold(0.0, (sum, record) => sum + (record.morningYield ?? 0));
@@ -684,25 +358,7 @@ class _MilkAnalyticsTabState extends State<MilkAnalyticsTab> with TickerProvider
     };
   }
 
-  Color _getRankColor(int rank) {
-    switch (rank) {
-      case 1: return Colors.amber;
-      case 2: return Colors.grey.shade600;
-      case 3: return Colors.brown;
-      default: return AppColors.primary;
-    }
-  }
 
-  Color _getQualityColor(String quality) {
-    switch (quality) {
-      case 'A+': return Colors.green;
-      case 'A': return Colors.lightGreen;
-      case 'B+': return Colors.orange;
-      case 'B': return Colors.deepOrange;
-      case 'C': return Colors.grey;
-      default: return Colors.grey;
-    }
-  }
 }
 
 class ChartDataPoint {
