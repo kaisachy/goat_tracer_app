@@ -540,6 +540,61 @@ class _CattleFormScreenState extends State<CattleFormScreen> {
   Future<void> _submitForm() async {
     if (!_formKey.currentState!.validate()) return;
 
+    final tagToCheck = _tagNoController.text.trim();
+    print('Checking tag: $tagToCheck');
+
+    // Check if tag already exists (only for new cattle or when tag is changed)
+    bool shouldCheckTag = widget.cattle == null ||
+        widget.cattle!.tagNo != tagToCheck;
+
+    print('Should check tag: $shouldCheckTag');
+
+    if (shouldCheckTag) {
+      // Show loading indicator for tag checking
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => const Center(
+          child: CircularProgressIndicator(),
+        ),
+      );
+
+      try {
+        // Get all cattle and check for duplicate tags
+        print('Fetching all cattle...');
+        final allCattle = await CattleService.getAllCattle();
+        print('Found ${allCattle.length} cattle records');
+
+        // Check if any existing cattle has the same tag
+        final duplicateExists = allCattle.any((cattle) {
+          final exists = cattle.tagNo.toLowerCase() == tagToCheck.toLowerCase();
+          if (exists) {
+            print('Duplicate found: ${cattle.tagNo}');
+          }
+          print('Comparing: "${cattle.tagNo}" with "$tagToCheck"');
+          return exists;
+        });
+
+        // Close loading dialog
+        if (mounted) Navigator.pop(context);
+
+        if (duplicateExists) {
+          print('Duplicate tag detected, showing error');
+          _showErrorSnackBar('Cattle tag already exists. Please use a different unique tag.');
+          return;
+        }
+
+        print('No duplicate found, proceeding with submission');
+
+      } catch (e) {
+        print('Error checking for duplicate tags: $e');
+        // Close loading dialog
+        if (mounted) Navigator.pop(context);
+        _showErrorSnackBar('Error validating tag. Please try again.');
+        return;
+      }
+    }
+
     showDialog(
       context: context,
       barrierDismissible: false,
@@ -556,7 +611,7 @@ class _CattleFormScreenState extends State<CattleFormScreen> {
 
     // Common data for both create and update
     final Map<String, dynamic> data = {
-      'tag_no': _tagNoController.text,
+      'tag_no': _tagNoController.text.trim(),
       'name': textOrNull(_nameController.text),
       'date_of_birth': _dateOfBirth,
       'gender': _gender,
@@ -574,18 +629,34 @@ class _CattleFormScreenState extends State<CattleFormScreen> {
 
     final bool success;
 
-    if (widget.cattle != null) {
-      // This is an UPDATE
-      data['id'] = widget.cattle!.id;
+    try {
+      if (widget.cattle != null) {
+        // This is an UPDATE
+        data['id'] = widget.cattle!.id;
 
-      // NEW: Add the original parent tags to the data map for the backend
-      data['original_mother_tag'] = _originalMotherTag;
-      data['original_father_tag'] = _originalFatherTag;
+        // NEW: Add the original parent tags to the data map for the backend
+        data['original_mother_tag'] = _originalMotherTag;
+        data['original_father_tag'] = _originalFatherTag;
 
-      success = await CattleService.updateCattleInformation(data);
-    } else {
-      // This is a CREATE
-      success = await CattleService.storeCattleInformation(data);
+        success = await CattleService.updateCattleInformation(data);
+      } else {
+        // This is a CREATE
+        success = await CattleService.storeCattleInformation(data);
+      }
+    } catch (e) {
+      if (mounted) {
+        Navigator.pop(context); // Close loading dialog
+
+        // Check if it's a duplicate entry error
+        if (e.toString().contains('Duplicate entry') ||
+            e.toString().contains('tag_no') ||
+            e.toString().contains('1062')) {
+          _showErrorSnackBar('Cattle tag already exists. Please use a different unique tag.');
+        } else {
+          _showErrorSnackBar('Failed to save cattle information');
+        }
+      }
+      return;
     }
 
     if (mounted) {
@@ -604,14 +675,9 @@ class _CattleFormScreenState extends State<CattleFormScreen> {
         );
         Navigator.pop(context, true);
       } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: const Text('Failed to save cattle information'),
-            backgroundColor: Colors.red.shade700,
-            behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-          ),
-        );
+        // Check if the failure is due to duplicate tag by examining the last response
+        // This is a fallback check in case the success is false but no exception was thrown
+        _showErrorSnackBar('Cattle tag already exists. Please use a different unique tag.');
       }
     }
   }
