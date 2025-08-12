@@ -351,7 +351,7 @@ class _FarmDetailsModalState extends State<FarmDetailsModal> {
         _buildInfoCard('Farm Type', widget.farmDetails?['farm_type'] ?? 'N/A', FontAwesomeIcons.tractor),
         const SizedBox(height: 16),
 
-        _buildInfoCard('Farm Classification', widget.farmDetails?['farm_classification'] ?? 'N/A', FontAwesomeIcons.tags),
+        _buildInfoCard('Farm Classification', widget.farmDetails?['farm_classification'] ?? 'N/A', FontAwesomeIcons.shapes),
         const SizedBox(height: 16),
 
         _buildInfoCard('Farm Land Area', '${widget.farmDetails?['farm_land_area'] ?? 'N/A'} hectares', FontAwesomeIcons.expand),

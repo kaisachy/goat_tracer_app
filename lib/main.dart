@@ -1,10 +1,13 @@
+// main.dart
 import 'package:flutter/material.dart';
+import 'auth_guard.dart';
 import 'screens/login_screen.dart';
 import 'services/secure_storage_service.dart';
 import 'screens/home_screen.dart';
 import 'screens/nav/cattle/cattle_detail_screen.dart';
 import 'services/cattle/cattle_service.dart';
 import 'models/cattle.dart';
+import 'services/auth_service.dart';
 
 void main() {
   runApp(const MyApp());
@@ -18,21 +21,23 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       title: 'Cattle Tracer',
       theme: ThemeData(primarySwatch: Colors.green),
-      home: const SplashScreen(), // Entry point
+      home: const AuthWrapper(), // Use AuthWrapper instead of SplashScreen
       // Define named routes for navigation
       routes: {
+        '/login': (context) => const LoginScreen(),
+        '/home': (context) => const AuthGuard(child: HomeScreen(userEmail: '')),
         '/cattle-detail': (context) {
           final args = ModalRoute.of(context)!.settings.arguments as Map<String, dynamic>?;
           final tag = args?['tag'] as String?;
 
           if (tag != null) {
-            // Return a FutureBuilder that fetches the cattle data
-            return CattleDetailLoader(tag: tag);
+            return AuthGuard(child: CattleDetailLoader(tag: tag));
           } else {
-            // Handle error case - redirect back or show error
-            return const Scaffold(
-              body: Center(
-                child: Text('Invalid cattle tag'),
+            return const AuthGuard(
+              child: Scaffold(
+                body: Center(
+                  child: Text('Invalid cattle tag'),
+                ),
               ),
             );
           }
@@ -42,26 +47,41 @@ class MyApp extends StatelessWidget {
   }
 }
 
-/// Splash screen that determines whether to show Login or Home
-class SplashScreen extends StatelessWidget {
-  const SplashScreen({super.key});
+/// Authentication Wrapper - Determines the initial screen
+class AuthWrapper extends StatelessWidget {
+  const AuthWrapper({super.key});
 
-  Future<bool> _isLoggedIn() async {
+  Future<bool> _checkAuthStatus() async {
     final token = await SecureStorageService().getToken();
-    return token != null;
+    if (token == null) return false;
+
+    // Verify token is still valid by checking user ID
+    final userId = await AuthService.getCurrentUserId();
+    return userId != null;
   }
 
   @override
   Widget build(BuildContext context) {
     return FutureBuilder<bool>(
-      future: _isLoggedIn(),
+      future: _checkAuthStatus(),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const Scaffold(
-            body: Center(child: CircularProgressIndicator()),
+            body: Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  CircularProgressIndicator(),
+                  SizedBox(height: 16),
+                  Text('Checking authentication...'),
+                ],
+              ),
+            ),
           );
-        } else if (snapshot.hasData && snapshot.data == true) {
-          return const HomeScreen(userEmail: 'Logged in via token');
+        }
+
+        if (snapshot.hasData && snapshot.data == true) {
+          return const HomeScreen(userEmail: 'Authenticated User');
         } else {
           return const LoginScreen();
         }
@@ -70,7 +90,7 @@ class SplashScreen extends StatelessWidget {
   }
 }
 
-/// Loader widget that fetches cattle data and navigates to detail screen
+/// Enhanced Cattle Detail Loader with authentication
 class CattleDetailLoader extends StatelessWidget {
   final String tag;
 
@@ -95,6 +115,14 @@ class CattleDetailLoader extends StatelessWidget {
             ),
           );
         } else if (snapshot.hasError) {
+          // Check if error is authentication related
+          if (snapshot.error.toString().contains('401') ||
+              snapshot.error.toString().contains('Unauthorized')) {
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              _handleAuthError(context);
+            });
+          }
+
           return Scaffold(
             appBar: AppBar(title: const Text('Error')),
             body: Center(
@@ -141,10 +169,25 @@ class CattleDetailLoader extends StatelessWidget {
 
   Future<Cattle?> _fetchCattleByTag(String tag) async {
     try {
-      // Use the static method from CattleService
+      // Check authentication before making API call
+      final token = await AuthService.getToken();
+      if (token == null) {
+        throw Exception('Not authenticated');
+      }
+
       return await CattleService.getCattleByTag(tag);
     } catch (e) {
       throw Exception('Failed to fetch cattle: $e');
+    }
+  }
+
+  void _handleAuthError(BuildContext context) async {
+    await AuthService.logout();
+    if (context.mounted) {
+      Navigator.of(context).pushAndRemoveUntil(
+        MaterialPageRoute(builder: (context) => const LoginScreen()),
+            (route) => false,
+      );
     }
   }
 }

@@ -14,7 +14,6 @@ import 'package:cattle_tracer_app/screens/nav/profile/widgets/personal_informati
 import 'package:cattle_tracer_app/screens/nav/profile/widgets/farm_details_widget.dart';
 import 'package:cattle_tracer_app/screens/nav/profile/widgets/educational_background_widget.dart';
 import 'package:cattle_tracer_app/screens/nav/profile/widgets/trainings_seminars_widget.dart';
-import 'package:cattle_tracer_app/screens/nav/profile/user_account_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
   final String userEmail;
@@ -581,208 +580,291 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
       backgroundImage = MemoryImage(base64Decode(profile['profile_picture']));
     }
 
-    return AnimatedBuilder(
-      animation: _headerAnimation,
-      builder: (context, child) {
-        // Clamp the opacity value to ensure it's between 0.0 and 1.0
-        final clampedOpacity = _headerAnimation.value.clamp(0.0, 1.0);
-
-        return Transform.translate(
-          offset: Offset(0, 50 * (1 - _headerAnimation.value)),
-          child: Opacity(
-            opacity: clampedOpacity,
-            child: Container(
-              margin: const EdgeInsets.all(20),
-              padding: const EdgeInsets.all(24),
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: [
-                    AppColors.primary,
-                    AppColors.primary.withOpacity(0.8),
-                  ],
-                ),
-                borderRadius: BorderRadius.circular(24),
-                boxShadow: [
-                  BoxShadow(
-                    color: AppColors.primary.withOpacity(0.3),
-                    blurRadius: 20,
-                    offset: const Offset(0, 8),
-                  ),
-                ],
-              ),
-              child: Column(
+    return Container(
+      margin: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.grey.withOpacity(0.1),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+        border: Border.all(
+          color: Colors.grey.withOpacity(0.1),
+          width: 1,
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Header Section with Edit Button
+          Stack(
+            children: [
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Row(
+                  // Profile Picture Section
+                  Column(
                     children: [
-                      // Enhanced Profile Picture
                       Stack(
                         children: [
-                          Hero(
-                            tag: 'profile_avatar',
-                            child: Container(
-                              decoration: BoxDecoration(
-                                shape: BoxShape.circle,
-                                border: Border.all(color: Colors.white, width: 4),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: Colors.black.withOpacity(0.2),
-                                    blurRadius: 15,
-                                    offset: const Offset(0, 8),
-                                  ),
-                                ],
+                          Container(
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              border: Border.all(
+                                color: AppColors.primary.withOpacity(0.2),
+                                width: 2,
                               ),
-                              child: CircleAvatar(
-                                radius: 42,
-                                backgroundColor: Colors.white.withOpacity(0.2),
-                                backgroundImage: backgroundImage,
-                                child: backgroundImage == null
-                                    ? const Icon(Icons.person_rounded, size: 42, color: Colors.white)
-                                    : null,
-                              ),
+                            ),
+                            child: CircleAvatar(
+                              radius: 40,
+                              backgroundColor: Colors.grey.shade100,
+                              backgroundImage: backgroundImage,
+                              child: backgroundImage == null
+                                  ? Icon(
+                                Icons.person_rounded,
+                                size: 40,
+                                color: Colors.grey.shade400,
+                              )
+                                  : null,
                             ),
                           ),
                           if (isEditingMode)
                             Positioned(
-                              bottom: 2,
-                              right: 2,
-                              child: AnimatedBuilder(
-                                animation: _editModeAnimation,
-                                builder: (context, child) {
-                                  // Clamp the scale value
-                                  final clampedScale = _editModeAnimation.value.clamp(0.0, 1.0);
-
-                                  return Transform.scale(
-                                    scale: clampedScale,
-                                    child: GestureDetector(
-                                      onTap: () => _showModernImagePicker(context, hasProfilePicture),
-                                      child: Container(
-                                        padding: const EdgeInsets.all(8),
-                                        decoration: BoxDecoration(
-                                          color: Colors.white,
-                                          shape: BoxShape.circle,
-                                          boxShadow: [
-                                            BoxShadow(
-                                              color: Colors.black.withOpacity(0.2),
-                                              blurRadius: 8,
-                                              offset: const Offset(0, 2),
-                                            ),
-                                          ],
-                                        ),
-                                        child: Icon(
-                                          Icons.camera_alt_rounded,
-                                          color: AppColors.primary,
-                                          size: 18,
-                                        ),
+                              bottom: 0,
+                              right: 0,
+                              child: GestureDetector(
+                                onTap: () => _showModernImagePicker(context, hasProfilePicture),
+                                child: Container(
+                                  padding: const EdgeInsets.all(6),
+                                  decoration: BoxDecoration(
+                                    color: AppColors.primary,
+                                    shape: BoxShape.circle,
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: Colors.black.withOpacity(0.1),
+                                        blurRadius: 4,
+                                        offset: const Offset(0, 2),
                                       ),
-                                    ),
-                                  );
-                                },
+                                    ],
+                                  ),
+                                  child: const Icon(
+                                    Icons.camera_alt_rounded,
+                                    color: Colors.white,
+                                    size: 16,
+                                  ),
+                                ),
                               ),
                             ),
                         ],
                       ),
-                      const SizedBox(width: 20),
-                      // Profile Info
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              '${profile?['first_name'] ?? 'Unknown'} ${profile?['last_name'] ?? 'User'}',
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontSize: 24,
-                                fontWeight: FontWeight.bold,
-                                letterSpacing: 0.5,
-                              ),
-                              maxLines: 2,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                            const SizedBox(height: 8),
-                            Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                              decoration: BoxDecoration(
-                                color: Colors.white.withOpacity(0.2),
-                                borderRadius: BorderRadius.circular(20),
-                              ),
-                              child: Text(
-                                farmDetails?['farm_name'] ?? 'No Farm Name',
-                                style: const TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.w500,
-                                ),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
                     ],
                   ),
-                  const SizedBox(height: 24),
-                  // Action Buttons
-                  Row(
-                    children: [
-                      Expanded(
-                        child: _buildModernActionButton(
-                          icon: Icons.settings_rounded,
-                          label: 'Settings',
-                          onTap: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) => const UserAccountScreen(),
-                              ),
-                            );
-                          },
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: _buildModernActionButton(
-                          icon: isEditingMode ? Icons.check_rounded : Icons.edit_rounded,
-                          label: isEditingMode ? 'Save' : 'Edit',
-                          isPrimary: true,
-                          onTap: _toggleEditMode,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 20),
-                  // Stats Cards
-                  IntrinsicHeight(
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                  const SizedBox(width: 20),
+
+                  // Profile Info Section
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Expanded(
-                          child: _buildModernStatsCard(
-                            icon: Icons.location_on_rounded,
-                            title: 'Address',
-                            value: '${profile?['barangay'] ?? 'N/A'}, ${profile?['municipality'] ?? 'N/A'}, ${profile?['province'] ?? 'N/A'}',
+                        // Name
+                        Text(
+                          '${profile?['first_name'] ?? 'Unknown'} ${profile?['last_name'] ?? 'User'}',
+                          style: TextStyle(
+                            color: Colors.grey.shade800,
+                            fontSize: 22,
+                            fontWeight: FontWeight.bold,
+                            height: 1.2,
                           ),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
                         ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: _buildModernStatsCard(
-                            icon: FontAwesomeIcons.expand,
-                            title: 'Farm Size',
-                            value: '${farmDetails?['farm_land_area'] ?? 'N/A'} hectares',
+                        const SizedBox(height: 8),
+
+                        // Farm Name Badge
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                          decoration: BoxDecoration(
+                            color: AppColors.primary.withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(
+                              color: AppColors.primary.withOpacity(0.2),
+                              width: 1,
+                            ),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
+                                Icons.agriculture_rounded,
+                                size: 14,
+                                color: AppColors.primary,
+                              ),
+                              const SizedBox(width: 6),
+                              Flexible(
+                                child: Text(
+                                  farmDetails?['farm_name'] ?? 'No Farm Name',
+                                  style: TextStyle(
+                                    color: AppColors.primary,
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                            ],
                           ),
                         ),
                       ],
                     ),
-                  )
+                  ),
                 ],
               ),
-            ),
+
+              // Edit Button in Top Right
+              Positioned(
+                top: 0,
+                right: 0,
+                child: GestureDetector(
+                  onTap: _toggleEditMode,
+                  child: Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: isEditingMode ? Colors.green : AppColors.primary,
+                      borderRadius: BorderRadius.circular(8),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.1),
+                          blurRadius: 4,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
+                    ),
+                    child: Icon(
+                      isEditingMode ? Icons.check_rounded : Icons.edit_rounded,
+                      color: Colors.white,
+                      size: 20,
+                    ),
+                  ),
+                ),
+              ),
+            ],
           ),
-        );
-      },
+
+          const SizedBox(height: 24),
+
+          // Information Cards Section
+          Row(
+            children: [
+              Expanded(
+                child: _buildInfoCard(
+                  icon: Icons.location_on_outlined,
+                  iconColor: Colors.green,
+                  title: 'Address',
+                  value: _formatAddress(profile),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: _buildInfoCard(
+                  icon: Icons.landscape_outlined,
+                  iconColor: Colors.green,
+                  title: 'Farm Size',
+                  value: _formatFarmSize(farmDetails),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
     );
+  }
+
+  Widget _buildInfoCard({
+    required IconData icon,
+    required Color iconColor,
+    required String title,
+    required String value,
+  }) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.grey.shade50,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: Colors.grey.withOpacity(0.1),
+          width: 1,
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: iconColor.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Icon(
+                  icon,
+                  size: 20,
+                  color: iconColor,
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  title,
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.grey.shade600,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Text(
+            value,
+            style: TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w500,
+              color: Colors.grey.shade800,
+            ),
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ],
+      ),
+    );
+  }
+
+  String _formatAddress(Map<String, dynamic>? profile) {
+    final barangay = profile?['barangay'] ?? '';
+    final municipality = profile?['municipality'] ?? '';
+    final province = profile?['province'] ?? '';
+
+    final parts = [barangay, municipality, province]
+        .where((part) => part.isNotEmpty)
+        .toList();
+
+    return parts.isEmpty ? 'No address provided' : parts.join(', ');
+  }
+
+  String _formatFarmSize(Map<String, dynamic>? farmDetails) {
+    final farmSize = farmDetails?['farm_land_area'];
+    if (farmSize == null || farmSize.toString().isEmpty) {
+      return 'Size not specified';
+    }
+    return '$farmSize hectares';
   }
 
   Widget _buildModernActionButton({
