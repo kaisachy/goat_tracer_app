@@ -155,6 +155,7 @@ class Cattle {
 
 class CattleEvent {
   final int id;
+  final int userId;
   final String cattleTag;
   final String? bullTag;
   final String? calfTag;
@@ -174,6 +175,7 @@ class CattleEvent {
 
   CattleEvent({
     required this.id,
+    required this.userId,
     required this.cattleTag,
     this.bullTag,
     this.calfTag,
@@ -195,6 +197,7 @@ class CattleEvent {
   factory CattleEvent.fromJson(Map<String, dynamic> json) {
     return CattleEvent(
       id: json['id'],
+      userId: json['user_id'],
       cattleTag: json['cattle_tag'],
       bullTag: json['bull_tag'],
       calfTag: json['calf_tag'],
@@ -219,6 +222,7 @@ class CattleEvent {
   Map<String, dynamic> toJson() {
     return {
       'id': id,
+      'user_id': userId,
       'cattle_tag': cattleTag,
       'bull_tag': bullTag,
       'calf_tag': calfTag,

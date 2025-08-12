@@ -541,60 +541,165 @@ class _CattleEventFormScreenState extends State<CattleEventFormScreen>
   }
 
   Future<void> _submitForm() async {
-    if (!_formKey.currentState!.validate()) return;
+    if (!_formKey.currentState!.validate()) {
+      _showErrorMessage('Please fix the form validation errors.');
+      return;
+    }
+
     if (selectedEventType == 'Select type of event') {
       _showErrorMessage('Please select an event type.');
       return;
     }
+
     if (_cattleDetails == null) {
       _showErrorMessage('Cattle information not loaded. Please try again.');
       return;
     }
+
     setState(() => _isLoading = true);
+
     try {
-      final data = {
-        'cattle_tag': widget.cattleTag,
-        'bull_tag': _controllers['bull_tag']!.text.isEmpty
-            ? null
-            : _controllers['bull_tag']!.text,
-        'calf_tag': _controllers['calf_tag']!.text.isEmpty
-            ? null
-            : _controllers['calf_tag']!.text,
+      // Prepare data with better validation
+      final data = <String, dynamic>{
+        'cattle_tag': widget.cattleTag?.trim(),
         'event_type': selectedEventType,
-        'event_date': _controllers['event_date']!.text,
-        'sickness_symptoms': _controllers['sickness_symptoms']!.text,
-        'diagnosis': _controllers['diagnosis']!.text,
-        'technician': _controllers['technician']!.text,
-        'medicine_given': _controllers['medicine_given']!.text,
-        'semen_used': _controllers['semen_used']!.text,
-        'estimated_return_date': _controllers['estimated_return_date']!.text,
-        'weighed_result': _controllers['weighed_result']!.text.isEmpty
-            ? null
-            : double.tryParse(_controllers['weighed_result']!.text),
-        'breeding_date': _controllers['breeding_date']!.text,
-        'expected_delivery_date':
-        _controllers['expected_delivery_date']!.text,
-        'notes': _controllers['notes']!.text,
+        'event_date': _controllers['event_date']!.text.trim(),
+        'notes': _controllers['notes']!.text.trim(),
       };
 
+      // Add optional fields only if they have values
+      final optionalFields = {
+        'bull_tag': _controllers['bull_tag']!.text.trim(),
+        'calf_tag': _controllers['calf_tag']!.text.trim(),
+        'sickness_symptoms': _controllers['sickness_symptoms']!.text.trim(),
+        'diagnosis': _controllers['diagnosis']!.text.trim(),
+        'technician': _controllers['technician']!.text.trim(),
+        'medicine_given': _controllers['medicine_given']!.text.trim(),
+        'semen_used': _controllers['semen_used']!.text.trim(),
+        'estimated_return_date': _controllers['estimated_return_date']!.text.trim(),
+        'breeding_date': _controllers['breeding_date']!.text.trim(),
+        'expected_delivery_date': _controllers['expected_delivery_date']!.text.trim(),
+      };
+
+      // Add non-empty optional fields
+      optionalFields.forEach((key, value) {
+        if (value.isNotEmpty) {
+          data[key] = value;
+        }
+      });
+
+      // Handle weight field specially
+      if (_controllers['weighed_result']!.text.trim().isNotEmpty) {
+        final weight = double.tryParse(_controllers['weighed_result']!.text.trim());
+        if (weight != null && weight > 0) {
+          data['weighed_result'] = weight;
+        } else {
+          _showErrorMessage('Please enter a valid weight value.');
+          setState(() => _isLoading = false);
+          return;
+        }
+      }
+
+      // Validate required fields
+      if (data['cattle_tag'] == null || data['cattle_tag'].toString().isEmpty) {
+        throw Exception('Cattle tag is required');
+      }
+
+      if (data['event_date'].toString().isEmpty) {
+        throw Exception('Event date is required');
+      }
+
+      // Additional validation for specific event types
+      if (selectedEventType.toLowerCase() == 'gives birth' &&
+          _controllers['calf_tag']!.text.trim().isEmpty &&
+          _temporaryCalfData == null) {
+        _showErrorMessage('Please register or specify a calf for birth events.');
+        setState(() => _isLoading = false);
+        return;
+      }
+
+      if (selectedEventType.toLowerCase() == 'breeding' &&
+          _controllers['bull_tag']!.text.trim().isEmpty) {
+        _showErrorMessage('Bull tag is required for breeding events.');
+        setState(() => _isLoading = false);
+        return;
+      }
+
+      // Log the data being sent (for debugging)
+      print('=== FORM SUBMISSION DEBUG ===');
+      print('Submitting event data: $data');
+      print('Is editing: $isEditing');
+      print('Selected event type: $selectedEventType');
+      print('Cattle details loaded: ${_cattleDetails != null}');
+      if (_temporaryCalfData != null) {
+        print('Temporary calf data: $_temporaryCalfData');
+      }
+
       bool eventSuccess;
-      if (isEditing) {
-        data['id'] = widget.event!.id;
-        eventSuccess = await CattleEventService.updateCattleEvent(data);
-      } else {
-        eventSuccess = await CattleEventService.storeCattleEvent(data);
+      String operation;
+
+      try {
+        if (isEditing) {
+          if (widget.event?.id == null) {
+            throw Exception('Event ID is required for editing');
+          }
+          data['id'] = widget.event!.id;
+          operation = 'update';
+          print('Updating event with ID: ${widget.event!.id}');
+          eventSuccess = await CattleEventService.updateCattleEvent(data);
+        } else {
+          operation = 'create';
+          print('Creating new event');
+          eventSuccess = await CattleEventService.storeCattleEvent(data);
+        }
+
+        print('Event service result: $eventSuccess');
+      } catch (serviceError) {
+        print('Service error details: $serviceError');
+        print('Service error type: ${serviceError.runtimeType}');
+
+        // More specific error handling
+        String errorMessage = 'Service error: $serviceError';
+        if (serviceError.toString().contains('SocketException')) {
+          errorMessage = 'Network error: Please check your internet connection.';
+        } else if (serviceError.toString().contains('TimeoutException')) {
+          errorMessage = 'Request timeout: Please try again.';
+        } else if (serviceError.toString().contains('FormatException')) {
+          errorMessage = 'Data format error: Please check your input.';
+        }
+
+        throw Exception(errorMessage);
       }
 
       if (eventSuccess) {
+        print('Event saved successfully, handling specific event types...');
+
         // Event saved successfully, now handle specific event types
-        if (selectedEventType.toLowerCase() == 'gives birth') {
-          await _handleGivesBirthEvent();
-        } else if (selectedEventType.toLowerCase() == 'breeding') {
-          await _handleBreedingEvent();
-        }else if (selectedEventType.toLowerCase() == 'pregnant') {
-          await _handlePregnantEvent();
-        }else if (selectedEventType.toLowerCase() == 'castrated') {
-          await _handleCastratedEvent();
+        try {
+          if (selectedEventType.toLowerCase() == 'gives birth') {
+            await _handleGivesBirthEvent();
+          } else if (selectedEventType.toLowerCase() == 'breeding') {
+            await _handleBreedingEvent();
+          } else if (selectedEventType.toLowerCase() == 'pregnant') {
+            await _handlePregnantEvent();
+          } else if (selectedEventType.toLowerCase() == 'castrated') {
+            await _handleCastratedEvent();
+          }
+        } catch (eventSpecificError) {
+          // Log but don't fail the entire operation for event-specific errors
+          print('Warning - Event-specific operation failed: $eventSpecificError');
+
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text('Event saved, but some related operations may have failed: ${eventSpecificError.toString()}'),
+                backgroundColor: Colors.orange[600],
+                behavior: SnackBarBehavior.floating,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+                duration: const Duration(seconds: 4),
+              ),
+            );
+          }
         }
 
         if (context.mounted) {
@@ -608,10 +713,36 @@ class _CattleEventFormScreenState extends State<CattleEventFormScreen>
           );
         }
       } else {
-        _showErrorMessage('Failed to save cattle event. Please try again.');
+        // More specific error message based on operation
+        String errorDetail = isEditing ?
+        'Failed to update the cattle event. Please verify your data and try again.' :
+        'Failed to create the cattle event. Please check your input data and network connection.';
+
+        throw Exception('$errorDetail The service returned false, which may indicate:\n'
+            '• Server validation errors\n'
+            '• Network connectivity issues\n'
+            '• Authentication problems\n'
+            '• Invalid data format\n\n'
+            'Check the console logs for more details.');
       }
     } catch (e) {
-      _showErrorMessage('Error saving event: ${e.toString()}');
+      print('=== ERROR IN _submitForm ===');
+      print('Error: $e');
+      print('Error type: ${e.runtimeType}');
+      print('Stack trace: ${StackTrace.current}');
+
+      String userFriendlyMessage;
+      if (e.toString().contains('Network error')) {
+        userFriendlyMessage = 'Network error: Please check your internet connection and try again.';
+      } else if (e.toString().contains('timeout')) {
+        userFriendlyMessage = 'Request timed out: Please try again.';
+      } else if (e.toString().contains('Service error')) {
+        userFriendlyMessage = e.toString();
+      } else {
+        userFriendlyMessage = 'Error saving event: ${e.toString()}';
+      }
+
+      _showErrorMessage(userFriendlyMessage);
     } finally {
       if (mounted) {
         setState(() => _isLoading = false);

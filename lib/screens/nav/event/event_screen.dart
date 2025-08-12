@@ -392,6 +392,7 @@ class _EventScreenState extends State<EventScreen> {
       // Create a CattleEvent object from the event data
       final cattleEvent = CattleEvent(
         id: event['id'] ?? 0,
+        userId: event['user_id'] ?? 0,
         cattleTag: event['cattle_tag']?.toString() ?? '',
         bullTag: event['bull_tag']?.toString(),
         calfTag: event['calf_tag']?.toString(),
