@@ -78,20 +78,66 @@ abstract class BaseEventFieldsState<T extends BaseEventFields> extends State<T> 
   }
 
   Future<void> fetchTechnicians() async {
+    print('🔍 DEBUG: Starting fetchTechnicians...');
     setState(() => loadingTechnicians = true);
+
     try {
-      final techniciansList = await UserService().getTechnicians();
+      print('🔍 DEBUG: About to call UserService().getUsersByRoles...');
+
+      // Try multiple approaches to debug the issue
+
+      // APPROACH 1: Try without any roles first to see if we get any users
+      print('🔍 DEBUG: Trying to fetch ALL users first...');
+      try {
+        final allUsers = await UserService().getUsersByRoles();
+        print('🔍 DEBUG: All users count: ${allUsers.length}');
+        for (var user in allUsers) {
+          print('🔍 DEBUG: User: ${user.firstName} ${user.lastName} - Role: "${user.role}"');
+        }
+      } catch (e) {
+        print('🔍 DEBUG: Error fetching all users: $e');
+      }
+
+      // APPROACH 2: Try the dedicated getTechnicians method
+      print('🔍 DEBUG: Trying getTechnicians method...');
+      try {
+        final directTechnicians = await UserService().getTechnicians();
+        print('🔍 DEBUG: Direct technicians count: ${directTechnicians.length}');
+        for (var tech in directTechnicians) {
+          print('🔍 DEBUG: Direct technician: ${tech.firstName} ${tech.lastName} - Role: "${tech.role}"');
+        }
+      } catch (e) {
+        print('🔍 DEBUG: Error with getTechnicians: $e');
+      }
+
+      // APPROACH 3: Try with the specific roles you want
+      print('🔍 DEBUG: Trying with roles [pvo, lgu]...');
+      final techniciansList = await UserService().getUsersByRoles(roles: ['pvo', 'lgu']);
+      print('🔍 DEBUG: PVO/LGU users count: ${techniciansList.length}');
+
+      // APPROACH 4: Try with uppercase roles
+      print('🔍 DEBUG: Trying with roles [PVO, LGU]...');
+      try {
+        final upperCaseTechs = await UserService().getUsersByRoles(roles: ['PVO', 'LGU']);
+        print('🔍 DEBUG: Uppercase PVO/LGU users count: ${upperCaseTechs.length}');
+      } catch (e) {
+        print('🔍 DEBUG: Error with uppercase roles: $e');
+      }
 
       if (mounted) {
         setState(() {
+          // For now, use whichever method returns results
           technicians = techniciansList;
           loadingTechnicians = false;
         });
 
-        // After loading technicians, check if we need to validate the current selection
+        print('🔍 DEBUG: Final technicians assigned: ${technicians.length}');
         _validateCurrentTechnicianSelection();
       }
-    } catch (e) {
+    } catch (e, stackTrace) {
+      print('🔍 DEBUG: Exception in fetchTechnicians: $e');
+      print('🔍 DEBUG: Stack trace: $stackTrace');
+
       if (mounted) {
         setState(() => loadingTechnicians = false);
         ScaffoldMessenger.of(context).showSnackBar(
@@ -102,6 +148,8 @@ abstract class BaseEventFieldsState<T extends BaseEventFields> extends State<T> 
         );
       }
     }
+
+    print('🔍 DEBUG: fetchTechnicians completed');
   }
 
   // Helper method to validate current technician selection after loading

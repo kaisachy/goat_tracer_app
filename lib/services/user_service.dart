@@ -38,10 +38,12 @@ class UserService {
     }
   }
 
-  /// Fetches users by specific roles using the new endpoint
   Future<List<User>> getUsersByRoles({List<String>? roles}) async {
+    print('🔍 UserService DEBUG: getUsersByRoles called with roles: $roles');
+
     final token = await _getToken();
     if (token == null) {
+      print('🔍 UserService DEBUG: No token found');
       throw Exception('Authentication required. Please login again.');
     }
 
@@ -51,38 +53,49 @@ class UserService {
       queryParams = '?roles=${roles.join(',')}';
     }
 
-    print('Fetching users by roles with URL: $_baseUrl/users/by-roles$queryParams');
+    final fullUrl = '$_baseUrl/users/by-roles$queryParams';
+    print('🔍 UserService DEBUG: Making request to: $fullUrl');
 
     try {
       final response = await http.get(
-        Uri.parse('$_baseUrl/users/by-roles$queryParams'),
+        Uri.parse(fullUrl),
         headers: {
           'Content-Type': 'application/json',
           'Authorization': 'Bearer $token',
         },
       );
 
-      print('Response status: ${response.statusCode}');
-      print('Response body: ${response.body}');
+      print('🔍 UserService DEBUG: Response status: ${response.statusCode}');
+      print('🔍 UserService DEBUG: Response body: ${response.body}');
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
 
         if (data['success'] == true && data['data'] != null) {
           final List<dynamic> usersData = data['data'];
-          return usersData.map((userData) => User.fromJson(userData)).toList();
+          print('🔍 UserService DEBUG: Found ${usersData.length} users in response');
+
+          final users = usersData.map((userData) => User.fromJson(userData)).toList();
+          print('🔍 UserService DEBUG: Successfully parsed ${users.length} User objects');
+
+          return users;
         } else {
+          print('🔍 UserService DEBUG: Response success=false or no data');
           return [];
         }
       } else if (response.statusCode == 401) {
+        print('🔍 UserService DEBUG: 401 Unauthorized');
         throw Exception('Session expired. Please login again.');
       } else if (response.statusCode == 404) {
+        print('🔍 UserService DEBUG: 404 Not Found');
         return [];
       } else {
+        print('🔍 UserService DEBUG: HTTP error ${response.statusCode}');
         final error = jsonDecode(response.body);
         throw Exception(error['message'] ?? 'Failed to load users. Status: ${response.statusCode}');
       }
     } catch (e) {
+      print('🔍 UserService DEBUG: Exception: $e');
       if (e is FormatException) {
         throw Exception('Invalid response format from server');
       }
