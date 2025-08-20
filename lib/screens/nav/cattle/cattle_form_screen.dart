@@ -3,6 +3,7 @@ import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
+import 'dart:math';
 import '../../../constants/app_colors.dart';
 import '../../../models/cattle.dart';
 import '../../../services/cattle/cattle_service.dart';
@@ -49,6 +50,10 @@ class _CattleFormScreenState extends State<CattleFormScreen> {
   List<Cattle> _maleCattle = [];
   bool _isLoadingParents = true;
 
+  // NEW: For tag generation
+  bool _isGeneratingTag = false;
+  List<String> _existingTags = [];
+
   // NEW: Dynamic options from user preferences
   List<String> _breedOptions = [];
   List<String> _groupNameOptions = [];
@@ -57,7 +62,7 @@ class _CattleFormScreenState extends State<CattleFormScreen> {
   final List<String> genderOptions = ['Male', 'Female'];
   final List<String> maleClassificationOptions = ['Calf', 'Steer', 'Growers', 'Bull'];
   final List<String> femaleClassificationOptions = ['Calf', 'Growers', 'Heifer', 'Cow'];
-  final List<String> sourceOptions = ['Born on farm', 'Purchased', 'Gift', 'Other'];
+  final List<String> sourceOptions = ['Born on farm', 'Purchased', 'Other'];
 
   // Helper to get correct classification options based on selected gender
   List<String> get classificationOptions {
@@ -72,6 +77,114 @@ class _CattleFormScreenState extends State<CattleFormScreen> {
     _loadUserPreferences();
     _populateFormFields();
     _fetchParentData();
+    _loadExistingTags();
+
+    // Auto-generate tag for new cattle
+    if (widget.cattle == null) {
+      _generateUniqueTag();
+    }
+  }
+
+  /// Load existing tags from all cattle
+  Future<void> _loadExistingTags() async {
+    try {
+      final allCattle = await CattleService.getAllCattle();
+      setState(() {
+        _existingTags = allCattle.map((cattle) => cattle.tagNo.toLowerCase()).toList();
+      });
+    } catch (e) {
+      print('Error loading existing tags: $e');
+    }
+  }
+
+  /// Generate a unique tag number
+  Future<void> _generateUniqueTag() async {
+    setState(() => _isGeneratingTag = true);
+
+    try {
+      // Reload existing tags to ensure we have the latest data
+      await _loadExistingTags();
+
+      String newTag = _generateRandomTag();
+
+      setState(() {
+        _tagNoController.text = newTag;
+        _isGeneratingTag = false;
+      });
+
+    } catch (e) {
+      print('Error generating tag: $e');
+      setState(() => _isGeneratingTag = false);
+      _showErrorSnackBar('Failed to generate tag number');
+    }
+  }
+
+  /// Generate different tag number options
+  String _generateRandomTag() {
+    // Find the highest existing CT- tag number
+    int highestNumber = 0;
+
+    for (String existingTag in _existingTags) {
+      final upperTag = existingTag.toUpperCase();
+      if (upperTag.startsWith('CT-')) {
+        final numberPart = upperTag.substring(3); // Remove 'CT-' prefix
+        final number = int.tryParse(numberPart);
+        if (number != null && number > highestNumber) {
+          highestNumber = number;
+        }
+      }
+    }
+
+    // Generate different options each time refresh is clicked
+    final random = Random();
+    final currentTag = _tagNoController.text.toUpperCase();
+
+    List<String> possibleTags = [];
+
+    // Option 1: Next sequential number
+    final nextSequential = highestNumber + 1;
+    possibleTags.add('CT-${nextSequential.toString().padLeft(4, '0')}');
+
+    // Option 2: Skip a few numbers ahead (random jump)
+    final jumpAhead = highestNumber + random.nextInt(10) + 2; // Jump 2-11 numbers ahead
+    possibleTags.add('CT-${jumpAhead.toString().padLeft(4, '0')}');
+
+    // Option 3: Random number in a higher range
+    final randomHigh = highestNumber + random.nextInt(50) + 20; // 20-70 numbers ahead
+    possibleTags.add('CT-${randomHigh.toString().padLeft(4, '0')}');
+
+    // Option 4: Round number (next hundred, fifty, etc.)
+    int roundNumber;
+    if (highestNumber < 50) {
+      roundNumber = 50;
+    } else if (highestNumber < 100) {
+      roundNumber = 100;
+    } else {
+      roundNumber = ((highestNumber / 100).ceil() + 1) * 100;
+    }
+    possibleTags.add('CT-${roundNumber.toString().padLeft(4, '0')}');
+
+    // Remove any that might already exist
+    possibleTags.removeWhere((tag) => _existingTags.contains(tag.toLowerCase()));
+
+    // Remove the current tag if it's in the list
+    possibleTags.removeWhere((tag) => tag == currentTag);
+
+    // If we have options, pick one randomly
+    if (possibleTags.isNotEmpty) {
+      return possibleTags[random.nextInt(possibleTags.length)];
+    }
+
+    // Fallback: just increment from current or highest
+    String fallbackTag;
+    if (currentTag.startsWith('CT-')) {
+      final currentNumber = int.tryParse(currentTag.substring(3)) ?? 0;
+      fallbackTag = 'CT-${(currentNumber + 1).toString().padLeft(4, '0')}';
+    } else {
+      fallbackTag = 'CT-${(highestNumber + 1).toString().padLeft(4, '0')}';
+    }
+
+    return fallbackTag;
   }
 
   /// Get the current logged-in user ID from AuthService
@@ -1005,6 +1118,45 @@ class _CattleFormScreenState extends State<CattleFormScreen> {
     );
   }
 
+  /// NEW: Build auto-generated tag field with refresh button
+  Widget _buildAutoTagField() {
+    return TextFormField(
+      controller: _tagNoController,
+      validator: (value) => value?.isEmpty == true ? 'Tag number is required' : null,
+      readOnly: widget.cattle == null, // Only read-only for new cattle
+      decoration: InputDecoration(
+        labelText: widget.cattle == null ? 'Tag Number (Auto-generated) *' : 'Tag Number *',
+        prefixIcon: Icon(Icons.label, color: AppColors.primary),
+        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(color: AppColors.primary, width: 2),
+        ),
+        fillColor: AppColors.cardBackground,
+        filled: true,
+        suffixIcon: widget.cattle == null
+            ? _isGeneratingTag
+            ? const Padding(
+          padding: EdgeInsets.all(12.0),
+          child: SizedBox(
+            width: 20,
+            height: 20,
+            child: CircularProgressIndicator(strokeWidth: 2),
+          ),
+        )
+            : IconButton(
+          onPressed: _generateUniqueTag,
+          icon: Icon(
+            Icons.refresh,
+            color: AppColors.primary,
+          ),
+          tooltip: 'Generate new tag number',
+        )
+            : null,
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -1040,12 +1192,7 @@ class _CattleFormScreenState extends State<CattleFormScreen> {
               _buildCard(
                 child: Column(
                   children: [
-                    _buildTextField(
-                      controller: _tagNoController,
-                      label: 'Tag Number *',
-                      icon: Icons.label,
-                      validator: (value) => value?.isEmpty == true ? 'Tag number is required' : null,
-                    ),
+                    _buildAutoTagField(), // NEW: Use the auto-generated tag field
                     const SizedBox(height: 16),
                     _buildTextField(
                       controller: _nameController,

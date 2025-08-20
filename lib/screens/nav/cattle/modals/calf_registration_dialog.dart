@@ -30,6 +30,7 @@ class _CalfRegistrationDialogState extends State<CalfRegistrationDialog> {
 
   String _selectedGender = 'Female';
   bool _isLoading = false;
+  bool _isGeneratingTag = false;
   List<String> _existingTags = [];
   int? _existingCalfId; // Store the calf ID for updates
 
@@ -71,6 +72,11 @@ class _CalfRegistrationDialogState extends State<CalfRegistrationDialog> {
         _selectedGender = 'Female';
         _existingCalfId = null;
       }
+    } else {
+      // For new calf registration, generate a tag after loading existing tags
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _generateNewTag();
+      });
     }
   }
 
@@ -105,6 +111,54 @@ class _CalfRegistrationDialogState extends State<CalfRegistrationDialog> {
       });
     } catch (e) {
       print('Error loading existing tags: $e');
+    }
+  }
+
+  String _generateNextCalfTag() {
+    // Find all existing calf tags that match the pattern CT-XXXX
+    final calfTags = _existingTags
+        .where((tag) => tag.startsWith('CT-') && tag.length == 7)
+        .toList();
+
+    // Also include the current tag in the controller to avoid duplicates
+    final currentTag = _tagController.text.trim();
+    if (currentTag.isNotEmpty && !calfTags.contains(currentTag)) {
+      calfTags.add(currentTag);
+    }
+
+    int maxNumber = 0;
+    for (String tag in calfTags) {
+      final numberPart = tag.substring(3); // Remove "CT-" prefix
+      final number = int.tryParse(numberPart);
+      if (number != null && number > maxNumber) {
+        maxNumber = number;
+      }
+    }
+
+    // Generate next number
+    final nextNumber = maxNumber + 1;
+    return 'CT-${nextNumber.toString().padLeft(4, '0')}';
+  }
+
+  Future<void> _generateNewTag() async {
+    setState(() => _isGeneratingTag = true);
+
+    try {
+      // Reload existing tags to get the most current data
+      await _loadExistingTags();
+
+      // Generate new tag
+      final newTag = _generateNextCalfTag();
+      setState(() {
+        _tagController.text = newTag;
+      });
+
+      print('Generated new calf tag: $newTag');
+    } catch (e) {
+      print('Error generating new tag: $e');
+      _showError('Error generating tag number');
+    } finally {
+      setState(() => _isGeneratingTag = false);
     }
   }
 
@@ -415,13 +469,36 @@ class _CalfRegistrationDialogState extends State<CalfRegistrationDialog> {
 
                       const SizedBox(height: 20),
 
-                      // Calf Tag Number
+                      // Calf Tag Number with Refresh Button
                       TextFormField(
                         controller: _tagController,
                         validator: _validateTagNumber,
+                        readOnly: !widget.isEditMode, // Make read-only for new calves, editable for existing
                         decoration: InputDecoration(
                           labelText: 'Calf Tag Number *',
                           prefixIcon: const Icon(Icons.label, color: AppColors.primary),
+                          suffixIcon: !widget.isEditMode ? Container(
+                            margin: const EdgeInsets.all(4),
+                            decoration: BoxDecoration(
+                              color: AppColors.primary,
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: IconButton(
+                              onPressed: _isGeneratingTag ? null : _generateNewTag,
+                              icon: _isGeneratingTag
+                                  ? const SizedBox(
+                                width: 16,
+                                height: 16,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                ),
+                              )
+                                  : const Icon(Icons.refresh, color: Colors.white, size: 20),
+                              tooltip: 'Generate new tag number',
+                              splashRadius: 20,
+                            ),
+                          ) : null,
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(12),
                             borderSide: const BorderSide(color: AppColors.lightGreen),
@@ -431,7 +508,12 @@ class _CalfRegistrationDialogState extends State<CalfRegistrationDialog> {
                             borderSide: const BorderSide(color: AppColors.primary, width: 2),
                           ),
                           filled: true,
-                          fillColor: AppColors.cardBackground,
+                          fillColor: widget.isEditMode ? AppColors.cardBackground : Colors.grey.shade50,
+                          helperText: widget.isEditMode ? null : 'Auto-generated tag number',
+                          helperStyle: TextStyle(
+                            color: Colors.grey.shade600,
+                            fontSize: 12,
+                          ),
                         ),
                       ),
 

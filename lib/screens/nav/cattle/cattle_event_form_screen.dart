@@ -755,10 +755,8 @@ class _CattleEventFormScreenState extends State<CattleEventFormScreen>
   Future<void> _handleBreedingEvent() async {
     try {
       bool cowStatusUpdated = false;
-      bool bullStatusUpdated = false;
       bool bullEventCreated = false;
       String cowStatus = '';
-      String bullStatus = '';
       String bullEventStatus = '';
 
       // Update cow (mother) status to Breeding
@@ -771,21 +769,13 @@ class _CattleEventFormScreenState extends State<CattleEventFormScreen>
             : 'Failed to update cow ${_cattleDetails!.tagNo} status';
       }
 
-      // Get bull information and create corresponding event
+      // Get bull information and create corresponding event (WITHOUT updating bull status)
       final bullTag = _controllers['bull_tag']?.text ?? '';
       if (bullTag.isNotEmpty) {
         try {
           final bull = await CattleService.getCattleByTag(bullTag);
           if (bull != null) {
-            // Update bull status to Breeding
-            final bullUpdateData = Map<String, dynamic>.from(bull.toJson());
-            bullUpdateData['status'] = 'Breeding';
-            bullStatusUpdated = await CattleService.updateCattleInformation(bullUpdateData);
-            bullStatus = bullStatusUpdated
-                ? 'Bull $bullTag status updated to Breeding'
-                : 'Failed to update bull $bullTag status';
-
-            // Create breeding event for the bull
+            // Create breeding event for the bull (but don't update bull status)
             final bullEventData = {
               'cattle_tag': bullTag,
               'bull_tag': null, // Bull doesn't need its own bull_tag
@@ -803,29 +793,25 @@ class _CattleEventFormScreenState extends State<CattleEventFormScreen>
 
             bullEventCreated = await CattleEventService.storeCattleEvent(bullEventData);
             bullEventStatus = bullEventCreated
-                ? 'Breeding event created for bull $bullTag'
+                ? 'Breeding event created for bull $bullTag (status unchanged)'
                 : 'Failed to create breeding event for bull $bullTag';
           } else {
-            bullStatus = 'Bull $bullTag not found in database';
-            bullEventStatus = 'Cannot create event for non-existent bull';
+            bullEventStatus = 'Bull $bullTag not found in database - cannot create event';
           }
         } catch (e) {
-          bullStatus = 'Error updating bull $bullTag status: $e';
           bullEventStatus = 'Error creating bull breeding event: $e';
         }
       } else {
-        bullStatus = 'No bull tag found for breeding event';
         bullEventStatus = 'No bull tag available for event creation';
       }
 
       // Log the results for debugging
       print('Breeding event results:');
       print('- Cow: $cowStatus');
-      print('- Bull Status: $bullStatus');
       print('- Bull Event: $bullEventStatus');
 
       // Optional: Show a snackbar with summary if needed
-      if (mounted && (cowStatusUpdated || bullStatusUpdated || bullEventCreated)) {
+      if (mounted && (cowStatusUpdated || bullEventCreated)) {
         if (bullEventCreated) {
         }
 
