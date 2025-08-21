@@ -30,6 +30,8 @@ class _CattleFormScreenState extends State<CattleFormScreen> {
   final _weightController = TextEditingController();
   final _notesController = TextEditingController();
 
+  bool get _isEditing => widget.cattle != null;
+
   // State variables for dates and dropdowns
   String? _dateOfBirth;
   String? _joinedDate;
@@ -81,6 +83,10 @@ class _CattleFormScreenState extends State<CattleFormScreen> {
 
     // Auto-generate tag for new cattle
     if (widget.cattle == null) {
+      _generateUniqueTag();
+    }
+
+    if (!_isEditing) {
       _generateUniqueTag();
     }
   }
@@ -657,8 +663,7 @@ class _CattleFormScreenState extends State<CattleFormScreen> {
     print('Checking tag: $tagToCheck');
 
     // Check if tag already exists (only for new cattle or when tag is changed)
-    bool shouldCheckTag = widget.cattle == null ||
-        widget.cattle!.tagNo != tagToCheck;
+    bool shouldCheckTag = !_isEditing || widget.cattle!.tagNo != tagToCheck;
 
     print('Should check tag: $shouldCheckTag');
 
@@ -673,35 +678,18 @@ class _CattleFormScreenState extends State<CattleFormScreen> {
       );
 
       try {
-        // Get all cattle and check for duplicate tags
-        print('Fetching all cattle...');
         final allCattle = await CattleService.getAllCattle();
-        print('Found ${allCattle.length} cattle records');
+        final duplicateExists = allCattle.any((cattle) =>
+        cattle.tagNo.toLowerCase() == tagToCheck.toLowerCase() &&
+            (!_isEditing || cattle.id != widget.cattle!.id));
 
-        // Check if any existing cattle has the same tag
-        final duplicateExists = allCattle.any((cattle) {
-          final exists = cattle.tagNo.toLowerCase() == tagToCheck.toLowerCase();
-          if (exists) {
-            print('Duplicate found: ${cattle.tagNo}');
-          }
-          print('Comparing: "${cattle.tagNo}" with "$tagToCheck"');
-          return exists;
-        });
-
-        // Close loading dialog
         if (mounted) Navigator.pop(context);
 
         if (duplicateExists) {
-          print('Duplicate tag detected, showing error');
           _showErrorSnackBar('Cattle tag already exists. Please use a different unique tag.');
           return;
         }
-
-        print('No duplicate found, proceeding with submission');
-
       } catch (e) {
-        print('Error checking for duplicate tags: $e');
-        // Close loading dialog
         if (mounted) Navigator.pop(context);
         _showErrorSnackBar('Error validating tag. Please try again.');
         return;
@@ -747,9 +735,12 @@ class _CattleFormScreenState extends State<CattleFormScreen> {
         // This is an UPDATE
         data['id'] = widget.cattle!.id;
 
-        // NEW: Add the original parent tags to the data map for the backend
+        // Add the original parent tags to the data map for the backend
         data['original_mother_tag'] = _originalMotherTag;
         data['original_father_tag'] = _originalFatherTag;
+
+        // IMPORTANT: Also add the original tag number for backend reference updates
+        data['original_tag_no'] = widget.cattle!.tagNo;
 
         success = await CattleService.updateCattleInformation(data);
       } else {
@@ -760,14 +751,26 @@ class _CattleFormScreenState extends State<CattleFormScreen> {
       if (mounted) {
         Navigator.pop(context); // Close loading dialog
 
-        // Check if it's a duplicate entry error
+        print('Error submitting form: $e');
+
+        // Parse different types of errors
+        String errorMessage = 'Failed to save cattle information';
+
         if (e.toString().contains('Duplicate entry') ||
             e.toString().contains('tag_no') ||
+            e.toString().contains('already exists') ||
             e.toString().contains('1062')) {
-          _showErrorSnackBar('Cattle tag already exists. Please use a different unique tag.');
-        } else {
-          _showErrorSnackBar('Failed to save cattle information');
+          errorMessage = 'Cattle tag already exists. Please use a different unique tag.';
+        } else if (e.toString().contains('foreign key constraint') ||
+            e.toString().contains('Cannot delete or update a parent row')) {
+          errorMessage = 'Unable to update. This cattle has offspring that reference it.';
+        } else if (e.toString().contains('connection') ||
+            e.toString().contains('network') ||
+            e.toString().contains('timeout')) {
+          errorMessage = 'Network error. Please check your connection and try again.';
         }
+
+        _showErrorSnackBar(errorMessage);
       }
       return;
     }
@@ -788,9 +791,8 @@ class _CattleFormScreenState extends State<CattleFormScreen> {
         );
         Navigator.pop(context, true);
       } else {
-        // Check if the failure is due to duplicate tag by examining the last response
-        // This is a fallback check in case the success is false but no exception was thrown
-        _showErrorSnackBar('Cattle tag already exists. Please use a different unique tag.');
+        // If success is false but no exception was thrown, show generic error
+        _showErrorSnackBar('Failed to save cattle information. Please try again.');
       }
     }
   }
@@ -1123,9 +1125,8 @@ class _CattleFormScreenState extends State<CattleFormScreen> {
     return TextFormField(
       controller: _tagNoController,
       validator: (value) => value?.isEmpty == true ? 'Tag number is required' : null,
-      readOnly: widget.cattle == null, // Only read-only for new cattle
       decoration: InputDecoration(
-        labelText: widget.cattle == null ? 'Tag Number (Auto-generated) *' : 'Tag Number *',
+        labelText: 'Tag Number *',
         prefixIcon: Icon(Icons.label, color: AppColors.primary),
         border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
         focusedBorder: OutlineInputBorder(
@@ -1134,8 +1135,7 @@ class _CattleFormScreenState extends State<CattleFormScreen> {
         ),
         fillColor: AppColors.cardBackground,
         filled: true,
-        suffixIcon: widget.cattle == null
-            ? _isGeneratingTag
+        suffixIcon: _isGeneratingTag
             ? const Padding(
           padding: EdgeInsets.all(12.0),
           child: SizedBox(
@@ -1151,8 +1151,7 @@ class _CattleFormScreenState extends State<CattleFormScreen> {
             color: AppColors.primary,
           ),
           tooltip: 'Generate new tag number',
-        )
-            : null,
+        ),
       ),
     );
   }
