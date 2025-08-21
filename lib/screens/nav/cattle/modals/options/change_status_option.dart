@@ -10,7 +10,8 @@ import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 class ChangeStatusOption {
   // 🔧 MODIFIED: Defined separate status lists
   static final List<String> _allStatuses = [
-    'Active',
+    'Healthy',
+    'Sick',
     'Breeding',
     'Lactating',
     'Pregnant',
@@ -20,7 +21,8 @@ class ChangeStatusOption {
   ];
 
   static final List<String> _maleStatuses = [
-    'Active',
+    'Healthy',
+    'Sick',
     'Breeding',
     'Sold',
     'Deceased',
@@ -36,7 +38,7 @@ class ChangeStatusOption {
     if (cattle.status.isNotEmpty && statusesForGender.contains(cattle.status)) {
       selectedStatus = cattle.status;
     } else {
-      selectedStatus = statusesForGender.first; // Default to 'Active'
+      selectedStatus = statusesForGender.first; // Default to 'Healthy'
     }
 
     showDialog(
@@ -312,9 +314,13 @@ class ChangeStatusOption {
     Color iconColor;
 
     switch (status.toLowerCase()) {
-      case 'active':
+      case 'healthy':
         iconData = Icons.check_circle;
         iconColor = Colors.green;
+        break;
+      case 'sick':
+        iconData = FontAwesomeIcons.virus;
+        iconColor = Colors.red;
         break;
       case 'pregnant':
         iconData = Icons.pregnant_woman_rounded;
@@ -329,7 +335,7 @@ class ChangeStatusOption {
         iconColor = Colors.cyan;
         break;
       case 'lactating & pregnant':
-        iconData = Icons.double_arrow_rounded; // A more distinct icon
+        iconData = Icons.double_arrow_rounded;
         iconColor = Colors.deepPurple;
         break;
       case 'sold':
@@ -338,7 +344,7 @@ class ChangeStatusOption {
         break;
       case 'deceased':
         iconData = FontAwesomeIcons.bookDead;
-        iconColor = Colors.red[600]!;
+        iconColor = Colors.black;
         break;
       default:
         iconData = Icons.circle_outlined;

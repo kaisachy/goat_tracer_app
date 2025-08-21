@@ -15,8 +15,10 @@ class EventCattleInfoEventCard extends StatelessWidget {
 
   Color _getStatusColor(String status) {
     switch (status.toLowerCase()) {
-      case 'active':
-        return const Color(0xFF22C55E); // Modern green
+      case 'healthy':
+        return const Color(0xFF22C55E);// Modern green
+      case 'sick':
+        return const Color(0xFFFFA500); // Modern orange
       case 'lactating':
         return const Color(0xFF3B82F6); // Modern blue
       case 'pregnant':
@@ -24,7 +26,7 @@ class EventCattleInfoEventCard extends StatelessWidget {
       case 'lactating & pregnant':
         return const Color(0xFFEC4899); // Pink (combination status)
       case 'sold':
-        return const Color(0xFFF59E0B); // Amber/orange
+        return const Color(0xFF7F7F7F); //Gray
       case 'deceased':
         return const Color(0xFFEF4444); // Modern red
       default:

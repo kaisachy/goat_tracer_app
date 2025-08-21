@@ -203,7 +203,7 @@ class _CalfRegistrationDialogState extends State<CalfRegistrationDialog> {
       'name': _nameController.text.trim().isEmpty ? null : _nameController.text.trim(),
       'gender': _selectedGender,
       'classification': _getClassification(),
-      'status': 'Active',
+      'status': 'Healthy',
       'source': 'Born on farm',
       'mother_tag': widget.motherTag,
       'father_tag': widget.fatherTag.isEmpty ? null : widget.fatherTag,

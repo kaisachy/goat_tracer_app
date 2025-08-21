@@ -805,6 +805,34 @@ class _CattleEventFormScreenState extends State<CattleEventFormScreen>
         bullEventStatus = 'No bull tag available for event creation';
       }
 
+      final returnToHeatText = _controllers['return_to_heat']?.text ?? '';
+      if (returnToHeatText.isNotEmpty) {
+        final returnToHeatDate = DateTime.tryParse(returnToHeatText);
+        final today = DateTime.now();
+        if (returnToHeatDate != null &&
+            returnToHeatDate.year == today.year &&
+            returnToHeatDate.month == today.month &&
+            returnToHeatDate.day == today.day) {
+          final cowUpdateData = Map<String, dynamic>.from(_cattleDetails!.toJson());
+          cowUpdateData['status'] = 'Healthy';
+          final updated = await CattleService.updateCattleInformation(cowUpdateData);
+          if (updated) {
+            print('Cow ${_cattleDetails!.tagNo} status auto-updated to Healthy');
+            if (mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text('Cow ${_cattleDetails!.tagNo} status changed to Healthy (Return to Heat)'),
+                  backgroundColor: Colors.green[600],
+                  behavior: SnackBarBehavior.floating,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+                  duration: const Duration(seconds: 3),
+                ),
+              );
+            }
+          }
+        }
+      }
+
       // Log the results for debugging
       print('Breeding event results:');
       print('- Cow: $cowStatus');

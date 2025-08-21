@@ -51,7 +51,7 @@ class Cattle {
       gender: json['gender'] ?? '',
       weight: json['weight'] != null ? double.tryParse(json['weight'].toString()) : null,
       classification: json['classification'] ?? '',
-      status: json['status'] ?? 'Active',
+      status: json['status'] ?? 'Healthy',
       breed: json['breed'],
       groupName: json['group_name'],
       joinedDate: json['joined_date'],

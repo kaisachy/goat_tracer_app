@@ -737,7 +737,7 @@ class _CattleFormScreenState extends State<CattleFormScreen> {
       'mother_tag': _motherTag,
       'father_tag': _fatherTag,
       'notes': textOrNull(_notesController.text),
-      'status': widget.cattle?.status ?? 'Active',
+      'status': widget.cattle?.status ?? 'Healthy',
     };
 
     final bool success;

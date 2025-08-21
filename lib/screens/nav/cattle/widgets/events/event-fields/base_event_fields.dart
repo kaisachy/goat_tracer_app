@@ -57,7 +57,7 @@ abstract class BaseEventFieldsState<T extends BaseEventFields> extends State<T> 
       final allCattle = await CattleService.getAllCattle();
       final bullsList = allCattle.where((cattle) =>
       cattle.classification.toLowerCase() == 'bull' &&
-          cattle.status.toLowerCase() == 'active'
+          cattle.status.toLowerCase() == 'healthy'
       ).toList();
 
       setState(() {

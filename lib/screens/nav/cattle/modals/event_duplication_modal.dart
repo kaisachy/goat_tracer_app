@@ -65,8 +65,8 @@ class _EventDuplicationModalState extends State<EventDuplicationModal> {
 
       // Filter cattle based on event type, gender, classification, and status
       final availableCattle = allCattle.where((cattle) {
-        // Check if cattle is active
-        if (cattle.status.toLowerCase() != 'active') {
+        // Check if cattle is healthy
+        if (cattle.status.toLowerCase() != 'healthy') {
           print('Debug: Skipping ${cattle.tagNo} - status: ${cattle.status}');
           return false;
         }
