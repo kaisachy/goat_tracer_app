@@ -2,9 +2,10 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 
-// Import your app colors
+// Import your app colors and services
 import '../constants/app_colors.dart';
 import '../config.dart';
+import '../services/address_service.dart';
 
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
@@ -25,28 +26,27 @@ class _RegisterScreenState extends State<RegisterScreen> {
   bool _isLoading = false;
   bool _isPasswordVisible = false;
   bool _isConfirmPasswordVisible = false;
+  bool _isLoadingMunicipalities = false;
+  bool _isLoadingBarangays = false;
 
-  // State variables for address fields
-  String? _selectedProvince;
-  String? _selectedMunicipality;
-  String? _selectedBarangay;
+  // Address data and selections
+  List<dynamic> _municipalities = [];
+  List<dynamic> _barangays = [];
 
-  // Placeholder data for demonstration.
-  // You should replace this with a real API call to fetch your data.
-  final List<String> _provinces = ['Province A', 'Province B', 'Province C'];
-  final Map<String, List<String>> _municipalities = {
-    'Province A': ['Municipality A1', 'Municipality A2'],
-    'Province B': ['Municipality B1', 'Municipality B2'],
-    'Province C': ['Municipality C1', 'Municipality C2'],
+  Map<String, dynamic>? _selectedMunicipality;
+  Map<String, dynamic>? _selectedBarangay;
+
+  // Fixed province data for Isabela
+  final Map<String, dynamic> _isabelaProvince = {
+    'name': 'Isabela',
+    'code': 'ISABELA'
   };
-  final Map<String, List<String>> _barangays = {
-    'Municipality A1': ['Brgy A1-1', 'Brgy A1-2'],
-    'Municipality A2': ['Brgy A2-1', 'Brgy A2-2'],
-    'Municipality B1': ['Brgy B1-1', 'Brgy B1-2'],
-    'Municipality B2': ['Brgy B2-1', 'Brgy B2-2'],
-    'Municipality C1': ['Brgy C1-1', 'Brgy C1-2'],
-    'Municipality C2': ['Brgy C2-1', 'Brgy C2-2'],
-  };
+
+  @override
+  void initState() {
+    super.initState();
+    _loadIsabelaMunicipalities();
+  }
 
   @override
   void dispose() {
@@ -58,14 +58,49 @@ class _RegisterScreenState extends State<RegisterScreen> {
     super.dispose();
   }
 
+  Future<void> _loadIsabelaMunicipalities() async {
+    setState(() => _isLoadingMunicipalities = true);
+    try {
+      print('Loading Isabela municipalities...');
+      final municipalities = await AddressService.getIsabelaMunicipalities();
+
+      setState(() {
+        _municipalities = municipalities;
+        _isLoadingMunicipalities = false;
+      });
+      print('Successfully loaded ${municipalities.length} municipalities');
+    } catch (e) {
+      print('Error loading municipalities: $e');
+      setState(() => _isLoadingMunicipalities = false);
+      _showMessage(
+          'Failed to load municipalities. Please check your internet connection.',
+          Colors.red);
+    }
+  }
+
+  Future<void> _loadBarangays(String municipalityCode) async {
+    setState(() => _isLoadingBarangays = true);
+    try {
+      final barangays = await AddressService.getBarangays(municipalityCode);
+      setState(() {
+        _barangays = barangays;
+        _selectedBarangay = null;
+        _isLoadingBarangays = false;
+      });
+    } catch (e) {
+      setState(() => _isLoadingBarangays = false);
+      _showMessage('Failed to load barangays: $e', Colors.red);
+    }
+  }
+
   Future<void> _registerUser() async {
     // Hide keyboard
     FocusScope.of(context).unfocus();
 
     if (_formKey.currentState!.validate()) {
-      // Additional validation for the required province field
-      if (_selectedProvince == null) {
-        _showMessage('Please select a province.', Colors.red);
+      // Additional validation for required address fields
+      if (_selectedMunicipality == null) {
+        _showMessage('Please select a municipality.', Colors.red);
         return;
       }
 
@@ -82,31 +117,26 @@ class _RegisterScreenState extends State<RegisterScreen> {
             'email': _emailController.text.trim(),
             'password': _passwordController.text,
             'role': 'farmer', // Default role
-            'province': _selectedProvince,
-            'municipality': _selectedMunicipality,
-            'barangay': _selectedBarangay,
+            'province': _isabelaProvince['name'], // Fixed to Isabela
+            'municipality': _selectedMunicipality?['name'],
+            'barangay': _selectedBarangay?['name'],
           }),
         );
 
         if (!mounted) return;
 
-        // Check if the response body is a valid JSON before decoding
         final data = jsonDecode(response.body);
 
         if (response.statusCode == 201) {
-          _showMessage(
-              'Registration Successful! Please login.', AppColors.vibrantGreen);
+          _showMessage('Registration Successful! Please login.', AppColors.vibrantGreen);
           // Navigate back to the login screen
           if (Navigator.canPop(context)) {
             Navigator.pop(context);
           }
         } else {
-          // Use the error message from the server if available
           final errorMessage = data['message'] ?? 'Registration failed. Status: ${response.statusCode}';
           print('Server Error: $errorMessage');
-          _showMessage(
-              errorMessage,
-              Colors.red);
+          _showMessage(errorMessage, Colors.red);
         }
       } on http.ClientException catch (e) {
         if (mounted) {
@@ -118,7 +148,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
           print('JSON Parsing Error: $e');
           _showMessage('Invalid response format from server. Please try again.', Colors.red);
         }
-        print('Error parsing JSON response: $e');
       } catch (e) {
         if (mounted) {
           print('Unexpected Error: $e');
@@ -151,7 +180,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
-        // Add a back button with a consistent color
         leading: IconButton(
           icon: Icon(Icons.arrow_back_ios, color: AppColors.textPrimary),
           onPressed: () => Navigator.of(context).pop(),
@@ -183,7 +211,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    'Join the Cattle Connect community',
+                    'Join the Cattle Connect community in Isabela',
                     textAlign: TextAlign.center,
                     style: Theme.of(context).textTheme.titleMedium?.copyWith(
                       color: AppColors.textSecondary,
@@ -197,12 +225,12 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   TextFormField(
                     controller: _emailController,
                     keyboardType: TextInputType.emailAddress,
-                    decoration:
-                    _inputDecoration('Email', Icons.email_outlined),
+                    decoration: _inputDecoration('Email', Icons.email_outlined),
                     validator: _validateEmail,
                     textInputAction: TextInputAction.next,
                   ),
                   const SizedBox(height: 20),
+
                   _buildAddressFields(),
                   const SizedBox(height: 20),
                   _buildPasswordField(),
@@ -262,70 +290,110 @@ class _RegisterScreenState extends State<RegisterScreen> {
   Widget _buildAddressFields() {
     return Column(
       children: [
-        DropdownButtonFormField<String>(
-          value: _selectedProvince,
-          decoration: _inputDecoration('Province', Icons.location_city),
-          items: _provinces
-              .map((String value) => DropdownMenuItem<String>(
-            value: value,
-            child: Text(value),
+        // Province Field (styled like other input fields)
+        TextFormField(
+          readOnly: true,
+          decoration: _inputDecoration('Province', Icons.location_city)
+              .copyWith(
+            suffixIcon: Padding(
+              padding: const EdgeInsets.all(12.0),
+              child: Icon(Icons.lock_outline,
+                  color: AppColors.textSecondary, size: 18),
+            ),
+          ),
+          controller: TextEditingController(text: _isabelaProvince['name']),
+        ),
+        const SizedBox(height: 20),
+
+        // Municipality Dropdown with loading indicator
+        _buildMunicipalityDropdown(),
+        const SizedBox(height: 20),
+
+        // Barangay Dropdown with loading indicator
+        _buildBarangayDropdown(),
+      ],
+    );
+  }
+
+  Widget _buildMunicipalityDropdown() {
+    return Stack(
+      children: [
+        DropdownButtonFormField<Map<String, dynamic>>(
+          value: _selectedMunicipality,
+          decoration: _inputDecoration('Municipality/City', Icons.location_on),
+          items: _municipalities
+              .map((municipality) => DropdownMenuItem<Map<String, dynamic>>(
+            value: municipality,
+            child: Text(municipality['name'] ?? 'Unknown Municipality'),
           ))
               .toList(),
-          onChanged: (String? newValue) {
-            setState(() {
-              _selectedProvince = newValue;
-              // Reset municipalities and barangays when province changes
-              _selectedMunicipality = null;
-              _selectedBarangay = null;
-            });
-          },
-          validator: (value) => value == null ? 'Please select a province' : null,
-        ),
-        const SizedBox(height: 20),
-        DropdownButtonFormField<String>(
-          value: _selectedMunicipality,
-          decoration: _inputDecoration('Municipality', Icons.location_on),
-          items: _selectedProvince != null
-              ? _municipalities[_selectedProvince!]
-              ?.map((String value) => DropdownMenuItem<String>(
-            value: value,
-            child: Text(value),
-          ))
-              .toList()
-              : [],
-          onChanged: (String? newValue) {
+          onChanged: _isLoadingMunicipalities
+              ? null
+              : (Map<String, dynamic>? newValue) {
             setState(() {
               _selectedMunicipality = newValue;
-              _selectedBarangay = null; // Reset barangay when municipality changes
+              _barangays = [];
+              _selectedBarangay = null;
             });
+            if (newValue != null) {
+              _loadBarangays(newValue['code']);
+            }
           },
-          validator: (value) {
-            // This is optional based on your backend logic
-            return null;
-          },
+          validator: (value) =>
+          value == null ? 'Please select a municipality' : null,
         ),
-        const SizedBox(height: 20),
-        DropdownButtonFormField<String>(
+        if (_isLoadingMunicipalities)
+          Positioned.fill(
+            child: Container(
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.7),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: const Center(
+                child: CircularProgressIndicator(),
+              ),
+            ),
+          ),
+      ],
+    );
+  }
+
+  Widget _buildBarangayDropdown() {
+    return Stack(
+      children: [
+        DropdownButtonFormField<Map<String, dynamic>>(
           value: _selectedBarangay,
-          decoration: _inputDecoration('Barangay', Icons.location_on_outlined),
-          items: _selectedMunicipality != null
-              ? _barangays[_selectedMunicipality!]
-              ?.map((String value) => DropdownMenuItem<String>(
-            value: value,
-            child: Text(value),
+          decoration:
+          _inputDecoration('Barangay', Icons.location_on_outlined),
+          items: _barangays
+              .map((barangay) => DropdownMenuItem<Map<String, dynamic>>(
+            value: barangay,
+            child: Text(barangay['name'] ?? 'Unknown Barangay'),
           ))
-              .toList()
-              : [],
-          onChanged: (String? newValue) {
+              .toList(),
+          onChanged: _isLoadingBarangays
+              ? null
+              : (Map<String, dynamic>? newValue) {
             setState(() {
               _selectedBarangay = newValue;
             });
           },
           validator: (value) {
-            // This is optional based on your backend logic
             return null;
           },
         ),
+        if (_isLoadingBarangays)
+          Positioned.fill(
+            child: Container(
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.7),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: const Center(
+                child: CircularProgressIndicator(),
+              ),
+            ),
+          ),
       ],
     );
   }
@@ -369,8 +437,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
             color: AppColors.textSecondary,
           ),
           onPressed: () {
-            setState(
-                    () => _isConfirmPasswordVisible = !_isConfirmPasswordVisible);
+            setState(() => _isConfirmPasswordVisible = !_isConfirmPasswordVisible);
           },
         ),
       ),
