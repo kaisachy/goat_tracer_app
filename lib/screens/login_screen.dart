@@ -20,7 +20,7 @@ class _LoginScreenState extends State<LoginScreen> {
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
   bool _isLoading = false;
-  bool _isPasswordVisible = false; // To toggle password visibility
+  bool _isPasswordVisible = false;
 
   @override
   void dispose() {
@@ -42,8 +42,9 @@ class _LoginScreenState extends State<LoginScreen> {
           url,
           headers: {'Content-Type': 'application/json'},
           body: jsonEncode({
-            'email': _emailController.text.trim(), // Use trim
+            'email': _emailController.text.trim(),
             'password': _passwordController.text,
+            'role_required': 'farmer', // Add this to specify farmer login only
           }),
         );
 
@@ -56,7 +57,6 @@ class _LoginScreenState extends State<LoginScreen> {
             await SecureStorageService().saveToken(data['token']);
 
             if (!mounted) return;
-            // SnackBar is shown before navigating
             _showMessage('Login Successful!', AppColors.vibrantGreen);
 
             Navigator.pushAndRemoveUntil(
@@ -64,14 +64,27 @@ class _LoginScreenState extends State<LoginScreen> {
               MaterialPageRoute(
                 builder: (_) => HomeScreen(userEmail: _emailController.text.trim()),
               ),
-                  (route) => false, // Removes all previous routes
+                  (route) => false,
             );
           } else {
-            _showMessage(data['message'] ?? 'Invalid credentials', Colors.red);
+            _showMessage(data['message'] ?? 'Login failed', Colors.red);
           }
         } else {
           final data = jsonDecode(response.body);
-          _showMessage(data['message'] ?? 'Server error: ${response.statusCode}', Colors.red);
+          String errorMessage = data['message'] ?? 'Server error: ${response.statusCode}';
+
+          // Handle specific error cases
+          if (response.statusCode == 403) {
+            if (errorMessage.contains('email not verified')) {
+              _showEmailVerificationDialog();
+            } else if (errorMessage.contains('farmer')) {
+              _showMessage('This login is only for farmers.', Colors.red);
+            } else {
+              _showMessage(errorMessage, Colors.red);
+            }
+          } else {
+            _showMessage(errorMessage, Colors.red);
+          }
         }
       } catch (e) {
         if (mounted) {
@@ -85,6 +98,76 @@ class _LoginScreenState extends State<LoginScreen> {
     }
   }
 
+  void _showEmailVerificationDialog() {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Row(
+            children: [
+              Icon(Icons.email_outlined, color: AppColors.primary),
+              SizedBox(width: 8),
+              Text('Email Verification Required'),
+            ],
+          ),
+          content: const Text(
+            'Your email address has not been verified. Please check your email for the verification link or request a new one.',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('Cancel'),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+                _resendVerificationEmail();
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.primary,
+                foregroundColor: Colors.white,
+              ),
+              child: const Text('Resend Email'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Future<void> _resendVerificationEmail() async {
+    setState(() => _isLoading = true);
+
+    try {
+      final response = await http.post(
+        Uri.parse('${AppConfig.baseUrl}/auth/resend-verification'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({
+          'email': _emailController.text.trim(),
+        }),
+      );
+
+      if (!mounted) return;
+
+      final data = jsonDecode(response.body);
+
+      if (data['success'] == true) {
+        _showMessage('Verification email sent! Please check your inbox.', AppColors.vibrantGreen);
+      } else {
+        _showMessage(data['message'] ?? 'Failed to send verification email', Colors.red);
+      }
+    } catch (e) {
+      if (mounted) {
+        _showMessage('Connection error. Please try again.', Colors.red);
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
+    }
+  }
+
   void _showMessage(String message, Color color) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
@@ -93,6 +176,7 @@ class _LoginScreenState extends State<LoginScreen> {
         behavior: SnackBarBehavior.floating,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
         margin: const EdgeInsets.all(16),
+        duration: const Duration(seconds: 4),
       ),
     );
   }
@@ -100,10 +184,8 @@ class _LoginScreenState extends State<LoginScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      // Set a clean background color
       backgroundColor: Colors.white,
       appBar: AppBar(
-        // Make AppBar transparent for a modern look
         backgroundColor: Colors.transparent,
         elevation: 0,
       ),
@@ -117,13 +199,13 @@ class _LoginScreenState extends State<LoginScreen> {
                 mainAxisAlignment: MainAxisAlignment.center,
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  // Branded Icon using your AppColors
+                  // Branded Icon
                   Icon(FontAwesomeIcons.cow, size: 80, color: AppColors.primary),
                   const SizedBox(height: 20),
 
-                  // Enhanced Welcome Text
+                  // Enhanced Welcome Text for Farmers
                   Text(
-                    'Welcome Back!',
+                    'Welcome Back, Farmer!',
                     textAlign: TextAlign.center,
                     style: Theme.of(context).textTheme.headlineMedium?.copyWith(
                       fontWeight: FontWeight.bold,
@@ -132,7 +214,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    'Sign in to your Cattle Connect account',
+                    'Sign in to your Cattle Connect farmer account',
                     textAlign: TextAlign.center,
                     style: Theme.of(context).textTheme.titleMedium?.copyWith(
                       color: AppColors.textSecondary,
@@ -157,7 +239,6 @@ class _LoginScreenState extends State<LoginScreen> {
                     decoration: _inputDecoration(
                       'Password',
                       Icons.lock_outline,
-                      // Added suffix icon to toggle password visibility
                       suffixIcon: IconButton(
                         icon: Icon(
                           _isPasswordVisible
@@ -272,7 +353,7 @@ class _LoginScreenState extends State<LoginScreen> {
             padding: const EdgeInsets.symmetric(horizontal: 4),
           ),
           child: const Text(
-            'Register here',
+            'Register',
             style: TextStyle(
               color: AppColors.primary,
               fontWeight: FontWeight.bold,
