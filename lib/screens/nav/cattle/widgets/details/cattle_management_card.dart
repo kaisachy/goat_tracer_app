@@ -43,7 +43,7 @@ class CattleManagementCard extends StatelessWidget {
             InfoItemData(
               icon: Icons.home,
               title: 'Source',
-              value: CattleDetailUtils.getSourceDisplay(cattle.source),
+              value: CattleDetailUtils.getSourceDisplay(cattle.source, cattle.sourceDetails),
             ),
             InfoItemData(
               icon: Icons.groups,

@@ -122,8 +122,15 @@
     }
   
     /// Gets source display text
-    static String getSourceDisplay(String source) {
-      return source.isNotEmpty ? source : 'Unknown';
+    static String getSourceDisplay(String source, [String? sourceDetails]) {
+      if (source.isEmpty) return 'Unknown';
+      
+      // If source is "Purchased" or "Other" and we have details, show them
+      if ((source == 'Purchased' || source == 'Other') && sourceDetails?.isNotEmpty == true) {
+        return '$source - $sourceDetails';
+      }
+      
+      return source;
     }
   
     /// Gets group display text

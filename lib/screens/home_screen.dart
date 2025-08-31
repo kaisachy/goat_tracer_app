@@ -11,9 +11,9 @@ import 'nav/cattle/cattle_screen.dart';
 import 'nav/dashboard/dashboard_screen.dart';
 import 'nav/profile/profile_screen.dart';
 import 'nav/milk/milk_screen.dart';
-import 'nav/schedule/schedule_screen.dart';
+import 'nav/event_schedule/event_schedule_screen.dart';
 import 'nav/setting/setting_screen.dart';
-import 'nav/event/event_screen.dart';
+import 'nav/map/map_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   final String userEmail;
@@ -58,10 +58,10 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
 
   void _initializePages() {
     _pages = [
+      AuthGuard(child: MapScreen()),
       AuthGuard(child: DashboardScreen()),
       const AuthGuard(child: CattleScreen()),
-      AuthGuard(child: EventScreen()),
-      AuthGuard(child: ScheduleScreen()),
+      AuthGuard(child: EventScheduleScreen()),
       AuthGuard(child: MilkScreen()),
       AuthGuard(child: ProfileScreen(userEmail: widget.userEmail)),
       AuthGuard(child: SettingScreen()),
@@ -423,13 +423,13 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   String _getAppBarTitle() {
     switch (_selectedIndex) {
       case 0:
-        return 'Dashboard';
+        return 'Map';
       case 1:
-        return 'My Cattle';
+        return 'Dashboard';
       case 2:
-        return 'Events';
+        return 'My Cattle';
       case 3:
-        return 'Schedule';
+        return 'Events & Schedule';
       case 4:
         return 'Milk Production';
       case 5:
@@ -451,26 +451,26 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
               padding: EdgeInsets.zero,
               children: [
                 _buildDrawerItem(
-                  icon: Icons.dashboard_rounded,
-                  text: 'Dashboard',
+                  icon: Icons.map_rounded,
+                  text: 'Map',
                   index: 0,
                   onTap: () => _onNavItemTapped(0),
                 ),
                 _buildDrawerItem(
-                  icon: FontAwesomeIcons.cow,
-                  text: 'Cattle',
+                  icon: Icons.dashboard_rounded,
+                  text: 'Dashboard',
                   index: 1,
                   onTap: () => _onNavItemTapped(1),
                 ),
                 _buildDrawerItem(
-                  icon: Icons.event_note_rounded,
-                  text: 'Events',
+                  icon: FontAwesomeIcons.cow,
+                  text: 'Cattle',
                   index: 2,
                   onTap: () => _onNavItemTapped(2),
                 ),
                 _buildDrawerItem(
-                  icon: Icons.schedule_rounded,
-                  text: 'Schedule',
+                  icon: Icons.event_note_rounded,
+                  text: 'Events & Schedule',
                   index: 3,
                   onTap: () => _onNavItemTapped(3),
                 ),

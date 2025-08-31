@@ -439,6 +439,7 @@ class _CattleDetailScreenState extends State<CattleDetailScreen>
                 pinned: true,
                 delegate: _StickyTabBarDelegate(
                   tabBar: Container(
+                    margin: const EdgeInsets.only(bottom: 16.0),
                     decoration: const BoxDecoration(
                       color: Colors.white,
                       boxShadow: [

@@ -38,6 +38,7 @@ class _CattleFormScreenState extends State<CattleFormScreen> {
   String? _gender;
   String? _classification;
   String? _source;
+  String? _sourceDetails; // For storing additional source information
   String? _motherTag;
   String? _fatherTag;
   String? _breed;
@@ -536,6 +537,102 @@ class _CattleFormScreenState extends State<CattleFormScreen> {
     );
   }
 
+  /// Show source details modal for Purchased or Other options
+  Future<void> _showSourceDetailsModal() async {
+    // Extract existing details if editing
+    String? existingDetails;
+    String baseSource = _source ?? '';
+    
+    if (_source != null && _source!.contains(' - ')) {
+      final parts = _source!.split(' - ');
+      if (parts.length >= 2) {
+        baseSource = parts[0];
+        existingDetails = parts.sublist(1).join(' - ');
+      }
+    }
+    
+    final controller = TextEditingController(text: existingDetails ?? '');
+    
+    return showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Row(
+          children: [
+            Icon(
+              baseSource == 'Purchased' ? Icons.shopping_cart : Icons.info,
+              color: AppColors.primary,
+            ),
+            const SizedBox(width: 8),
+            Text(baseSource == 'Purchased' ? 'Purchased - Details' : 'Other - Details'),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              baseSource == 'Purchased' 
+                ? 'Where/who did you purchase this cattle from?'
+                : 'Please provide additional details about how you acquired this cattle (e.g., gift, inheritance, trade).',
+              style: TextStyle(color: Colors.grey[600], fontSize: 14),
+            ),
+            const SizedBox(height: 16),
+            TextField(
+              controller: controller,
+              decoration: InputDecoration(
+                labelText: baseSource == 'Purchased' ? 'Purchase Source' : 'Acquisition Details',
+                hintText: baseSource == 'Purchased' 
+                  ? 'e.g., John Smith Farm, Market XYZ, Auction House ABC'
+                  : 'e.g., Gift from neighbor, Inheritance, Trade, etc.',
+                border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                prefixIcon: Icon(Icons.info, color: AppColors.primary),
+                filled: true,
+                fillColor: Colors.grey[50],
+              ),
+              maxLines: 3,
+              autofocus: true,
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          if (existingDetails != null) ...[
+            TextButton(
+              onPressed: () {
+                setState(() {
+                  // Clear the source details and revert to base source
+                  _source = baseSource;
+                  _sourceDetails = null;
+                });
+                Navigator.pop(context);
+              },
+              style: TextButton.styleFrom(foregroundColor: Colors.red),
+              child: const Text('Clear'),
+            ),
+          ],
+          ElevatedButton(
+            onPressed: () {
+              final details = controller.text.trim();
+              if (details.isNotEmpty) {
+                setState(() {
+                  // Update the source to show the combined information
+                  _source = '$baseSource - $details';
+                  // Store the details separately for backend
+                  _sourceDetails = details;
+                });
+              }
+              Navigator.pop(context);
+            },
+            style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary),
+            child: const Text('Save', style: TextStyle(color: Colors.white)),
+          ),
+        ],
+      ),
+    );
+  }
+
   /// Show delete confirmation dialog
   Future<void> _showDeleteConfirmDialog(String title, String option, Function(String) onDelete) async {
     return showDialog(
@@ -593,7 +690,15 @@ class _CattleFormScreenState extends State<CattleFormScreen> {
             ? c.classification
             : null;
       }
-      _source = sourceOptions.contains(c.source) ? c.source : null;
+      // Handle source and source details
+      if (c.sourceDetails != null && c.sourceDetails!.isNotEmpty) {
+        // If we have source details, show the combined format
+        _source = '${c.source} - ${c.sourceDetails}';
+        _sourceDetails = c.sourceDetails;
+      } else {
+        _source = sourceOptions.contains(c.source) ? c.source : null;
+        _sourceDetails = null;
+      }
     }
   }
 
@@ -722,6 +827,7 @@ class _CattleFormScreenState extends State<CattleFormScreen> {
       'group_name': textOrNull(_groupName),
       'joined_date': _joinedDate,
       'source': _source,
+      'source_details': _sourceDetails,
       'mother_tag': _motherTag,
       'father_tag': _fatherTag,
       'notes': textOrNull(_notesController.text),
@@ -1286,14 +1392,98 @@ class _CattleFormScreenState extends State<CattleFormScreen> {
                       icon: Icons.event,
                     ),
                     const SizedBox(height: 16),
-                    _buildDropdown(
-                      label: 'Source *',
+                    // Custom source dropdown that can show combined information
+                    DropdownButtonFormField<String>(
                       value: _source,
-                      options: sourceOptions,
                       validator: (value) => value == null ? 'Source is required' : null,
-                      onChanged: (value) => setState(() => _source = value),
-                      icon: Icons.source,
+                      isExpanded: true,
+                      decoration: InputDecoration(
+                        labelText: 'Source *',
+                        prefixIcon: Icon(Icons.source, color: AppColors.primary),
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: BorderSide(color: AppColors.primary, width: 2),
+                        ),
+                        fillColor: AppColors.cardBackground,
+                        filled: true,
+                      ),
+                      hint: const Text('Select Source'),
+                      items: [
+                        // Add the base options
+                        ...sourceOptions.map((option) => DropdownMenuItem<String>(
+                          value: option,
+                          child: Text(option),
+                        )),
+                        // Add any custom combined options that exist
+                        if (_source != null && _source!.contains(' - '))
+                          DropdownMenuItem<String>(
+                            value: _source,
+                            child: Text(_source!),
+                          ),
+                      ],
+                      onChanged: (value) {
+                        setState(() {
+                          _source = value;
+                          // Show modal for Purchased or Other options
+                          if (value == 'Purchased' || value == 'Other') {
+                            WidgetsBinding.instance.addPostFrameCallback((_) {
+                              _showSourceDetailsModal();
+                            });
+                          }
+                        });
+                      },
                     ),
+                    // Show edit button if we have source details
+                    if (_source != null && _source!.contains(' - ')) ...[
+                      const SizedBox(height: 16),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Container(
+                              padding: const EdgeInsets.all(12),
+                              decoration: BoxDecoration(
+                                color: AppColors.primary.withOpacity(0.1),
+                                borderRadius: BorderRadius.circular(8),
+                                border: Border.all(
+                                  color: AppColors.primary.withOpacity(0.3),
+                                  width: 1,
+                                ),
+                              ),
+                              child: Row(
+                                children: [
+                                  Icon(
+                                    _source!.startsWith('Purchased') ? Icons.shopping_cart : Icons.info,
+                                    color: AppColors.primary,
+                                    size: 20,
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Expanded(
+                                    child: Text(
+                                      _source!,
+                                      style: TextStyle(
+                                        color: AppColors.textPrimary,
+                                        fontWeight: FontWeight.w500,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          IconButton(
+                            onPressed: _showSourceDetailsModal,
+                            icon: Icon(Icons.edit, color: AppColors.primary),
+                            tooltip: 'Edit source details',
+                            style: IconButton.styleFrom(
+                              backgroundColor: AppColors.primary.withOpacity(0.1),
+                              padding: const EdgeInsets.all(12),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
                   ],
                 ),
               ),

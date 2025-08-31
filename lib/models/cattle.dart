@@ -14,6 +14,7 @@ class Cattle {
   final String? groupName;
   final String? joinedDate;
   final String source;
+  final String? sourceDetails; // NEW: For storing additional source information
   final String? motherTag;
   final String? fatherTag;
   final String? offspring; // Added this line
@@ -34,6 +35,7 @@ class Cattle {
     this.groupName,
     this.joinedDate,
     required this.source,
+    this.sourceDetails, // Added this line
     this.motherTag,
     this.fatherTag,
     this.offspring, // Added this line
@@ -56,6 +58,7 @@ class Cattle {
       groupName: json['group_name'],
       joinedDate: json['joined_date'],
       source: json['source'] ?? 'Born on farm',
+      sourceDetails: json['source_details'], // Added this line
       motherTag: json['mother_tag'],
       fatherTag: json['father_tag'],
       offspring: json['offspring'], // Added this line
@@ -79,6 +82,7 @@ class Cattle {
       'group_name': groupName,
       'joined_date': joinedDate,
       'source': source,
+      'source_details': sourceDetails, // Added this line
       'mother_tag': motherTag,
       'father_tag': fatherTag,
       'offspring': offspring, // Added this line
@@ -118,6 +122,7 @@ class Cattle {
     String? groupName,
     String? joinedDate,
     String? source,
+    String? sourceDetails, // Added this line
     String? motherTag,
     String? fatherTag,
     String? offspring, // Added this line
@@ -138,6 +143,7 @@ class Cattle {
       groupName: groupName ?? this.groupName,
       joinedDate: joinedDate ?? this.joinedDate,
       source: source ?? this.source,
+      sourceDetails: sourceDetails ?? this.sourceDetails, // Added this line
       motherTag: motherTag ?? this.motherTag,
       fatherTag: fatherTag ?? this.fatherTag,
       offspring: offspring ?? this.offspring, // Added this line
