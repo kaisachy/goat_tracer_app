@@ -200,7 +200,18 @@ class _LoginScreenState extends State<LoginScreen> {
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   // Branded Icon
-                  Icon(FontAwesomeIcons.cow, size: 80, color: AppColors.primary),
+                  CircleAvatar(
+                    radius: 60,
+                    backgroundColor: Colors.transparent,
+                    child: ClipOval(
+                      child: Image.asset(
+                        'assets/images/logo.png',
+                        width: 120,
+                        height: 120,
+                        fit: BoxFit.cover,
+                      ),
+                    ),
+                  ),
                   const SizedBox(height: 20),
 
                   // Enhanced Welcome Text for Farmers
