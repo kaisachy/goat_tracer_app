@@ -6,6 +6,7 @@ import 'package:cattle_tracer_app/models/cattle.dart';
 import 'package:cattle_tracer_app/constants/app_colors.dart';
 import 'package:cattle_tracer_app/services/cattle/cattle_service.dart';
 import 'package:cattle_tracer_app/screens/nav/cattle/modals/options/common/ui_helpers.dart';
+import 'package:cattle_tracer_app/utils/cattle_age_classification.dart';
 
 class ChangeStageOption {
   // 🔧 MODIFIED: Defined separate, gender-specific stage lists
@@ -67,6 +68,11 @@ class ChangeStageOption {
                     const SizedBox(height: 24),
                     _buildCurrentStageInfo(cattle),
                     const SizedBox(height: 20),
+                                         // Show age classification validation alert if needed
+                     if (!CattleAgeClassification.isClassificationAccurate(cattle))
+                       _buildAgeClassificationAlert(cattle),
+                     if (!CattleAgeClassification.isClassificationAccurate(cattle))
+                       const SizedBox(height: 20),
                     // 🔧 MODIFIED: Pass the dynamic list and the update function
                     _buildStageSelector(
                       stagesForGender,
@@ -171,12 +177,73 @@ class ChangeStageOption {
     );
   }
 
+  static Widget _buildAgeClassificationAlert(Cattle cattle) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.yellow[50],
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.yellow[300]!),
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: Colors.yellow[100],
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Icon(
+              Icons.warning_amber,
+              color: Colors.yellow[700],
+              size: 20,
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Age Classification Alert',
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.yellow[800],
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  CattleAgeClassification.getValidationMessage(cattle),
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: Colors.yellow[700],
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'Consider updating the stage to match the age.',
+                  style: TextStyle(
+                    fontSize: 11,
+                    color: Colors.yellow[600],
+                    fontStyle: FontStyle.italic,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+
+
   // 🔧 MODIFIED: Function now accepts a list of stages and a callback
   static Widget _buildStageSelector(
       List<String> stages,
       String selectedStage,
-      ValueChanged<String?> onChanged,
-      ) {
+      ValueChanged<String?> onChanged) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -251,8 +318,7 @@ class ChangeStageOption {
       BuildContext context,
       Cattle cattle,
       String selectedStage,
-      VoidCallback? onCattleUpdated,
-      ) {
+      VoidCallback? onCattleUpdated) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.end,
       children: [
@@ -274,7 +340,6 @@ class ChangeStageOption {
           onPressed: selectedStage == cattle.classification
               ? null
               : () async {
-            Navigator.pop(context);
             await _updateCattleStage(
                 context, cattle, selectedStage, onCattleUpdated);
           },
@@ -312,8 +377,7 @@ class ChangeStageOption {
       BuildContext context,
       Cattle cattle,
       String newStage,
-      VoidCallback? onCattleUpdated,
-      ) async {
+      VoidCallback? onCattleUpdated) async {
     UIHelpers.showEnhancedLoadingDialog(
         context, 'Updating cattle stage...', Icons.update);
 
@@ -327,6 +391,9 @@ class ChangeStageOption {
       Navigator.pop(context);
 
       if (success) {
+        // Close the stage selection form modal
+        Navigator.pop(context);
+        
         UIHelpers.showEnhancedSnackbar(
           context,
           FontAwesomeIcons.arrowUpRightFromSquare,
@@ -358,4 +425,6 @@ class ChangeStageOption {
       );
     }
   }
+
+  
 }

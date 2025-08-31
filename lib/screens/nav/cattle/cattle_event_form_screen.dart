@@ -805,7 +805,7 @@ class _CattleEventFormScreenState extends State<CattleEventFormScreen>
         bullEventStatus = 'No bull tag available for event creation';
       }
 
-      final returnToHeatText = _controllers['return_to_heat']?.text ?? '';
+      final returnToHeatText = _controllers['estimated_return_date']?.text ?? '';
       if (returnToHeatText.isNotEmpty) {
         final returnToHeatDate = DateTime.tryParse(returnToHeatText);
         final today = DateTime.now();

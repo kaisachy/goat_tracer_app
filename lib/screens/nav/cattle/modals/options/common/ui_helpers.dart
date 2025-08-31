@@ -148,6 +148,20 @@ class UIHelpers {
     );
   }
 
+  /// Safely close a dialog if it can be popped
+  static void safeCloseDialog(BuildContext context) {
+    if (Navigator.of(context, rootNavigator: true).canPop()) {
+      Navigator.of(context, rootNavigator: true).pop();
+    }
+  }
+
+  /// Safely show error dialog only if context is still mounted
+  static void safeShowErrorDialog(BuildContext context, String title, String message) {
+    if (context.mounted) {
+      showErrorDialog(context, title, message);
+    }
+  }
+
   static void showEnhancedSnackbar(
       BuildContext context,
       IconData icon,

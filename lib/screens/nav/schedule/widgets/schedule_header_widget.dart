@@ -64,7 +64,7 @@ class ScheduleHeader extends StatelessWidget {
                 color: AppColors.primary,
                 size: isNarrow ? 18 : 20,
               ),
-              suffixIcon: searchController?.text.isNotEmpty == true
+              suffixIcon: searchController.text.isNotEmpty == true
                   ? IconButton(
                 icon: Icon(
                   Icons.clear_rounded,

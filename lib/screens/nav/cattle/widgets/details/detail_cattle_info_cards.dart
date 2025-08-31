@@ -6,13 +6,45 @@ import 'package:cattle_tracer_app/constants/app_colors.dart';
 import 'package:cattle_tracer_app/utils/cattle_detail_utils.dart';
 import 'info_item_widget.dart';
 
-class CattleBasicInfoCard extends StatelessWidget {
+class CattleBasicInfoCard extends StatefulWidget {
   final Cattle cattle;
 
   const CattleBasicInfoCard({super.key, required this.cattle});
 
+  /// Create a key that changes when cattle data changes
+  static Key createKey(Cattle cattle) {
+    return ValueKey('${cattle.id}_${cattle.dateOfBirth}_${cattle.classification}_${cattle.gender}');
+  }
+
+  @override
+  State<CattleBasicInfoCard> createState() => _CattleBasicInfoCardState();
+}
+
+class _CattleBasicInfoCardState extends State<CattleBasicInfoCard> {
+  @override
+  void didUpdateWidget(CattleBasicInfoCard oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // Force rebuild when cattle data changes by checking key fields
+    if (_shouldRebuild(oldWidget.cattle, widget.cattle)) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) setState(() {});
+      });
+    }
+  }
+
+  bool _shouldRebuild(Cattle oldCattle, Cattle newCattle) {
+    return oldCattle.dateOfBirth != newCattle.dateOfBirth ||
+        oldCattle.classification != newCattle.classification ||
+        oldCattle.gender != newCattle.gender ||
+        oldCattle.breed != newCattle.breed ||
+        oldCattle.weight != newCattle.weight ||
+        oldCattle.status != newCattle.status ||
+        oldCattle.name != newCattle.name;
+  }
+
   @override
   Widget build(BuildContext context) {
+    
     return Container(
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
@@ -44,32 +76,32 @@ class CattleBasicInfoCard extends StatelessWidget {
             InfoItemData(
               icon: Icons.cake,
               title: 'Age',
-              value: CattleDetailUtils.getAgeFromDob(cattle.dateOfBirth),
+              value: CattleDetailUtils.getAgeFromDob(widget.cattle.dateOfBirth),
             ),
             InfoItemData(
               icon: Icons.event,
               title: 'Date of Birth',
-              value: CattleDetailUtils.formatDate(cattle.dateOfBirth),
+              value: CattleDetailUtils.formatDate(widget.cattle.dateOfBirth),
             ),
             InfoItemData(
-              icon: CattleDetailUtils.getGenderIcon(cattle.gender),
+              icon: CattleDetailUtils.getGenderIcon(widget.cattle.gender),
               title: 'Gender',
-              value: cattle.gender,
+              value: widget.cattle.gender,
             ),
             InfoItemData(
               icon: Icons.category,
               title: 'Classification',
-              value: CattleDetailUtils.getClassificationDisplay(cattle.classification),
+              value: CattleDetailUtils.getClassificationDisplay(widget.cattle.classification),
             ),
             InfoItemData(
               icon: FontAwesomeIcons.cow,
               title: 'Breed',
-              value: CattleDetailUtils.getBreedDisplay(cattle.breed),
+              value: CattleDetailUtils.getBreedDisplay(widget.cattle.breed),
             ),
             InfoItemData(
               icon: Icons.monitor_weight,
               title: 'Weight',
-              value: CattleDetailUtils.formatWeight(cattle.weight),
+              value: CattleDetailUtils.formatWeight(widget.cattle.weight),
             ),
           ]),
         ],

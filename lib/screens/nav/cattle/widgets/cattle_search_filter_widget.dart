@@ -20,14 +20,13 @@ class CattleSearchFilterWidget extends StatefulWidget {
     super.key,
     required this.onSearchChanged,
     required this.onFiltersChanged,
-    required this.breedOptions, // Now required - should be generated from actual cattle data
-    required this.groupNameOptions, // Now required - should be generated from actual cattle data
-    this.initialGender = 'All',
-    this.initialClassification = 'All',
-    this.initialStatus = 'All',
-    // NEW: Initial breed and group name parameters
-    this.initialBreed = 'All',
-    this.initialGroupName = 'All',
+    required this.initialGender,
+    required this.initialClassification,
+    required this.initialStatus,
+    required this.initialBreed,
+    required this.initialGroupName,
+    required this.breedOptions,
+    required this.groupNameOptions,
   });
 
   @override

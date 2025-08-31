@@ -33,7 +33,10 @@ class CattleDetailsTabContent extends StatelessWidget {
               children: [
                 _buildAnimatedCard(
                   delay: 100,
-                  child: CattleBasicInfoCard(cattle: cattle),
+                  child: CattleBasicInfoCard(
+                    key: CattleBasicInfoCard.createKey(cattle),
+                    cattle: cattle,
+                  ),
                 ),
                 const SizedBox(height: 20),
                 _buildAnimatedCard(

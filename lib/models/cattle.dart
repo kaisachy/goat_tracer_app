@@ -100,13 +100,44 @@ class Cattle {
     try {
       return base64Decode(cattlePicture!);
     } catch (e) {
-      print('Error decoding cattle picture: $e');
       return null;
     }
   }
 
   /// Check if cattle has a picture
   bool get hasPicture => cattlePicture != null && cattlePicture!.isNotEmpty;
+
+  /// Get computed age in months from date of birth
+  int? get computedAgeInMonths {
+    if (dateOfBirth == null || dateOfBirth!.isEmpty) {
+      return null;
+    }
+
+    try {
+      final birthDate = DateTime.parse(dateOfBirth!);
+      final now = DateTime.now();
+      final difference = now.difference(birthDate);
+      return (difference.inDays / 30.44).round(); // Average days per month
+    } catch (e) {
+      return null;
+    }
+  }
+
+  /// Get age string for display (prioritizes backend age, falls back to computed age)
+  String? get displayAge {
+    // First try to use the backend-provided age
+    if (age != null && age!.isNotEmpty) {
+      return age;
+    }
+    
+    // Fall back to computed age from date of birth
+    final computedAge = computedAgeInMonths;
+    if (computedAge != null) {
+      return computedAge.toString();
+    }
+    
+    return null;
+  }
 
   /// Create a copy with updated fields
   Cattle copyWith({

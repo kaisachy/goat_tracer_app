@@ -14,6 +14,8 @@ import 'nav/milk/milk_screen.dart';
 import 'nav/event_schedule/event_schedule_screen.dart';
 import 'nav/setting/setting_screen.dart';
 import 'nav/map/map_screen.dart';
+import 'package:cattle_tracer_app/services/cattle/cattle_status_service.dart';
+import 'package:cattle_tracer_app/services/refresh_service.dart';
 
 class HomeScreen extends StatefulWidget {
   final String userEmail;
@@ -53,6 +55,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     // Check authentication when app comes back to foreground
     if (state == AppLifecycleState.resumed) {
       _checkAuthenticationStatus();
+      _checkCattleStatusUpdates();
     }
   }
 
@@ -86,6 +89,28 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
       // On error, assume authentication is compromised
       await AuthService.logout();
       _redirectToLogin();
+    }
+  }
+
+  Future<void> _checkCattleStatusUpdates() async {
+    try {
+      // Check for cattle that need status updates (Breeding -> Healthy)
+      final updatedCattle = await CattleStatusService.checkAndUpdateBreedingStatus();
+      
+      if (updatedCattle.isNotEmpty && mounted) {
+        // Show a notification to the user about the status updates
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('${updatedCattle.length} cow(s) status automatically updated to Healthy'),
+            backgroundColor: Colors.green[600],
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+            duration: const Duration(seconds: 3),
+          ),
+        );
+      }
+    } catch (e) {
+      print('Error checking cattle status updates: $e');
     }
   }
 
@@ -143,6 +168,78 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     });
     await _loadProfileData();
   }
+
+  Future<void> _handleRefresh() async {
+    try {
+      // Show loading indicator
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Row(
+            children: [
+              SizedBox(
+                width: 16,
+                height: 16,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                ),
+              ),
+              const SizedBox(width: 12),
+              const Text('Refreshing all data...'),
+            ],
+          ),
+          backgroundColor: AppColors.primary,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+          duration: const Duration(seconds: 3),
+        ),
+      );
+
+      // Perform comprehensive refresh for all data
+      final refreshResults = await RefreshService.refreshAllData();
+      
+      // Dismiss loading indicator
+      ScaffoldMessenger.of(context).hideCurrentSnackBar();
+      
+      // Show appropriate success message
+      final message = RefreshService.getRefreshMessage(refreshResults);
+      final hasErrors = refreshResults['errors'].isNotEmpty;
+      final hasCattleUpdates = refreshResults['cattleStatusUpdates'].isNotEmpty;
+      
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(message),
+          backgroundColor: hasErrors ? Colors.orange[600] : 
+                          hasCattleUpdates ? Colors.green[600] : AppColors.lightGreen,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+          duration: const Duration(seconds: 4),
+        ),
+      );
+
+      // Force refresh of the current page by triggering a rebuild
+      setState(() {
+        // This will trigger a rebuild of the current page
+      });
+
+    } catch (e) {
+      // Dismiss loading indicator
+      ScaffoldMessenger.of(context).hideCurrentSnackBar();
+      
+      // Show error message
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error refreshing data: ${e.toString()}'),
+          backgroundColor: Colors.red[600],
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+          duration: const Duration(seconds: 4),
+        ),
+      );
+    }
+  }
+
+
 
   void _onNavItemTapped(int index) {
     setState(() => _selectedIndex = index);
@@ -414,6 +511,13 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
           tooltip: 'Open Menu',
           onPressed: () => _scaffoldKey.currentState?.openDrawer(),
         ),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.refresh),
+            tooltip: 'Refresh All App Data',
+            onPressed: _handleRefresh,
+          ),
+        ],
       ),
       drawer: _buildDrawer(),
       body: _pages[_selectedIndex],

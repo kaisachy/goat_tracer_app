@@ -5,6 +5,7 @@ import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:cattle_tracer_app/models/cattle.dart';
 import 'package:cattle_tracer_app/constants/app_colors.dart';
 import 'package:cattle_tracer_app/utils/cattle_detail_utils.dart';
+import 'package:cattle_tracer_app/utils/cattle_age_classification.dart';
 import 'package:cattle_tracer_app/screens/nav/cattle/modals/photo_options_modal.dart';
 import 'package:cattle_tracer_app/screens/nav/cattle/modals/cattle_options_modal.dart';
 import 'package:cattle_tracer_app/screens/nav/cattle/widgets/details/cattle_schedules_section.dart';
@@ -15,6 +16,7 @@ class CattleHeroSection extends StatefulWidget {
   final Function(String?) onImageUpdate;
   final Function(Cattle) onEditCattle;
   final VoidCallback onAddEvent;
+  final VoidCallback? onCattleUpdated;
   final bool isUpdatingImage;
 
   const CattleHeroSection({
@@ -23,6 +25,7 @@ class CattleHeroSection extends StatefulWidget {
     required this.onImageUpdate,
     required this.onEditCattle,
     required this.onAddEvent,
+    this.onCattleUpdated,
     this.isUpdatingImage = false,
   });
 
@@ -261,12 +264,7 @@ class _CattleHeroSectionState extends State<CattleHeroSection> {
         Positioned(
           top: 40,
           right: 20,
-          child: _buildFloatingButton(
-            icon: Icons.more_vert,
-            onTap: () {
-              _showCattleOptionsModal(context);
-            },
-          ),
+          child: _buildMoreOptionsButton(),
         ),
         Positioned(
           bottom: 20,
@@ -392,11 +390,46 @@ class _CattleHeroSectionState extends State<CattleHeroSection> {
   }
 
   void _showCattleOptionsModal(BuildContext context) {
+    // Show alert if there's a classification issue
+    if (!CattleAgeClassification.isClassificationAccurate(widget.cattle)) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Row(
+            children: [
+              Icon(
+                Icons.warning_amber,
+                color: Colors.white,
+                size: 20,
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  'Age Classification Alert: ${CattleAgeClassification.getValidationMessage(widget.cattle)}',
+                  style: const TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          backgroundColor: Colors.yellow[700],
+          duration: const Duration(seconds: 4),
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+          margin: const EdgeInsets.all(16),
+        ),
+      );
+    }
+    
     CattleOptionsModal.show(
       context: context,
       cattle: widget.cattle,
       onAddEvent: widget.onAddEvent,
       onEditCattle: widget.onEditCattle,
+      onCattleUpdated: widget.onCattleUpdated,
     );
   }
 
@@ -647,6 +680,50 @@ class _CattleHeroSectionState extends State<CattleHeroSection> {
               ],
             ),
           ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildMoreOptionsButton() {
+    final bool hasClassificationIssue = !CattleAgeClassification.isClassificationAccurate(widget.cattle);
+    
+    return Tooltip(
+      message: hasClassificationIssue 
+          ? CattleAgeClassification.getValidationMessage(widget.cattle)
+          : 'More options',
+      child: Stack(
+        children: [
+          _buildFloatingButton(
+            icon: Icons.more_vert,
+            onTap: () {
+              _showCattleOptionsModal(context);
+            },
+          ),
+          if (hasClassificationIssue)
+            Positioned(
+              right: 0,
+              top: 0,
+              child: Container(
+                padding: const EdgeInsets.all(4),
+                decoration: BoxDecoration(
+                  color: Colors.yellow[700],
+                  shape: BoxShape.circle,
+                  border: Border.all(color: Colors.white, width: 1.5),
+                ),
+                constraints: const BoxConstraints(
+                  minWidth: 16,
+                  minHeight: 16,
+                ),
+                child: const Center(
+                  child: Icon(
+                    Icons.warning_amber,
+                    color: Colors.white,
+                    size: 8,
+                  ),
+                ),
+              ),
+            ),
         ],
       ),
     );

@@ -275,7 +275,6 @@ class ChangeStatusOption {
           onPressed: selectedStatus == cattle.status
               ? null
               : () async {
-            Navigator.pop(context);
             await _updateCattleStatus(
                 context, cattle, selectedStatus, onCattleUpdated);
           },
@@ -373,6 +372,9 @@ class ChangeStatusOption {
       Navigator.pop(context);
 
       if (success) {
+        // Close the status selection form modal
+        Navigator.pop(context);
+        
         UIHelpers.showEnhancedSnackbar(
           context,
           Icons.swap_horiz,

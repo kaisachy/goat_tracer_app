@@ -122,44 +122,32 @@ class CattleEventService {
       return false;
     }
 
-    final uri = Uri.parse('$_baseUrl/cattles/event');
-    final requestBody = jsonEncode(data);
-
-    log('=== UPDATE CATTLE EVENT DEBUG ===');
-    log('URI: $uri');
-    log('Request Body: $requestBody');
-    log('Data being sent: $data');
+    // Extract the event ID from the data
+    final eventId = data['id'];
+    if (eventId == null) {
+      log('Update failed: No event ID provided.');
+      return false;
+    }
 
     try {
-      final response = await http.put(
-        uri,
-        headers: {
-          'Content-Type': 'application/json; charset=UTF-8',
-          'Authorization': 'Bearer $token',
-        },
-        body: requestBody,
-      );
+      // First, delete the existing event
+      final deleteSuccess = await deleteCattleEvent(eventId);
+      if (!deleteSuccess) {
+        log('Failed to delete existing event for update.');
+        return false;
+      }
 
-      log('Update Response Status Code: ${response.statusCode}');
-      log('Update Response Body: ${response.body}');
+      // Remove the ID from the data since we're creating a new event
+      final newEventData = Map<String, dynamic>.from(data);
+      newEventData.remove('id');
 
-      if (response.statusCode == 200) {
-        log('Cattle event updated successfully.');
+      // Create a new event with the updated data
+      final createSuccess = await storeCattleEvent(newEventData);
+      if (createSuccess) {
+        log('Cattle event updated successfully via delete-and-recreate.');
         return true;
       } else {
-        log('Failed to update cattle event. Status: ${response.statusCode}');
-        log('Error response body: ${response.body}');
-
-        // Try to extract error message from response
-        try {
-          final errorData = jsonDecode(response.body);
-          if (errorData['message'] != null) {
-            log('Server error message: ${errorData['message']}');
-          }
-        } catch (parseError) {
-          log('Could not parse error response as JSON: $parseError');
-        }
-
+        log('Failed to create new event after deletion.');
         return false;
       }
     } catch (e, stackTrace) {

@@ -8,6 +8,7 @@ import 'package:cattle_tracer_app/constants/app_colors.dart';
 import 'package:intl/intl.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 
+
 class CattleScreen extends StatefulWidget {
   const CattleScreen({super.key});
 
@@ -698,4 +699,6 @@ class _CattleScreenState extends State<CattleScreen>
       ),
     );
   }
+
+
 }

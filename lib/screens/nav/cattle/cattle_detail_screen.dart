@@ -207,7 +207,8 @@ class _CattleDetailScreenState extends State<CattleDetailScreen>
         oldCattle.cattlePicture != newCattle.cattlePicture ||
         oldCattle.weight != newCattle.weight ||
         oldCattle.breed != newCattle.breed ||
-        oldCattle.dateOfBirth != newCattle.dateOfBirth;
+        oldCattle.dateOfBirth != newCattle.dateOfBirth ||
+        oldCattle.name != newCattle.name;
   }
 
   /// Animate refresh to provide visual feedback
@@ -418,6 +419,7 @@ class _CattleDetailScreenState extends State<CattleDetailScreen>
                   onImageUpdate: _updateCattleImage,
                   onEditCattle: _navigateToEditCattle,
                   onAddEvent: _navigateToAddEventForm,
+                  onCattleUpdated: _onCattleUpdated,
                   isUpdatingImage: _isUpdatingImage,
                 ),
               ),
