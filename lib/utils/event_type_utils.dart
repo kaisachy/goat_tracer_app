@@ -5,7 +5,7 @@ import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import '../../../../constants/app_colors.dart';
 
 class EventTypeUtils {
-  static List<String> getEventTypesForGender(String? gender) {
+  static List<String> getEventTypesForGender(String? gender, {String? classification}) {
     final baseTypes = ['Select type of event'];
 
     if (gender == null) {
@@ -13,22 +13,43 @@ class EventTypeUtils {
     }
 
     final genderLower = gender.toLowerCase().trim();
+    final classificationLower = classification?.toLowerCase().trim();
+
+    // Debug logging
+    print('DEBUG: Gender: $gender, Classification: $classification');
+    print('DEBUG: Gender lower: $genderLower, Classification lower: $classificationLower');
+
+    // If cattle is a Calf, exclude breeding-related events
+    final isCalf = classificationLower == 'calf';
+    print('DEBUG: Is Calf: $isCalf');
 
     if (genderLower == 'female') {
-      return [
+      final femaleEvents = [
         ...baseTypes,
         'Dry off',
         'Treated',
-        'Breeding',
         'Weighed',
-        'Gives Birth',
         'Vaccinated',
-        'Pregnant',
-        'Aborted Pregnancy',
         'Deworming',
         'Hoof Trimming',
         'Other',
       ];
+
+      // Only add breeding-related events if not a Calf
+      if (!isCalf) {
+        femaleEvents.addAll([
+          'Breeding',
+          'Gives Birth',
+          'Pregnant',
+          'Aborted Pregnancy',
+        ]);
+        print('DEBUG: Added breeding events for non-calf female');
+      } else {
+        print('DEBUG: Excluded breeding events for calf female');
+      }
+
+      print('DEBUG: Final female events: ${femaleEvents.join(', ')}');
+      return femaleEvents;
     } else if (genderLower == 'male') {
       return [
         ...baseTypes,

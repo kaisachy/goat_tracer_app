@@ -55,9 +55,7 @@ class _CattleScheduleFormState extends State<CattleScheduleForm> {
     super.initState();
     _loadCattleList();
     _loadVeterinarians();
-    if (_isEditing) {
-      _populateFieldsForEditing();
-    }
+    // Note: _populateFieldsForEditing() will be called after data is loaded
   }
 
   @override
@@ -77,6 +75,11 @@ class _CattleScheduleFormState extends State<CattleScheduleForm> {
         _cattleList = cattle;
         _isLoadingCattle = false;
       });
+      
+      // Populate fields for editing after cattle list is loaded
+      if (_isEditing && _veterinarianList.isNotEmpty) {
+        _populateFieldsForEditing();
+      }
     } catch (e) {
       print('Error loading cattle list: $e');
       setState(() => _isLoadingCattle = false);
@@ -97,6 +100,11 @@ class _CattleScheduleFormState extends State<CattleScheduleForm> {
         _isLoadingVeterinarians = false;
       });
       print('Loaded ${veterinarians.length} veterinarians');
+      
+      // Populate fields for editing after veterinarians are loaded
+      if (_isEditing && _cattleList.isNotEmpty) {
+        _populateFieldsForEditing();
+      }
     } catch (e) {
       print('Error loading veterinarians: $e');
       setState(() => _isLoadingVeterinarians = false);
@@ -113,7 +121,7 @@ class _CattleScheduleFormState extends State<CattleScheduleForm> {
 
     if (schedule.cattleTag != null && schedule.cattleTag!.isNotEmpty) {
       _selectedCattleTags = schedule.cattleTag!
-          .split(', ')
+          .split(',')
           .map((tag) => tag.trim())
           .where((tag) => tag.isNotEmpty)
           .toList();

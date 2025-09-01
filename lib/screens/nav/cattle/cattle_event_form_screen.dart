@@ -8,6 +8,7 @@ import '../../../models/cattle.dart';
 import '../../../services/cattle/cattle_event_service.dart';
 import '../../../services/cattle/cattle_service.dart';
 import '../../../constants/app_colors.dart';
+import '../../../utils/event_type_utils.dart';
 import 'modals/calf_registration_dialog.dart';
 import 'widgets/events/event_cattle_info_card.dart';
 import 'widgets/events/event_notes_section.dart';
@@ -95,9 +96,12 @@ class _CattleEventFormScreenState extends State<CattleEventFormScreen>
     ];
 
     for (var field in fields) {
-      _controllers[field] = TextEditingController(
-        text: isEditing ? widget.event!.toJson()[field]?.toString() ?? '' : '',
-      );
+      String initialValue = '';
+      if (isEditing && widget.event != null) {
+        final eventJson = widget.event!.toJson();
+        initialValue = eventJson[field]?.toString() ?? '';
+      }
+      _controllers[field] = TextEditingController(text: initialValue);
     }
   }
 
@@ -171,7 +175,13 @@ class _CattleEventFormScreenState extends State<CattleEventFormScreen>
   }
 
   Future<void> _loadCattleDetails() async {
-    if (widget.cattleTag == null || widget.cattleTag!.isEmpty) {
+    // Get cattle tag from either widget.cattleTag or from the event being edited
+    String? cattleTag = widget.cattleTag;
+    if (cattleTag == null && isEditing && widget.event != null) {
+      cattleTag = widget.event!.cattleTag;
+    }
+
+    if (cattleTag == null || cattleTag.isEmpty) {
       _showErrorMessage('Invalid cattle tag provided');
       return;
     }
@@ -179,7 +189,7 @@ class _CattleEventFormScreenState extends State<CattleEventFormScreen>
     setState(() => _isLoading = true);
 
     try {
-      final cattle = await CattleService.getCattleByTag(widget.cattleTag!);
+      final cattle = await CattleService.getCattleByTag(cattleTag);
 
       // Animations are played only after the initial data is fetched.
       _fadeController.forward();
@@ -196,7 +206,7 @@ class _CattleEventFormScreenState extends State<CattleEventFormScreen>
       } else {
         if (mounted) {
           _showErrorMessage(
-              'Cattle with tag "${widget.cattleTag}" not found in the database');
+              'Cattle with tag "$cattleTag" not found in the database');
         }
       }
     } catch (e) {
@@ -214,7 +224,7 @@ class _CattleEventFormScreenState extends State<CattleEventFormScreen>
     final editEventType = widget.event!.eventType;
     await Future.delayed(Duration.zero);
 
-    final eventTypes = _getEventTypesForGender(cattle.gender);
+    final eventTypes = _getEventTypesForGender(cattle.gender, classification: cattle.classification);
 
     if (eventTypes.contains(editEventType)) {
       setState(() {
@@ -232,26 +242,9 @@ class _CattleEventFormScreenState extends State<CattleEventFormScreen>
     }
   }
 
-  List<String> _getEventTypesForGender(String gender) {
-    final baseTypes = ['Select type of event'];
-
-    if (gender.toLowerCase() == 'female') {
-      return [
-        ...baseTypes, 'Dry off', 'Treated', 'Breeding', 'Weighed',
-        'Gives Birth', 'Vaccinated', 'Pregnant', 'Aborted Pregnancy',
-        'Deworming', 'Hoof Trimming', 'Other',
-      ];
-    } else if (gender.toLowerCase() == 'male') {
-      return [
-        ...baseTypes, 'Treated', 'Weighed', 'Vaccinated', 'Deworming',
-        'Hoof Trimming', 'Castrated', 'Weaned', 'Other'
-      ];
-    } else {
-      return [
-        ...baseTypes, 'Treated', 'Weighed', 'Vaccinated', 'Deworming',
-        'Hoof Trimming', 'Other'
-      ];
-    }
+  List<String> _getEventTypesForGender(String gender, {String? classification}) {
+    // Use the centralized utility method instead of duplicating logic
+    return EventTypeUtils.getEventTypesForGender(gender, classification: classification);
   }
 
   void _showErrorMessage(String message) {
@@ -434,7 +427,13 @@ class _CattleEventFormScreenState extends State<CattleEventFormScreen>
   }
 
   Future<void> _openCalfRegistrationDialog() async {
-    final motherTag = widget.cattleTag ?? '';
+    // Get cattle tag from either widget.cattleTag or from the event being edited
+    String? cattleTag = widget.cattleTag;
+    if (cattleTag == null && isEditing && widget.event != null) {
+      cattleTag = widget.event!.cattleTag;
+    }
+    
+    final motherTag = cattleTag ?? '';
     final fatherTag = _controllers['bull_tag']?.text ?? '';
 
     // Prepare existing calf data for the dialog with safe type conversion
@@ -559,9 +558,15 @@ class _CattleEventFormScreenState extends State<CattleEventFormScreen>
     setState(() => _isLoading = true);
 
     try {
+      // Get cattle tag from either widget.cattleTag or from the event being edited
+      String? cattleTag = widget.cattleTag;
+      if (cattleTag == null && isEditing && widget.event != null) {
+        cattleTag = widget.event!.cattleTag;
+      }
+
       // Prepare data with better validation
       final data = <String, dynamic>{
-        'cattle_tag': widget.cattleTag?.trim(),
+        'cattle_tag': cattleTag?.trim(),
         'event_type': selectedEventType,
         'event_date': _controllers['event_date']!.text.trim(),
         'notes': _controllers['notes']!.text.trim(),
@@ -784,9 +789,7 @@ class _CattleEventFormScreenState extends State<CattleEventFormScreen>
   Future<void> _handleBreedingEvent() async {
     try {
       bool cowStatusUpdated = false;
-      bool bullEventCreated = false;
       String cowStatus = '';
-      String bullEventStatus = '';
 
       // Update cow (mother) status to Breeding
       if (_cattleDetails != null) {
@@ -798,100 +801,9 @@ class _CattleEventFormScreenState extends State<CattleEventFormScreen>
             : 'Failed to update cow ${_cattleDetails!.tagNo} status';
       }
 
-      // Get breeding type and handle accordingly
-      final breedingFieldsKey = _eventSpecificFieldsKey.currentState;
-      final breedingType = breedingFieldsKey?.getBreedingType() ?? 'artificial_insemination';
-      
-      if (breedingType == 'artificial_insemination') {
-        // For AI, get bull tag from semen selection
-        final semenUsed = _controllers['semen_used']?.text ?? '';
-        if (semenUsed.isNotEmpty) {
-          // Extract bull tag from semen selection
-          String bullTag = '';
-          if (semenUsed.contains(' Semen')) {
-            String tagPart = semenUsed.replaceAll(' Semen', '');
-            if (tagPart.contains(' (') && tagPart.contains(')')) {
-              bullTag = tagPart.split(' (')[0];
-            } else {
-              bullTag = tagPart;
-            }
-          }
-          
-          if (bullTag.isNotEmpty) {
-            try {
-              final bull = await CattleService.getCattleByTag(bullTag);
-              if (bull != null) {
-                // Create breeding event for the bull (but don't update bull status)
-                final bullEventData = {
-                  'cattle_tag': bullTag,
-                  'bull_tag': null,
-                  'calf_tag': null,
-                  'event_type': 'Breeding',
-                  'event_date': _controllers['event_date']!.text,
-                  'sickness_symptoms': '',
-                  'diagnosis': '',
-                  'technician': _controllers['technician']!.text,
-                  'medicine_given': '',
-                  'weighed_result': null,
-                  'breeding_date': _controllers['event_date']!.text,
-                  'breeding_type': 'artificial_insemination',
-                  'notes': 'AI breeding with cow ${_cattleDetails?.tagNo ?? 'Unknown'}${_controllers['notes']!.text.isNotEmpty ? '. Additional notes: ${_controllers['notes']!.text}' : ''}',
-                };
-
-                bullEventCreated = await CattleEventService.storeCattleEvent(bullEventData);
-                bullEventStatus = bullEventCreated
-                    ? 'AI breeding event created for bull $bullTag (status unchanged)'
-                    : 'Failed to create AI breeding event for bull $bullTag';
-              } else {
-                bullEventStatus = 'Bull $bullTag not found in database - cannot create event';
-              }
-            } catch (e) {
-              bullEventStatus = 'Error creating bull AI breeding event: $e';
-            }
-          } else {
-            bullEventStatus = 'Could not extract bull tag from semen selection';
-          }
-        } else {
-          bullEventStatus = 'No semen selected for AI breeding';
-        }
-      } else {
-        // For natural breeding, get bull tag directly
-        final bullTag = _controllers['bull_tag']?.text ?? '';
-        if (bullTag.isNotEmpty) {
-          try {
-            final bull = await CattleService.getCattleByTag(bullTag);
-            if (bull != null) {
-                                            // Create breeding event for the bull (but don't update bull status)
-                final bullEventData = {
-                  'cattle_tag': bullTag,
-                  'bull_tag': null,
-                  'calf_tag': null,
-                  'event_type': 'Breeding',
-                  'event_date': _controllers['event_date']!.text,
-                  'sickness_symptoms': '',
-                  'diagnosis': '',
-                  'technician': '', // No technician for natural breeding
-                  'medicine_given': '',
-                  'weighed_result': null,
-                  'breeding_date': _controllers['event_date']!.text,
-                  'breeding_type': 'natural_breeding',
-                  'notes': 'Natural breeding with cow ${_cattleDetails?.tagNo ?? 'Unknown'}${_controllers['notes']!.text.isNotEmpty ? '. Additional notes: ${_controllers['notes']!.text}' : ''}',
-                };
-
-              bullEventCreated = await CattleEventService.storeCattleEvent(bullEventData);
-              bullEventStatus = bullEventCreated
-                  ? 'Natural breeding event created for bull $bullTag (status unchanged)'
-                  : 'Failed to create natural breeding event for bull $bullTag';
-            } else {
-              bullEventStatus = 'Bull $bullTag not found in database - cannot create event';
-            }
-          } catch (e) {
-            bullEventStatus = 'Error creating bull natural breeding event: $e';
-          }
-        } else {
-          bullEventStatus = 'No bull tag available for natural breeding event creation';
-        }
-      }
+      // Log the results for debugging
+      print('Breeding event results:');
+      print('- Cow: $cowStatus');
 
       final returnToHeatText = _controllers['estimated_return_date']?.text ?? '';
       if (returnToHeatText.isNotEmpty) {
@@ -924,12 +836,9 @@ class _CattleEventFormScreenState extends State<CattleEventFormScreen>
       // Log the results for debugging
       print('Breeding event results:');
       print('- Cow: $cowStatus');
-      print('- Bull Event: $bullEventStatus');
 
       // Optional: Show a snackbar with summary if needed
-      if (mounted && (cowStatusUpdated || bullEventCreated)) {
-        if (bullEventCreated) {
-        }
+      if (mounted && cowStatusUpdated) {
 
         // You can uncomment this if you want to show success feedback
         /*
@@ -1120,7 +1029,7 @@ class _CattleEventFormScreenState extends State<CattleEventFormScreen>
                               key: _eventSpecificFieldsKey,
                               selectedEventType: selectedEventType,
                               controllers: _controllers,
-                              cattleTag: widget.cattleTag,
+                              cattleTag: widget.cattleTag ?? (isEditing && widget.event != null ? widget.event!.cattleTag : null),
                               temporaryCalfData: _temporaryCalfData,
                               onEditCalfPressed: _openCalfRegistrationDialog,
                               showReturnToHeat: _shouldShowReturnToHeatField(),

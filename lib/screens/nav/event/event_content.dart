@@ -617,9 +617,6 @@ class _EventContentState extends State<EventContent> {
 
   void _handleEventAction(String action, Map<String, dynamic> event) {
     switch (action) {
-      case 'view':
-        _showEventDetails(event);
-        break;
       case 'edit':
         _editEvent(event);
         break;
@@ -632,51 +629,9 @@ class _EventContentState extends State<EventContent> {
     }
   }
 
-  void _showEventDetails(Map<String, dynamic> event) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text(event['event_type']?.toString() ?? 'Event Details'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _buildDetailRow('Cattle Tag', event['cattle_tag']?.toString() ?? 'N/A'),
-            _buildDetailRow('Event Date', _formatDate(event['event_date'])),
-            if (event['notes']?.toString().isNotEmpty == true)
-              _buildDetailRow('Notes', event['notes']?.toString() ?? ''),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Close'),
-          ),
-        ],
-      ),
-    );
-  }
 
-  Widget _buildDetailRow(String label, String value) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          SizedBox(
-            width: 80,
-            child: Text(
-              '$label:',
-              style: const TextStyle(fontWeight: FontWeight.w600),
-            ),
-          ),
-          Expanded(
-            child: Text(value),
-          ),
-        ],
-      ),
-    );
-  }
+
+
 
   void _editEvent(Map<String, dynamic> event) {
     // Convert the map to a CattleEvent object
@@ -684,7 +639,10 @@ class _EventContentState extends State<EventContent> {
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => CattleEventFormScreen(event: cattleEvent),
+        builder: (context) => CattleEventFormScreen(
+          event: cattleEvent,
+          cattleTag: event['cattle_tag']?.toString(),
+        ),
       ),
     ).then((_) => _loadAllCattleEvents());
   }
@@ -813,16 +771,6 @@ class _EventContentState extends State<EventContent> {
       context: context,
       position: position,
       items: [
-        const PopupMenuItem(
-          value: 'view',
-          child: Row(
-            children: [
-              Icon(Icons.visibility_rounded, size: 18),
-              SizedBox(width: 8),
-              Text('View Details'),
-            ],
-          ),
-        ),
         const PopupMenuItem(
           value: 'edit',
           child: Row(

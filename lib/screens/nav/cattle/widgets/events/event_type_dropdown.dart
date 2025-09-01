@@ -29,7 +29,10 @@ class EventTypeDropdown extends StatefulWidget {
 
 class EventTypeDropdownState extends State<EventTypeDropdown> {
   List<String> get eventTypes {
-    return EventTypeUtils.getEventTypesForGender(widget.cattleDetails?.gender);
+    return EventTypeUtils.getEventTypesForGender(
+      widget.cattleDetails?.gender,
+      classification: widget.cattleDetails?.classification,
+    );
   }
 
   // Helper method to show date picker and update controller

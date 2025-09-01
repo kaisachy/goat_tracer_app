@@ -1,11 +1,12 @@
 import 'package:cattle_tracer_app/services/cattle/cattle_event_service.dart';
 import 'package:cattle_tracer_app/services/cattle/cattle_service.dart';
+import 'package:flutter/src/material/date.dart';
 
 class BreedingAnalysisService {
   static Future<Map<String, dynamic>> getBreedingSuccessAnalysis({
     String? selectedCowTag,
     String? selectedBullTag,
-    String? selectedBreedingType,
+    String? selectedBreedingType, String? successStatus, DateTimeRange<DateTime>? dateRange,
   }) async {
     try {
       // Get all breeding events
@@ -130,10 +131,13 @@ class BreedingAnalysisService {
 
       final List<Map<String, dynamic>> successfulBreedings = [];
       final List<Map<String, dynamic>> failedBreedings = [];
+      final List<Map<String, dynamic>> pendingBreedings = [];
 
       for (int i = 0; i < cowBreedings.length; i++) {
         final breeding = cowBreedings[i];
         final breedingDate = DateTime.parse(breeding['event_date'] ?? '1900-01-01');
+        final today = DateTime.now();
+        final daysSinceBreeding = today.difference(breedingDate).inDays;
         
         // Look for pregnancy within 30-60 days after breeding
         bool foundPregnancy = false;
@@ -151,9 +155,21 @@ class BreedingAnalysisService {
           }
         }
 
-        print('DEBUG: Analyzing breeding for cow $cowTag on ${breeding['event_date']}');
+        print('DEBUG: Analyzing breeding for cow $cowTag on ${breeding['event_date']} (${daysSinceBreeding} days ago)');
         print('DEBUG: Responsible bull: $responsibleBull');
         print('DEBUG: Breeding type: $breedingType');
+
+        // Check if breeding is too recent to determine success/failure
+        if (daysSinceBreeding < 30) {
+          print('DEBUG: ⏳ Breeding too recent (${daysSinceBreeding} days) - marking as pending');
+          pendingBreedings.add({
+            'event_date': breeding['event_date'],
+            'breeding_type': breedingType,
+            'days_since_breeding': daysSinceBreeding,
+            'status': 'pending',
+          });
+          continue; // Skip to next breeding event
+        }
 
         // Check pregnancy events
         for (final pregnancy in cowPregnancies) {
@@ -207,11 +223,24 @@ class BreedingAnalysisService {
         }
 
         if (!foundPregnancy) {
-          print('DEBUG: ❌ No pregnancy/birth match found - marking as failed');
-          failedBreedings.add({
-            'event_date': breeding['event_date'],
-            'breeding_type': breeding['breeding_type'],
-          });
+          // Only mark as failed if enough time has passed (more than 60 days)
+          if (daysSinceBreeding > 60) {
+            print('DEBUG: ❌ No pregnancy/birth match found after ${daysSinceBreeding} days - marking as failed');
+            failedBreedings.add({
+              'event_date': breeding['event_date'],
+              'breeding_type': breedingType,
+              'days_since_breeding': daysSinceBreeding,
+              'status': 'failed',
+            });
+          } else {
+            print('DEBUG: ⏳ No pregnancy/birth match found but only ${daysSinceBreeding} days passed - marking as pending');
+            pendingBreedings.add({
+              'event_date': breeding['event_date'],
+              'breeding_type': breedingType,
+              'days_since_breeding': daysSinceBreeding,
+              'status': 'pending',
+            });
+          }
         }
 
         // Track bull performance
@@ -251,19 +280,24 @@ class BreedingAnalysisService {
         }
       }
 
-      // Calculate success rate for this cow
+      // Calculate success rate for this cow (only count resolved breedings)
       final totalBreedings = cowBreedings.length;
+      final resolvedBreedings = successfulBreedings.length + failedBreedings.length;
       final successfulCount = successfulBreedings.length;
-      final successRate = totalBreedings > 0 ? (successfulCount / totalBreedings) * 100 : 0.0;
+      final pendingCount = pendingBreedings.length;
+      final successRate = resolvedBreedings > 0 ? (successfulCount / resolvedBreedings) * 100 : 0.0;
 
       cowAnalysis.add({
         'cow_tag': cowTag,
         'total_breedings': totalBreedings,
         'successful_breedings': successfulCount,
         'failed_breedings': failedBreedings.length,
+        'pending_breedings': pendingCount,
+        'resolved_breedings': resolvedBreedings,
         'success_rate': successRate,
         'successful_breedings_details': successfulBreedings,
         'failed_breedings_details': failedBreedings,
+        'pending_breedings_details': pendingBreedings,
         'last_breeding_date': cowBreedings.isNotEmpty ? cowBreedings.last['event_date'] : null,
       });
     }
@@ -285,13 +319,18 @@ class BreedingAnalysisService {
     // Calculate overall statistics
     final totalBreedings = breedingEvents.length;
     final totalSuccessful = cowAnalysis.fold<int>(0, (sum, cow) => sum + (cow['successful_breedings'] as int));
-    final overallSuccessRate = totalBreedings > 0 ? (totalSuccessful / totalBreedings) * 100 : 0.0;
+    final totalFailed = cowAnalysis.fold<int>(0, (sum, cow) => sum + (cow['failed_breedings'] as int));
+    final totalPending = cowAnalysis.fold<int>(0, (sum, cow) => sum + (cow['pending_breedings'] as int));
+    final totalResolved = totalSuccessful + totalFailed;
+    final overallSuccessRate = totalResolved > 0 ? (totalSuccessful / totalResolved) * 100 : 0.0;
 
     return {
       'overall_statistics': {
         'total_breedings': totalBreedings,
         'total_successful': totalSuccessful,
-        'total_failed': totalBreedings - totalSuccessful,
+        'total_failed': totalFailed,
+        'total_pending': totalPending,
+        'total_resolved': totalResolved,
         'overall_success_rate': overallSuccessRate,
       },
       'cow_analysis': cowAnalysis,

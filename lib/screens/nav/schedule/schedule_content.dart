@@ -367,7 +367,10 @@ class _ScheduleContentWidgetState extends State<ScheduleContentWidget> with Tick
           scheduleToEdit: schedule,
         ),
       ),
-    );
+    ).then((_) {
+      // Refresh the schedules after editing
+      _loadSchedules();
+    });
   }
 
   void _showScheduleDetails(Schedule schedule) {

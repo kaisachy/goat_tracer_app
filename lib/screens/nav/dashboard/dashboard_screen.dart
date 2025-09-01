@@ -4,7 +4,8 @@ import 'package:cattle_tracer_app/models/cattle.dart';
 import 'package:cattle_tracer_app/constants/app_colors.dart';
 import 'package:cattle_tracer_app/services/cattle/cattle_service.dart';
 import 'package:cattle_tracer_app/services/cattle/cattle_event_service.dart';
-import '../../dashboard/breeding_success_card.dart';
+import 'package:fl_chart/fl_chart.dart';
+import 'breeding_success_card.dart';
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
@@ -205,19 +206,19 @@ class _DashboardScreenState extends State<DashboardScreen>
             delegate: SliverChildListDelegate([
               _buildOverviewCards(),
               const SizedBox(height: 20),
-              _buildBreedingSuccessCard(),
-              const SizedBox(height: 20),
-              _buildGenderDistribution(),
+              _buildClassificationDistribution(),
               const SizedBox(height: 20),
               _buildStatusBreakdown(),
+              const SizedBox(height: 20),
+              _buildBreedingSuccessCard(),
+              const SizedBox(height: 20),
+              _buildExpectedDeliveries(),
               const SizedBox(height: 20),
               _buildRecentEvents(),
               const SizedBox(height: 20),
               _buildEventsByType(),
               const SizedBox(height: 20),
               _buildBreedDistribution(),
-              const SizedBox(height: 20),
-              _buildClassificationDistribution(),
               const SizedBox(height: 20),
               _buildHealthStats(),
               const SizedBox(height: 100), // Bottom padding
@@ -228,18 +229,191 @@ class _DashboardScreenState extends State<DashboardScreen>
     );
   }
 
+  Widget _buildExpectedDeliveries() {
+    // Extract pregnant events with expected delivery date
+    final List<Map<String, dynamic>> deliveries = allEvents
+        .where((e) =>
+            (e['event_type']?.toString().toLowerCase() ?? '') == 'pregnant' &&
+            (e['expected_delivery_date'] != null &&
+                e['expected_delivery_date'].toString().isNotEmpty))
+        .map((e) => {
+              'cattle_tag': e['cattle_tag'],
+              'expected_delivery_date': e['expected_delivery_date'],
+            })
+        .toList();
+
+    // Sort by expected delivery date (earliest first)
+    deliveries.sort((a, b) {
+      try {
+        final ad = DateTime.parse(a['expected_delivery_date']);
+        final bd = DateTime.parse(b['expected_delivery_date']);
+        return ad.compareTo(bd);
+      } catch (_) {
+        return 0;
+      }
+    });
+
+    return _buildAnimatedCard(
+      delay: 175,
+      child: Container(
+        padding: const EdgeInsets.all(24),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(20),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.05),
+              blurRadius: 20,
+              offset: const Offset(0, 8),
+            ),
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: const [
+                Icon(Icons.calendar_month, color: AppColors.darkGreen, size: 24),
+                SizedBox(width: 12),
+                Text(
+                  'Expected Deliveries',
+                  style: TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.textPrimary,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 20),
+            if (deliveries.isNotEmpty)
+              ...deliveries.map((d) => _buildExpectedDeliveryRow(d)).toList()
+            else
+              Container(
+                padding: const EdgeInsets.all(20),
+                child: Column(
+                  children: [
+                    Icon(
+                      Icons.event_busy,
+                      size: 48,
+                      color: Colors.grey.shade400,
+                    ),
+                    const SizedBox(height: 12),
+                    Text(
+                      'No expected deliveries',
+                      style: TextStyle(
+                        color: Colors.grey.shade600,
+                        fontSize: 16,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildExpectedDeliveryRow(Map<String, dynamic> delivery) {
+    final tag = delivery['cattle_tag']?.toString() ?? 'N/A';
+    final dateStr = delivery['expected_delivery_date']?.toString();
+
+    DateTime? date;
+    int? daysLeft;
+    if (dateStr != null && dateStr.isNotEmpty) {
+      try {
+        date = DateTime.parse(dateStr);
+        daysLeft = date.difference(DateTime.now()).inDays;
+      } catch (_) {}
+    }
+
+    final Color chipColor;
+    if (daysLeft == null) {
+      chipColor = Colors.grey.shade500;
+    } else if (daysLeft < 0) {
+      chipColor = Colors.red.shade500; // overdue
+    } else if (daysLeft <= 14) {
+      chipColor = Colors.orange.shade600; // soon
+    } else {
+      chipColor = AppColors.vibrantGreen; // later
+    }
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: chipColor.withOpacity(0.06),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: chipColor.withOpacity(0.25)),
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: chipColor.withOpacity(0.12),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Icon(Icons.pregnant_woman, color: chipColor, size: 20),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  '#$tag',
+                  style: const TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.textPrimary,
+                  ),
+                ),
+                Text(
+                  date != null ? _formatFullDate(date) : 'N/A',
+                  style: const TextStyle(
+                    fontSize: 13,
+                    color: AppColors.textSecondary,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          if (daysLeft != null)
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+              decoration: BoxDecoration(
+                color: chipColor.withOpacity(0.12),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Text(
+                daysLeft < 0
+                    ? '${daysLeft.abs()}d overdue'
+                    : '${daysLeft}d left',
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                  color: chipColor,
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
+  String _formatFullDate(DateTime date) {
+    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    return '${date.day.toString().padLeft(2, '0')} ${months[date.month - 1]} ${date.year}';
+  }
+
   Widget _buildOverviewCards() {
     final totalCattle = allCattle.length;
-    final activeCattle = allCattle.where((c) => c.status.toLowerCase() == 'active').length;
-    final totalEvents = allEvents.length;
-    final recentEvents = allEvents.where((e) {
-      try {
-        final eventDate = DateTime.parse(e['event_date']);
-        return eventDate.isAfter(DateTime.now().subtract(const Duration(days: 30)));
-      } catch (e) {
-        return false;
-      }
-    }).length;
+    final activeCattle = allCattle.where((c) => 
+      c.status.toLowerCase() != 'sold' && c.status.toLowerCase() != 'deceased').length;
 
     return Row(
       children: [
@@ -259,13 +433,7 @@ class _DashboardScreenState extends State<DashboardScreen>
         Expanded(
           child: _buildAnimatedCard(
             delay: 100,
-            child: _buildOverviewCard(
-              title: 'Total Events',
-              value: totalEvents.toString(),
-              icon: Icons.event_note,
-              color: Colors.blue.shade500,
-              subtitle: '$recentEvents this month',
-            ),
+            child: _buildGenderPieChart(),
           ),
         ),
       ],
@@ -280,6 +448,7 @@ class _DashboardScreenState extends State<DashboardScreen>
     required String subtitle,
   }) {
     return Container(
+      height: 180, // Fixed height to match pie chart container
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         color: Colors.white,
@@ -295,6 +464,7 @@ class _DashboardScreenState extends State<DashboardScreen>
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // Header with icon and title
           Row(
             children: [
               Container(
@@ -305,32 +475,39 @@ class _DashboardScreenState extends State<DashboardScreen>
                 ),
                 child: Icon(icon, color: color, size: 24),
               ),
-              const Spacer(),
-              Text(
-                value,
-                style: TextStyle(
-                  fontSize: 32,
-                  fontWeight: FontWeight.bold,
-                  color: color,
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  title,
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.textPrimary,
+                  ),
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 12),
-          Text(
-            title,
-            style: const TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.w600,
-              color: AppColors.textPrimary,
+          // Main value display
+          Center(
+            child: Text(
+              value,
+              style: TextStyle(
+                fontSize: 48,
+                fontWeight: FontWeight.bold,
+                color: color,
+              ),
             ),
           ),
-          const SizedBox(height: 4),
-          Text(
-            subtitle,
-            style: TextStyle(
-              fontSize: 14,
-              color: AppColors.textSecondary.withOpacity(0.8),
+          // Subtitle centered
+          Center(
+            child: Text(
+              subtitle,
+              style: TextStyle(
+                fontSize: 14,
+                color: AppColors.textSecondary.withOpacity(0.8),
+                fontWeight: FontWeight.w500,
+              ),
             ),
           ),
         ],
@@ -338,111 +515,24 @@ class _DashboardScreenState extends State<DashboardScreen>
     );
   }
 
-  Widget _buildGenderDistribution() {
-    final males = allCattle.where((c) => c.gender.toLowerCase() == 'male').length;
-    final females = allCattle.where((c) => c.gender.toLowerCase() == 'female').length;
-    final total = allCattle.length;
 
-    return _buildAnimatedCard(
-      delay: 200,
-      child: Container(
-        padding: const EdgeInsets.all(24),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(20),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.05),
-              blurRadius: 20,
-              offset: const Offset(0, 8),
-            ),
-          ],
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                const Icon(Icons.pie_chart, color: AppColors.darkGreen, size: 24),
-                const SizedBox(width: 12),
-                const Text(
-                  'Gender Distribution',
-                  style: TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                    color: AppColors.textPrimary,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 24),
-            if (total > 0) ...[
-              _buildGenderBar('Male', males, total, Colors.blue.shade400),
-              const SizedBox(height: 16),
-              _buildGenderBar('Female', females, total, Colors.pink.shade400),
-            ] else
-              const Text(
-                'No cattle data available',
-                style: TextStyle(color: AppColors.textSecondary),
-              ),
-          ],
-        ),
-      ),
-    );
-  }
 
-  Widget _buildGenderBar(String label, int count, int total, Color color) {
-    final percentage = total > 0 ? (count / total * 100) : 0.0;
 
-    return Column(
-      children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Text(
-              label,
-              style: const TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w600,
-                color: AppColors.textPrimary,
-              ),
-            ),
-            Text(
-              '$count (${percentage.toStringAsFixed(1)}%)',
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w600,
-                color: color,
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 8),
-        Container(
-          height: 8,
-          decoration: BoxDecoration(
-            color: Colors.grey.shade200,
-            borderRadius: BorderRadius.circular(4),
-          ),
-          child: FractionallySizedBox(
-            widthFactor: percentage / 100,
-            alignment: Alignment.centerLeft,
-            child: Container(
-              decoration: BoxDecoration(
-                color: color,
-                borderRadius: BorderRadius.circular(4),
-              ),
-            ),
-          ),
-        ),
-      ],
-    );
-  }
 
   Widget _buildStatusBreakdown() {
+    // Define all 8 status types
+    final allStatuses = ['Healthy', 'Sick', 'Breeding', 'Pregnant', 'Lactating', 'Lactating & Pregnant', 'Sold', 'Deceased'];
+    
     final statusCount = <String, int>{};
+    
+    // Initialize all statuses with 0
+    for (var status in allStatuses) {
+      statusCount[status] = 0;
+    }
+    
+    // Count actual cattle statuses
     for (var cattle in allCattle) {
-      final status = cattle.status.toLowerCase();
+      final status = cattle.status.isNotEmpty ? cattle.status : 'Unknown';
       statusCount[status] = (statusCount[status] ?? 0) + 1;
     }
 
@@ -479,49 +569,71 @@ class _DashboardScreenState extends State<DashboardScreen>
               ],
             ),
             const SizedBox(height: 20),
-            if (statusCount.isNotEmpty)
-              Wrap(
-                spacing: 12,
-                runSpacing: 12,
-                children: statusCount.entries.map((entry) {
-                  final color = _getStatusColor(entry.key);
-                  return Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                    decoration: BoxDecoration(
-                      color: color.withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(20),
-                      border: Border.all(color: color.withOpacity(0.3)),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Container(
-                          width: 8,
-                          height: 8,
-                          decoration: BoxDecoration(
-                            color: color,
-                            shape: BoxShape.circle,
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        Text(
-                          '${entry.key.toUpperCase()}: ${entry.value}',
-                          style: TextStyle(
-                            color: color,
-                            fontWeight: FontWeight.w600,
-                            fontSize: 14,
-                          ),
-                        ),
-                      ],
-                    ),
-                  );
-                }).toList(),
-              )
-            else
-              const Text(
-                'No status data available',
-                style: TextStyle(color: AppColors.textSecondary),
-              ),
+            GridView.builder(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+                             gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                 crossAxisCount: 2,
+                 crossAxisSpacing: 12,
+                 mainAxisSpacing: 12,
+                 childAspectRatio: 1.5,
+               ),
+              itemCount: statusCount.length,
+              itemBuilder: (context, index) {
+                final entry = statusCount.entries.toList()[index];
+                                 final color = _getStatusColor(entry.key);
+                 return Container(
+                   padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                   decoration: BoxDecoration(
+                     color: color.withOpacity(0.05),
+                     borderRadius: BorderRadius.circular(12),
+                     border: Border.all(color: color.withOpacity(0.2)),
+                   ),
+                                     child: Column(
+                     mainAxisAlignment: MainAxisAlignment.center,
+                     children: [
+                       // Label at top
+                       Row(
+                         children: [
+                           Container(
+                             width: 8,
+                             height: 8,
+                             decoration: BoxDecoration(
+                               color: color,
+                               shape: BoxShape.circle,
+                             ),
+                           ),
+                           const SizedBox(width: 8),
+                           Expanded(
+                             child: Text(
+                               entry.key,
+                               style: const TextStyle(
+                                 fontSize: 14,
+                                 fontWeight: FontWeight.w600,
+                                 color: AppColors.textPrimary,
+                               ),
+                               overflow: TextOverflow.ellipsis,
+                             ),
+                           ),
+                         ],
+                       ),
+                       const SizedBox(height: 6),
+                       // Value centered
+                       Center(
+                         child: Text(
+                           '${entry.value}',
+                           style: TextStyle(
+                             fontSize: 24,
+                             fontWeight: FontWeight.bold,
+                             color: color,
+                           ),
+                         ),
+                       ),
+                     ],
+                   ),
+                );
+              },
+            ),
           ],
         ),
       ),
@@ -847,7 +959,17 @@ class _DashboardScreenState extends State<DashboardScreen>
   }
 
   Widget _buildClassificationDistribution() {
+    // Define all 6 classifications
+    final allClassifications = ['Calf', 'Grower', 'Heifer', 'Steer', 'Cow', 'Bull'];
+    
     final classificationCount = <String, int>{};
+    
+    // Initialize all classifications with 0
+    for (var classification in allClassifications) {
+      classificationCount[classification] = 0;
+    }
+    
+    // Count actual cattle classifications
     for (var cattle in allCattle) {
       final classification = cattle.classification.isNotEmpty
           ? cattle.classification
@@ -892,7 +1014,7 @@ class _DashboardScreenState extends State<DashboardScreen>
               ],
             ),
             const SizedBox(height: 20),
-            if (sortedClassifications.isNotEmpty && total > 0)
+            if (sortedClassifications.isNotEmpty)
               Column(
                 children: sortedClassifications.map((entry) {
                   final percentage = (entry.value / total * 100);
@@ -907,19 +1029,6 @@ class _DashboardScreenState extends State<DashboardScreen>
                           children: [
                             Row(
                               children: [
-                                Container(
-                                  padding: const EdgeInsets.all(8),
-                                  decoration: BoxDecoration(
-                                    color: color.withOpacity(0.1),
-                                    borderRadius: BorderRadius.circular(8),
-                                  ),
-                                  child: Icon(
-                                    _getClassificationIcon(entry.key),
-                                    color: color,
-                                    size: 18,
-                                  ),
-                                ),
-                                const SizedBox(width: 12),
                                 Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
@@ -1155,53 +1264,27 @@ class _DashboardScreenState extends State<DashboardScreen>
   }
 
   Color _getClassificationColor(String classification) {
-    switch (classification.toLowerCase()) {
-      case 'calf':
-        return Colors.lightBlue.shade400;
-      case 'heifer':
-        return Colors.pink.shade400;
-      case 'bull':
-        return Colors.deepOrange.shade500;
-      case 'cow':
-        return Colors.green.shade500;
-      case 'steer':
-        return Colors.brown.shade500;
-      case 'grower':
-        return Colors.purple.shade400;
-      default:
-        return Colors.indigo.shade400;
-    }
-  }
-
-  IconData _getClassificationIcon(String classification) {
-    switch (classification.toLowerCase()) {
-      case 'calf':
-        return Icons.child_care;
-      case 'heifer':
-        return Icons.female;
-      case 'bull':
-        return Icons.male;
-      case 'cow':
-        return FontAwesomeIcons.cow;
-      case 'steer':
-        return Icons.agriculture;
-      case 'grower':
-        return Icons.trending_up;
-      default:
-        return Icons.pets;
-    }
+    return AppColors.lightGreen;
   }
 
   Color _getStatusColor(String status) {
     switch (status.toLowerCase()) {
-      case 'active':
+      case 'healthy':
         return Colors.green.shade500;
-      case 'inactive':
-        return Colors.grey.shade500;
-      case 'sold':
-        return Colors.blue.shade500;
-      case 'deceased':
+      case 'sick':
         return Colors.red.shade500;
+      case 'breeding':
+        return Colors.pink.shade500;
+      case 'lactating':
+        return Colors.blue.shade500;
+      case 'pregnant':
+        return Colors.purple.shade500;
+      case 'lactating & pregnant':
+        return Colors.indigo.shade500;
+      case 'sold':
+        return Colors.orange.shade500;
+      case 'deceased':
+        return Colors.grey.shade600;
       default:
         return AppColors.lightGreen;
     }
@@ -1296,6 +1379,144 @@ class _DashboardScreenState extends State<DashboardScreen>
     return _buildAnimatedCard(
       delay: 150,
       child: const BreedingSuccessCard(),
+    );
+  }
+
+  Widget _buildGenderPieChart() {
+    final males = allCattle.where((c) => c.gender.toLowerCase() == 'male').length;
+    final females = allCattle.where((c) => c.gender.toLowerCase() == 'female').length;
+    final total = allCattle.length;
+
+    if (total == 0) {
+      return Container(
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(20),
+          boxShadow: [
+            BoxShadow(
+              color: AppColors.darkGreen.withOpacity(0.1),
+              blurRadius: 20,
+              offset: const Offset(0, 8),
+            ),
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Cattle Gender',
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+                color: AppColors.textPrimary,
+              ),
+            ),
+            const SizedBox(height: 4),
+            const Text(
+              'No data available',
+              style: TextStyle(
+                fontSize: 14,
+                color: AppColors.textSecondary,
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.darkGreen.withOpacity(0.1),
+            blurRadius: 20,
+            offset: const Offset(0, 8),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Cattle Gender',
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w600,
+              color: AppColors.textPrimary,
+            ),
+          ),
+          const SizedBox(height: 8),
+          SizedBox(
+            height: 80,
+            child: PieChart(
+              PieChartData(
+                sections: [
+                  PieChartSectionData(
+                    color: AppColors.darkGreen,
+                    value: males.toDouble(),
+                    title: '${males}',
+                    radius: 25,
+                    titleStyle: const TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
+                  ),
+                  PieChartSectionData(
+                    color: AppColors.gold,
+                    value: females.toDouble(),
+                    title: '${females}',
+                    radius: 25,
+                    titleStyle: const TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
+                  ),
+                ],
+                centerSpaceRadius: 12,
+                sectionsSpace: 2,
+              ),
+            ),
+          ),
+          const SizedBox(height: 12),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            children: [
+              _buildLegendItem('M', males, AppColors.darkGreen),
+              _buildLegendItem('F', females, AppColors.gold),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildLegendItem(String label, int count, Color color) {
+    return Row(
+      children: [
+        Container(
+          width: 12,
+          height: 12,
+          decoration: BoxDecoration(
+            color: color,
+            shape: BoxShape.circle,
+          ),
+        ),
+        const SizedBox(width: 6),
+        Text(
+          '$label: $count',
+          style: TextStyle(
+            fontSize: 12,
+            fontWeight: FontWeight.w500,
+            color: AppColors.textSecondary,
+          ),
+        ),
+      ],
     );
   }
 }
