@@ -4,6 +4,7 @@ import 'package:cattle_tracer_app/models/cattle.dart';
 import 'package:cattle_tracer_app/constants/app_colors.dart';
 import 'package:cattle_tracer_app/services/cattle/cattle_service.dart';
 import 'package:cattle_tracer_app/services/cattle/cattle_event_service.dart';
+import '../../dashboard/breeding_success_card.dart';
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
@@ -203,6 +204,8 @@ class _DashboardScreenState extends State<DashboardScreen>
           sliver: SliverList(
             delegate: SliverChildListDelegate([
               _buildOverviewCards(),
+              const SizedBox(height: 20),
+              _buildBreedingSuccessCard(),
               const SizedBox(height: 20),
               _buildGenderDistribution(),
               const SizedBox(height: 20),
@@ -1287,5 +1290,12 @@ class _DashboardScreenState extends State<DashboardScreen>
     } catch (e) {
       return dateString;
     }
+  }
+
+  Widget _buildBreedingSuccessCard() {
+    return _buildAnimatedCard(
+      delay: 150,
+      child: const BreedingSuccessCard(),
+    );
   }
 }

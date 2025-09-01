@@ -2,7 +2,6 @@
 
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
-import 'package:cattle_tracer_app/services/auth_service.dart';
 import 'base_event_fields.dart';
 
 class BreedingEventFields extends BaseEventFields {
@@ -17,8 +16,6 @@ class BreedingEventFields extends BaseEventFields {
 
 class BreedingEventFieldsState extends BaseEventFieldsState<BreedingEventFields> {
   String _breedingType = 'artificial_insemination'; // Default to AI
-  String? _currentUserRole;
-  bool _isLoadingRole = true;
 
   // Getter to access breeding type from parent
   String get breedingType => _breedingType;
@@ -26,22 +23,6 @@ class BreedingEventFieldsState extends BaseEventFieldsState<BreedingEventFields>
   @override
   void initState() {
     super.initState();
-    _loadCurrentUserRole();
-  }
-
-  Future<void> _loadCurrentUserRole() async {
-    try {
-      final role = await AuthService.getUserRole();
-      setState(() {
-        _currentUserRole = role?.toLowerCase();
-        _isLoadingRole = false;
-      });
-    } catch (e) {
-      setState(() {
-        _currentUserRole = 'farmer'; // Default to farmer if error
-        _isLoadingRole = false;
-      });
-    }
   }
 
   @override
@@ -148,30 +129,7 @@ class BreedingEventFieldsState extends BaseEventFieldsState<BreedingEventFields>
     }
   }
 
-  bool _canPerformBreedingType() {
-    if (_isLoadingRole || _currentUserRole == null) return false;
-    
-    if (_breedingType == 'artificial_insemination') {
-      // Only technician and pvo can perform AI
-      return _currentUserRole == 'technician' || _currentUserRole == 'pvo';
-    } else {
-      // Only farmer can perform natural breeding
-      return _currentUserRole == 'farmer';
-    }
-  }
 
-  // Check if current user can perform the selected breeding type
-  bool _canCurrentUserPerformBreeding() {
-    if (_isLoadingRole || _currentUserRole == null) return false;
-    
-    if (_breedingType == 'artificial_insemination') {
-      // Only technician and pvo can perform AI
-      return _currentUserRole == 'technician' || _currentUserRole == 'pvo';
-    } else {
-      // Only farmer can perform natural breeding
-      return _currentUserRole == 'farmer';
-    }
-  }
 
   @override
   Widget build(BuildContext context) {

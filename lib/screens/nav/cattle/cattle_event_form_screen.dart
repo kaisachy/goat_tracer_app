@@ -583,7 +583,7 @@ class _CattleEventFormScreenState extends State<CattleEventFormScreen>
 
       // Add breeding type for breeding events
       if (selectedEventType.toLowerCase() == 'breeding') {
-        final breedingFieldsKey = _eventSpecificFieldsKey.currentState as EventSpecificFieldsState?;
+        final breedingFieldsKey = _eventSpecificFieldsKey.currentState;
         final breedingType = breedingFieldsKey?.getBreedingType();
         if (breedingType != null) {
           data['breeding_type'] = breedingType;
@@ -629,7 +629,7 @@ class _CattleEventFormScreenState extends State<CattleEventFormScreen>
 
       if (selectedEventType.toLowerCase() == 'breeding') {
         // Get breeding type from the breeding event fields
-        final breedingFieldsKey = _eventSpecificFieldsKey.currentState as EventSpecificFieldsState?;
+        final breedingFieldsKey = _eventSpecificFieldsKey.currentState;
         final breedingType = breedingFieldsKey?.getBreedingType();
         
         if (breedingType == 'artificial_insemination') {
@@ -799,7 +799,7 @@ class _CattleEventFormScreenState extends State<CattleEventFormScreen>
       }
 
       // Get breeding type and handle accordingly
-      final breedingFieldsKey = _eventSpecificFieldsKey.currentState as EventSpecificFieldsState?;
+      final breedingFieldsKey = _eventSpecificFieldsKey.currentState;
       final breedingType = breedingFieldsKey?.getBreedingType() ?? 'artificial_insemination';
       
       if (breedingType == 'artificial_insemination') {
