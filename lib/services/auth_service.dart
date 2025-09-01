@@ -87,14 +87,19 @@ class AuthService {
       }
 
       if (data['success'] == true) {
+        print('🔍 AuthService DEBUG: Login successful, saving data...');
         // Save token and user data
         await _storage.saveToken(data['token']);
+        print('🔍 AuthService DEBUG: Token saved');
 
         if (data['user'] != null && data['user']['id'] != null) {
+          final userId = data['user']['id'].toString();
+          print('🔍 AuthService DEBUG: Saving user ID: $userId');
           await _storage.write(
               key: 'user_id',
-              value: data['user']['id'].toString()
+              value: userId
           );
+          print('🔍 AuthService DEBUG: User ID saved to storage');
 
           // Save additional user info for easy access
           await _storage.write(
@@ -222,7 +227,10 @@ class AuthService {
   }
 
   static Future<String?> getUserId() async {
-    return await _storage.read(key: 'user_id');
+    print('🔍 AuthService DEBUG: getUserId() called');
+    final userId = await _storage.read(key: 'user_id');
+    print('🔍 AuthService DEBUG: User ID from storage: $userId');
+    return userId;
   }
 
   static Future<String?> getUserRole() async {
@@ -244,44 +252,85 @@ class AuthService {
 
   /// Check if user is authenticated and has valid token
   static Future<bool> isAuthenticated() async {
+    print('🔍 AuthService DEBUG: isAuthenticated() called');
     final token = await getToken();
-    if (token == null) return false;
+    print('🔍 AuthService DEBUG: Token exists: ${token != null}');
+    if (token == null) {
+      print('🔍 AuthService DEBUG: ❌ No token - not authenticated');
+      return false;
+    }
 
     try {
+      print('🔍 AuthService DEBUG: Checking token validity...');
       final parts = token.split('.');
-      if (parts.length != 3) return false;
+      print('🔍 AuthService DEBUG: Token parts count: ${parts.length}');
+      if (parts.length != 3) {
+        print('🔍 AuthService DEBUG: ❌ Invalid token format - not 3 parts');
+        return false;
+      }
 
+      print('🔍 AuthService DEBUG: Decoding token payload...');
       final payload = json.decode(
           utf8.decode(base64Url.decode(base64Url.normalize(parts[1])))
       );
+      print('🔍 AuthService DEBUG: Token payload: $payload');
 
       final exp = payload['exp'];
-      if (exp == null) return false;
+      print('🔍 AuthService DEBUG: Token expiration: $exp');
+      if (exp == null) {
+        print('🔍 AuthService DEBUG: ❌ No expiration in token');
+        return false;
+      }
 
       final currentTime = DateTime.now().millisecondsSinceEpoch ~/ 1000;
-      return currentTime < exp;
+      print('🔍 AuthService DEBUG: Current time: $currentTime');
+      final isValid = currentTime < exp;
+      print('🔍 AuthService DEBUG: Token is valid: $isValid');
+      return isValid;
     } catch (e) {
-      print('Error checking token validity: $e');
+      print('🔍 AuthService DEBUG: ❌ Error checking token validity: $e');
       return false;
     }
   }
 
   /// Get current user ID from token claims
   static Future<String?> getCurrentUserId() async {
+    print('🔍 AuthService DEBUG: getCurrentUserId() called');
     final token = await getToken();
-    if (token == null) return null;
+    print('🔍 AuthService DEBUG: Token exists: ${token != null}');
+    if (token == null) {
+      print('🔍 AuthService DEBUG: ❌ No token found');
+      return null;
+    }
 
     try {
+      print('🔍 AuthService DEBUG: Decoding JWT token...');
       final parts = token.split('.');
-      if (parts.length != 3) return null;
+      print('🔍 AuthService DEBUG: Token parts count: ${parts.length}');
+      if (parts.length != 3) {
+        print('🔍 AuthService DEBUG: ❌ Invalid token format - not 3 parts');
+        return null;
+      }
 
+      print('🔍 AuthService DEBUG: Decoding payload (part 1)...');
       final payload = json.decode(
           utf8.decode(base64Url.decode(base64Url.normalize(parts[1])))
       );
+      print('🔍 AuthService DEBUG: Token payload: $payload');
 
-      return payload['sub']?.toString();
+      final userId = payload['sub']?.toString();
+      print('🔍 AuthService DEBUG: User ID from token (sub): $userId');
+      
+      // Also check for other possible user ID fields
+      final userIdAlt = payload['user_id']?.toString();
+      print('🔍 AuthService DEBUG: User ID from token (user_id): $userIdAlt');
+      
+      final userIdAlt2 = payload['id']?.toString();
+      print('🔍 AuthService DEBUG: User ID from token (id): $userIdAlt2');
+
+      return userId ?? userIdAlt ?? userIdAlt2;
     } catch (e) {
-      print('Error decoding user ID from token: $e');
+      print('🔍 AuthService DEBUG: ❌ Error decoding user ID from token: $e');
       return null;
     }
   }

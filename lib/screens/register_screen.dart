@@ -293,7 +293,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
         // Province Field (styled like other input fields)
         TextFormField(
           readOnly: true,
-          decoration: _inputDecoration('Province', Icons.location_city)
+          decoration: _inputDecoration('Province', Icons.location_on)
               .copyWith(
             suffixIcon: Padding(
               padding: const EdgeInsets.all(12.0),
@@ -320,7 +320,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
       children: [
         DropdownButtonFormField<Map<String, dynamic>>(
           value: _selectedMunicipality,
-          decoration: _inputDecoration('Municipality/City', Icons.location_on),
+          decoration: _inputDecoration('Municipality/City', Icons.location_city),
           items: _municipalities
               .map((municipality) => DropdownMenuItem<Map<String, dynamic>>(
             value: municipality,
@@ -364,7 +364,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
         DropdownButtonFormField<Map<String, dynamic>>(
           value: _selectedBarangay,
           decoration:
-          _inputDecoration('Barangay', Icons.location_on_outlined),
+          _inputDecoration('Barangay', Icons.home),
           items: _barangays
               .map((barangay) => DropdownMenuItem<Map<String, dynamic>>(
             value: barangay,

@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:cattle_tracer_app/services/user_service.dart';
 import 'package:cattle_tracer_app/services/auth_service.dart';
+import 'package:cattle_tracer_app/services/address_service.dart';
 import 'package:cattle_tracer_app/models/user.dart';
 import 'package:cattle_tracer_app/constants/app_colors.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 
 class SettingScreen extends StatefulWidget {
   const SettingScreen({super.key});
@@ -14,11 +16,11 @@ class SettingScreen extends StatefulWidget {
 class _SettingScreenState extends State<SettingScreen> with TickerProviderStateMixin {
   final UserService _userService = UserService();
   final _formKey = GlobalKey<FormState>();
+  final _passwordFormKey = GlobalKey<FormState>();
 
   // Controllers for user info
   final _firstNameController = TextEditingController();
   final _lastNameController = TextEditingController();
-  final _emailController = TextEditingController();
 
   // Controllers for password change
   final _currentPasswordController = TextEditingController();
@@ -33,6 +35,15 @@ class _SettingScreenState extends State<SettingScreen> with TickerProviderStateM
   bool _obscureNewPassword = true;
   bool _obscureConfirmPassword = true;
 
+  // Address-related variables
+  List<dynamic> _municipalities = [];
+  List<dynamic> _barangays = [];
+  String? _selectedMunicipality;
+  String? _selectedBarangay;
+  bool _isLoadingMunicipalities = false;
+  bool _isLoadingBarangays = false;
+  bool _isDataReady = false; // New flag to track when data is ready for dropdowns
+
   late AnimationController _animationController;
   late Animation<double> _fadeAnimation;
 
@@ -46,7 +57,15 @@ class _SettingScreenState extends State<SettingScreen> with TickerProviderStateM
     _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
       CurvedAnimation(parent: _animationController, curve: Curves.easeInOut),
     );
-    _loadUserData();
+    
+    // Add listener to new password controller to trigger confirm password validation
+    _newPasswordController.addListener(() {
+      if (_passwordFormKey.currentState != null) {
+        _passwordFormKey.currentState!.validate();
+      }
+    });
+    
+    _initializeData();
   }
 
   @override
@@ -54,22 +73,79 @@ class _SettingScreenState extends State<SettingScreen> with TickerProviderStateM
     _animationController.dispose();
     _firstNameController.dispose();
     _lastNameController.dispose();
-    _emailController.dispose();
     _currentPasswordController.dispose();
     _newPasswordController.dispose();
     _confirmPasswordController.dispose();
     super.dispose();
   }
 
+  Future<void> _initializeData() async {
+    try {
+      // Load municipalities first
+      await _loadMunicipalities();
+      
+      // Then load user data (which will load barangays if municipality is set)
+      await _loadUserData();
+    } catch (e) {
+      debugPrint('Error initializing data: $e');
+    }
+  }
+
+  Future<void> _loadMunicipalities() async {
+    try {
+      setState(() => _isLoadingMunicipalities = true);
+      final municipalities = await AddressService.getIsabelaMunicipalities();
+      setState(() {
+        _municipalities = municipalities;
+        _isLoadingMunicipalities = false;
+      });
+      
+      // If user data is already loaded but municipalities were empty, reload user data
+      if (_currentUser != null && _selectedMunicipality == null) {
+        await _loadUserData();
+      } else if (_currentUser == null) {
+        // If user data is not loaded yet, mark data as ready for initial load
+        setState(() {
+          _isDataReady = true;
+        });
+      }
+    } catch (e) {
+      setState(() => _isLoadingMunicipalities = false);
+    }
+  }
+
+  Future<void> _loadBarangays(String municipalityCode) async {
+    try {
+      setState(() => _isLoadingBarangays = true);
+      final barangays = await AddressService.getBarangays(municipalityCode);
+      setState(() {
+        _barangays = barangays;
+        _isLoadingBarangays = false;
+      });
+    } catch (e) {
+      setState(() => _isLoadingBarangays = false);
+    }
+  }
+
   Future<void> _loadUserData() async {
     try {
+      final token = await AuthService.getToken();
+      final userId = await AuthService.getUserId();
+      final userRole = await AuthService.getUserRole();
+      final userEmail = await AuthService.getUserFirstName();
+      
       setState(() => _isLoading = true);
 
-      // Get the user ID directly from the authentication token.
-      final userIdString = await AuthService.getCurrentUserId();
+      // Check authentication status first
+      final isAuthenticated = await AuthService.isAuthenticated();
 
-      // Debug print to check the userIdString from token
-      debugPrint('[_loadUserData] Fetched userIdString from token: $userIdString');
+      // Try to get user ID from stored data first, then from token as fallback
+      String? userIdString = await AuthService.getUserId();
+      
+      // If not found in storage, try to get from token
+      if (userIdString == null || userIdString.isEmpty) {
+        userIdString = await AuthService.getCurrentUserId();
+      }
 
       if (userIdString == null || userIdString.isEmpty) {
         throw Exception('User session not found. Please login again.');
@@ -85,13 +161,50 @@ class _SettingScreenState extends State<SettingScreen> with TickerProviderStateM
         _currentUser = user;
         _firstNameController.text = user.firstName;
         _lastNameController.text = user.lastName;
-        _emailController.text = user.email;
         _isLoading = false;
       });
 
-      _animationController.forward();
-    } catch (e) {
-      debugPrint('Error loading user data: $e');
+      // Wait for municipalities to be loaded before setting municipality selection
+      if (_municipalities.isEmpty) {
+        return; // Exit early, will be called again after municipalities load
+      }
+
+      // Now set municipality and validate it
+      setState(() {
+        _selectedMunicipality = user.municipality;
+        _selectedBarangay = user.barangay;
+      });
+
+      // Validate municipality exists in our list
+      if (_selectedMunicipality != null) {
+        final municipalityExists = _municipalities.any((m) => m['name'] == _selectedMunicipality);
+        if (!municipalityExists) {
+          setState(() {
+            _selectedMunicipality = null;
+            _selectedBarangay = null;
+          });
+        }
+      }
+
+                   // Load barangays if municipality is already set
+      if (_selectedMunicipality != null && _municipalities.isNotEmpty) {
+        try {
+          final municipality = _municipalities.firstWhere(
+            (m) => m['name'] == _selectedMunicipality,
+          );
+          await _loadBarangays(municipality['code']);
+        } catch (e) {
+          // Municipality not found in list
+        }
+      }
+
+       // Mark data as ready for dropdowns
+       setState(() {
+         _isDataReady = true;
+       });
+
+       _animationController.forward();
+         } catch (e) {
       setState(() => _isLoading = false);
 
       String errorMessage;
@@ -104,7 +217,7 @@ class _SettingScreenState extends State<SettingScreen> with TickerProviderStateM
         _showErrorSnackBar(errorMessage);
       }
     }
-  }
+   }
 
   void _showLoginRequiredDialog() {
     showDialog(
@@ -130,7 +243,9 @@ class _SettingScreenState extends State<SettingScreen> with TickerProviderStateM
   }
 
   Future<void> _updateProfile() async {
-    if (!_formKey.currentState!.validate()) return;
+    if (!_formKey.currentState!.validate()) {
+      return;
+    }
 
     try {
       _showLoadingDialog('Updating profile...');
@@ -139,7 +254,10 @@ class _SettingScreenState extends State<SettingScreen> with TickerProviderStateM
         _currentUser!.id,
         _firstNameController.text.trim(),
         _lastNameController.text.trim(),
-        _emailController.text.trim(),
+        _currentUser!.email, // Keep existing email
+        province: 'Isabela', // Set to Isabela
+        municipality: _selectedMunicipality,
+        barangay: _selectedBarangay,
       );
 
       setState(() {
@@ -157,18 +275,29 @@ class _SettingScreenState extends State<SettingScreen> with TickerProviderStateM
   }
 
   Future<void> _changePassword() async {
-    if (_newPasswordController.text != _confirmPasswordController.text) {
-      _showErrorSnackBar('New passwords do not match');
+    // Validate the password form
+    if (!_passwordFormKey.currentState!.validate()) {
+      return;
+    }
+
+    // Additional validation checks
+    if (_currentPasswordController.text.trim().isEmpty) {
+      _showErrorSnackBar('Current password is required');
+      return;
+    }
+
+    if (_newPasswordController.text.trim().isEmpty) {
+      _showErrorSnackBar('New password is required');
       return;
     }
 
     if (_newPasswordController.text.length < 6) {
-      _showErrorSnackBar('Password must be at least 6 characters');
+      _showErrorSnackBar('New password must be at least 6 characters');
       return;
     }
 
-    if (_currentPasswordController.text.isEmpty) {
-      _showErrorSnackBar('Current password is required');
+    if (_newPasswordController.text.trim() != _confirmPasswordController.text.trim()) {
+      _showErrorSnackBar('New passwords do not match');
       return;
     }
 
@@ -177,8 +306,8 @@ class _SettingScreenState extends State<SettingScreen> with TickerProviderStateM
 
       final success = await _userService.changePassword(
         _currentUser!.id,
-        _currentPasswordController.text,
-        _newPasswordController.text,
+        _currentPasswordController.text.trim(),
+        _newPasswordController.text.trim(),
       );
 
       if (success) {
@@ -186,6 +315,8 @@ class _SettingScreenState extends State<SettingScreen> with TickerProviderStateM
         _currentPasswordController.clear();
         _newPasswordController.clear();
         _confirmPasswordController.clear();
+        // Reset form validation
+        _passwordFormKey.currentState?.reset();
 
         Navigator.of(context, rootNavigator: true).pop(); // Close loading dialog
         _showSuccessSnackBar('Password changed successfully!');
@@ -244,7 +375,7 @@ class _SettingScreenState extends State<SettingScreen> with TickerProviderStateM
             Expanded(child: Text(message)),
           ],
         ),
-        backgroundColor: Colors.green,
+        backgroundColor: AppColors.success,
         behavior: SnackBarBehavior.floating,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
         margin: const EdgeInsets.all(16),
@@ -263,7 +394,7 @@ class _SettingScreenState extends State<SettingScreen> with TickerProviderStateM
             Expanded(child: Text(message)),
           ],
         ),
-        backgroundColor: Colors.red,
+        backgroundColor: AppColors.danger,
         behavior: SnackBarBehavior.floating,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
         margin: const EdgeInsets.all(16),
@@ -284,35 +415,37 @@ class _SettingScreenState extends State<SettingScreen> with TickerProviderStateM
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text(
-                  'Profile Information',
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.grey[800],
-                  ),
-                ),
-                TextButton.icon(
-                  onPressed: () {
-                    setState(() {
-                      if (_isEditingProfile) {
-                        // Cancel editing - restore original values
-                        _firstNameController.text = _currentUser?.firstName ?? '';
-                        _lastNameController.text = _currentUser?.lastName ?? '';
-                        _emailController.text = _currentUser?.email ?? '';
-                      }
-                      _isEditingProfile = !_isEditingProfile;
-                    });
-                  },
-                  icon: Icon(
-                    _isEditingProfile ? Icons.close : Icons.edit,
-                    size: 20,
-                  ),
-                  label: Text(
-                    _isEditingProfile ? 'Cancel' : 'Edit',
-                    style: const TextStyle(fontSize: 14),
-                  ),
-                ),
+                                 Text(
+                   'Profile Information',
+                   style: TextStyle(
+                     fontSize: 18,
+                     fontWeight: FontWeight.bold,
+                     color: AppColors.textPrimary,
+                   ),
+                 ),
+                                 TextButton.icon(
+                   onPressed: () {
+                     setState(() {
+                       if (_isEditingProfile) {
+                         // Cancel editing - restore original values
+                         _firstNameController.text = _currentUser?.firstName ?? '';
+                         _lastNameController.text = _currentUser?.lastName ?? '';
+                         _selectedMunicipality = _currentUser?.municipality;
+                         _selectedBarangay = _currentUser?.barangay;
+                       }
+                       _isEditingProfile = !_isEditingProfile;
+                     });
+                   },
+                   icon: Icon(
+                     _isEditingProfile ? Icons.close : Icons.edit,
+                     size: 20,
+                     color: AppColors.primary,
+                   ),
+                   label: Text(
+                     _isEditingProfile ? 'Cancel' : 'Edit',
+                     style: TextStyle(fontSize: 14, color: AppColors.primary),
+                   ),
+                 ),
               ],
             ),
             const SizedBox(height: 16),
@@ -327,77 +460,182 @@ class _SettingScreenState extends State<SettingScreen> with TickerProviderStateM
                         return Row(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Expanded(
-                              child: _buildNameField(
-                                controller: _firstNameController,
-                                label: 'First Name',
-                                icon: Icons.person,
-                                enabled: _isEditingProfile,
-                              ),
-                            ),
-                            const SizedBox(width: 16),
-                            Expanded(
-                              child: _buildNameField(
-                                controller: _lastNameController,
-                                label: 'Last Name',
-                                icon: Icons.person_outline,
-                                enabled: _isEditingProfile,
-                              ),
-                            ),
+                                                         Expanded(
+                               child: _buildNameField(
+                                 controller: _firstNameController,
+                                 label: 'First Name',
+                                 icon: FontAwesomeIcons.signature,
+                                 enabled: _isEditingProfile,
+                               ),
+                             ),
+                             const SizedBox(width: 16),
+                             Expanded(
+                               child: _buildNameField(
+                                 controller: _lastNameController,
+                                 label: 'Last Name',
+                                 icon: FontAwesomeIcons.signature,
+                                 enabled: _isEditingProfile,
+                               ),
+                             ),
                           ],
                         );
                       } else {
                         // Narrow layout: column for names
                         return Column(
-                          children: [
-                            _buildNameField(
-                              controller: _firstNameController,
-                              label: 'First Name',
-                              icon: Icons.person,
-                              enabled: _isEditingProfile,
-                            ),
-                            const SizedBox(height: 16),
-                            _buildNameField(
-                              controller: _lastNameController,
-                              label: 'Last Name',
-                              icon: Icons.person_outline,
-                              enabled: _isEditingProfile,
-                            ),
-                          ],
+                                                     children: [
+                             _buildNameField(
+                               controller: _firstNameController,
+                               label: 'First Name',
+                               icon: FontAwesomeIcons.signature,
+                               enabled: _isEditingProfile,
+                             ),
+                             const SizedBox(height: 16),
+                             _buildNameField(
+                               controller: _lastNameController,
+                               label: 'Last Name',
+                               icon: FontAwesomeIcons.signature,
+                               enabled: _isEditingProfile,
+                             ),
+                           ],
                         );
                       }
                     },
                   ),
                   const SizedBox(height: 16),
-                  TextFormField(
-                    controller: _emailController,
-                    enabled: _isEditingProfile,
-                    keyboardType: TextInputType.emailAddress,
-                    decoration: InputDecoration(
-                      labelText: 'Email Address',
-                      prefixIcon: const Icon(Icons.email),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide: BorderSide(color: Colors.grey[300]!),
+                                                        // Province field (read-only, set to Isabela)
+                    TextFormField(
+                      readOnly: true,
+                      initialValue: 'Isabela',
+                      decoration: InputDecoration(
+                        labelText: 'Province',
+                        labelStyle: TextStyle(color: AppColors.darkGreen),
+                        prefixIcon: Icon(Icons.location_on, color: AppColors.darkGreen),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        filled: true,
+                        fillColor: Colors.grey[50],
+                        contentPadding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
                       ),
-                      enabledBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide: BorderSide(color: Colors.grey[300]!),
-                      ),
-                      filled: !_isEditingProfile,
-                      fillColor: !_isEditingProfile ? Colors.grey[50] : null,
-                      contentPadding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
                     ),
-                    validator: (value) {
-                      if (value == null || value.trim().isEmpty) {
-                        return 'Email is required';
+                  const SizedBox(height: 16),
+                                                                          // Municipality dropdown
+                    _isDataReady ? DropdownButtonFormField<String>(
+                      decoration: InputDecoration(
+                        labelText: 'Municipality',
+                        labelStyle: TextStyle(color: AppColors.darkGreen),
+                        prefixIcon: Icon(Icons.location_city, color: AppColors.darkGreen),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        filled: !_isEditingProfile,
+                        fillColor: !_isEditingProfile ? Colors.grey[50] : null,
+                        contentPadding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
+                      ),
+                    items: _municipalities.map<DropdownMenuItem<String>>((municipality) {
+                        return DropdownMenuItem<String>(
+                          value: municipality['name'],
+                          child: Text(municipality['name']),
+                        );
+                      }).toList(),
+                    value: (_selectedMunicipality != null && 
+                           _municipalities.any((m) => m['name'] == _selectedMunicipality))
+                        ? _selectedMunicipality
+                        : null,
+                    onChanged: _isEditingProfile ? (String? newValue) async {
+                      setState(() {
+                        _selectedMunicipality = newValue;
+                        _selectedBarangay = null; // Reset barangay when municipality changes
+                      });
+                      
+                      if (newValue != null) {
+                        try {
+                          final municipality = _municipalities.firstWhere(
+                            (m) => m['name'] == newValue,
+                          );
+                          await _loadBarangays(municipality['code']);
+                        } catch (e) {
+                          debugPrint('Municipality not found: $newValue');
+                        }
                       }
-                      if (!RegExp(r'^[\w-.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(value)) {
-                        return 'Enter a valid email address';
-                      }
-                      return null;
-                    },
-                  ),
+                    } : null,
+                                         validator: (value) {
+                       if (value == null || value.isEmpty) {
+                         return 'Please select a municipality';
+                       }
+                       return null;
+                     },
+                                                           ) : Container(
+                       padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
+                       decoration: BoxDecoration(
+                         border: Border.all(color: Colors.grey[300]!),
+                         borderRadius: BorderRadius.circular(12),
+                         color: Colors.grey[50],
+                       ),
+                       child: Row(
+                         children: [
+                           Icon(Icons.location_city, color: AppColors.darkGreen),
+                           const SizedBox(width: 12),
+                           Text(
+                             _isLoadingMunicipalities ? 'Loading municipalities...' : 'Municipality',
+                             style: TextStyle(color: AppColors.darkGreen),
+                           ),
+                         ],
+                       ),
+                     ),
+                  const SizedBox(height: 16),
+                                                                          // Barangay dropdown
+                    _isDataReady ? DropdownButtonFormField<String>(
+                      decoration: InputDecoration(
+                        labelText: 'Barangay',
+                        labelStyle: TextStyle(color: AppColors.darkGreen),
+                        prefixIcon: Icon(Icons.home, color: AppColors.darkGreen),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        filled: !_isEditingProfile || _selectedMunicipality == null,
+                        fillColor: (!_isEditingProfile || _selectedMunicipality == null) ? Colors.grey[50] : null,
+                        contentPadding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
+                      ),
+                    items: _barangays.map<DropdownMenuItem<String>>((barangay) {
+                        return DropdownMenuItem<String>(
+                          value: barangay['name'],
+                          child: Text(barangay['name']),
+                        );
+                      }).toList(),
+                    value: (_selectedBarangay != null && 
+                           _barangays.any((b) => b['name'] == _selectedBarangay))
+                        ? _selectedBarangay
+                        : null,
+                    onChanged: (_isEditingProfile && _selectedMunicipality != null) ? (String? newValue) {
+                      setState(() {
+                        _selectedBarangay = newValue;
+                      });
+                    } : null,
+                                         validator: (value) {
+                       if (_selectedMunicipality != null && (value == null || value.isEmpty)) {
+                         return 'Please select a barangay';
+                       }
+                       return null;
+                     },
+                                                                                                                                                               ) : Container(
+                        padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
+                        decoration: BoxDecoration(
+                          border: Border.all(color: Colors.grey[300]!),
+                          borderRadius: BorderRadius.circular(12),
+                          color: Colors.grey[50],
+                        ),
+                        child: Row(
+                          children: [
+                            Icon(Icons.home, color: AppColors.darkGreen),
+                            const SizedBox(width: 12),
+                            Text(
+                              _isLoadingBarangays ? 'Loading barangays...' : 'Barangay',
+                              style: TextStyle(color: AppColors.darkGreen),
+                            ),
+                          ],
+                        ),
+                      ),
                   if (_isEditingProfile) ...[
                     const SizedBox(height: 24),
                     SizedBox(
@@ -441,17 +679,13 @@ class _SettingScreenState extends State<SettingScreen> with TickerProviderStateM
   }) {
     return TextFormField(
       controller: controller,
-      enabled: enabled,
+      readOnly: !enabled,
       decoration: InputDecoration(
         labelText: label,
-        prefixIcon: Icon(icon),
+        labelStyle: TextStyle(color: AppColors.darkGreen),
+        prefixIcon: Icon(icon, color: AppColors.darkGreen),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: Colors.grey[300]!),
-        ),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: Colors.grey[300]!),
         ),
         filled: !enabled,
         fillColor: !enabled ? Colors.grey[50] : null,
@@ -478,124 +712,147 @@ class _SettingScreenState extends State<SettingScreen> with TickerProviderStateM
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text(
-                  'Password & Security',
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.grey[800],
-                  ),
-                ),
-                TextButton.icon(
-                  onPressed: () {
-                    setState(() {
-                      if (_isChangingPassword) {
-                        _currentPasswordController.clear();
-                        _newPasswordController.clear();
-                        _confirmPasswordController.clear();
-                      }
-                      _isChangingPassword = !_isChangingPassword;
-                    });
-                  },
-                  icon: Icon(
-                    _isChangingPassword ? Icons.close : Icons.lock,
-                    size: 20,
-                  ),
-                  label: Text(
-                    _isChangingPassword ? 'Cancel' : 'Change',
-                    style: const TextStyle(fontSize: 14),
-                  ),
-                ),
+                                 Text(
+                   'Password & Security',
+                   style: TextStyle(
+                     fontSize: 18,
+                     fontWeight: FontWeight.bold,
+                     color: AppColors.textPrimary,
+                   ),
+                 ),
+                                                   TextButton.icon(
+                    onPressed: () {
+                      setState(() {
+                        if (_isChangingPassword) {
+                          _currentPasswordController.clear();
+                          _newPasswordController.clear();
+                          _confirmPasswordController.clear();
+                          // Reset form validation
+                          _passwordFormKey.currentState?.reset();
+                        }
+                        _isChangingPassword = !_isChangingPassword;
+                      });
+                    },
+                   icon: Icon(
+                     _isChangingPassword ? Icons.close : Icons.lock,
+                     size: 20,
+                     color: AppColors.primary,
+                   ),
+                   label: Text(
+                     _isChangingPassword ? 'Cancel' : 'Change',
+                     style: TextStyle(fontSize: 14, color: AppColors.primary),
+                   ),
+                 ),
               ],
             ),
             if (!_isChangingPassword) ...[
               const SizedBox(height: 16),
-              Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: Colors.blue[50],
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: Colors.blue[100]!),
-                ),
-                child: Row(
-                  children: [
-                    Icon(Icons.info_outline, color: Colors.blue[700]),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Text(
-                        'Keep your account secure by using a strong password.',
-                        style: TextStyle(color: Colors.blue[700]),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
+                                                                                                                       Container(
+                   padding: const EdgeInsets.all(16),
+                   decoration: BoxDecoration(
+                     color: AppColors.lightBackground,
+                     borderRadius: BorderRadius.circular(12),
+                     border: Border.all(color: AppColors.darkGreen.withOpacity(0.3)),
+                   ),
+                   child: Row(
+                     children: [
+                       Icon(Icons.info_outline, color: AppColors.darkGreen),
+                       const SizedBox(width: 12),
+                       Expanded(
+                         child: Text(
+                           'Keep your account secure by using a strong password.',
+                           style: TextStyle(color: AppColors.darkGreen),
+                         ),
+                       ),
+                     ],
+                   ),
+                 ),
             ] else ...[
               const SizedBox(height: 16),
-              TextFormField(
-                controller: _currentPasswordController,
-                obscureText: _obscureCurrentPassword,
-                decoration: InputDecoration(
-                  labelText: 'Current Password',
-                  prefixIcon: const Icon(Icons.lock_outline),
-                  suffixIcon: IconButton(
-                    icon: Icon(_obscureCurrentPassword ? Icons.visibility : Icons.visibility_off),
-                    onPressed: () => setState(() => _obscureCurrentPassword = !_obscureCurrentPassword),
+              Form(
+                key: _passwordFormKey,
+                child: Column(
+                  children: [
+                    TextFormField(
+                  controller: _currentPasswordController,
+                  obscureText: _obscureCurrentPassword,
+                  decoration: InputDecoration(
+                    labelText: 'Current Password',
+                    labelStyle: TextStyle(color: AppColors.darkGreen),
+                    prefixIcon: Icon(Icons.lock_outline, color: AppColors.darkGreen),
+                    suffixIcon: IconButton(
+                      icon: Icon(_obscureCurrentPassword ? Icons.visibility : Icons.visibility_off, color: AppColors.darkGreen),
+                      onPressed: () => setState(() => _obscureCurrentPassword = !_obscureCurrentPassword),
+                    ),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    contentPadding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
                   ),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide(color: Colors.grey[300]!),
-                  ),
-                  enabledBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide(color: Colors.grey[300]!),
-                  ),
-                  contentPadding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
+                  validator: (value) {
+                    if (value == null || value.trim().isEmpty) {
+                      return 'Current password is required';
+                    }
+                    return null;
+                  },
                 ),
-              ),
               const SizedBox(height: 16),
-              TextFormField(
-                controller: _newPasswordController,
-                obscureText: _obscureNewPassword,
-                decoration: InputDecoration(
-                  labelText: 'New Password',
-                  prefixIcon: const Icon(Icons.lock),
-                  suffixIcon: IconButton(
-                    icon: Icon(_obscureNewPassword ? Icons.visibility : Icons.visibility_off),
-                    onPressed: () => setState(() => _obscureNewPassword = !_obscureNewPassword),
+                                                           TextFormField(
+                  controller: _newPasswordController,
+                  obscureText: _obscureNewPassword,
+                  decoration: InputDecoration(
+                    labelText: 'New Password',
+                    labelStyle: TextStyle(color: AppColors.darkGreen),
+                    prefixIcon: Icon(Icons.lock, color: AppColors.darkGreen),
+                    suffixIcon: IconButton(
+                      icon: Icon(_obscureNewPassword ? Icons.visibility : Icons.visibility_off, color: AppColors.darkGreen),
+                      onPressed: () => setState(() => _obscureNewPassword = !_obscureNewPassword),
+                    ),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    helperText: 'Minimum 6 characters',
+                    helperStyle: TextStyle(color: AppColors.darkGreen),
+                    contentPadding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
                   ),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide(color: Colors.grey[300]!),
-                  ),
-                  enabledBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide(color: Colors.grey[300]!),
-                  ),
-                  helperText: 'Minimum 6 characters',
-                  contentPadding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
+                  validator: (value) {
+                    if (value == null || value.trim().isEmpty) {
+                      return 'New password is required';
+                    }
+                    if (value.length < 6) {
+                      return 'Password must be at least 6 characters';
+                    }
+                    return null;
+                  },
                 ),
-              ),
               const SizedBox(height: 16),
-              TextFormField(
-                controller: _confirmPasswordController,
-                obscureText: _obscureConfirmPassword,
-                decoration: InputDecoration(
-                  labelText: 'Confirm New Password',
-                  prefixIcon: const Icon(Icons.lock),
-                  suffixIcon: IconButton(
-                    icon: Icon(_obscureConfirmPassword ? Icons.visibility : Icons.visibility_off),
-                    onPressed: () => setState(() => _obscureConfirmPassword = !_obscureConfirmPassword),
+                                                           TextFormField(
+                  controller: _confirmPasswordController,
+                  obscureText: _obscureConfirmPassword,
+                  decoration: InputDecoration(
+                    labelText: 'Confirm New Password',
+                    labelStyle: TextStyle(color: AppColors.darkGreen),
+                    prefixIcon: Icon(Icons.lock, color: AppColors.darkGreen),
+                    suffixIcon: IconButton(
+                      icon: Icon(_obscureConfirmPassword ? Icons.visibility : Icons.visibility_off, color: AppColors.darkGreen),
+                      onPressed: () => setState(() => _obscureConfirmPassword = !_obscureConfirmPassword),
+                    ),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    contentPadding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
                   ),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide(color: Colors.grey[300]!),
-                  ),
-                  enabledBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide(color: Colors.grey[300]!),
-                  ),
-                  contentPadding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
+                  validator: (value) {
+                    if (value == null || value.trim().isEmpty) {
+                      return 'Please confirm your new password';
+                    }
+                    if (value != _newPasswordController.text.trim()) {
+                      return 'Passwords do not match';
+                    }
+                    return null;
+                  },
+                ),
+                  ],
                 ),
               ),
               const SizedBox(height: 24),
@@ -605,7 +862,7 @@ class _SettingScreenState extends State<SettingScreen> with TickerProviderStateM
                 child: ElevatedButton(
                   onPressed: _changePassword,
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.red,
+                    backgroundColor: AppColors.danger,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
                     ),
@@ -632,7 +889,7 @@ class _SettingScreenState extends State<SettingScreen> with TickerProviderStateM
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.grey[50],
+      backgroundColor: AppColors.pageBackground,
       body: _isLoading
           ? Center(
         child: Column(
@@ -640,10 +897,10 @@ class _SettingScreenState extends State<SettingScreen> with TickerProviderStateM
           children: [
             CircularProgressIndicator(color: AppColors.primary),
             const SizedBox(height: 16),
-            Text(
-              'Loading account information...',
-              style: TextStyle(color: Colors.grey[600]),
-            ),
+                         Text(
+               'Loading account information...',
+               style: TextStyle(color: AppColors.textSecondary),
+             ),
           ],
         ),
       )
@@ -652,25 +909,25 @@ class _SettingScreenState extends State<SettingScreen> with TickerProviderStateM
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(
-              Icons.error_outline,
-              size: 64,
-              color: Colors.grey[400],
-            ),
+                         Icon(
+               Icons.error_outline,
+               size: 64,
+               color: AppColors.textSecondary,
+             ),
             const SizedBox(height: 16),
-            Text(
-              'Unable to load user data',
-              style: TextStyle(
-                fontSize: 18,
-                color: Colors.grey[600],
-                fontWeight: FontWeight.w500,
-              ),
-            ),
+                         Text(
+               'Unable to load user data',
+               style: TextStyle(
+                 fontSize: 18,
+                 color: AppColors.textSecondary,
+                 fontWeight: FontWeight.w500,
+               ),
+             ),
             const SizedBox(height: 8),
-            Text(
-              'Please try refreshing or login again',
-              style: TextStyle(color: Colors.grey[500]),
-            ),
+                         Text(
+               'Please try refreshing or login again',
+               style: TextStyle(color: AppColors.textSecondary),
+             ),
             const SizedBox(height: 24),
             ElevatedButton.icon(
               onPressed: _loadUserData,

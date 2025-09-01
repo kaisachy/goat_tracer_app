@@ -14,27 +14,69 @@ class UserService {
 
   /// Fetches a user by their ID.
   Future<User> getUser(int id) async {
+    print('🔍 UserService DEBUG: getUser($id) called');
+    print('🔍 UserService DEBUG: Base URL: $_baseUrl');
+    
     final token = await _getToken();
+    print('🔍 UserService DEBUG: Token exists: ${token != null}');
     if (token == null) {
+      print('🔍 UserService DEBUG: ❌ No token found - throwing auth exception');
       throw Exception('Authentication required. Please login again.');
     }
 
-    final response = await http.get(
-      Uri.parse('$_baseUrl/users/$id'),
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': 'Bearer $token',
-      },
-    );
+    final url = '$_baseUrl/users/$id';
+    print('🔍 UserService DEBUG: Making GET request to: $url');
+    print('🔍 UserService DEBUG: Request headers: {"Content-Type": "application/json", "Authorization": "Bearer ***"}');
+    print('🔍 UserService DEBUG: Request timestamp: ${DateTime.now()}');
 
-    if (response.statusCode == 200) {
-      final data = jsonDecode(response.body);
-      return User.fromJson(data['data']);
-    } else if (response.statusCode == 401) {
-      throw Exception('Session expired. Please login again.');
-    } else {
-      final error = jsonDecode(response.body);
-      throw Exception(error['message'] ?? 'Failed to load user data.');
+    try {
+      final response = await http.get(
+        Uri.parse(url),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+      );
+
+      print('🔍 UserService DEBUG: Response received');
+      print('🔍 UserService DEBUG: Status code: ${response.statusCode}');
+      print('🔍 UserService DEBUG: Response headers: ${response.headers}');
+      print('🔍 UserService DEBUG: Response body: ${response.body}');
+
+      if (response.statusCode == 200) {
+        print('🔍 UserService DEBUG: ✅ 200 OK - parsing response');
+        final data = jsonDecode(response.body);
+        print('🔍 UserService DEBUG: Parsed JSON: $data');
+        
+        if (data['data'] != null) {
+          print('🔍 UserService DEBUG: Creating User object from data');
+          final user = User.fromJson(data['data']);
+          print('🔍 UserService DEBUG: ✅ User object created: ${user.toString()}');
+          return user;
+        } else {
+          print('🔍 UserService DEBUG: ❌ No data field in response');
+          throw Exception('Invalid response format: missing data field');
+        }
+      } else if (response.statusCode == 401) {
+        print('🔍 UserService DEBUG: ❌ 401 Unauthorized - session expired');
+        throw Exception('Session expired. Please login again.');
+      } else if (response.statusCode == 404) {
+        print('🔍 UserService DEBUG: ❌ 404 Not Found - user not found');
+        throw Exception('User not found.');
+      } else {
+        print('🔍 UserService DEBUG: ❌ HTTP error ${response.statusCode}');
+        final error = jsonDecode(response.body);
+        final errorMessage = error['message'] ?? 'Failed to load user data.';
+        print('🔍 UserService DEBUG: Error message: $errorMessage');
+        throw Exception(errorMessage);
+      }
+    } catch (e) {
+      print('🔍 UserService DEBUG: ❌ Exception during API call: $e');
+      if (e is FormatException) {
+        print('🔍 UserService DEBUG: FormatException - invalid JSON response');
+        throw Exception('Invalid response format from server');
+      }
+      rethrow;
     }
   }
 
@@ -192,30 +234,60 @@ class UserService {
 
   /// Changes the password for a given user ID.
   Future<bool> changePassword(int userId, String currentPassword, String newPassword) async {
+    print('🔍 UserService DEBUG: changePassword($userId) called');
+    print('🔍 UserService DEBUG: Base URL: $_baseUrl');
+    
     final token = await _getToken();
+    print('🔍 UserService DEBUG: Token exists: ${token != null}');
     if (token == null) {
+      print('🔍 UserService DEBUG: ❌ No token found - throwing auth exception');
       throw Exception('Authentication required. Please login again.');
     }
 
-    final response = await http.put(
-      Uri.parse('$_baseUrl/users/$userId/password'),
-      headers: {
-        'Content-Type': 'application/json; charset=UTF-8',
-        'Authorization': 'Bearer $token',
-      },
-      body: jsonEncode({
-        'current_password': currentPassword,
-        'new_password': newPassword,
-      }),
-    );
+    final url = '$_baseUrl/users/$userId/password';
+    print('🔍 UserService DEBUG: Making PUT request to: $url');
+    print('🔍 UserService DEBUG: Request headers: {"Content-Type": "application/json; charset=UTF-8", "Authorization": "Bearer ***"}');
+    print('🔍 UserService DEBUG: Request body: {"current_password": "***", "new_password": "***"}');
+    print('🔍 UserService DEBUG: Request timestamp: ${DateTime.now()}');
 
-    if (response.statusCode == 200) {
-      return true;
-    } else if (response.statusCode == 401) {
-      throw Exception('Session expired. Please login again.');
-    } else {
-      final error = jsonDecode(response.body);
-      throw Exception(error['message'] ?? 'Failed to change password.');
+    try {
+      final response = await http.put(
+        Uri.parse(url),
+        headers: {
+          'Content-Type': 'application/json; charset=UTF-8',
+          'Authorization': 'Bearer $token',
+        },
+        body: jsonEncode({
+          'current_password': currentPassword,
+          'new_password': newPassword,
+        }),
+      );
+
+      print('🔍 UserService DEBUG: Response received');
+      print('🔍 UserService DEBUG: Status code: ${response.statusCode}');
+      print('🔍 UserService DEBUG: Response headers: ${response.headers}');
+      print('🔍 UserService DEBUG: Response body: ${response.body}');
+
+      if (response.statusCode == 200) {
+        print('🔍 UserService DEBUG: ✅ 200 OK - password changed successfully');
+        return true;
+      } else if (response.statusCode == 401) {
+        print('🔍 UserService DEBUG: ❌ 401 Unauthorized - session expired');
+        throw Exception('Session expired. Please login again.');
+      } else {
+        print('🔍 UserService DEBUG: ❌ HTTP error ${response.statusCode}');
+        final error = jsonDecode(response.body);
+        final errorMessage = error['message'] ?? 'Failed to change password.';
+        print('🔍 UserService DEBUG: Error message: $errorMessage');
+        throw Exception(errorMessage);
+      }
+    } catch (e) {
+      print('🔍 UserService DEBUG: ❌ Exception during password change API call: $e');
+      if (e is FormatException) {
+        print('🔍 UserService DEBUG: FormatException - invalid JSON response');
+        throw Exception('Invalid response format from server');
+      }
+      rethrow;
     }
   }
 }
