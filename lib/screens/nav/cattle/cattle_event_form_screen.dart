@@ -581,6 +581,15 @@ class _CattleEventFormScreenState extends State<CattleEventFormScreen>
         'expected_delivery_date': _controllers['expected_delivery_date']!.text.trim(),
       };
 
+      // Add breeding type for breeding events
+      if (selectedEventType.toLowerCase() == 'breeding') {
+        final breedingFieldsKey = _eventSpecificFieldsKey.currentState as EventSpecificFieldsState?;
+        final breedingType = breedingFieldsKey?.getBreedingType();
+        if (breedingType != null) {
+          data['breeding_type'] = breedingType;
+        }
+      }
+
       // Add non-empty optional fields
       optionalFields.forEach((key, value) {
         if (value.isNotEmpty) {
@@ -618,11 +627,31 @@ class _CattleEventFormScreenState extends State<CattleEventFormScreen>
         return;
       }
 
-      if (selectedEventType.toLowerCase() == 'breeding' &&
-          _controllers['bull_tag']!.text.trim().isEmpty) {
-        _showErrorMessage('Bull tag is required for breeding events.');
-        setState(() => _isLoading = false);
-        return;
+      if (selectedEventType.toLowerCase() == 'breeding') {
+        // Get breeding type from the breeding event fields
+        final breedingFieldsKey = _eventSpecificFieldsKey.currentState as EventSpecificFieldsState?;
+        final breedingType = breedingFieldsKey?.getBreedingType();
+        
+        if (breedingType == 'artificial_insemination') {
+          // For AI, require semen_used and technician
+          if (_controllers['semen_used']!.text.trim().isEmpty) {
+            _showErrorMessage('Semen selection is required for Artificial Insemination.');
+            setState(() => _isLoading = false);
+            return;
+          }
+          if (_controllers['technician']!.text.trim().isEmpty) {
+            _showErrorMessage('Technician is required for Artificial Insemination.');
+            setState(() => _isLoading = false);
+            return;
+          }
+        } else if (breedingType == 'natural_breeding') {
+          // For natural breeding, require bull_tag only
+          if (_controllers['bull_tag']!.text.trim().isEmpty) {
+            _showErrorMessage('Bull selection is required for Natural Breeding.');
+            setState(() => _isLoading = false);
+            return;
+          }
+        }
       }
 
       // Log the data being sent (for debugging)
@@ -769,40 +798,99 @@ class _CattleEventFormScreenState extends State<CattleEventFormScreen>
             : 'Failed to update cow ${_cattleDetails!.tagNo} status';
       }
 
-      // Get bull information and create corresponding event (WITHOUT updating bull status)
-      final bullTag = _controllers['bull_tag']?.text ?? '';
-      if (bullTag.isNotEmpty) {
-        try {
-          final bull = await CattleService.getCattleByTag(bullTag);
-          if (bull != null) {
-            // Create breeding event for the bull (but don't update bull status)
-            final bullEventData = {
-              'cattle_tag': bullTag,
-              'bull_tag': null, // Bull doesn't need its own bull_tag
-              'calf_tag': null, // No calf tag for bull's breeding event
-              'event_type': 'Breeding',
-              'event_date': _controllers['event_date']!.text,
-              'sickness_symptoms': '',
-              'diagnosis': '',
-              'technician': _controllers['technician']!.text,
-              'medicine_given': '',
-              'weighed_result': null,
-              'breeding_date': _controllers['event_date']!.text, // Same as event_date for consistency
-              'notes': 'Breeding with cow ${_cattleDetails?.tagNo ?? 'Unknown'}${_controllers['notes']!.text.isNotEmpty ? '. Additional notes: ${_controllers['notes']!.text}' : ''}',
-            };
-
-            bullEventCreated = await CattleEventService.storeCattleEvent(bullEventData);
-            bullEventStatus = bullEventCreated
-                ? 'Breeding event created for bull $bullTag (status unchanged)'
-                : 'Failed to create breeding event for bull $bullTag';
-          } else {
-            bullEventStatus = 'Bull $bullTag not found in database - cannot create event';
+      // Get breeding type and handle accordingly
+      final breedingFieldsKey = _eventSpecificFieldsKey.currentState as EventSpecificFieldsState?;
+      final breedingType = breedingFieldsKey?.getBreedingType() ?? 'artificial_insemination';
+      
+      if (breedingType == 'artificial_insemination') {
+        // For AI, get bull tag from semen selection
+        final semenUsed = _controllers['semen_used']?.text ?? '';
+        if (semenUsed.isNotEmpty) {
+          // Extract bull tag from semen selection
+          String bullTag = '';
+          if (semenUsed.contains(' Semen')) {
+            String tagPart = semenUsed.replaceAll(' Semen', '');
+            if (tagPart.contains(' (') && tagPart.contains(')')) {
+              bullTag = tagPart.split(' (')[0];
+            } else {
+              bullTag = tagPart;
+            }
           }
-        } catch (e) {
-          bullEventStatus = 'Error creating bull breeding event: $e';
+          
+          if (bullTag.isNotEmpty) {
+            try {
+              final bull = await CattleService.getCattleByTag(bullTag);
+              if (bull != null) {
+                // Create breeding event for the bull (but don't update bull status)
+                final bullEventData = {
+                  'cattle_tag': bullTag,
+                  'bull_tag': null,
+                  'calf_tag': null,
+                  'event_type': 'Breeding',
+                  'event_date': _controllers['event_date']!.text,
+                  'sickness_symptoms': '',
+                  'diagnosis': '',
+                  'technician': _controllers['technician']!.text,
+                  'medicine_given': '',
+                  'weighed_result': null,
+                  'breeding_date': _controllers['event_date']!.text,
+                  'breeding_type': 'artificial_insemination',
+                  'notes': 'AI breeding with cow ${_cattleDetails?.tagNo ?? 'Unknown'}${_controllers['notes']!.text.isNotEmpty ? '. Additional notes: ${_controllers['notes']!.text}' : ''}',
+                };
+
+                bullEventCreated = await CattleEventService.storeCattleEvent(bullEventData);
+                bullEventStatus = bullEventCreated
+                    ? 'AI breeding event created for bull $bullTag (status unchanged)'
+                    : 'Failed to create AI breeding event for bull $bullTag';
+              } else {
+                bullEventStatus = 'Bull $bullTag not found in database - cannot create event';
+              }
+            } catch (e) {
+              bullEventStatus = 'Error creating bull AI breeding event: $e';
+            }
+          } else {
+            bullEventStatus = 'Could not extract bull tag from semen selection';
+          }
+        } else {
+          bullEventStatus = 'No semen selected for AI breeding';
         }
       } else {
-        bullEventStatus = 'No bull tag available for event creation';
+        // For natural breeding, get bull tag directly
+        final bullTag = _controllers['bull_tag']?.text ?? '';
+        if (bullTag.isNotEmpty) {
+          try {
+            final bull = await CattleService.getCattleByTag(bullTag);
+            if (bull != null) {
+                                            // Create breeding event for the bull (but don't update bull status)
+                final bullEventData = {
+                  'cattle_tag': bullTag,
+                  'bull_tag': null,
+                  'calf_tag': null,
+                  'event_type': 'Breeding',
+                  'event_date': _controllers['event_date']!.text,
+                  'sickness_symptoms': '',
+                  'diagnosis': '',
+                  'technician': '', // No technician for natural breeding
+                  'medicine_given': '',
+                  'weighed_result': null,
+                  'breeding_date': _controllers['event_date']!.text,
+                  'breeding_type': 'natural_breeding',
+                  'notes': 'Natural breeding with cow ${_cattleDetails?.tagNo ?? 'Unknown'}${_controllers['notes']!.text.isNotEmpty ? '. Additional notes: ${_controllers['notes']!.text}' : ''}',
+                };
+
+              bullEventCreated = await CattleEventService.storeCattleEvent(bullEventData);
+              bullEventStatus = bullEventCreated
+                  ? 'Natural breeding event created for bull $bullTag (status unchanged)'
+                  : 'Failed to create natural breeding event for bull $bullTag';
+            } else {
+              bullEventStatus = 'Bull $bullTag not found in database - cannot create event';
+            }
+          } catch (e) {
+            bullEventStatus = 'Error creating bull natural breeding event: $e';
+          }
+        } else {
+          bullEventStatus = 'No bull tag available for natural breeding event creation';
+        }
       }
 
       final returnToHeatText = _controllers['estimated_return_date']?.text ?? '';

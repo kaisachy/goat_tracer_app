@@ -129,15 +129,7 @@ class _SettingScreenState extends State<SettingScreen> with TickerProviderStateM
 
   Future<void> _loadUserData() async {
     try {
-      final token = await AuthService.getToken();
-      final userId = await AuthService.getUserId();
-      final userRole = await AuthService.getUserRole();
-      final userEmail = await AuthService.getUserFirstName();
-      
       setState(() => _isLoading = true);
-
-      // Check authentication status first
-      final isAuthenticated = await AuthService.isAuthenticated();
 
       // Try to get user ID from stored data first, then from token as fallback
       String? userIdString = await AuthService.getUserId();

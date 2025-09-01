@@ -171,6 +171,15 @@ class EventSpecificFieldsState extends State<EventSpecificFields> {
     }
   }
 
+  // Get breeding type from breeding event fields
+  String? getBreedingType() {
+    if (widget.selectedEventType.toLowerCase() == 'breeding') {
+      final breedingState = _breedingFieldsKey.currentState as BreedingEventFieldsState?;
+      return breedingState?.breedingType;
+    }
+    return null;
+  }
+
   @override
   Widget build(BuildContext context) {
     if (widget.selectedEventType == 'Select type of event' ||

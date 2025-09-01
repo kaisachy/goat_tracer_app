@@ -21,8 +21,10 @@ abstract class BaseEventFields extends StatefulWidget {
 abstract class BaseEventFieldsState<T extends BaseEventFields> extends State<T> {
   List<Cattle> bulls = [];
   List<User> technicians = [];
+  List<User> farmers = [];
   bool loadingBulls = false;
   bool loadingTechnicians = false;
+  bool loadingFarmers = false;
 
   static const int cattleGestationPeriodDays = 283;
   static const int returnToHeatDays = 21;
@@ -36,6 +38,9 @@ abstract class BaseEventFieldsState<T extends BaseEventFields> extends State<T> 
     if (needsTechnicians()) {
       fetchTechnicians();
     }
+    if (needsFarmers()) {
+      fetchFarmers();
+    }
     setupEventDateListeners();
   }
 
@@ -48,6 +53,7 @@ abstract class BaseEventFieldsState<T extends BaseEventFields> extends State<T> 
   // Abstract methods to be implemented by subclasses
   bool needsBulls() => false;
   bool needsTechnicians() => false;
+  bool needsFarmers() => false;
   void setupEventDateListeners() {}
   void removeEventDateListeners() {}
 
@@ -152,6 +158,44 @@ abstract class BaseEventFieldsState<T extends BaseEventFields> extends State<T> 
     print('🔍 DEBUG: fetchTechnicians completed');
   }
 
+  Future<void> fetchFarmers() async {
+    print('🔍 DEBUG: Starting fetchFarmers...');
+    setState(() => loadingFarmers = true);
+
+    try {
+      print('🔍 DEBUG: About to call UserService().getUsersByRoles for farmers...');
+
+      // Fetch users with farmer role
+      final farmersList = await UserService().getUsersByRoles(roles: ['farmer']);
+      print('🔍 DEBUG: Farmers count: ${farmersList.length}');
+
+      if (mounted) {
+        setState(() {
+          farmers = farmersList;
+          loadingFarmers = false;
+        });
+
+        print('🔍 DEBUG: Final farmers assigned: ${farmers.length}');
+        _validateCurrentFarmerSelection();
+      }
+    } catch (e, stackTrace) {
+      print('🔍 DEBUG: Exception in fetchFarmers: $e');
+      print('🔍 DEBUG: Stack trace: $stackTrace');
+
+      if (mounted) {
+        setState(() => loadingFarmers = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to load farmers: $e'),
+            backgroundColor: Colors.red.shade700,
+          ),
+        );
+      }
+    }
+
+    print('🔍 DEBUG: fetchFarmers completed');
+  }
+
   // Helper method to validate current technician selection after loading
   void _validateCurrentTechnicianSelection() {
     final currentValue = widget.controllers['technician']?.text;
@@ -165,6 +209,23 @@ abstract class BaseEventFieldsState<T extends BaseEventFields> extends State<T> 
       // If it doesn't exist, clear the field
       if (!exists) {
         widget.controllers['technician']?.clear();
+      }
+    }
+  }
+
+  // Helper method to validate current farmer selection after loading
+  void _validateCurrentFarmerSelection() {
+    final currentValue = widget.controllers['farmer']?.text;
+    if (currentValue != null && currentValue.isNotEmpty) {
+      // Check if the current value exists in the loaded farmers
+      final exists = farmers.any((farmer) {
+        final displayName = '${farmer.firstName} ${farmer.lastName}';
+        return displayName == currentValue;
+      });
+
+      // If it doesn't exist, clear the field
+      if (!exists) {
+        widget.controllers['farmer']?.clear();
       }
     }
   }
@@ -302,6 +363,66 @@ abstract class BaseEventFieldsState<T extends BaseEventFields> extends State<T> 
             : widget.controllers['bull_tag']?.text,
         decoration: InputDecoration(
           labelText: 'Bull Tag (Father)',
+          prefixIcon: const Icon(FontAwesomeIcons.mars, color: AppColors.primary),
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(15),
+            borderSide: const BorderSide(color: AppColors.lightGreen),
+          ),
+          focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(15),
+            borderSide: const BorderSide(color: AppColors.primary, width: 2),
+          ),
+          filled: true,
+          fillColor: Colors.white,
+          contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
+          suffixIcon: loadingBulls
+              ? Container(
+            width: 20,
+            height: 20,
+            padding: const EdgeInsets.all(12),
+            child: const CircularProgressIndicator(strokeWidth: 2),
+          )
+              : null,
+        ),
+        hint: Text(loadingBulls ? 'Loading bulls...' : 'Select bull'),
+        isExpanded: true,
+        items: bulls.map((bull) {
+          return DropdownMenuItem<String>(
+            value: bull.tagNo,
+            child: SizedBox(
+              width: double.infinity,
+              child: Text(
+                '${bull.tagNo} ${bull.name != null ? '(${bull.name})' : ''}',
+                overflow: TextOverflow.ellipsis,
+                maxLines: 1,
+              ),
+            ),
+          );
+        }).toList(),
+        onChanged: loadingBulls ? null : (value) {
+          widget.controllers['bull_tag']?.text = value ?? '';
+        },
+        validator: (value) {
+          if (value == null || value.isEmpty) {
+            return 'Please select a bull';
+          }
+          return null;
+        },
+      ),
+    );
+  }
+
+  // Custom bull dropdown for natural breeding (simpler label)
+  Widget buildBullDropdownForNaturalBreeding() {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 16),
+      width: double.infinity,
+      child: DropdownButtonFormField<String>(
+        value: widget.controllers['bull_tag']?.text.isEmpty == true
+            ? null
+            : widget.controllers['bull_tag']?.text,
+        decoration: InputDecoration(
+          labelText: 'Bull', // Simplified label for natural breeding
           prefixIcon: const Icon(FontAwesomeIcons.mars, color: AppColors.primary),
           border: OutlineInputBorder(
             borderRadius: BorderRadius.circular(15),
@@ -607,6 +728,197 @@ abstract class BaseEventFieldsState<T extends BaseEventFields> extends State<T> 
             return 'Please select semen type';
           }
           return null;
+        },
+      ),
+    );
+  }
+
+  // Enhanced buildFarmerDropdown method for base_event_fields.dart
+  Widget buildFarmerDropdown() {
+    // Get current value from controller
+    String? currentValue = widget.controllers['farmer']?.text;
+
+    // Handle empty or null current value
+    if (currentValue?.isEmpty == true) {
+      currentValue = null;
+    }
+
+    print('=== Farmer Dropdown Debug ===');
+    print('Controller value: "$currentValue"');
+    print('Loading farmers: $loadingFarmers');
+    print('Farmers count: ${farmers.length}');
+
+    // If still loading farmers, show loading state
+    if (loadingFarmers) {
+      return Container(
+        margin: const EdgeInsets.only(bottom: 16),
+        width: double.infinity,
+        child: DropdownButtonFormField<String>(
+          value: null,
+          decoration: InputDecoration(
+            labelText: 'Farmer',
+            prefixIcon: const Icon(FontAwesomeIcons.user, color: AppColors.primary),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(15),
+              borderSide: const BorderSide(color: AppColors.lightGreen),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(15),
+              borderSide: const BorderSide(color: AppColors.primary, width: 2),
+            ),
+            filled: true,
+            fillColor: Colors.white,
+            contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 16),
+            suffixIcon: Container(
+              width: 20,
+              height: 20,
+              padding: const EdgeInsets.all(12),
+              child: const CircularProgressIndicator(strokeWidth: 2),
+            ),
+          ),
+          hint: const Text('Loading farmers...'),
+          items: const [],
+          onChanged: null,
+        ),
+      );
+    }
+
+    // Create dropdown items with enhanced styling
+    List<DropdownMenuItem<String>> dropdownItems = farmers.map((farmer) {
+      final displayName = '${farmer.firstName} ${farmer.lastName}'.trim();
+      return DropdownMenuItem<String>(
+        value: displayName,
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 4),
+          width: double.infinity,
+          constraints: const BoxConstraints(minHeight: 60),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Text(
+                displayName,
+                style: const TextStyle(
+                  fontWeight: FontWeight.w500,
+                  fontSize: 16,
+                  height: 1.2,
+                ),
+                overflow: TextOverflow.ellipsis,
+                maxLines: 1,
+              ),
+              const SizedBox(height: 4),
+              Text(
+                farmer.role.toUpperCase(),
+                style: TextStyle(
+                  fontSize: 13,
+                  color: AppColors.textSecondary.withOpacity(0.7),
+                  fontWeight: FontWeight.w400,
+                  height: 1.1,
+                ),
+                overflow: TextOverflow.ellipsis,
+                maxLines: 1,
+              ),
+            ],
+          ),
+        ),
+      );
+    }).toList();
+
+    // Check if the current value exists in the available options
+    bool valueExists = false;
+    if (currentValue != null) {
+      valueExists = dropdownItems.any((item) {
+        // Trim and compare both values
+        final itemValue = item.value?.trim() ?? '';
+        final currentVal = currentValue?.trim() ?? '';
+        return itemValue == currentVal;
+      });
+      print('Checking if "$currentValue" exists in dropdown items: $valueExists');
+    }
+
+    // Determine the dropdown value to use
+    String? dropdownValue;
+    if (currentValue != null && valueExists) {
+      dropdownValue = currentValue.trim();
+      print('Using existing value: "$dropdownValue"');
+    } else {
+      dropdownValue = null;
+      if (currentValue != null && !valueExists) {
+        print('Current value "$currentValue" not found in farmers, clearing...');
+        // Clear the controller if the value doesn't exist
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) {
+            widget.controllers['farmer']?.clear();
+          }
+        });
+      }
+    }
+
+    print('Final dropdown value: "$dropdownValue"');
+    print('=== End Debug ===');
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 16),
+      width: double.infinity,
+      child: DropdownButtonFormField<String>(
+        value: dropdownValue,
+        decoration: InputDecoration(
+          labelText: 'Farmer',
+          prefixIcon: const Icon(FontAwesomeIcons.user, color: AppColors.primary),
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(15),
+            borderSide: const BorderSide(color: AppColors.lightGreen),
+          ),
+          focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(15),
+            borderSide: const BorderSide(color: AppColors.primary, width: 2),
+          ),
+          filled: true,
+          fillColor: Colors.white,
+          contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 18),
+        ),
+        hint: const Text('Select farmer'),
+        isExpanded: true,
+        itemHeight: 70,
+        menuMaxHeight: 300,
+        items: dropdownItems,
+        onChanged: (value) {
+          print('Farmer dropdown changed to: "$value"');
+          // Update the controller with the display name
+          widget.controllers['farmer']?.text = value ?? '';
+          print('Controller updated to: "${widget.controllers['farmer']?.text}"');
+
+          // Force a rebuild to ensure the UI reflects the change
+          if (mounted) {
+            setState(() {});
+          }
+        },
+        validator: (value) {
+          if (value == null || value.isEmpty) {
+            return 'Please select a farmer';
+          }
+          return null;
+        },
+        // Custom dropdown button builder for better selected value display
+        selectedItemBuilder: (BuildContext context) {
+          return farmers.map<Widget>((farmer) {
+            final displayName = '${farmer.firstName} ${farmer.lastName}'.trim();
+            return Container(
+              alignment: Alignment.centerLeft,
+              constraints: const BoxConstraints(minHeight: 50),
+              child: Text(
+                displayName,
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w500,
+                  color: AppColors.textPrimary,
+                ),
+                overflow: TextOverflow.ellipsis,
+                maxLines: 1,
+              ),
+            );
+          }).toList();
         },
       ),
     );

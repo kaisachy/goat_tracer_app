@@ -2,6 +2,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import 'package:cattle_tracer_app/services/auth_service.dart';
 import 'base_event_fields.dart';
 
 class BreedingEventFields extends BaseEventFields {
@@ -15,11 +16,39 @@ class BreedingEventFields extends BaseEventFields {
 }
 
 class BreedingEventFieldsState extends BaseEventFieldsState<BreedingEventFields> {
+  String _breedingType = 'artificial_insemination'; // Default to AI
+  String? _currentUserRole;
+  bool _isLoadingRole = true;
+
+  // Getter to access breeding type from parent
+  String get breedingType => _breedingType;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadCurrentUserRole();
+  }
+
+  Future<void> _loadCurrentUserRole() async {
+    try {
+      final role = await AuthService.getUserRole();
+      setState(() {
+        _currentUserRole = role?.toLowerCase();
+        _isLoadingRole = false;
+      });
+    } catch (e) {
+      setState(() {
+        _currentUserRole = 'farmer'; // Default to farmer if error
+        _isLoadingRole = false;
+      });
+    }
+  }
+
   @override
   bool needsBulls() => true; // Still need bulls for semen dropdown
 
   @override
-  bool needsTechnicians() => true;
+  bool needsTechnicians() => _breedingType == 'artificial_insemination';
 
   @override
   void setupEventDateListeners() {
@@ -101,6 +130,49 @@ class BreedingEventFieldsState extends BaseEventFieldsState<BreedingEventFields>
     }
   }
 
+  void _onBreedingTypeChanged(String? value) {
+    if (value != null) {
+      setState(() {
+        _breedingType = value;
+        
+        // Clear fields when switching breeding types
+        if (value == 'natural_breeding') {
+          // Clear AI-specific fields
+          widget.controllers['semen_used']?.clear();
+          widget.controllers['technician']?.clear();
+        } else {
+          // Clear natural breeding fields
+          widget.controllers['bull_tag']?.clear();
+        }
+      });
+    }
+  }
+
+  bool _canPerformBreedingType() {
+    if (_isLoadingRole || _currentUserRole == null) return false;
+    
+    if (_breedingType == 'artificial_insemination') {
+      // Only technician and pvo can perform AI
+      return _currentUserRole == 'technician' || _currentUserRole == 'pvo';
+    } else {
+      // Only farmer can perform natural breeding
+      return _currentUserRole == 'farmer';
+    }
+  }
+
+  // Check if current user can perform the selected breeding type
+  bool _canCurrentUserPerformBreeding() {
+    if (_isLoadingRole || _currentUserRole == null) return false;
+    
+    if (_breedingType == 'artificial_insemination') {
+      // Only technician and pvo can perform AI
+      return _currentUserRole == 'technician' || _currentUserRole == 'pvo';
+    } else {
+      // Only farmer can perform natural breeding
+      return _currentUserRole == 'farmer';
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     print('DEBUG: BreedingEventFields build() called');
@@ -111,18 +183,66 @@ class BreedingEventFieldsState extends BaseEventFieldsState<BreedingEventFields>
 
     return Column(
       children: [
-        // Semen dropdown (this will populate the bull_tag automatically)
-        Builder(
-          builder: (context) {
-            print('DEBUG: About to call buildSemenDropdown()');
-            final semenWidget = buildSemenDropdown();
-            print('DEBUG: buildSemenDropdown() returned widget type: ${semenWidget.runtimeType}');
-            return semenWidget;
-          },
+        // Breeding Type Selection
+        Container(
+          margin: const EdgeInsets.only(bottom: 16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Breeding Type',
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w500,
+                  color: Colors.grey[700],
+                ),
+              ),
+              const SizedBox(height: 8),
+                             Column(
+                 children: [
+                   RadioListTile<String>(
+                     title: const Text('Artificial Insemination'),
+                     value: 'artificial_insemination',
+                     groupValue: _breedingType,
+                     onChanged: _onBreedingTypeChanged,
+                     contentPadding: EdgeInsets.zero,
+                     visualDensity: VisualDensity.compact,
+                   ),
+                   RadioListTile<String>(
+                     title: const Text('Natural Breeding'),
+                     value: 'natural_breeding',
+                     groupValue: _breedingType,
+                     onChanged: _onBreedingTypeChanged,
+                     contentPadding: EdgeInsets.zero,
+                     visualDensity: VisualDensity.compact,
+                   ),
+                 ],
+               ),
+            ],
+          ),
         ),
 
-        // Technician dropdown
-        buildTechnicianDropdown(),
+        // AI-specific fields
+        if (_breedingType == 'artificial_insemination') ...[
+          // Semen dropdown (this will populate the bull_tag automatically)
+          Builder(
+            builder: (context) {
+              print('DEBUG: About to call buildSemenDropdown()');
+              final semenWidget = buildSemenDropdown();
+              print('DEBUG: buildSemenDropdown() returned widget type: ${semenWidget.runtimeType}');
+              return semenWidget;
+            },
+          ),
+
+          // Technician dropdown
+          buildTechnicianDropdown(),
+        ],
+
+        // Natural breeding fields
+        if (_breedingType == 'natural_breeding') ...[
+          // Bull selection dropdown (without farmer field, simplified label)
+          buildBullDropdownForNaturalBreeding(),
+        ],
 
         // Estimated return to heat date (read-only, calculated)
         Container(

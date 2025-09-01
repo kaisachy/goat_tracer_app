@@ -916,21 +916,41 @@ class _EventCattleTabContentState extends State<EventCattleTabContent> {
         break;
 
       case 'breeding':
-        if (event['semen_used'] != null && event['semen_used'].toString().isNotEmpty && event['semen_used'] != 'N/A') {
-          relevantDetails['Semen Used'] = event['semen_used'].toString();
+        // Check breeding type to determine which fields to show
+        final breedingType = event['breeding_type']?.toString().toLowerCase();
+        
+        if (breedingType == 'artificial_insemination') {
+          // For AI breeding, show semen and technician
+          if (event['semen_used'] != null && event['semen_used'].toString().isNotEmpty && event['semen_used'] != 'N/A') {
+            relevantDetails['Semen Used'] = event['semen_used'].toString();
+          }
+          if (event['technician'] != null && event['technician'].toString().isNotEmpty && event['technician'] != 'N/A') {
+            relevantDetails['Technician'] = event['technician'].toString();
+          }
+        } else if (breedingType == 'natural_breeding') {
+          // For natural breeding, show bull tag
+          if (event['bull_tag'] != null && event['bull_tag'].toString().isNotEmpty && event['bull_tag'] != 'N/A') {
+            relevantDetails['Bull'] = event['bull_tag'].toString();
+          }
+        } else {
+          // Fallback for events without breeding_type (backward compatibility)
+          if (event['semen_used'] != null && event['semen_used'].toString().isNotEmpty && event['semen_used'] != 'N/A') {
+            relevantDetails['Semen Used'] = event['semen_used'].toString();
+          }
+          if (event['technician'] != null && event['technician'].toString().isNotEmpty && event['technician'] != 'N/A') {
+            relevantDetails['Technician'] = event['technician'].toString();
+          }
+          if (event['bull_tag'] != null && event['bull_tag'].toString().isNotEmpty && event['bull_tag'] != 'N/A') {
+            relevantDetails['Bull'] = event['bull_tag'].toString();
+          }
         }
-        if (event['technician'] != null && event['technician'].toString().isNotEmpty && event['technician'] != 'N/A') {
-          relevantDetails['Technician'] = event['technician'].toString();
-        }
-        if (event['estimated_return_date'] != null && event['estimated_return_date'].toString().isNotEmpty && event['estimated_return_date'] != 'N/A') {
-          relevantDetails['Est. Return to Heat'] = _formatDate(event['estimated_return_date']);
-        }
-
+        
+        // Show estimated return to heat date for female cattle
         final cattleGender = widget.cattle.gender.toLowerCase();
-        if (cattleGender == 'male') {
-          relevantDetails['Est. Return to Heat'] = 'Not Applicable';
-        } else if (event['estimated_return_date'] != null && event['estimated_return_date'].toString().isNotEmpty && event['estimated_return_date'] != 'N/A') {
+        if (cattleGender == 'female' && event['estimated_return_date'] != null && event['estimated_return_date'].toString().isNotEmpty && event['estimated_return_date'] != 'N/A') {
           relevantDetails['Est. Return to Heat'] = _formatDate(event['estimated_return_date']);
+        } else if (cattleGender == 'male') {
+          relevantDetails['Est. Return to Heat'] = 'Not Applicable';
         }
         break;
 
