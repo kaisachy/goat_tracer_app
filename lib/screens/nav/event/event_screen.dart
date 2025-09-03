@@ -9,7 +9,7 @@ import 'package:cattle_tracer_app/utils/event_type_utils.dart';
 import '../../../models/cattle.dart';
 import 'cattle_selection_modal.dart';
 
-class EventScreen extends StatefulWidget {
+  class EventScreen extends StatefulWidget {
   const EventScreen({super.key});
 
   @override
@@ -30,7 +30,7 @@ class _EventScreenState extends State<EventScreen> {
     return [
       'All', 'Dry off', 'Treated', 'Breeding', 'Weighed', 'Gives Birth',
       'Vaccinated', 'Pregnant', 'Aborted Pregnancy', 'Deworming',
-      'Hoof Trimming', 'Castrated', 'Weaned', 'Other',
+      'Hoof Trimming', 'Castrated', 'Weaned', 'Deceased', 'Other',
     ];
   }
 
@@ -42,6 +42,7 @@ class _EventScreenState extends State<EventScreen> {
     'vaccinated',
     'deworming',
     'hoof trimming',
+    'deceased',
   ];
 
   @override
@@ -218,6 +219,9 @@ class _EventScreenState extends State<EventScreen> {
 
       case 'castrated':
         return _compareFieldValues(event1['technician'], event2['technician']);
+
+      case 'deceased':
+        return _compareFieldValues(event1['cause_of_death'], event2['cause_of_death']);
 
       case 'other':
       default:
@@ -1128,8 +1132,14 @@ class _EventScreenState extends State<EventScreen> {
         break;
 
       case 'castrated':
-        if (event['technician'] != null && event['technician'].toString().isNotEmpty && event['technician'] != 'N/A') {
+        if (event['technician'] != null && event['technician'].toString().isNotEmpty && event['technician'].toString() != 'N/A') {
           relevantDetails['Technician'] = event['technician'].toString();
+        }
+        break;
+
+      case 'deceased':
+        if (event['cause_of_death'] != null && event['cause_of_death'].toString().isNotEmpty && event['cause_of_death'].toString() != 'N/A') {
+          relevantDetails['Cause of Death'] = event['cause_of_death'].toString();
         }
         break;
 

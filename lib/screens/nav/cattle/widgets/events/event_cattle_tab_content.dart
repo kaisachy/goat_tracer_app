@@ -32,15 +32,17 @@ class _EventCattleTabContentState extends State<EventCattleTabContent> {
   Set<int> expandedCards = <int>{};
 
   List<String> get eventTypes {
+    // Comprehensive event types for female cattle - includes all available event types
     final femaleEventTypes = [
       'All', 'Dry off', 'Treated', 'Breeding', 'Weighed', 'Gives Birth',
       'Vaccinated', 'Pregnant', 'Aborted Pregnancy', 'Deworming',
-      'Hoof Trimming', 'Other',
+      'Hoof Trimming', 'Weaned', 'Deceased', 'Other',
     ];
 
+    // Comprehensive event types for male cattle - includes all available event types
     final maleEventTypes = [
       'All', 'Treated', 'Breeding', 'Weighed', 'Vaccinated', 'Deworming',
-      'Hoof Trimming', 'Castrated', 'Weaned', 'Other',
+      'Hoof Trimming', 'Castrated', 'Weaned', 'Deceased', 'Other',
     ];
 
     // Check cattle gender and return appropriate event types
@@ -56,6 +58,7 @@ class _EventCattleTabContentState extends State<EventCattleTabContent> {
     'vaccinated',
     'deworming',
     'hoof trimming',
+    'deceased',
   ];
 
   @override
@@ -247,6 +250,9 @@ class _EventCattleTabContentState extends State<EventCattleTabContent> {
       // Only basic fields matter for weaned
         return true;
 
+      case 'deceased':
+        return _compareFieldValues(event1['cause_of_death'], event2['cause_of_death']);
+
       case 'other':
       default:
       // For 'other' event, compare all potentially relevant fields
@@ -306,9 +312,9 @@ class _EventCattleTabContentState extends State<EventCattleTabContent> {
       final gender = widget.cattle.gender.toLowerCase();
       final validEventTypes = gender == 'female'
           ? ['dry off', 'treated', 'breeding', 'weighed', 'gives birth', 'vaccinated',
-        'pregnant', 'aborted pregnancy', 'deworming', 'hoof trimming', 'other']
+        'pregnant', 'aborted pregnancy', 'deworming', 'hoof trimming', 'deceased', 'other']
           : ['treated', 'breeding', 'weighed', 'vaccinated', 'deworming', 'hoof trimming',
-        'castrated', 'weaned','other'];
+        'castrated', 'weaned', 'deceased', 'other'];
 
       final matchesGender = validEventTypes.contains(type);
 
@@ -1012,6 +1018,12 @@ class _EventCattleTabContentState extends State<EventCattleTabContent> {
 
       case 'weaned':
       // No additional fields for weaned
+        break;
+
+      case 'deceased':
+        if (event['cause_of_death'] != null && event['cause_of_death'].toString().isNotEmpty && event['cause_of_death'] != 'N/A') {
+          relevantDetails['Cause of Death'] = event['cause_of_death'].toString();
+        }
         break;
 
       case 'other':

@@ -6,6 +6,7 @@ import 'package:cattle_tracer_app/services/cattle/cattle_service.dart';
 import 'package:cattle_tracer_app/services/cattle/cattle_event_service.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'breeding_success_card.dart';
+import 'widgets/vaccination_dashboard_widget.dart';
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
@@ -211,6 +212,8 @@ class _DashboardScreenState extends State<DashboardScreen>
               _buildStatusBreakdown(),
               const SizedBox(height: 20),
               _buildBreedingSuccessCard(),
+              const SizedBox(height: 20),
+              _buildVaccinationDashboard(),
               const SizedBox(height: 20),
               _buildExpectedDeliveries(),
               const SizedBox(height: 20),
@@ -1382,6 +1385,16 @@ class _DashboardScreenState extends State<DashboardScreen>
     );
   }
 
+  Widget _buildVaccinationDashboard() {
+    return _buildAnimatedCard(
+      delay: 200,
+      child: VaccinationDashboardWidget(
+        allCattle: allCattle,
+        allEvents: allEvents,
+      ),
+    );
+  }
+
   Widget _buildGenderPieChart() {
     final males = allCattle.where((c) => c.gender.toLowerCase() == 'male').length;
     final females = allCattle.where((c) => c.gender.toLowerCase() == 'female').length;
@@ -1425,6 +1438,9 @@ class _DashboardScreenState extends State<DashboardScreen>
       );
     }
 
+    final malePercentage = total > 0 ? ((males / total) * 100).toStringAsFixed(0) : '0';
+    final femalePercentage = total > 0 ? ((females / total) * 100).toStringAsFixed(0) : '0';
+
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
@@ -1458,7 +1474,7 @@ class _DashboardScreenState extends State<DashboardScreen>
                   PieChartSectionData(
                     color: AppColors.darkGreen,
                     value: males.toDouble(),
-                    title: '${males}',
+                    title: '${malePercentage}%',
                     radius: 25,
                     titleStyle: const TextStyle(
                       fontSize: 14,
@@ -1469,7 +1485,7 @@ class _DashboardScreenState extends State<DashboardScreen>
                   PieChartSectionData(
                     color: AppColors.gold,
                     value: females.toDouble(),
-                    title: '${females}',
+                    title: '${femalePercentage}%',
                     radius: 25,
                     titleStyle: const TextStyle(
                       fontSize: 14,

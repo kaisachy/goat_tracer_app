@@ -1,16 +1,25 @@
 import 'package:cattle_tracer_app/screens/nav/schedule/widgets/schedule_header_widget.dart';
 import 'package:cattle_tracer_app/screens/nav/schedule/widgets/schedule_stats_row_widget.dart';
 import 'package:cattle_tracer_app/screens/nav/schedule/widgets/schedule_tab_bar_widget.dart';
+import 'package:cattle_tracer_app/screens/nav/schedule/widgets/schedule_card_widget.dart';
+import 'package:cattle_tracer_app/screens/nav/schedule/widgets/schedule_empty_states_widget.dart';
+import 'package:cattle_tracer_app/screens/nav/schedule/widgets/today_schedule_header_widget.dart';
 import 'package:flutter/material.dart';
 import '../../../constants/app_colors.dart';
 import '../../../models/schedule.dart';
 import '../../../services/schedule/schedule_service.dart';
 import '../../../utils/schedule_utils.dart';
+import '../../../services/cattle/cattle_event_service.dart';
 import 'cattle_schedule_form.dart';
 
 
 class ScheduleContentWidget extends StatefulWidget {
-  const ScheduleContentWidget({super.key});
+  final Function(VoidCallback)? onReloadCallback;
+  
+  const ScheduleContentWidget({
+    super.key,
+    this.onReloadCallback,
+  });
 
   @override
   State<ScheduleContentWidget> createState() => _ScheduleContentWidgetState();
@@ -50,9 +59,12 @@ class _ScheduleContentWidgetState extends State<ScheduleContentWidget> with Tick
     _tabController = TabController(length: 5, vsync: this);
     _tabController.addListener(_onTabChanged);
 
+    // Register reload callback with parent
+    widget.onReloadCallback?.call(loadSchedules);
+
     // Load schedules immediately
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      _loadSchedules();
+      loadSchedules();
     });
   }
 
@@ -88,7 +100,7 @@ class _ScheduleContentWidgetState extends State<ScheduleContentWidget> with Tick
     _applyFilters();
   }
 
-  Future<void> _loadSchedules() async {
+  Future<void> loadSchedules() async {
     setState(() => _isLoading = true);
 
     try {
@@ -273,31 +285,24 @@ class _ScheduleContentWidgetState extends State<ScheduleContentWidget> with Tick
     }
 
     if (_filteredSchedules.isEmpty) {
-      return const Center(
-        child: Text('No schedules found'),
+      final type = _getEmptyStateType();
+      return ScheduleEmptyStates(
+        type: type,
+        hasSchedules: _schedules.isNotEmpty,
+        searchQuery: _searchQuery,
       );
     }
 
     return RefreshIndicator(
-      onRefresh: _loadSchedules,
+      onRefresh: loadSchedules,
       child: ListView.builder(
+        padding: const EdgeInsets.all(20),
         itemCount: _filteredSchedules.length,
         itemBuilder: (context, index) {
           final schedule = _filteredSchedules[index];
-          return Card(
-            margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-            child: ListTile(
-              title: Text(schedule.title),
-              subtitle: Text(schedule.cattleTag ?? 'No cattle assigned'),
-              trailing: PopupMenuButton<String>(
-                onSelected: (value) => _handleMenuAction(value, schedule),
-                itemBuilder: (context) => [
-                  const PopupMenuItem(value: 'view', child: Text('View')),
-                  const PopupMenuItem(value: 'edit', child: Text('Edit')),
-                  const PopupMenuItem(value: 'delete', child: Text('Delete')),
-                ],
-              ),
-            ),
+          return ScheduleCard(
+            schedule: schedule,
+            onMenuAction: _handleMenuAction,
           );
         },
       ),
@@ -310,35 +315,38 @@ class _ScheduleContentWidgetState extends State<ScheduleContentWidget> with Tick
     }
 
     if (_todaysSchedules.isEmpty) {
-      return const Center(
-        child: Text('No schedules for today'),
-      );
+      return const ScheduleEmptyStates(type: ScheduleEmptyStateType.todayEmpty);
     }
 
     return RefreshIndicator(
-      onRefresh: _loadSchedules,
-      child: ListView.builder(
-        itemCount: _todaysSchedules.length,
-        itemBuilder: (context, index) {
-          final schedule = _todaysSchedules[index];
-          return Card(
-            margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-            child: ListTile(
-              title: Text(schedule.title),
-              subtitle: Text(schedule.cattleTag ?? 'No cattle assigned'),
-              trailing: PopupMenuButton<String>(
-                onSelected: (value) => _handleMenuAction(value, schedule),
-                itemBuilder: (context) => [
-                  const PopupMenuItem(value: 'view', child: Text('View')),
-                  const PopupMenuItem(value: 'edit', child: Text('Edit')),
-                  const PopupMenuItem(value: 'delete', child: Text('Delete')),
-                ],
-              ),
-            ),
-          );
-        },
+      onRefresh: loadSchedules,
+      child: ListView(
+        padding: const EdgeInsets.all(20),
+        children: [
+          TodayScheduleHeader(todaysSchedules: _todaysSchedules),
+          const SizedBox(height: 16),
+          ..._filteredSchedules.map((s) => ScheduleCard(
+                schedule: s,
+                isToday: true,
+                onMenuAction: _handleMenuAction,
+              )),
+        ],
       ),
     );
+  }
+
+  ScheduleEmptyStateType _getEmptyStateType() {
+    if (_searchQuery.isNotEmpty) return ScheduleEmptyStateType.searchEmpty;
+    switch (_selectedFilter) {
+      case ScheduleFilter.upcoming:
+        return ScheduleEmptyStateType.upcomingEmpty;
+      case ScheduleFilter.overdue:
+        return ScheduleEmptyStateType.overdueEmpty;
+      case ScheduleFilter.completed:
+        return ScheduleEmptyStateType.completedEmpty;
+      default:
+        return ScheduleEmptyStateType.allEmpty;
+    }
   }
 
   // Menu action handlers and other methods
@@ -353,6 +361,18 @@ class _ScheduleContentWidgetState extends State<ScheduleContentWidget> with Tick
       case 'delete':
         _confirmDeleteSchedule(schedule);
         break;
+      case 'cancel':
+        _updateStatus(schedule, ScheduleStatus.cancelled);
+        break;
+      case 'complete':
+        _updateStatus(schedule, ScheduleStatus.completed);
+        break;
+      case 'reschedule':
+        _updateStatus(schedule, ScheduleStatus.scheduled);
+        break;
+      case 'duplicate':
+        _duplicateSchedule(schedule);
+        break;
     }
   }
 
@@ -363,14 +383,131 @@ class _ScheduleContentWidgetState extends State<ScheduleContentWidget> with Tick
       context,
       MaterialPageRoute(
         builder: (context) => CattleScheduleForm(
-          onScheduleAdded: _loadSchedules,
+          onScheduleAdded: loadSchedules,
           scheduleToEdit: schedule,
         ),
       ),
     ).then((_) {
       // Refresh the schedules after editing
-      _loadSchedules();
+      loadSchedules();
     });
+  }
+
+  Future<void> _updateStatus(Schedule schedule, String status) async {
+    try {
+      await ScheduleService.updateScheduleStatus(schedule.id ?? 0, status);
+      // If marking as completed, auto-create event(s) except Feed and Other
+      if (status == ScheduleStatus.completed) {
+        await _createEventsForSchedule(schedule);
+      } else if (status == ScheduleStatus.scheduled) {
+        // If rescheduled, remove previously auto-created events for this schedule
+        await _removeEventsForSchedule(schedule);
+      }
+      await loadSchedules();
+      _showSnackBar('Schedule updated to $status');
+    } catch (e) {
+      _showSnackBar('Failed to update status: ${e.toString()}', isError: true);
+    }
+  }
+
+  Future<void> _duplicateSchedule(Schedule schedule) async {
+    try {
+      // Duplicate to the same datetime by default
+      await ScheduleService.duplicateSchedule(schedule, schedule.scheduleDateTime);
+      await loadSchedules();
+      _showSnackBar('Schedule duplicated');
+    } catch (e) {
+      _showSnackBar('Failed to duplicate: ${e.toString()}', isError: true);
+    }
+  }
+
+  Future<void> _createEventsForSchedule(Schedule schedule) async {
+    final mappedEventType = _mapScheduleTypeToEventType(schedule.type);
+    if (mappedEventType == null) {
+      return; // No matching event for this type
+    }
+
+    final tags = _extractCattleTags(schedule.cattleTag);
+    int successCount = 0;
+    for (final tag in tags) {
+      final data = <String, dynamic>{
+        'cattle_tag': tag,
+        'event_type': mappedEventType,
+        'event_date': _formatDateForApi(schedule.scheduleDateTime),
+        'notes': schedule.notes,
+      };
+      // For vaccination, carry over vaccine name and technician
+      if (mappedEventType.toLowerCase() == 'vaccinated') {
+        if ((schedule.vaccineType ?? '').isNotEmpty) {
+          data['medicine_given'] = schedule.vaccineType;
+        }
+        if ((schedule.veterinarian ?? '').isNotEmpty) {
+          data['technician'] = schedule.veterinarian;
+        }
+      }
+      try {
+        final ok = await CattleEventService.storeCattleEvent(data);
+        if (ok) successCount++;
+      } catch (_) {}
+    }
+    if (successCount > 0) {
+      _showSnackBar('Created $successCount ${mappedEventType.toLowerCase()} event(s)');
+    }
+  }
+
+  Future<void> _removeEventsForSchedule(Schedule schedule) async {
+    final mappedEventType = _mapScheduleTypeToEventType(schedule.type);
+    if (mappedEventType == null) return;
+
+    final tags = _extractCattleTags(schedule.cattleTag);
+    final allEvents = await CattleEventService.getCattleEvent();
+    final scheduleDate = _formatDateForApi(schedule.scheduleDateTime);
+
+    for (final tag in tags) {
+      // Find matching events by cattle_tag, event_type, and event_date
+      final matches = allEvents.where((e) =>
+        (e['cattle_tag']?.toString() ?? '').trim().toUpperCase() == tag.trim().toUpperCase() &&
+        (e['event_type']?.toString().toLowerCase() ?? '') == mappedEventType.toLowerCase() &&
+        (e['event_date']?.toString() ?? '') == scheduleDate
+      );
+      for (final evt in matches) {
+        final id = int.tryParse('${evt['id']}');
+        if (id != null) {
+          await CattleEventService.deleteCattleEvent(id);
+        }
+      }
+    }
+  }
+
+  List<String> _extractCattleTags(String? cattleTag) {
+    if (cattleTag == null || cattleTag.trim().isEmpty) return [];
+    return cattleTag
+        .split(',')
+        .map((t) => t.trim())
+        .where((t) => t.isNotEmpty)
+        .toList();
+  }
+
+  String? _mapScheduleTypeToEventType(String scheduleType) {
+    switch (scheduleType.toLowerCase()) {
+      case 'vaccination':
+        return 'Vaccinated';
+      case 'deworming':
+        return 'Deworming';
+      case 'hoof trimming':
+        return 'Hoof Trimming';
+      case 'weigh':
+        return 'Weighed';
+      case 'feed':
+      case 'other':
+        return null;
+      default:
+        return null;
+    }
+  }
+
+  String _formatDateForApi(DateTime date) {
+    return '${date.year.toString().padLeft(4, '0')}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
   }
 
   void _showScheduleDetails(Schedule schedule) {
@@ -415,7 +552,7 @@ class _ScheduleContentWidgetState extends State<ScheduleContentWidget> with Tick
               try {
                 await ScheduleService.deleteSchedule(schedule.id ?? 0);
                 Navigator.pop(context);
-                _loadSchedules();
+                loadSchedules();
                 _showSnackBar('Schedule deleted successfully');
               } catch (e) {
                 Navigator.pop(context);

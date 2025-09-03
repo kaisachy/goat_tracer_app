@@ -26,12 +26,12 @@ class _EventContentState extends State<EventContent> {
   String selectedEventType = 'All';
   Set<int> expandedCards = <int>{};
 
-  // All possible event types
+  // All possible event types - comprehensive list including all event types from EventTypeUtils
   List<String> get eventTypes {
     return [
       'All', 'Dry off', 'Treated', 'Breeding', 'Weighed', 'Gives Birth',
       'Vaccinated', 'Pregnant', 'Aborted Pregnancy', 'Deworming',
-      'Hoof Trimming', 'Castrated', 'Weaned', 'Other',
+      'Hoof Trimming', 'Castrated', 'Weaned', 'Deceased', 'Other',
     ];
   }
 
@@ -43,6 +43,7 @@ class _EventContentState extends State<EventContent> {
     'vaccinated',
     'deworming',
     'hoof trimming',
+    'deceased',
   ];
 
   @override
@@ -745,6 +746,9 @@ class _EventContentState extends State<EventContent> {
         break;
       case 'castrated':
         if (event['technician'] != null) details.add({'label': 'Technician', 'value': event['technician']});
+        break;
+      case 'deceased':
+        if (event['cause_of_death'] != null) details.add({'label': 'Cause of Death', 'value': event['cause_of_death']});
         break;
     }
 

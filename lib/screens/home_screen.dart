@@ -12,15 +12,18 @@ import 'nav/dashboard/dashboard_screen.dart';
 import 'nav/profile/profile_screen.dart';
 import 'nav/milk/milk_screen.dart';
 import 'nav/event_schedule/event_schedule_screen.dart';
+import 'nav/vaccination/vaccination_schedule_screen.dart';
 import 'nav/setting/setting_screen.dart';
 import 'nav/map/map_screen.dart';
 import 'package:cattle_tracer_app/services/cattle/cattle_status_service.dart';
 import 'package:cattle_tracer_app/services/refresh_service.dart';
 
 class HomeScreen extends StatefulWidget {
-  final String userEmail;
+  final String? userEmail;
+  final int? initialSelectedIndex;
+  final int? initialEventScheduleTabIndex;
 
-  const HomeScreen({super.key, required this.userEmail});
+  const HomeScreen({super.key, this.userEmail, this.initialSelectedIndex, this.initialEventScheduleTabIndex});
 
   @override
   State<HomeScreen> createState() => _HomeScreenState();
@@ -40,6 +43,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+    _selectedIndex = widget.initialSelectedIndex ?? 0;
     _initializePages();
     _loadProfileData();
   }
@@ -64,9 +68,10 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
       AuthGuard(child: MapScreen()),
       AuthGuard(child: DashboardScreen()),
       const AuthGuard(child: CattleScreen()),
-      AuthGuard(child: EventScheduleScreen()),
+      AuthGuard(child: EventScheduleScreen(initialTabIndex:  widget.initialEventScheduleTabIndex ?? 0)),
+      AuthGuard(child: VaccinationScheduleScreen()),
       AuthGuard(child: MilkScreen()),
-      AuthGuard(child: ProfileScreen(userEmail: widget.userEmail)),
+      AuthGuard(child: ProfileScreen(userEmail: widget.userEmail ?? '')),
       AuthGuard(child: SettingScreen()),
     ];
   }
@@ -582,19 +587,19 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                   icon: Icons.opacity_rounded,
                   text: 'Milk Production',
                   index: 4,
-                  onTap: () => _onNavItemTapped(4),
+                  onTap: () => _onNavItemTapped(5),
                 ),
                 _buildDrawerItem(
                   icon: Icons.person_rounded,
                   text: 'Profile',
                   index: 5,
-                  onTap: () => _onNavItemTapped(5),
+                  onTap: () => _onNavItemTapped(6),
                 ),
                 _buildDrawerItem(
                   icon: Icons.settings_rounded,
                   text: 'Settings',
                   index: 6,
-                  onTap: () => _onNavItemTapped(6),
+                  onTap: () => _onNavItemTapped(7),
                 ),
               ],
             ),
@@ -623,7 +628,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
         ),
       ),
       accountEmail: Text(
-        widget.userEmail,
+        widget.userEmail ?? '',
         style: const TextStyle(color: Colors.white70),
       ),
       currentAccountPicture: _buildProfilePicture(),

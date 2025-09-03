@@ -7,7 +7,9 @@ import 'package:cattle_tracer_app/screens/nav/schedule/cattle_schedule_form.dart
 import 'package:cattle_tracer_app/screens/nav/event/cattle_selection_modal.dart';
 
 class EventScheduleScreen extends StatefulWidget {
-  const EventScheduleScreen({super.key});
+  final int initialTabIndex;
+
+  const EventScheduleScreen({super.key, this.initialTabIndex = 0});
 
   @override
   State<EventScheduleScreen> createState() => _EventScheduleScreenState();
@@ -16,11 +18,12 @@ class EventScheduleScreen extends StatefulWidget {
 class _EventScheduleScreenState extends State<EventScheduleScreen>
     with TickerProviderStateMixin {
   late TabController _tabController;
+  VoidCallback? _onScheduleReload;
 
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 2, vsync: this);
+    _tabController = TabController(length: 2, vsync: this, initialIndex: widget.initialTabIndex.clamp(0, 1));
     _tabController.addListener(() {
       setState(() {}); // Rebuild to update FAB
     });
@@ -71,9 +74,13 @@ class _EventScheduleScreenState extends State<EventScheduleScreen>
           Expanded(
             child: TabBarView(
               controller: _tabController,
-              children: const [
-                EventContent(),
-                schedule_content.ScheduleContentWidget(),
+              children: [
+                const EventContent(),
+                schedule_content.ScheduleContentWidget(
+                  onReloadCallback: (callback) {
+                    _onScheduleReload = callback;
+                  },
+                ),
               ],
             ),
           ),
@@ -108,7 +115,10 @@ class _EventScheduleScreenState extends State<EventScheduleScreen>
             context,
             MaterialPageRoute(
               builder: (context) => CattleScheduleForm(
-                onScheduleAdded: () {},
+                onScheduleAdded: () {
+                  // Trigger reload of schedule content
+                  _reloadScheduleContent();
+                },
               ),
             ),
           );
@@ -129,5 +139,10 @@ class _EventScheduleScreenState extends State<EventScheduleScreen>
       ),
       elevation: 4,
     );
+  }
+
+  void _reloadScheduleContent() {
+    // Trigger reload of the schedule content widget
+    _onScheduleReload?.call();
   }
 }

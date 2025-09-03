@@ -12,7 +12,9 @@ import 'modals/schedule_details_dialog_modal.dart';
 
 
 class ScheduleScreen extends StatefulWidget {
-  const ScheduleScreen({super.key});
+  final String? initialSearch;
+
+  const ScheduleScreen({super.key, this.initialSearch});
 
   @override
   State<ScheduleScreen> createState() => _ScheduleScreenState();
@@ -116,6 +118,16 @@ class _ScheduleScreenState extends State<ScheduleScreen> with TickerProviderStat
         _isLoading = false;
       });
 
+      // Apply initial search if provided
+      if (widget.initialSearch != null && widget.initialSearch!.trim().isNotEmpty) {
+        _searchController.text = widget.initialSearch!;
+        _searchQuery = widget.initialSearch!;
+        // Ensure the All tab is selected so filter applies across all
+        if (_tabController.index != _allTab) {
+          _tabController.index = _allTab;
+        }
+      }
+
       // Apply filters after state is updated
       _applyFilters();
 
@@ -150,7 +162,8 @@ class _ScheduleScreenState extends State<ScheduleScreen> with TickerProviderStat
         return schedule.title.toLowerCase().contains(query) ||
             schedule.type.toLowerCase().contains(query) ||
             (schedule.cattleTag?.toLowerCase().contains(query) ?? false) ||
-            (schedule.veterinarian?.toLowerCase().contains(query) ?? false);
+            (schedule.veterinarian?.toLowerCase().contains(query) ?? false) ||
+            (schedule.vaccineType?.toLowerCase().contains(query) ?? false);
       }).toList();
     }
 
@@ -163,7 +176,8 @@ class _ScheduleScreenState extends State<ScheduleScreen> with TickerProviderStat
           return schedule.title.toLowerCase().contains(query) ||
               schedule.type.toLowerCase().contains(query) ||
               (schedule.cattleTag?.toLowerCase().contains(query) ?? false) ||
-              (schedule.veterinarian?.toLowerCase().contains(query) ?? false);
+              (schedule.veterinarian?.toLowerCase().contains(query) ?? false) ||
+              (schedule.vaccineType?.toLowerCase().contains(query) ?? false);
         }
         return true;
       }).toList();
@@ -199,18 +213,19 @@ class _ScheduleScreenState extends State<ScheduleScreen> with TickerProviderStat
                 setState(() => _searchQuery = '');
                 _applyFilters();
               },
-              child: ScheduleStatsRow(tabCounts: _tabCounts),
+              child: const SizedBox.shrink(),
             ),
           ),
-          SliverPersistentHeader(
-            delegate: ScheduleTabBarDelegate(
-              ScheduleTabBar(
-                key: ValueKey(_tabCounts.toString()), // Force rebuild when counts change
-                tabController: _tabController,
-                tabCounts: _tabCounts,
-              ),
+          SliverToBoxAdapter(
+            child: ScheduleStatsRow(
+              tabCounts: _tabCounts,
             ),
-            pinned: true,
+          ),
+          SliverToBoxAdapter(
+            child: ScheduleTabBar(
+              tabController: _tabController,
+              tabCounts: _tabCounts,
+            ),
           ),
         ],
         body: ScheduleContent(
@@ -222,168 +237,24 @@ class _ScheduleScreenState extends State<ScheduleScreen> with TickerProviderStat
           selectedFilter: _selectedFilter,
           searchQuery: _searchQuery,
           onRefresh: _loadSchedules,
-          onMenuAction: _handleMenuAction,
-        ),
-      ),
-      floatingActionButton: _buildFAB(),
-    );
-  }
-
-  Widget _buildFAB() {
-    return FloatingActionButton.extended(
-      onPressed: _showCattleScheduleForm,
-      backgroundColor: AppColors.primary,
-      foregroundColor: Colors.white,
-      icon: const Icon(Icons.add, size: 20),
-      label: const Text(
-        'Add Schedule',
-        style: TextStyle(
-          fontSize: 14,
-          fontWeight: FontWeight.w600,
-        ),
-      ),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
-      ),
-      elevation: 4,
-    );
-  }
-
-  // Menu action handlers and other methods
-  void _handleMenuAction(String action, Schedule schedule) {
-    switch (action) {
-      case 'view':
-        _showScheduleDetails(schedule);
-        break;
-      case 'edit':
-        _showEditScheduleDialog(schedule);
-        break;
-      case 'complete':
-        _updateScheduleStatus(schedule, ScheduleStatus.completed);
-        break;
-      case 'cancel':
-        _updateScheduleStatus(schedule, ScheduleStatus.cancelled);
-        break;
-      case 'reschedule':
-        _updateScheduleStatus(schedule, ScheduleStatus.scheduled);
-        break;
-      case 'duplicate':
-        _duplicateSchedule(schedule);
-        break;
-      case 'delete':
-        _confirmDeleteSchedule(schedule);
-        break;
-    }
-  }
-
-  void _showCattleScheduleForm() {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => CattleScheduleForm(
-          onScheduleAdded: _loadSchedules,
+          onMenuAction: (action, schedule) async {
+            if (action == 'view') {
+              await showDialog(
+                context: context,
+                builder: (_) => ScheduleDetailsDialog(schedule: schedule),
+              );
+            }
+          },
         ),
       ),
     );
-  }
-
-  void _showEditScheduleDialog(Schedule schedule) {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => CattleScheduleForm(
-          onScheduleAdded: _loadSchedules,
-          scheduleToEdit: schedule,
-        ),
-      ),
-    );
-  }
-
-  void _showScheduleDetails(Schedule schedule) {
-    showDialog(
-      context: context,
-      builder: (context) => ScheduleDetailsDialog(schedule: schedule),
-    );
-  }
-
-  Future<void> _updateScheduleStatus(Schedule schedule, String newStatus) async {
-    try {
-      await ScheduleService.updateScheduleStatus(schedule.id!, newStatus);
-      _showSnackBar('Schedule ${newStatus.toLowerCase()} successfully');
-      _loadSchedules(); // This will refresh all data and update counts
-    } catch (e) {
-      _showSnackBar('Error updating schedule: ${e.toString()}', isError: true);
-    }
-  }
-
-  Future<void> _duplicateSchedule(Schedule schedule) async {
-    try {
-      final tomorrow = DateTime.now().add(const Duration(days: 1));
-      await ScheduleService.duplicateSchedule(schedule, tomorrow);
-      _showSnackBar('Schedule duplicated successfully');
-      _loadSchedules();
-    } catch (e) {
-      _showSnackBar('Error duplicating schedule: ${e.toString()}', isError: true);
-    }
-  }
-
-  void _confirmDeleteSchedule(Schedule schedule) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: const Text(
-          'Delete Schedule',
-          style: TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-        content: Text(
-          'Are you sure you want to delete "${schedule.title}"?',
-          style: const TextStyle(fontSize: 14),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text(
-              'Cancel',
-              style: TextStyle(color: Colors.grey[600]),
-            ),
-          ),
-          TextButton(
-            onPressed: () {
-              Navigator.pop(context);
-              _deleteSchedule(schedule);
-            },
-            child: const Text(
-              'Delete',
-              style: TextStyle(color: Colors.red),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Future<void> _deleteSchedule(Schedule schedule) async {
-    try {
-      await ScheduleService.deleteSchedule(schedule.id!);
-      _showSnackBar('Schedule deleted successfully');
-      _loadSchedules();
-    } catch (e) {
-      _showSnackBar('Error deleting schedule: ${e.toString()}', isError: true);
-    }
   }
 
   void _showSnackBar(String message, {bool isError = false}) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(message),
-        backgroundColor: isError ? Colors.red[600] : Colors.green[600],
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        margin: const EdgeInsets.all(16),
+        backgroundColor: isError ? Colors.red : AppColors.vibrantGreen,
       ),
     );
   }

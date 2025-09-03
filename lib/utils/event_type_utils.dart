@@ -32,6 +32,7 @@ class EventTypeUtils {
         'Vaccinated',
         'Deworming',
         'Hoof Trimming',
+        'Deceased',
         'Other',
       ];
 
@@ -48,10 +49,15 @@ class EventTypeUtils {
         print('DEBUG: Excluded breeding events for calf female');
       }
 
+      // Add Weaned event only for Calf classification
+      if (isCalf) {
+        femaleEvents.add('Weaned');
+      }
+
       print('DEBUG: Final female events: ${femaleEvents.join(', ')}');
       return femaleEvents;
     } else if (genderLower == 'male') {
-      return [
+      final maleEvents = [
         ...baseTypes,
         'Treated',
         'Weighed',
@@ -59,9 +65,14 @@ class EventTypeUtils {
         'Deworming',
         'Hoof Trimming',
         'Castrated',
-        'Weaned',
+        'Deceased',
         'Other'
       ];
+      // Add Weaned event only for Calf classification (not adult bulls)
+      if (isCalf) {
+        maleEvents.add('Weaned');
+      }
+      return maleEvents;
     } else {
       return [
         ...baseTypes,
@@ -70,6 +81,7 @@ class EventTypeUtils {
         'Vaccinated',
         'Deworming',
         'Hoof Trimming',
+        'Deceased',
         'Other'
       ];
     }
@@ -101,6 +113,8 @@ class EventTypeUtils {
         return FontAwesomeIcons.mars;
       case 'weaned':
         return FontAwesomeIcons.bottleWater;
+      case 'deceased':
+        return FontAwesomeIcons.skull;
       case 'other':
         return FontAwesomeIcons.ellipsis;
       case 'loading cattle information...':
@@ -124,6 +138,7 @@ class EventTypeUtils {
       case 'castrated': return Colors.indigo.shade400;
       case 'weaned': return Colors.teal.shade400;
       case 'aborted pregnancy': return Colors.red.shade600;
+      case 'deceased': return Colors.grey.shade700;
       case 'other': return Colors.blueGrey.shade400;
       case 'loading cattle information...': return Colors.grey.shade400;
       default: return AppColors.lightGreen;

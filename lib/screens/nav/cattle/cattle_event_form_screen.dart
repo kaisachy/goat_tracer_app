@@ -92,7 +92,7 @@ class _CattleEventFormScreenState extends State<CattleEventFormScreen>
       'bull_tag', 'calf_tag', 'event_date', 'sickness_symptoms',
       'diagnosis', 'technician', 'medicine_given', 'semen_used',
       'estimated_return_date', 'weighed_result', 'breeding_date',
-      'expected_delivery_date', 'notes'
+      'expected_delivery_date', 'cause_of_death', 'notes'
     ];
 
     for (var field in fields) {
@@ -584,6 +584,7 @@ class _CattleEventFormScreenState extends State<CattleEventFormScreen>
         'estimated_return_date': _controllers['estimated_return_date']!.text.trim(),
         'breeding_date': _controllers['breeding_date']!.text.trim(),
         'expected_delivery_date': _controllers['expected_delivery_date']!.text.trim(),
+        'cause_of_death': _controllers['cause_of_death']!.text.trim(),
       };
 
       // Add breeding type for breeding events
@@ -621,6 +622,14 @@ class _CattleEventFormScreenState extends State<CattleEventFormScreen>
 
       if (data['event_date'].toString().isEmpty) {
         throw Exception('Event date is required');
+      }
+
+      // Validate cause of death for deceased events
+      if (selectedEventType.toLowerCase() == 'deceased' &&
+          _controllers['cause_of_death']!.text.trim().isEmpty) {
+        _showErrorMessage('Cause of death is required for deceased events.');
+        setState(() => _isLoading = false);
+        return;
       }
 
       // Additional validation for specific event types
@@ -715,6 +724,8 @@ class _CattleEventFormScreenState extends State<CattleEventFormScreen>
             await _handlePregnantEvent();
           } else if (selectedEventType.toLowerCase() == 'castrated') {
             await _handleCastratedEvent();
+          } else if (selectedEventType.toLowerCase() == 'deceased') {
+            await _handleDeceasedEvent();
           }
         } catch (eventSpecificError) {
           // Log but don't fail the entire operation for event-specific errors
@@ -914,6 +925,56 @@ class _CattleEventFormScreenState extends State<CattleEventFormScreen>
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Warning: Failed to update cattle status to Pregnant'),
+            backgroundColor: Colors.orange[600],
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+            duration: const Duration(seconds: 3),
+          ),
+        );
+      }
+    }
+  }
+
+  Future<void> _handleDeceasedEvent() async {
+    try {
+      bool cattleStatusUpdated = false;
+      String cattleStatus = '';
+
+      // Update cattle status to Deceased
+      if (_cattleDetails != null) {
+        final cattleUpdateData = Map<String, dynamic>.from(_cattleDetails!.toJson());
+        cattleUpdateData['status'] = 'Deceased';
+        cattleStatusUpdated = await CattleService.updateCattleInformation(cattleUpdateData);
+        cattleStatus = cattleStatusUpdated
+            ? 'Cattle ${_cattleDetails!.tagNo} status updated to Deceased'
+            : 'Failed to update cattle ${_cattleDetails!.tagNo} status to Deceased';
+      }
+
+      // Log the result for debugging
+      print('Deceased event result: $cattleStatus');
+
+      // Optional: Show success feedback to user
+      if (mounted && cattleStatusUpdated) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Cattle status updated to Deceased'),
+            backgroundColor: Colors.grey[700],
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+            duration: const Duration(seconds: 2),
+          ),
+        );
+      }
+
+    } catch (e) {
+      // Log any errors that occur during the process
+      print('Error in _handleDeceasedEvent: $e');
+
+      // Optional: Show error message to user
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Warning: Failed to update cattle status to Deceased'),
             backgroundColor: Colors.orange[600],
             behavior: SnackBarBehavior.floating,
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),

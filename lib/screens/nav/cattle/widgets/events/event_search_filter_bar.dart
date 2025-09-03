@@ -342,6 +342,8 @@ IconData _getEventIcon(String eventType) {
       return Icons.heart_broken_rounded;
     case 'other':
       return Icons.more_horiz_rounded;
+    case 'all':
+      return Icons.filter_list_rounded;
     default:
       return Icons.event_note_rounded;
   }
@@ -375,6 +377,8 @@ Color _getEventColor(String eventType) {
       return Colors.red.shade600;
     case 'other':
       return Colors.blueGrey.shade400;
+    case 'all':
+      return AppColors.vibrantGreen;
     default:
       return AppColors.lightGreen;
   }

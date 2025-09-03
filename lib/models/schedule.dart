@@ -9,6 +9,7 @@ class Schedule {
   final String status;
   final String? veterinarian;
   final String? notes;
+  final String? vaccineType;
   final DateTime? createdAt;
   final DateTime? updatedAt;
 
@@ -23,6 +24,7 @@ class Schedule {
     this.status = 'Scheduled',
     this.veterinarian,
     this.notes,
+    this.vaccineType,
     this.createdAt,
     this.updatedAt,
   });
@@ -40,6 +42,7 @@ class Schedule {
         status: json['status']?.toString() ?? 'Scheduled',
         veterinarian: json['veterinarian']?.toString(),
         notes: json['notes']?.toString(),
+        vaccineType: json['vaccine_type']?.toString(),
         createdAt: _parseDateTime(json['created_at']),
         updatedAt: _parseDateTime(json['updated_at']),
       );
@@ -115,6 +118,7 @@ class Schedule {
       'status': status,
       'veterinarian': veterinarian,
       'notes': notes,
+      if (vaccineType != null) 'vaccine_type': vaccineType,
       if (createdAt != null) 'created_at': createdAt!.toIso8601String(),
       if (updatedAt != null) 'updated_at': updatedAt!.toIso8601String(),
     };
@@ -133,6 +137,7 @@ class Schedule {
       'status': status,
       'veterinarian': veterinarian,
       'notes': notes,
+      if (vaccineType != null) 'vaccine_type': vaccineType,
     };
   }
 
@@ -157,6 +162,7 @@ class Schedule {
     String? status,
     String? veterinarian,
     String? notes,
+    String? vaccineType,
     DateTime? createdAt,
     DateTime? updatedAt,
   }) {
@@ -171,6 +177,7 @@ class Schedule {
       status: status ?? this.status,
       veterinarian: veterinarian ?? this.veterinarian,
       notes: notes ?? this.notes,
+      vaccineType: vaccineType ?? this.vaccineType,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
     );
@@ -243,7 +250,8 @@ class Schedule {
               priority == other.priority &&
               status == other.status &&
               veterinarian == other.veterinarian &&
-              notes == other.notes;
+              notes == other.notes &&
+              vaccineType == other.vaccineType;
 
   @override
   int get hashCode =>
@@ -256,7 +264,8 @@ class Schedule {
       priority.hashCode ^
       status.hashCode ^
       veterinarian.hashCode ^
-      notes.hashCode;
+      notes.hashCode ^
+      vaccineType.hashCode;
 }
 
 // Constants for enum values
