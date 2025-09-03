@@ -6,8 +6,8 @@ class CattleAgeClassification {
   static const int GROWER_MIN_AGE = 8;
   static const int GROWER_MAX_AGE = 18;
   static const int HEIFER_STEER_MIN_AGE = 18;
-  static const int HEIFER_STEER_MAX_AGE = 24;
-  static const int COW_BULL_MIN_AGE = 24;
+  static const int HEIFER_STEER_MAX_AGE = 24; // Upper bound is exclusive in logic below
+  static const int COW_BULL_MIN_AGE = 24; // Inclusive: >= 24 months is Cow/Bull
 
   /// Get the expected classification based on age and gender
   static String getExpectedClassification(int ageInMonths, String gender) {
@@ -15,14 +15,14 @@ class CattleAgeClassification {
       return 'Calf';
     } else if (ageInMonths > GROWER_MIN_AGE && ageInMonths <= GROWER_MAX_AGE) {
       return 'Growers';
-    } else if (ageInMonths > HEIFER_STEER_MIN_AGE && ageInMonths <= HEIFER_STEER_MAX_AGE) {
+    } else if (ageInMonths > HEIFER_STEER_MIN_AGE && ageInMonths < HEIFER_STEER_MAX_AGE) {
       if (gender == 'Female') {
         return 'Heifer';
       } else if (gender == 'Male') {
         return 'Steer';
       }
       return 'Heifer'; // Default fallback
-    } else if (ageInMonths > COW_BULL_MIN_AGE) {
+    } else if (ageInMonths >= COW_BULL_MIN_AGE) {
       if (gender == 'Female') {
         return 'Cow';
       } else if (gender == 'Male') {
@@ -59,33 +59,49 @@ class CattleAgeClassification {
   /// Parse various age formats to months
   static int? _parseAgeToMonths(String ageString) {
     if (ageString.isEmpty) return null;
-    
+
     try {
-      // Handle "X months" format
-      if (ageString.toLowerCase().contains('month')) {
-        final monthMatch = RegExp(r'(\d+(?:\.\d+)?)').firstMatch(ageString);
-        if (monthMatch != null) {
-          final ageValue = double.parse(monthMatch.group(1)!);
-          return ageValue.round();
+      final normalized = ageString.trim().toLowerCase();
+
+      // Handle years: e.g., "2y", "2 yr", "2yrs", "2 year(s)", "2yo"
+      final yearsRegex = RegExp(r'(\d+(?:\.\d+)?)\s*(y|yr|yrs|year|years|yo)\b');
+      final yearsMatch = yearsRegex.firstMatch(normalized);
+      if (yearsMatch != null) {
+        final value = double.parse(yearsMatch.group(1)!);
+        return (value * 12).round();
+      }
+
+      // Handle months: e.g., "24m", "24 mo", "24mos", "24 month(s)"
+      final monthsRegex = RegExp(r'(\d+(?:\.\d+)?)\s*(m|mo|mos|month|months)\b');
+      final monthsMatch = monthsRegex.firstMatch(normalized);
+      if (monthsMatch != null) {
+        final value = double.parse(monthsMatch.group(1)!);
+        return value.round();
+      }
+
+      // Handle explicit words without abbreviations (fallbacks)
+      if (normalized.contains('year')) {
+        final yearNumberMatch = RegExp(r'(\d+(?:\.\d+)?)').firstMatch(normalized);
+        if (yearNumberMatch != null) {
+          final value = double.parse(yearNumberMatch.group(1)!);
+          return (value * 12).round();
         }
       }
-      
-      // Handle "X years" format
-      if (ageString.toLowerCase().contains('year')) {
-        final yearMatch = RegExp(r'(\d+(?:\.\d+)?)').firstMatch(ageString);
-        if (yearMatch != null) {
-          final ageValue = double.parse(yearMatch.group(1)!);
-          return (ageValue * 12).round();
+      if (normalized.contains('month')) {
+        final monthNumberMatch = RegExp(r'(\d+(?:\.\d+)?)').firstMatch(normalized);
+        if (monthNumberMatch != null) {
+          final value = double.parse(monthNumberMatch.group(1)!);
+          return value.round();
         }
       }
-      
+
       // Handle plain number format (assume months)
-      final numberMatch = RegExp(r'(\d+(?:\.\d+)?)').firstMatch(ageString);
+      final numberMatch = RegExp(r'(\d+(?:\.\d+)?)').firstMatch(normalized);
       if (numberMatch != null) {
-        final ageValue = double.parse(numberMatch.group(1)!);
-        return ageValue.round();
+        final value = double.parse(numberMatch.group(1)!);
+        return value.round();
       }
-      
+
       return null;
     } catch (e) {
       return null;

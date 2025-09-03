@@ -6,6 +6,8 @@ import 'package:cattle_tracer_app/services/cattle/cattle_service.dart';
 import 'package:cattle_tracer_app/services/cattle/cattle_event_service.dart';
 import 'package:cattle_tracer_app/constants/app_colors.dart';
 import 'package:cattle_tracer_app/screens/nav/schedule/cattle_schedule_form.dart';
+import 'package:cattle_tracer_app/models/schedule.dart';
+import 'package:cattle_tracer_app/services/schedule/schedule_service.dart';
 
 
 class VaccinationScheduleScreen extends StatefulWidget {
@@ -22,6 +24,8 @@ class _VaccinationScheduleScreenState extends State<VaccinationScheduleScreen>
   List<VaccinationSchedule> vaccinationSchedules = [];
   List<Map<String, dynamic>> cattleNeedingVaccination = [];
   Map<String, List<VaccineType>> vaccinesByStage = {};
+  // key: TAG|vaccineType(lower)
+  final Map<String, Schedule> _scheduledByCattleVaccine = {};
   
   bool isLoading = true;
   String? error;
@@ -63,6 +67,11 @@ class _VaccinationScheduleScreenState extends State<VaccinationScheduleScreen>
 
       final cattleData = await CattleService.getAllCattle();
       final eventsData = await CattleEventService.getCattleEvent();
+      // Load existing scheduled vaccination schedules from backend
+      final existingVaccinationSchedules = await ScheduleService.getSchedules(
+        type: ScheduleType.vaccination,
+        status: ScheduleStatus.scheduled,
+      );
 
       final schedules = await VaccinationService().generateVaccinationSchedules(
         allCattle: cattleData,
@@ -75,6 +84,25 @@ class _VaccinationScheduleScreenState extends State<VaccinationScheduleScreen>
       );
 
       final vaccinesByStageData = VaccinationService().getVaccinesByStage();
+
+      // Build lookup map for quick checks per cattle+vaccine
+      _scheduledByCattleVaccine.clear();
+      for (final sched in existingVaccinationSchedules) {
+        if (sched.vaccineType == null || sched.vaccineType!.isEmpty) continue;
+        final vaccineKeyName = sched.vaccineType!.toLowerCase();
+        for (final tag in sched.cattleTagsList) {
+          final key = _scheduledKey(tag, vaccineKeyName);
+          // Keep the earliest upcoming schedule if multiple
+          if (_scheduledByCattleVaccine.containsKey(key)) {
+            final current = _scheduledByCattleVaccine[key]!;
+            if (sched.scheduleDateTime.isBefore(current.scheduleDateTime)) {
+              _scheduledByCattleVaccine[key] = sched;
+            }
+          } else {
+            _scheduledByCattleVaccine[key] = sched;
+          }
+        }
+      }
 
       if (mounted) {
         setState(() {
@@ -95,6 +123,15 @@ class _VaccinationScheduleScreenState extends State<VaccinationScheduleScreen>
         });
       }
     }
+  }
+
+  String _scheduledKey(String cattleTag, String vaccineTypeLower) {
+    return '${cattleTag.trim().toUpperCase()}|$vaccineTypeLower';
+  }
+
+  Schedule? _getScheduledFor(String cattleTag, String vaccineType) {
+    final key = _scheduledKey(cattleTag, vaccineType.toLowerCase());
+    return _scheduledByCattleVaccine[key];
   }
 
   @override
@@ -315,7 +352,7 @@ class _VaccinationScheduleScreenState extends State<VaccinationScheduleScreen>
     );
 
     final pendingOrOverdue = schedules.where((s) => s.isPending || s.isOverdue).toList();
-    final completedCount = schedules.where((s) => s.isCompleted).length;
+    // final completedCount = schedules.where((s) => s.isCompleted).length; // Unused
     final hasSchedules = schedules.isNotEmpty;
 
     return Container(
@@ -541,6 +578,7 @@ class _VaccinationScheduleScreenState extends State<VaccinationScheduleScreen>
     final ageInMonths = _getAccurateAgeInMonths(cattle);
     final ageDisplay = _getAgeDisplay(cattle, ageInMonths);
     final classification = _normalizeClassification(cattle.classification);
+    final scheduled = _getScheduledFor(cattle.tagNo, schedule.vaccineType);
 
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
@@ -580,6 +618,29 @@ class _VaccinationScheduleScreenState extends State<VaccinationScheduleScreen>
               ],
             ),
           ),
+          if (scheduled != null)
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+              decoration: BoxDecoration(
+                color: AppColors.vibrantGreen,
+                borderRadius: BorderRadius.circular(14),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(Icons.event_available, color: Colors.white, size: 14),
+                  const SizedBox(width: 6),
+                  Text(
+                    'Scheduled • ${_formatScheduleDate(scheduled.scheduleDateTime)}',
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 10,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
+              ),
+            ),
         ],
       ),
     );

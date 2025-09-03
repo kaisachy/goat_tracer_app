@@ -22,6 +22,10 @@ class _DashboardScreenState extends State<DashboardScreen>
   bool isLoading = true;
   String? error;
 
+  // Weight analysis state
+  String? _selectedWeightCattleTag; // Selected cattle for weight analysis
+  String _weightTagSearch = '';
+
   late AnimationController _animationController;
   late AnimationController _cardAnimationController;
   late Animation<double> _fadeAnimation;
@@ -72,6 +76,18 @@ class _DashboardScreenState extends State<DashboardScreen>
           allEvents = eventsData;
           isLoading = false;
           error = null;
+          // Initialize default selected cattle for weight analysis if not set
+          if (_selectedWeightCattleTag == null) {
+            final tagsWithWeighed = allEvents
+                .where((e) => (e['event_type']?.toString().toLowerCase() ?? '') == 'weighed')
+                .map((e) => e['cattle_tag']?.toString() ?? '')
+                .where((t) => t.isNotEmpty)
+                .toSet()
+                .toList();
+            if (tagsWithWeighed.isNotEmpty) {
+              _selectedWeightCattleTag = tagsWithWeighed.first;
+            }
+          }
         });
         _cardAnimationController.forward();
       }
@@ -215,11 +231,11 @@ class _DashboardScreenState extends State<DashboardScreen>
               const SizedBox(height: 20),
               _buildVaccinationDashboard(),
               const SizedBox(height: 20),
+              _buildWeightAnalysis(),
+              const SizedBox(height: 20),
               _buildExpectedDeliveries(),
               const SizedBox(height: 20),
               _buildRecentEvents(),
-              const SizedBox(height: 20),
-              _buildEventsByType(),
               const SizedBox(height: 20),
               _buildBreedDistribution(),
               const SizedBox(height: 20),
@@ -230,6 +246,272 @@ class _DashboardScreenState extends State<DashboardScreen>
         ),
       ],
     );
+  }
+
+  Widget _buildWeightAnalysis() {
+    // Available tags from all cattle (not only those with weighed events)
+    final allTags = allCattle
+        .map((c) => c.tagNo)
+        .where((t) => t.isNotEmpty)
+        .toSet() // ensure unique to avoid duplicate value assertion
+        .toList()
+      ..sort();
+    // Filter tags by search query (case-insensitive contains)
+    final availableTags = (_weightTagSearch.isEmpty
+        ? allTags
+        : allTags.where((t) => t.toLowerCase().contains(_weightTagSearch.toLowerCase())).toList())
+      ..sort();
+
+    // Resolve selected tag safely against the current list
+    final String? selectedTag = (availableTags.contains(_selectedWeightCattleTag))
+        ? _selectedWeightCattleTag
+        : (availableTags.isNotEmpty ? availableTags.first : null);
+
+    // Ensure a selection exists if possible
+    // (Do not call setState here; use selectedTag locally and update on user change)
+
+    // Filter weighed events by selected cattle tag
+    final weighedEvents = allEvents.where((e) =>
+      (e['event_type']?.toString().toLowerCase() ?? '') == 'weighed' &&
+      (e['weighed_result'] != null && e['weighed_result'].toString().isNotEmpty) &&
+      (e['event_date'] != null && e['event_date'].toString().isNotEmpty) &&
+      (selectedTag != null && e['cattle_tag']?.toString() == selectedTag)
+    ).toList()
+      ..sort((a, b) {
+        final ad = DateTime.tryParse(a['event_date']?.toString() ?? '') ?? DateTime(1900);
+        final bd = DateTime.tryParse(b['event_date']?.toString() ?? '') ?? DateTime(1900);
+        return ad.compareTo(bd);
+      });
+
+    return _buildAnimatedCard(
+      delay: 225,
+      child: Container(
+        padding: const EdgeInsets.all(24),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(20),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.05),
+              blurRadius: 20,
+              offset: const Offset(0, 8),
+            ),
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                const Icon(Icons.monitor_weight_rounded, color: AppColors.darkGreen, size: 24),
+                const SizedBox(width: 12),
+                const Text(
+                  'Weight Analysis',
+                  style: TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.textPrimary,
+                  ),
+                ),
+                const Spacer(),
+              ],
+            ),
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                // Search by tag no
+                _buildWeightTagSearchField(),
+                const SizedBox(width: 8),
+                if (availableTags.isNotEmpty) _buildWeightCattleSelector(availableTags, selectedTag),
+              ],
+            ),
+            const SizedBox(height: 20),
+            if (weighedEvents.isEmpty)
+              Center(
+                child: Column(
+                  children: [
+                    Icon(Icons.insights_rounded, size: 48, color: Colors.grey.shade400),
+                    const SizedBox(height: 8),
+                    Text(
+                      availableTags.isEmpty
+                          ? 'No weighed events recorded'
+                          : 'No weighed events for #${selectedTag}',
+                      style: TextStyle(color: Colors.grey.shade600),
+                    ),
+                  ],
+                ),
+              )
+            else
+              SizedBox(
+                height: 250,
+                child: LineChart(
+                  (() {
+                    final spots = _buildWeightSpots(weighedEvents);
+                    final double minX = 0;
+                    final double maxX = spots.isEmpty ? 0 : (spots.length - 1).toDouble();
+                    return LineChartData(
+                      gridData: FlGridData(
+                        show: true,
+                        drawVerticalLine: false,
+                        getDrawingHorizontalLine: (value) => FlLine(
+                          color: Colors.grey.shade200,
+                          strokeWidth: 1,
+                        ),
+                      ),
+                      titlesData: FlTitlesData(
+                        leftTitles: AxisTitles(
+                          sideTitles: SideTitles(showTitles: true, reservedSize: 36,
+                            getTitlesWidget: (val, meta) => Padding(
+                              padding: const EdgeInsets.only(right: 6),
+                              child: Text(val.toStringAsFixed(0),
+                                  style: TextStyle(fontSize: 10, color: Colors.grey.shade600)),
+                            ),
+                          ),
+                        ),
+                        bottomTitles: AxisTitles(
+                          sideTitles: SideTitles(showTitles: true,
+                            interval: 1,
+                            getTitlesWidget: (val, meta) {
+                              // Only display for whole-number indices within range
+                              if (val % 1 != 0) return const SizedBox.shrink();
+                              final idx = val.toInt();
+                              final label = _weightChartLabels[idx] ?? '';
+                              if (label.isEmpty) return const SizedBox.shrink();
+                              return Padding(
+                                padding: const EdgeInsets.only(top: 6),
+                                child: Text(label, style: TextStyle(fontSize: 9, color: Colors.grey.shade600)),
+                              );
+                            },
+                          ),
+                        ),
+                        topTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                        rightTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                      ),
+                      borderData: FlBorderData(show: false),
+                      lineTouchData: LineTouchData(
+                        handleBuiltInTouches: true,
+                        touchTooltipData: LineTouchTooltipData(
+                          getTooltipItems: (spots) => spots.map((s) => LineTooltipItem(
+                            '${s.y.toStringAsFixed(1)} kg',
+                            const TextStyle(color: Colors.white, fontWeight: FontWeight.w600),
+                          )).toList(),
+                        ),
+                      ),
+                      minX: minX,
+                      maxX: maxX,
+                      minY: 0,
+                      lineBarsData: [
+                        LineChartBarData(
+                          isCurved: true,
+                          color: AppColors.darkGreen,
+                          barWidth: 3,
+                          dotData: FlDotData(show: true),
+                          belowBarData: BarAreaData(
+                            show: true,
+                            color: AppColors.darkGreen.withOpacity(0.12),
+                          ),
+                          spots: spots,
+                        ),
+                      ],
+                    );
+                  })(),
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildWeightCattleSelector(List<String> availableTags, String? selectedTag) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      decoration: BoxDecoration(
+        color: Colors.grey.shade100,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: Colors.grey.shade300),
+      ),
+      child: DropdownButtonHideUnderline(
+        child: DropdownButton<String>(
+          value: selectedTag,
+          isDense: true,
+          iconSize: 18,
+          items: availableTags
+              .map((tag) => DropdownMenuItem(
+                    value: tag,
+                    child: Text('#$tag', style: const TextStyle(fontSize: 12)),
+                  ))
+              .toList(),
+          onChanged: (v) => setState(() => _selectedWeightCattleTag = v),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildWeightTagSearchField() {
+    return Container(
+      width: 160,
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      decoration: BoxDecoration(
+        color: Colors.grey.shade100,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: Colors.grey.shade300),
+      ),
+      child: Row(
+        children: [
+          Icon(Icons.search, size: 16, color: Colors.grey.shade600),
+          const SizedBox(width: 6),
+          Expanded(
+            child: TextField(
+              decoration: const InputDecoration(
+                hintText: 'Search tag...',
+                isDense: true,
+                border: InputBorder.none,
+              ),
+              style: const TextStyle(fontSize: 12),
+              onChanged: (val) => setState(() => _weightTagSearch = val.trim()),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // Builds the data points for the weight chart based on selected period
+  final Map<int, String> _weightChartLabels = {};
+
+  List<FlSpot> _buildWeightSpots(List<Map<String, dynamic>> weighedEvents) {
+    _weightChartLabels.clear();
+    int idx = 0;
+    String? lastDateLabel;
+    return weighedEvents.map((e) {
+      final ds = DateTime.tryParse(e['event_date']?.toString() ?? '');
+      final w = double.tryParse(e['weighed_result']?.toString() ?? '');
+      final y = (w ?? 0).toDouble();
+      final x = (idx).toDouble();
+      String label = ds != null ? _formatEventDateLabel(ds) : '';
+      // Avoid duplicate labels for multiple events on the same day
+      if (lastDateLabel != null && label == lastDateLabel) {
+        label = '';
+      } else {
+        lastDateLabel = label;
+      }
+      _weightChartLabels[idx] = label;
+      idx += 1;
+      return FlSpot(x, y);
+    }).toList();
+  }
+
+  String _formatKey(DateTime d) => '${d.year}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}';
+  String _formatMonthKey(DateTime d) => '${d.year}-${d.month.toString().padLeft(2, '0')}';
+  String _shortMonth(int m) {
+    const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    return months[(m - 1).clamp(0, 11)];
+  }
+
+  String _formatEventDateLabel(DateTime d) {
+    const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    return '${d.day.toString().padLeft(2, '0')} ${months[d.month - 1]}';
   }
 
   Widget _buildExpectedDeliveries() {
@@ -776,102 +1058,6 @@ class _DashboardScreenState extends State<DashboardScreen>
             ),
           ),
         ],
-      ),
-    );
-  }
-
-  Widget _buildEventsByType() {
-    final eventTypeCount = <String, int>{};
-    for (var event in allEvents) {
-      final eventType = event['event_type']?.toString().toLowerCase() ?? 'unknown';
-      eventTypeCount[eventType] = (eventTypeCount[eventType] ?? 0) + 1;
-    }
-
-    final sortedEvents = eventTypeCount.entries.toList()
-      ..sort((a, b) => b.value.compareTo(a.value));
-
-    return _buildAnimatedCard(
-      delay: 500,
-      child: Container(
-        padding: const EdgeInsets.all(24),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(20),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.05),
-              blurRadius: 20,
-              offset: const Offset(0, 8),
-            ),
-          ],
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                const Icon(Icons.category, color: AppColors.darkGreen, size: 24),
-                const SizedBox(width: 12),
-                const Text(
-                  'Events by Type',
-                  style: TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                    color: AppColors.textPrimary,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 20),
-            if (sortedEvents.isNotEmpty)
-              ...sortedEvents.take(6).map((entry) {
-                final color = _getEventTypeColor(entry.key);
-                return Padding(
-                  padding: const EdgeInsets.only(bottom: 12),
-                  child: Row(
-                    children: [
-                      Icon(
-                        _getEventTypeIcon(entry.key),
-                        color: color,
-                        size: 20,
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Text(
-                          entry.key.toUpperCase(),
-                          style: const TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w600,
-                            color: AppColors.textPrimary,
-                          ),
-                        ),
-                      ),
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-                        decoration: BoxDecoration(
-                          color: color.withOpacity(0.1),
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: Text(
-                          entry.value.toString(),
-                          style: TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.bold,
-                            color: color,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                );
-              })
-            else
-              const Text(
-                'No event data available',
-                style: TextStyle(color: AppColors.textSecondary),
-              ),
-          ],
-        ),
       ),
     );
   }
@@ -1477,7 +1663,7 @@ class _DashboardScreenState extends State<DashboardScreen>
                     title: '${malePercentage}%',
                     radius: 25,
                     titleStyle: const TextStyle(
-                      fontSize: 14,
+                      fontSize: 12,
                       fontWeight: FontWeight.bold,
                       color: Colors.white,
                     ),
@@ -1488,7 +1674,7 @@ class _DashboardScreenState extends State<DashboardScreen>
                     title: '${femalePercentage}%',
                     radius: 25,
                     titleStyle: const TextStyle(
-                      fontSize: 14,
+                      fontSize: 12,
                       fontWeight: FontWeight.bold,
                       color: Colors.white,
                     ),

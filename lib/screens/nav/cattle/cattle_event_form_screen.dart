@@ -726,6 +726,8 @@ class _CattleEventFormScreenState extends State<CattleEventFormScreen>
             await _handleCastratedEvent();
           } else if (selectedEventType.toLowerCase() == 'deceased') {
             await _handleDeceasedEvent();
+          } else if (selectedEventType.toLowerCase() == 'weighed') {
+            await _handleWeighedEvent();
           }
         } catch (eventSpecificError) {
           // Log but don't fail the entire operation for event-specific errors
@@ -975,6 +977,51 @@ class _CattleEventFormScreenState extends State<CattleEventFormScreen>
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Warning: Failed to update cattle status to Deceased'),
+            backgroundColor: Colors.orange[600],
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+            duration: const Duration(seconds: 3),
+          ),
+        );
+      }
+    }
+  }
+
+  Future<void> _handleWeighedEvent() async {
+    try {
+      if (_cattleDetails == null) return;
+
+      final weightText = _controllers['weighed_result']?.text.trim() ?? '';
+      final latestWeight = double.tryParse(weightText);
+
+      if (latestWeight == null || latestWeight <= 0) {
+        print('Weighed event: invalid or empty weight, skipping cattle weight update');
+        return;
+      }
+
+      final cattleUpdateData = Map<String, dynamic>.from(_cattleDetails!.toJson());
+      cattleUpdateData['weight'] = latestWeight;
+
+      final updated = await CattleService.updateCattleInformation(cattleUpdateData);
+      print('Cattle weight update result: $updated');
+
+      if (mounted && updated) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Updated weight to ${latestWeight.toStringAsFixed(1)} kg'),
+            backgroundColor: Colors.green[600],
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+            duration: const Duration(seconds: 2),
+          ),
+        );
+      }
+    } catch (e) {
+      print('Error in _handleWeighedEvent: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Warning: Failed to update cattle weight'),
             backgroundColor: Colors.orange[600],
             behavior: SnackBarBehavior.floating,
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),

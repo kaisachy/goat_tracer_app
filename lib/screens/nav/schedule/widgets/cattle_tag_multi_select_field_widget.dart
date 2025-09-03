@@ -10,6 +10,7 @@ class CattleTagMultiSelectField extends StatelessWidget {
   final bool isLoadingCattle;
   final Function(List<String>) onCattleTagsChanged;
   final VoidCallback onRefreshCattle;
+  final Set<String>? scheduledTagsForVaccine; // uppercase tags that are already scheduled
 
   const CattleTagMultiSelectField({
     super.key,
@@ -18,6 +19,7 @@ class CattleTagMultiSelectField extends StatelessWidget {
     required this.isLoadingCattle,
     required this.onCattleTagsChanged,
     required this.onRefreshCattle,
+    this.scheduledTagsForVaccine,
   });
 
   @override
@@ -154,6 +156,7 @@ class CattleTagMultiSelectField extends StatelessWidget {
       builder: (context) => CattleMultiSelectDialog(
         cattleList: cattleList,
         initialSelectedTags: selectedCattleTags,
+        scheduledTagsForVaccine: scheduledTagsForVaccine ?? const {},
       ),
     );
 

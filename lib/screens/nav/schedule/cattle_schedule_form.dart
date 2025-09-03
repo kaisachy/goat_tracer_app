@@ -58,6 +58,8 @@ class _CattleScheduleFormState extends State<CattleScheduleForm> {
   String? _selectedVaccineName;
   bool _isLoadingVaccineCandidates = false;
   List<Map<String, dynamic>> _allEvents = [];
+  // Prevent duplicate schedules cache for current vaccine selection
+  final Set<String> _scheduledTagsForSelectedVaccine = {};
 
   @override
   void initState() {
@@ -233,6 +235,7 @@ class _CattleScheduleFormState extends State<CattleScheduleForm> {
                   }
                 },
                 onRefreshCattle: _loadCattleList,
+                scheduledTagsForVaccine: _scheduledTagsForSelectedVaccine,
               ),
               const SizedBox(height: 16),
               SchedulePriorityDropdown(
@@ -488,6 +491,19 @@ class _CattleScheduleFormState extends State<CattleScheduleForm> {
       return;
     }
 
+    // Final validation: prevent duplicates on selected tags for this vaccine
+    try {
+      await _loadExistingScheduledForSelectedVaccine();
+      final conflicted = _selectedCattleTags
+          .map((t) => t.trim().toUpperCase())
+          .where((t) => _scheduledTagsForSelectedVaccine.contains(t))
+          .toList();
+      if (conflicted.isNotEmpty) {
+        _showError('Some cattle already have a scheduled "${_selectedVaccineName!}": ${conflicted.join(', ')}');
+        return;
+      }
+    } catch (_) {}
+
     if (mounted) setState(() => _isLoading = true);
 
     try {
@@ -649,6 +665,32 @@ class _CattleScheduleFormState extends State<CattleScheduleForm> {
       );
     }
   }
+
+  // Internal state helpers (must live on State to use setState)
+  void _setLoadingVaccineCandidates(bool loading) {
+    if (mounted) {
+      setState(() {
+        _isLoadingVaccineCandidates = loading;
+      });
+    }
+  }
+
+  void _setSelectedCattleTags(List<String> tags) {
+    if (mounted) {
+      setState(() {
+        _selectedCattleTags = tags;
+      });
+    }
+  }
+
+  void _updateVaccineSelection(String? value) {
+    if (mounted) {
+      setState(() {
+        _selectedVaccineName = value;
+      });
+      _populateCattleNeedingSelectedVaccine();
+    }
+  }
 }
 
 extension _VaccinationUI on _CattleScheduleFormState {
@@ -772,6 +814,8 @@ extension _VaccinationUI on _CattleScheduleFormState {
     });
     
     try {
+      // Refresh existing scheduled cache for this vaccine
+      await _loadExistingScheduledForSelectedVaccine();
       // Generate vaccination schedules for all cattle
       final schedules = await VaccinationService().generateVaccinationSchedules(
         allCattle: _cattleList,
@@ -784,7 +828,12 @@ extension _VaccinationUI on _CattleScheduleFormState {
       final needing = schedules.where((s) =>
           s.vaccineType == _selectedVaccineName && (s.isPending || s.isOverdue));
 
-      final tags = needing.map((s) => s.cattleTag).toSet().toList();
+      // Exclude cattle that already have a Scheduled vaccination of this type
+      final tags = needing
+          .map((s) => s.cattleTag)
+          .where((tag) => !_scheduledTagsForSelectedVaccine.contains(tag.toUpperCase()))
+          .toSet()
+          .toList();
       
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted) {
@@ -804,28 +853,25 @@ extension _VaccinationUI on _CattleScheduleFormState {
     }
   }
 
-  void _updateVaccineSelection(String? value) {
-    if (mounted) {
-      setState(() {
-        _selectedVaccineName = value;
-      });
-      _populateCattleNeedingSelectedVaccine();
+  Future<void> _loadExistingScheduledForSelectedVaccine() async {
+    _scheduledTagsForSelectedVaccine.clear();
+    if (_selectedVaccineName == null) return;
+    try {
+      final existing = await ScheduleService.getSchedules(
+        type: ScheduleType.vaccination,
+        status: ScheduleStatus.scheduled,
+      );
+      for (final s in existing) {
+        if ((s.vaccineType ?? '').toLowerCase() == _selectedVaccineName!.toLowerCase()) {
+          for (final tag in s.cattleTagsList) {
+            _scheduledTagsForSelectedVaccine.add(tag.toUpperCase());
+          }
+        }
+      }
+    } catch (e) {
+      debugPrint('Error loading existing scheduled for vaccine: $e');
     }
   }
 
-  void _setLoadingVaccineCandidates(bool loading) {
-    if (mounted) {
-      setState(() {
-        _isLoadingVaccineCandidates = loading;
-      });
-    }
-  }
-
-  void _setSelectedCattleTags(List<String> tags) {
-    if (mounted) {
-      setState(() {
-        _selectedCattleTags = tags;
-      });
-    }
-  }
+  
 }

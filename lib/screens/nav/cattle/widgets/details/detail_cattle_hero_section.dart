@@ -704,25 +704,7 @@ class _CattleHeroSectionState extends State<CattleHeroSection> {
             Positioned(
               right: 0,
               top: 0,
-              child: Container(
-                padding: const EdgeInsets.all(4),
-                decoration: BoxDecoration(
-                  color: Colors.yellow[700],
-                  shape: BoxShape.circle,
-                  border: Border.all(color: Colors.white, width: 1.5),
-                ),
-                constraints: const BoxConstraints(
-                  minWidth: 16,
-                  minHeight: 16,
-                ),
-                child: const Center(
-                  child: Icon(
-                    Icons.warning_amber,
-                    color: Colors.white,
-                    size: 8,
-                  ),
-                ),
-              ),
+              child: const _PulsingAlertDot(),
             ),
         ],
       ),
@@ -806,6 +788,111 @@ class _CattleHeroSectionState extends State<CattleHeroSection> {
             ),
           ),
         ),
+      ),
+    );
+  }
+
+}
+
+class _PulsingAlertDot extends StatefulWidget {
+  const _PulsingAlertDot();
+
+  @override
+  State<_PulsingAlertDot> createState() => _PulsingAlertDotState();
+}
+
+class _PulsingAlertDotState extends State<_PulsingAlertDot> with TickerProviderStateMixin {
+  late AnimationController _pulseController;
+  late AnimationController _glowController;
+  late Animation<double> _pulseAnimation;
+  late Animation<double> _glowAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+    _pulseController = AnimationController(
+      duration: const Duration(milliseconds: 1200),
+      vsync: this,
+    );
+    _pulseAnimation = Tween<double>(begin: 0.8, end: 1.2).animate(
+      CurvedAnimation(parent: _pulseController, curve: Curves.easeInOut),
+    );
+
+    _glowController = AnimationController(
+      duration: const Duration(milliseconds: 1500),
+      vsync: this,
+    );
+    _glowAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(parent: _glowController, curve: Curves.easeInOut),
+    );
+
+    _pulseController.repeat(reverse: true);
+    _glowController.repeat(reverse: true);
+  }
+
+  @override
+  void dispose() {
+    _pulseController.dispose();
+    _glowController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: 20,
+      height: 20,
+      child: AnimatedBuilder(
+        animation: Listenable.merge([_pulseAnimation, _glowAnimation]),
+        builder: (context, child) {
+          return Stack(
+            alignment: Alignment.center,
+            children: [
+              Container(
+                width: 20 * _glowAnimation.value,
+                height: 20 * _glowAnimation.value,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: Colors.amber.withOpacity(0.25 * (1 - _glowAnimation.value)),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.amber.withOpacity(0.35 * _glowAnimation.value),
+                      blurRadius: 8 * _glowAnimation.value,
+                      spreadRadius: 2 * _glowAnimation.value,
+                    ),
+                  ],
+                ),
+              ),
+              Container(
+                width: 12 * _pulseAnimation.value,
+                height: 12 * _pulseAnimation.value,
+                decoration: BoxDecoration(
+                  color: Colors.amber[700],
+                  shape: BoxShape.circle,
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.amber.withOpacity(0.6),
+                      blurRadius: 6,
+                      offset: const Offset(0, 2),
+                    ),
+                    BoxShadow(
+                      color: Colors.amber.withOpacity(0.3),
+                      blurRadius: 12,
+                      spreadRadius: 1,
+                    ),
+                  ],
+                ),
+                child: const Center(
+                  child: Icon(
+                    Icons.warning_amber,
+                    color: Colors.white,
+                    size: 8,
+                  ),
+                ),
+              ),
+            ],
+          );
+        },
       ),
     );
   }

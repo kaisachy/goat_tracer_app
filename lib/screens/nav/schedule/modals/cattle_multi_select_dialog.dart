@@ -6,11 +6,13 @@ import '../../../../models/cattle.dart';
 class CattleMultiSelectDialog extends StatefulWidget {
   final List<Cattle> cattleList;
   final List<String> initialSelectedTags;
+  final Set<String> scheduledTagsForVaccine; // uppercase tags already scheduled
 
   const CattleMultiSelectDialog({
     super.key,
     required this.cattleList,
     required this.initialSelectedTags,
+    required this.scheduledTagsForVaccine,
   });
 
   @override
@@ -390,45 +392,66 @@ class _CattleMultiSelectDialogState extends State<CattleMultiSelectDialog> {
             final cattle = filteredCattle[index];
             final isSelected = tempSelected.contains(cattle.tagNo);
 
+            final isBlocked = widget.scheduledTagsForVaccine.contains(cattle.tagNo.toUpperCase());
             return Container(
               margin: const EdgeInsets.only(bottom: 8),
               decoration: BoxDecoration(
                 color: isSelected ? AppColors.primary.withOpacity(0.05) : Colors.white,
                 borderRadius: BorderRadius.circular(12),
                 border: Border.all(
-                  color: isSelected ? AppColors.primary.withOpacity(0.3) : Colors.grey[200]!,
+                  color: isBlocked
+                      ? Colors.orange.withOpacity(0.6)
+                      : (isSelected ? AppColors.primary.withOpacity(0.3) : Colors.grey[200]!),
                   width: isSelected ? 2 : 1,
                 ),
               ),
-              child: ListTile(
-                contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                leading: _buildCattleAvatar(cattle, isSelected),
-                title: _buildCattleTitle(cattle),
-                subtitle: _buildCattleSubtitle(cattle),
-                trailing: Container(
-                  width: 24,
-                  height: 24,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: isSelected ? AppColors.primary : Colors.transparent,
-                    border: Border.all(
-                      color: isSelected ? AppColors.primary : Colors.grey[400]!,
-                      width: 2,
-                    ),
+              child: InkWell(
+                borderRadius: BorderRadius.circular(12),
+                onTap: isBlocked
+                    ? null
+                    : () {
+                        setState(() {
+                          if (isSelected) {
+                            tempSelected.remove(cattle.tagNo);
+                          } else {
+                            tempSelected.add(cattle.tagNo);
+                          }
+                        });
+                      },
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      _buildCattleAvatar(cattle, isSelected),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            _buildTitleSection(cattle, isBlocked),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      Container(
+                        width: 24,
+                        height: 24,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: isSelected ? AppColors.primary : Colors.transparent,
+                          border: Border.all(
+                            color: isSelected ? AppColors.primary : Colors.grey[400]!,
+                            width: 2,
+                          ),
+                        ),
+                        child: isSelected
+                            ? const Icon(Icons.check, color: Colors.white, size: 16)
+                            : null,
+                      ),
+                    ],
                   ),
-                  child: isSelected
-                      ? const Icon(Icons.check, color: Colors.white, size: 16)
-                      : null,
                 ),
-                onTap: () {
-                  setState(() {
-                    if (isSelected) {
-                      tempSelected.remove(cattle.tagNo);
-                    } else {
-                      tempSelected.add(cattle.tagNo);
-                    }
-                  });
-                },
               ),
             );
           },
@@ -468,26 +491,14 @@ class _CattleMultiSelectDialogState extends State<CattleMultiSelectDialog> {
   Widget _buildCattleTitle(Cattle cattle) {
     return Row(
       children: [
-        Text(
-          cattle.tagNo,
-          style: const TextStyle(
-            fontWeight: FontWeight.bold,
-            fontSize: 16,
-          ),
-        ),
-        const SizedBox(width: 8),
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-          decoration: BoxDecoration(
-            color: _getClassificationColor(cattle.classification).withOpacity(0.15),
-            borderRadius: BorderRadius.circular(12),
-          ),
+        Expanded(
           child: Text(
-            cattle.classification.isNotEmpty ? cattle.classification : 'Unknown',
-            style: TextStyle(
-              color: _getClassificationColor(cattle.classification),
-              fontSize: 10,
-              fontWeight: FontWeight.w600,
+            cattle.tagNo,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(
+              fontWeight: FontWeight.bold,
+              fontSize: 16,
             ),
           ),
         ),
@@ -495,24 +506,63 @@ class _CattleMultiSelectDialogState extends State<CattleMultiSelectDialog> {
     );
   }
 
-  Widget _buildCattleSubtitle(Cattle cattle) {
-    return cattle.name != null && cattle.name!.isNotEmpty
-        ? Text(
-      cattle.name!,
-      style: TextStyle(
-        color: Colors.grey[600],
-        fontSize: 14,
-      ),
-    )
-        : Text(
-      'No name assigned',
-      style: TextStyle(
-        color: Colors.grey[400],
-        fontSize: 12,
-        fontStyle: FontStyle.italic,
-      ),
+  Widget _buildTitleSection(Cattle cattle, bool isBlocked) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            Expanded(child: _buildCattleTitle(cattle)),
+          ],
+        ),
+        const SizedBox(height: 4),
+        Row(
+          children: [
+            Flexible(
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                decoration: BoxDecoration(
+                  color: _getClassificationColor(cattle.classification).withOpacity(0.15),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Text(
+                  cattle.classification.isNotEmpty ? cattle.classification : 'Unknown',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    color: _getClassificationColor(cattle.classification),
+                    fontSize: 10,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(width: 8),
+            if (isBlocked)
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                decoration: BoxDecoration(
+                  color: Colors.orange.withOpacity(0.12),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: Colors.orange.withOpacity(0.5)),
+                ),
+                child: const Text(
+                  'Already Scheduled',
+                  style: TextStyle(
+                    fontSize: 10,
+                    color: Colors.orange,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+          ],
+        ),
+      ],
     );
   }
+
+  // Removed unused helper widgets to avoid lints
 
   Widget _buildEmptyState() {
     return Center(
@@ -660,21 +710,7 @@ class _CattleMultiSelectDialogState extends State<CattleMultiSelectDialog> {
   }
 
   Color _getClassificationColor(String classification) {
-    switch (classification.toLowerCase()) {
-      case 'bull':
-        return Colors.blue;
-      case 'cow':
-        return Colors.pink;
-      case 'calf':
-        return Colors.green;
-      case 'heifer':
-        return Colors.orange;
-      case 'steer':
-        return Colors.purple;
-      case 'growers':
-        return Colors.yellowAccent;
-      default:
-        return Colors.grey;
-    }
+    // Use a single consistent color for all classification types
+    return AppColors.primary;
   }
 }

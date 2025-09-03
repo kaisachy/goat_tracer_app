@@ -7,7 +7,6 @@ import '../../../constants/app_colors.dart';
 import '../../../models/schedule.dart';
 import '../../../services/schedule/schedule_service.dart';
 import '../../../utils/schedule_utils.dart';
-import 'cattle_schedule_form.dart';
 import 'modals/schedule_details_dialog_modal.dart';
 
 

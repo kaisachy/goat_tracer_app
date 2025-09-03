@@ -42,6 +42,7 @@ class _CattleScreenState extends State<CattleScreen>
       CurvedAnimation(parent: _animationController, curve: Curves.easeInOut),
     );
 
+
     // ✨ ADDED: Register the observer
     WidgetsBinding.instance.addObserver(this);
 
