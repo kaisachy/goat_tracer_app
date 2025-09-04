@@ -536,7 +536,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
       case 1:
         return 'Dashboard';
       case 2:
-        return 'My Cattle';
+        return 'Production Record';
       case 3:
         return 'Events & Schedule';
       case 4:
@@ -573,7 +573,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                 ),
                 _buildDrawerItem(
                   icon: FontAwesomeIcons.cow,
-                  text: 'Cattle',
+                  text: 'Production Record',
                   index: 2,
                   onTap: () => _onNavItemTapped(2),
                 ),
