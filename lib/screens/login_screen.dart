@@ -72,18 +72,8 @@ class _LoginScreenState extends State<LoginScreen> {
           final data = jsonDecode(response.body);
           String errorMessage = data['message'] ?? 'Server error: ${response.statusCode}';
 
-          // Handle specific error cases
-          if (response.statusCode == 403) {
-            if (errorMessage.contains('email not verified')) {
-              _showEmailVerificationDialog();
-            } else if (errorMessage.contains('farmer')) {
-              _showMessage('This login is only for farmers.', Colors.red);
-            } else {
-              _showMessage(errorMessage, Colors.red);
-            }
-          } else {
-            _showMessage(errorMessage, Colors.red);
-          }
+          // Show server-provided error message directly (no email verification gating)
+          _showMessage(errorMessage, Colors.red);
         }
       } catch (e) {
         if (mounted) {
@@ -97,75 +87,7 @@ class _LoginScreenState extends State<LoginScreen> {
     }
   }
 
-  void _showEmailVerificationDialog() {
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: const Row(
-            children: [
-              Icon(Icons.email_outlined, color: AppColors.primary),
-              SizedBox(width: 8),
-              Text('Email Verification Required'),
-            ],
-          ),
-          content: const Text(
-            'Your email address has not been verified. Please check your email for the verification link or request a new one.',
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(),
-              child: const Text('Cancel'),
-            ),
-            ElevatedButton(
-              onPressed: () {
-                Navigator.of(context).pop();
-                _resendVerificationEmail();
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.primary,
-                foregroundColor: Colors.white,
-              ),
-              child: const Text('Resend Email'),
-            ),
-          ],
-        );
-      },
-    );
-  }
-
-  Future<void> _resendVerificationEmail() async {
-    setState(() => _isLoading = true);
-
-    try {
-      final response = await http.post(
-        Uri.parse('${AppConfig.baseUrl}/auth/resend-verification'),
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({
-          'email': _emailController.text.trim(),
-        }),
-      );
-
-      if (!mounted) return;
-
-      final data = jsonDecode(response.body);
-
-      if (data['success'] == true) {
-        _showMessage('Verification email sent! Please check your inbox.', AppColors.vibrantGreen);
-      } else {
-        _showMessage(data['message'] ?? 'Failed to send verification email', Colors.red);
-      }
-    } catch (e) {
-      if (mounted) {
-        _showMessage('Connection error. Please try again.', Colors.red);
-      }
-    } finally {
-      if (mounted) {
-        setState(() => _isLoading = false);
-      }
-    }
-  }
+  // Email verification flow removed: login no longer requires verified email
 
   void _showMessage(String message, Color color) {
     ScaffoldMessenger.of(context).showSnackBar(
