@@ -10,6 +10,7 @@ class CalfRegistrationDialog extends StatefulWidget {
   final String fatherTag;
   final Map<String, dynamic>? existingCalfData; // For editing mode
   final bool isEditMode; // Flag to determine if we're editing
+  final List<String>? reservedTags; // Tags to avoid (e.g., already prepared in-session)
 
   const CalfRegistrationDialog({
     super.key,
@@ -17,6 +18,7 @@ class CalfRegistrationDialog extends StatefulWidget {
     required this.fatherTag,
     this.existingCalfData,
     this.isEditMode = false,
+    this.reservedTags,
   });
 
   @override
@@ -26,15 +28,14 @@ class CalfRegistrationDialog extends StatefulWidget {
 class _CalfRegistrationDialogState extends State<CalfRegistrationDialog> {
   final _formKey = GlobalKey<FormState>();
   final _tagController = TextEditingController();
-  final _nameController = TextEditingController();
 
-  String _selectedGender = 'Female';
+  String _selectedSex = 'Female';
   bool _isLoading = false;
   bool _isGeneratingTag = false;
   List<String> _existingTags = [];
   int? _existingCalfId; // Store the calf ID for updates
 
-  final List<String> _genderOptions = ['Male', 'Female'];
+  final List<String> _sexOptions = ['Male', 'Female'];
 
   @override
   void initState() {
@@ -60,16 +61,14 @@ class _CalfRegistrationDialogState extends State<CalfRegistrationDialog> {
         }
 
         _tagController.text = _safeParseString(calfData['tag_no']) ?? '';
-        _nameController.text = _safeParseString(calfData['name']) ?? '';
-        _selectedGender = _safeParseString(calfData['gender']) ?? 'Female';
+        _selectedSex = _safeParseString(calfData['sex']) ?? 'Female';
 
         print('Edit mode initialized with calf ID: $_existingCalfId, tag: ${_tagController.text}');
       } catch (e) {
         print('Error initializing edit mode: $e');
         // Set defaults on error
         _tagController.text = '';
-        _nameController.text = '';
-        _selectedGender = 'Female';
+        _selectedSex = 'Female';
         _existingCalfId = null;
       }
     } else {
@@ -100,6 +99,10 @@ class _CalfRegistrationDialogState extends State<CalfRegistrationDialog> {
       final cattle = await CattleService.getAllCattle();
       setState(() {
         _existingTags = cattle.map((c) => c.tagNo).toList();
+        // Include reserved tags from current session to prevent duplicates
+        if (widget.reservedTags != null && widget.reservedTags!.isNotEmpty) {
+          _existingTags.addAll(widget.reservedTags!);
+        }
 
         // If editing, remove the current calf's tag from existing tags
         if (widget.isEditMode && widget.existingCalfData != null) {
@@ -200,8 +203,7 @@ class _CalfRegistrationDialogState extends State<CalfRegistrationDialog> {
 
     final baseData = <String, dynamic>{
       'tag_no': _tagController.text.trim(),
-      'name': _nameController.text.trim().isEmpty ? null : _nameController.text.trim(),
-      'gender': _selectedGender,
+      'sex': _selectedSex,
       'classification': _getClassification(),
       'status': 'Healthy',
       'source': 'Born on farm',
@@ -276,8 +278,7 @@ class _CalfRegistrationDialogState extends State<CalfRegistrationDialog> {
       // Prepare result data with safe type conversion - DO NOT register yet
       Map<String, dynamic> resultData = {
         'tag_no': _tagController.text.trim(),
-        'gender': _selectedGender,
-        'name': _nameController.text.trim().isEmpty ? null : _nameController.text.trim(),
+        'sex': _selectedSex,
         'registered': false, // Mark as not registered yet - will be done when event is saved
         'isEditMode': widget.isEditMode,
         'fullCalfData': calfData,
@@ -519,34 +520,13 @@ class _CalfRegistrationDialogState extends State<CalfRegistrationDialog> {
 
                       const SizedBox(height: 16),
 
-                      // Calf Name (Optional)
-                      TextFormField(
-                        controller: _nameController,
-                        decoration: InputDecoration(
-                          labelText: 'Calf Name (Optional)',
-                          prefixIcon: const Icon(FontAwesomeIcons.signature, color: AppColors.primary),
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12),
-                            borderSide: const BorderSide(color: AppColors.lightGreen),
-                          ),
-                          focusedBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12),
-                            borderSide: const BorderSide(color: AppColors.primary, width: 2),
-                          ),
-                          filled: true,
-                          fillColor: AppColors.cardBackground,
-                        ),
-                      ),
-
-                      const SizedBox(height: 16),
-
                       // Gender Selection
                       DropdownButtonFormField<String>(
-                        value: _selectedGender,
+                        value: _selectedSex,
                         decoration: InputDecoration(
-                          labelText: 'Gender *',
+                          labelText: 'Sex *',
                           prefixIcon: Icon(
-                            _selectedGender == 'Male' ? Icons.male : Icons.female,
+                            _selectedSex == 'Male' ? Icons.male : Icons.female,
                             color: AppColors.primary,
                           ),
                           border: OutlineInputBorder(
@@ -560,15 +540,15 @@ class _CalfRegistrationDialogState extends State<CalfRegistrationDialog> {
                           filled: true,
                           fillColor: AppColors.cardBackground,
                         ),
-                        items: _genderOptions.map((gender) {
+                        items: _sexOptions.map((sex) {
                           return DropdownMenuItem<String>(
-                            value: gender,
-                            child: Text(gender),
+                            value: sex,
+                            child: Text(sex),
                           );
                         }).toList(),
                         onChanged: (value) {
                           if (value != null) {
-                            setState(() => _selectedGender = value);
+                            setState(() => _selectedSex = value);
                           }
                         },
                       ),
@@ -679,7 +659,6 @@ class _CalfRegistrationDialogState extends State<CalfRegistrationDialog> {
   @override
   void dispose() {
     _tagController.dispose();
-    _nameController.dispose();
     super.dispose();
   }
 }

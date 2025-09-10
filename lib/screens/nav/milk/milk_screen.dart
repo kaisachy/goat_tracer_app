@@ -305,8 +305,7 @@ class _MilkScreenState extends State<MilkScreen> with TickerProviderStateMixin {
       orElse: () => Cattle(
         id: 0,
         tagNo: record.cattleTag ?? 'Unknown',
-        name: 'Unknown',
-        gender: 'Unknown',
+        sex: 'Unknown',
         classification: 'Unknown',
         status: 'Unknown',
         source: 'Unknown',
@@ -314,8 +313,8 @@ class _MilkScreenState extends State<MilkScreen> with TickerProviderStateMixin {
     );
 
     // Check if this should be displayed as "Whole Farm Milk"
-    final isWholeFarmMilk = (cattle.name == 'Unknown' && (record.cattleTag == null || record.cattleTag == 'N/A' || record.cattleTag == 'Unknown'));
-    final displayTitle = isWholeFarmMilk ? 'Whole Farm Milk' : '${cattle.name} (${record.cattleTag ?? 'N/A'})';
+    final isWholeFarmMilk = (record.cattleTag == null || record.cattleTag == 'N/A' || record.cattleTag == 'Unknown');
+    final displayTitle = isWholeFarmMilk ? 'Whole Farm Milk' : 'Cattle #${record.cattleTag ?? 'N/A'}';
 
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
@@ -495,9 +494,8 @@ class _MilkScreenState extends State<MilkScreen> with TickerProviderStateMixin {
 
   void _showMilkRecordDetails(MilkProduction record, Cattle cattle) {
     // Check if this should be displayed as "Whole Farm Milk"
-    final isWholeFarmMilk = (cattle.name == 'Unknown' &&
-        (record.cattleTag == null || record.cattleTag == 'N/A' || record.cattleTag == 'Unknown'));
-    final displayTitle = isWholeFarmMilk ? 'Whole Farm Milk' : cattle.name ?? 'Unknown';
+    final isWholeFarmMilk = (record.cattleTag == null || record.cattleTag == 'N/A' || record.cattleTag == 'Unknown');
+    final displayTitle = isWholeFarmMilk ? 'Whole Farm Milk' : 'Cattle #${record.cattleTag ?? 'N/A'}';
 
     showDialog(
       context: context,

@@ -294,7 +294,7 @@ class VaccinationProtocol {
     required int ageInMonths,
     required int ageInDays,
     required String classification,
-    required String gender,
+    required String sex,
     required bool isDairy,
     required String status,
     bool isPregnant = false,
@@ -307,7 +307,7 @@ class VaccinationProtocol {
         ageInMonths: ageInMonths,
         ageInDays: ageInDays,
         classification: classification,
-        gender: gender,
+        sex: sex,
         isDairy: isDairy,
         status: status,
         isPregnant: isPregnant,
@@ -324,7 +324,7 @@ class VaccinationProtocol {
     required int ageInMonths,
     required int ageInDays,
     required String classification,
-    required String gender,
+    required String sex,
     required bool isDairy,
     required String status,
     bool isPregnant = false,
@@ -339,12 +339,12 @@ class VaccinationProtocol {
     
     // For pre-calving vaccines, only apply to pregnant cattle
     if (isPreCalvingVaccine) {
-      return isPregnant && _matchesPreCalvingStage(vaccine, classification, gender, isDairy, status);
+      return isPregnant && _matchesPreCalvingStage(vaccine, classification, sex, isDairy, status);
     }
     
     // For non-pre-calving vaccines, use normal stage matching
     for (final stage in vaccine.applicableStages) {
-      if (_matchesStage(stage, classification, gender, isDairy, status, ageInMonths, ageInDays)) {
+      if (_matchesStage(stage, classification, sex, isDairy, status, ageInMonths, ageInDays)) {
         return true;
       }
     }
@@ -352,7 +352,7 @@ class VaccinationProtocol {
     return false;
   }
 
-  static bool _matchesStage(String stage, String classification, String gender, bool isDairy, String status, int ageInMonths, int ageInDays) {
+  static bool _matchesStage(String stage, String classification, String sex, bool isDairy, String status, int ageInMonths, int ageInDays) {
     switch (stage) {
       case 'Newborn Calf':
         // Only apply to 1 day old calves
@@ -364,15 +364,15 @@ class VaccinationProtocol {
         return classification == 'Growers' || classification == 'Steer';
       
       case 'Replacement Heifers':
-        return classification == 'Heifer' && gender == 'Female';
+        return classification == 'Heifer' && sex == 'Female';
       
       case 'Breeding Cows & Bulls':
-        return (classification == 'Cow' && gender == 'Female') || 
-               (classification == 'Bull' && gender == 'Male');
+        return (classification == 'Cow' && sex == 'Female') || 
+               (classification == 'Bull' && sex == 'Male');
       
       case 'Pregnant Heifer & Cow':
-        return ((classification == 'Cow' && gender == 'Female') || 
-                (classification == 'Heifer' && gender == 'Female')) &&
+        return ((classification == 'Cow' && sex == 'Female') || 
+                (classification == 'Heifer' && sex == 'Female')) &&
                (status.toLowerCase() == 'pregnant' || 
                 status.toLowerCase() == 'lactating & pregnant');
       
@@ -415,10 +415,10 @@ class VaccinationProtocol {
   }
 
   /// Check if cattle matches stage requirements for pre-calving vaccines
-  static bool _matchesPreCalvingStage(VaccineType vaccine, String classification, String gender, bool isDairy, String status) {
+  static bool _matchesPreCalvingStage(VaccineType vaccine, String classification, String sex, bool isDairy, String status) {
     // Pre-calving vaccines are for pregnant cows and heifers (both dairy and beef)
     return (classification == 'Cow' || classification == 'Heifer') &&
-           gender == 'Female' &&
+           sex == 'Female' &&
            (status.toLowerCase() == 'pregnant' || 
             status.toLowerCase() == 'lactating & pregnant');
   }

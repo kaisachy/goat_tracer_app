@@ -43,6 +43,7 @@ class EventSpecificFieldsState extends State<EventSpecificFields> {
   Map<String, dynamic>? _newCalfData;
   final GlobalKey<BreedingEventFieldsState> _breedingFieldsKey = GlobalKey<BreedingEventFieldsState>();
   final GlobalKey<PregnantEventFieldsState> _pregnantFieldsKey = GlobalKey<PregnantEventFieldsState>();
+  final GlobalKey<GivesBirthEventFieldsState> _givesBirthFieldsKey = GlobalKey<GivesBirthEventFieldsState>();
 
   @override
   void initState() {
@@ -99,6 +100,7 @@ class EventSpecificFieldsState extends State<EventSpecificFields> {
 
       case 'gives birth':
         return GivesBirthEventFields(
+          key: _givesBirthFieldsKey,
           controllers: widget.controllers,
           cattleTag: widget.cattleTag,
           temporaryCalfData: _newCalfData,
@@ -177,6 +179,14 @@ class EventSpecificFieldsState extends State<EventSpecificFields> {
     }
   }
 
+  // Expose calves collected in Gives Birth fields
+  List<Map<String, dynamic>>? getCalves() {
+    if (widget.selectedEventType.toLowerCase() == 'gives birth') {
+      return _givesBirthFieldsKey.currentState?.getCalves();
+    }
+    return null;
+  }
+
   // Get breeding type from breeding event fields
   String? getBreedingType() {
     if (widget.selectedEventType.toLowerCase() == 'breeding') {
@@ -190,6 +200,11 @@ class EventSpecificFieldsState extends State<EventSpecificFields> {
   Widget build(BuildContext context) {
     if (widget.selectedEventType == 'Select type of event' ||
         widget.selectedEventType == 'Loading cattle information...') {
+      return const SizedBox.shrink();
+    }
+
+    // Don't show the details container for "Other" events
+    if (widget.selectedEventType.toLowerCase() == 'other') {
       return const SizedBox.shrink();
     }
 

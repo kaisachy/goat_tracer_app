@@ -138,7 +138,7 @@ class EventCattleInfoEventCard extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      cattleDetails!.name ?? 'Unnamed Cattle',
+                      'Cattle #${cattleDetails!.tagNo}',
                       style: const TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.bold,

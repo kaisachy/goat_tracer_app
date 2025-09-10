@@ -190,7 +190,7 @@ class VaccinationService {
       ageInMonths: ageInMonths,
       ageInDays: _getAccurateAgeInDays(cattle),
       classification: effectiveClassification,
-      gender: cattle.gender,
+      sex: cattle.sex,
       isDairy: isDairy,
       status: cattle.status,
       isPregnant: pregnancyInfo != null,
@@ -430,17 +430,17 @@ class VaccinationService {
 
   /// Get the current stage of the cattle for vaccination purposes
   String _getCattleStage(Cattle cattle, String classification) {
-    final gender = cattle.gender;
+    final sex = cattle.sex;
     
     if (classification == 'Calf') {
       return 'Pre-weaning Calves';
     } else if (classification == 'Growers' || classification == 'Steer') {
       return 'Weaned Calves / Growers / Steer';
-    } else if (classification == 'Heifer' && gender == 'Female') {
+    } else if (classification == 'Heifer' && sex == 'Female') {
       return 'Replacement Heifers';
-    } else if (classification == 'Cow' && gender == 'Female') {
+    } else if (classification == 'Cow' && sex == 'Female') {
       return 'Pregnant Heifer & Cow';
-    } else if (classification == 'Bull' && gender == 'Male') {
+    } else if (classification == 'Bull' && sex == 'Male') {
       return 'Breeding Cows & Bulls';
     }
     
@@ -461,7 +461,7 @@ class VaccinationService {
           orElse: () => Cattle(
             id: 0,
             tagNo: schedule.cattleTag,
-            gender: '',
+            sex: '',
             classification: '',
             status: '',
             source: '',

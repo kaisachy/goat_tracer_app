@@ -338,7 +338,7 @@ class _MilkRecordFormScreenState extends State<MilkRecordFormScreen> {
                 ),
               ),
               const SizedBox(width: 8),
-              Text('${cattle.name} (${cattle.tagNo})'),
+              Text('Cattle #${cattle.tagNo}'),
             ],
           ),
         )).toList(),

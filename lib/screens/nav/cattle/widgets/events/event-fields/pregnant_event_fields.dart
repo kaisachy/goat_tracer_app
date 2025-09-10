@@ -60,6 +60,35 @@ class PregnantEventFieldsState extends BaseEventFieldsState<PregnantEventFields>
   }
 
   @override
+  void onBullsLoaded() {
+    // If semen_used has a value but bull_tag is empty, try to derive bull tag from semen label
+    final semenText = widget.controllers['semen_used']?.text ?? '';
+    final bullText = widget.controllers['bull_tag']?.text ?? '';
+    if (semenText.isNotEmpty && (bullText.isEmpty)) {
+      // Expected semen format examples:
+      // - "TAG123 (Name) Semen"
+      // - "TAG123 Semen"
+      // - "TAG123"
+      String extracted = semenText.trim();
+      // Remove trailing word 'Semen' if present
+      if (extracted.toLowerCase().endsWith('semen')) {
+        extracted = extracted.substring(0, extracted.length - 5).trim();
+      }
+      // Take first token as tag (up to first space or '(')
+      int stop = extracted.indexOf(' ');
+      int paren = extracted.indexOf('(');
+      if (stop == -1 || (paren != -1 && paren < stop)) {
+        stop = paren;
+      }
+      final bullTag = stop == -1 ? extracted : extracted.substring(0, stop).trim();
+      if (bullTag.isNotEmpty) {
+        widget.controllers['bull_tag']?.text = bullTag;
+        if (mounted) setState(() {});
+      }
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Column(
       children: [

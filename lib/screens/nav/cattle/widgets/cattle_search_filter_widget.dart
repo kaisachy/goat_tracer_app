@@ -6,7 +6,7 @@ class CattleSearchFilterWidget extends StatefulWidget {
   // MODIFIED: Callback now accepts breed and group name
   final Function(String, String, String, String, String) onFiltersChanged;
   final Function(String) onSearchChanged;
-  final String initialGender;
+  final String initialSex;
   final String initialClassification;
   final String initialStatus;
   // NEW: Initial breed and group name properties
@@ -20,7 +20,7 @@ class CattleSearchFilterWidget extends StatefulWidget {
     super.key,
     required this.onSearchChanged,
     required this.onFiltersChanged,
-    required this.initialGender,
+    required this.initialSex,
     required this.initialClassification,
     required this.initialStatus,
     required this.initialBreed,
@@ -35,7 +35,7 @@ class CattleSearchFilterWidget extends StatefulWidget {
 }
 
 class _CattleSearchFilterWidgetState extends State<CattleSearchFilterWidget> {
-  late String _selectedGender;
+  late String _selectedSex;
   late String _selectedClassification;
   late String _selectedStatus;
   // NEW: State for selected breed and group name
@@ -43,7 +43,7 @@ class _CattleSearchFilterWidgetState extends State<CattleSearchFilterWidget> {
   late String _selectedGroupName;
   final TextEditingController _searchController = TextEditingController();
 
-  final List<String> _genderOptions = ['All', 'Male', 'Female', 'Other'];
+  final List<String> _sexOptions = ['All', 'Male', 'Female', 'Other'];
 
   final List<String> _allClassificationOptions = [
     'All',
@@ -69,7 +69,7 @@ class _CattleSearchFilterWidgetState extends State<CattleSearchFilterWidget> {
   @override
   void initState() {
     super.initState();
-    _selectedGender = widget.initialGender;
+    _selectedSex = widget.initialSex;
     _selectedClassification = widget.initialClassification;
     _selectedStatus = widget.initialStatus;
     // NEW: Initialize breed and group name
@@ -85,7 +85,7 @@ class _CattleSearchFilterWidgetState extends State<CattleSearchFilterWidget> {
 
   // Helper method for classification options
   List<String> _getFilteredClassificationOptions() {
-    switch (_selectedGender) {
+    switch (_selectedSex) {
       case 'Male':
         return ['All', 'Bull', 'Steer', 'Calf', 'Growers'];
       case 'Female':
@@ -97,7 +97,7 @@ class _CattleSearchFilterWidgetState extends State<CattleSearchFilterWidget> {
 
   // Helper method for status options
   List<String> _getFilteredStatusOptions() {
-    switch (_selectedGender) {
+    switch (_selectedSex) {
       case 'Male':
       // Removes female-specific statuses
         return ['All', 'Healthy', 'Sick', 'Sold', 'Deceased'];
@@ -109,10 +109,10 @@ class _CattleSearchFilterWidgetState extends State<CattleSearchFilterWidget> {
   // MODIFIED: Pass all filters to the callback
   void _updateFilters() {
     widget.onFiltersChanged(
-        _selectedGender, _selectedClassification, _selectedStatus, _selectedBreed, _selectedGroupName);
+        _selectedSex, _selectedClassification, _selectedStatus, _selectedBreed, _selectedGroupName);
   }
 
-  // MODIFIED: Logic to reset dependent filters when gender changes
+  // MODIFIED: Logic to reset dependent filters when sex changes
   void _showGenderFilterDialog() {
     showDialog(
       context: context,
@@ -174,14 +174,14 @@ class _CattleSearchFilterWidgetState extends State<CattleSearchFilterWidget> {
                   child: ListView(
                     shrinkWrap: true,
                     padding: const EdgeInsets.symmetric(vertical: 8),
-                    children: _genderOptions.map((gender) {
-                      bool isSelected = _selectedGender == gender;
+                    children: _sexOptions.map((sex) {
+                      bool isSelected = _selectedSex == sex;
                       return Material(
                         color: Colors.transparent,
                         child: InkWell(
                           onTap: () {
                             setState(() {
-                              _selectedGender = gender;
+                              _selectedSex = sex;
 
                               // Reset both classification and status if they become invalid
                               final validClassifications =
@@ -216,7 +216,7 @@ class _CattleSearchFilterWidgetState extends State<CattleSearchFilterWidget> {
                                 const SizedBox(width: 16),
                                 Expanded(
                                   child: Text(
-                                    gender,
+                                    sex,
                                     style: TextStyle(
                                       fontSize: 16,
                                       color: isSelected
@@ -248,7 +248,7 @@ class _CattleSearchFilterWidgetState extends State<CattleSearchFilterWidget> {
                     child: TextButton(
                       onPressed: () {
                         setState(() {
-                          _selectedGender = 'All';
+                          _selectedSex = 'All';
                         });
                         _updateFilters();
                         Navigator.pop(context);
@@ -965,13 +965,13 @@ class _CattleSearchFilterWidgetState extends State<CattleSearchFilterWidget> {
                                       ),
                                       const SizedBox(height: 2),
                                       Text(
-                                        'Current: $_selectedGender',
+                                        'Current: $_selectedSex',
                                         style: TextStyle(
                                           fontSize: 13,
-                                          color: _selectedGender != 'All'
+                                          color: _selectedSex != 'All'
                                               ? AppColors.primary
                                               : AppColors.textSecondary,
-                                          fontWeight: _selectedGender != 'All'
+                                          fontWeight: _selectedSex != 'All'
                                               ? FontWeight.w500
                                               : FontWeight.normal,
                                         ),
@@ -1241,7 +1241,7 @@ class _CattleSearchFilterWidgetState extends State<CattleSearchFilterWidget> {
                 ),
 
                 // MODIFIED: Clear All Filters Button condition and action
-                if (_selectedGender != 'All' ||
+                if (_selectedSex != 'All' ||
                     _selectedClassification != 'All' ||
                     _selectedStatus != 'All' ||
                     _selectedBreed != 'All' ||
@@ -1260,7 +1260,7 @@ class _CattleSearchFilterWidgetState extends State<CattleSearchFilterWidget> {
                       child: ElevatedButton.icon(
                         onPressed: () {
                           setState(() {
-                            _selectedGender = 'All';
+                            _selectedSex = 'All';
                             _selectedClassification = 'All';
                             _selectedStatus = 'All';
                             _selectedBreed = 'All';
@@ -1294,14 +1294,14 @@ class _CattleSearchFilterWidgetState extends State<CattleSearchFilterWidget> {
   // MODIFIED: Updated build method to check for new filters
   @override
   Widget build(BuildContext context) {
-    bool hasActiveFilters = _selectedGender != 'All' ||
+    bool hasActiveFilters = _selectedSex != 'All' ||
         _selectedClassification != 'All' ||
         _selectedStatus != 'All' ||
         _selectedBreed != 'All' ||
         _selectedGroupName != 'All';
 
     int activeFilterCount = 0;
-    if (_selectedGender != 'All') activeFilterCount++;
+    if (_selectedSex != 'All') activeFilterCount++;
     if (_selectedClassification != 'All') activeFilterCount++;
     if (_selectedStatus != 'All') activeFilterCount++;
     if (_selectedBreed != 'All') activeFilterCount++;
@@ -1416,7 +1416,7 @@ class _CattleSearchFilterWidgetState extends State<CattleSearchFilterWidget> {
   }
 
   // MODIFIED: Public methods to access current filter values
-  String get selectedGender => _selectedGender;
+  String get selectedGender => _selectedSex;
   String get selectedClassification => _selectedClassification;
   String get selectedStatus => _selectedStatus;
   String get selectedBreed => _selectedBreed;
@@ -1431,7 +1431,7 @@ class _CattleSearchFilterWidgetState extends State<CattleSearchFilterWidget> {
   // MODIFIED: Method to reset all filters programmatically
   void resetAllFilters() {
     setState(() {
-      _selectedGender = 'All';
+      _selectedSex = 'All';
       _selectedClassification = 'All';
       _selectedStatus = 'All';
       _selectedBreed = 'All';

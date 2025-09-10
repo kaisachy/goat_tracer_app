@@ -207,8 +207,7 @@ class _CattleDetailScreenState extends State<CattleDetailScreen>
         oldCattle.cattlePicture != newCattle.cattlePicture ||
         oldCattle.weight != newCattle.weight ||
         oldCattle.breed != newCattle.breed ||
-        oldCattle.dateOfBirth != newCattle.dateOfBirth ||
-        oldCattle.name != newCattle.name;
+        oldCattle.dateOfBirth != newCattle.dateOfBirth;
   }
 
   /// Animate refresh to provide visual feedback

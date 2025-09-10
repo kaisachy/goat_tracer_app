@@ -568,7 +568,7 @@ class _VaccinationScheduleScreenState extends State<VaccinationScheduleScreen>
       orElse: () => Cattle(
         id: 0,
         tagNo: schedule.cattleTag,
-        gender: '',
+        sex: '',
         classification: '',
         status: '',
         source: '',
@@ -725,22 +725,6 @@ class _VaccinationScheduleScreenState extends State<VaccinationScheduleScreen>
     }
   }
 
-  // Helper methods for scheduled vaccinations
-  int _getVaccineTypePriority(String vaccineType) {
-    // Define priority order for vaccine types
-    final priorityOrder = {
-      'Scour Vaccine': 0,
-      'Mastitis Vaccines': 1,
-      'Brucellosis': 2,
-      'Blackleg': 3,
-      'IBR': 4,
-      'BVD': 5,
-      'Leptospirosis': 6,
-      'Pinkeye': 7,
-    };
-    
-    return priorityOrder[vaccineType] ?? 999;
-  }
 
   String _formatScheduleDate(DateTime date) {
     const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
@@ -759,18 +743,6 @@ class _VaccinationScheduleScreenState extends State<VaccinationScheduleScreen>
     }
   }
 
-  Color _getPriorityColor(String priority) {
-    switch (priority.toLowerCase()) {
-      case 'high':
-        return Colors.red;
-      case 'medium':
-        return Colors.orange;
-      case 'low':
-        return Colors.green;
-      default:
-        return Colors.grey;
-    }
-  }
 
 
 

@@ -63,7 +63,7 @@ class _EventDuplicationModalState extends State<EventDuplicationModal> {
       print('Debug: Loading cattle for event type: $originalEventType');
       print('Debug: Total cattle loaded: ${allCattle.length}');
 
-      // Filter cattle based on event type, gender, classification, and status
+      // Filter cattle based on event type, sex, classification, and status
       final availableCattle = allCattle.where((cattle) {
         // Check if cattle is healthy
         if (cattle.status.toLowerCase() != 'healthy') {
@@ -77,9 +77,9 @@ class _EventDuplicationModalState extends State<EventDuplicationModal> {
           return false;
         }
 
-        // Check gender compatibility
-        if (!_isEventTypeValidForGender(originalEventType, cattle.gender)) {
-          print('Debug: Skipping ${cattle.tagNo} - gender incompatible: ${cattle.gender}');
+        // Check sex compatibility
+        if (!_isEventTypeValidForGender(originalEventType, cattle.sex)) {
+          print('Debug: Skipping ${cattle.tagNo} - sex incompatible: ${cattle.sex}');
           return false;
         }
 
@@ -89,7 +89,7 @@ class _EventDuplicationModalState extends State<EventDuplicationModal> {
           return false;
         }
 
-        print('Debug: Including ${cattle.tagNo} - gender: ${cattle.gender}, classification: ${cattle.classification}');
+        print('Debug: Including ${cattle.tagNo} - sex: ${cattle.sex}, classification: ${cattle.classification}');
         return true;
       }).toList();
 
@@ -112,18 +112,18 @@ class _EventDuplicationModalState extends State<EventDuplicationModal> {
     }
   }
 
-  bool _isEventTypeValidForGender(String eventType, String gender) {
-    final genderLower = gender.toLowerCase();
+  bool _isEventTypeValidForGender(String eventType, String sex) {
+    final sexLower = sex.toLowerCase();
 
     switch (eventType) {
       case 'dry off':
       case 'breeding':
-        return genderLower == 'female';
+        return sexLower == 'female';
       case 'treated':
       case 'vaccinated':
       case 'deworming':
       case 'hoof trimming':
-        return true; // Valid for both genders
+        return true; // Valid for both sexs
       default:
         return true;
     }
@@ -161,9 +161,8 @@ class _EventDuplicationModalState extends State<EventDuplicationModal> {
       } else {
         _availableCattle = _allCattle.where((cattle) {
           final tagNo = cattle.tagNo.toLowerCase();
-          final name = (cattle.name ?? '').toLowerCase();
           final queryLower = query.toLowerCase();
-          return tagNo.contains(queryLower) || name.contains(queryLower);
+          return tagNo.contains(queryLower);
         }).toList();
       }
 
@@ -442,7 +441,7 @@ class _EventDuplicationModalState extends State<EventDuplicationModal> {
                   Expanded(
                     child: TextField(
                       decoration: InputDecoration(
-                        hintText: 'Search cattle by tag or name...',
+                        hintText: 'Search cattle by tag...',
                         prefixIcon: const Icon(Icons.search, color: AppColors.primary),
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
@@ -589,16 +588,8 @@ class _EventDuplicationModalState extends State<EventDuplicationModal> {
                         subtitle: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            if (cattle.name != null && cattle.name!.isNotEmpty)
-                              Text(
-                                cattle.name!,
-                                style: TextStyle(
-                                  color: Colors.grey.shade600,
-                                  fontSize: 12,
-                                ),
-                              ),
                             Text(
-                              '${cattle.gender} • ${cattle.classification} • ${cattle.status}',
+                              '${cattle.sex} • ${cattle.classification} • ${cattle.status}',
                               style: TextStyle(
                                 color: Colors.grey.shade500,
                                 fontSize: 11,

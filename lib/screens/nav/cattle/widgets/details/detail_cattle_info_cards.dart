@@ -13,7 +13,7 @@ class CattleBasicInfoCard extends StatefulWidget {
 
   /// Create a key that changes when cattle data changes
   static Key createKey(Cattle cattle) {
-    return ValueKey('${cattle.id}_${cattle.dateOfBirth}_${cattle.classification}_${cattle.gender}');
+    return ValueKey('${cattle.id}_${cattle.dateOfBirth}_${cattle.classification}_${cattle.sex}');
   }
 
   @override
@@ -35,11 +35,10 @@ class _CattleBasicInfoCardState extends State<CattleBasicInfoCard> {
   bool _shouldRebuild(Cattle oldCattle, Cattle newCattle) {
     return oldCattle.dateOfBirth != newCattle.dateOfBirth ||
         oldCattle.classification != newCattle.classification ||
-        oldCattle.gender != newCattle.gender ||
+        oldCattle.sex != newCattle.sex ||
         oldCattle.breed != newCattle.breed ||
         oldCattle.weight != newCattle.weight ||
-        oldCattle.status != newCattle.status ||
-        oldCattle.name != newCattle.name;
+        oldCattle.status != newCattle.status;
   }
 
   @override
@@ -84,9 +83,9 @@ class _CattleBasicInfoCardState extends State<CattleBasicInfoCard> {
               value: CattleDetailUtils.formatDate(widget.cattle.dateOfBirth),
             ),
             InfoItemData(
-              icon: CattleDetailUtils.getGenderIcon(widget.cattle.gender),
+              icon: CattleDetailUtils.getGenderIcon(widget.cattle.sex),
               title: 'Gender',
-              value: widget.cattle.gender,
+              value: widget.cattle.sex,
             ),
             InfoItemData(
               icon: Icons.category,

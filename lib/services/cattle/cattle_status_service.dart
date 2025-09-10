@@ -35,7 +35,7 @@ class CattleStatusService {
       // Filter female cattle with "Breeding" status
       final breedingCattle = cattleData.where((cattle) {
         final cattleMap = cattle;
-        return cattleMap['gender'] == 'Female' && cattleMap['status'] == 'Breeding';
+        return cattleMap['sex'] == 'Female' && cattleMap['status'] == 'Breeding';
       }).toList();
 
       log('CattleStatusService: Found ${breedingCattle.length} female cattle with Breeding status');
@@ -122,7 +122,7 @@ class CattleStatusService {
       // Filter female cattle with "Breeding" status
       final breedingCattle = cattleData.where((cattle) {
         final cattleMap = cattle;
-        return cattleMap['gender'] == 'Female' && cattleMap['status'] == 'Breeding';
+        return cattleMap['sex'] == 'Female' && cattleMap['status'] == 'Breeding';
       }).toList();
 
       for (final cattle in breedingCattle) {

@@ -502,12 +502,6 @@ class _DashboardScreenState extends State<DashboardScreen>
     }).toList();
   }
 
-  String _formatKey(DateTime d) => '${d.year}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}';
-  String _formatMonthKey(DateTime d) => '${d.year}-${d.month.toString().padLeft(2, '0')}';
-  String _shortMonth(int m) {
-    const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-    return months[(m - 1).clamp(0, 11)];
-  }
 
   String _formatEventDateLabel(DateTime d) {
     const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
@@ -718,7 +712,7 @@ class _DashboardScreenState extends State<DashboardScreen>
         Expanded(
           child: _buildAnimatedCard(
             delay: 100,
-            child: _buildGenderPieChart(),
+            child: _buildSexPieChart(),
           ),
         ),
       ],
@@ -1581,9 +1575,9 @@ class _DashboardScreenState extends State<DashboardScreen>
     );
   }
 
-  Widget _buildGenderPieChart() {
-    final males = allCattle.where((c) => c.gender.toLowerCase() == 'male').length;
-    final females = allCattle.where((c) => c.gender.toLowerCase() == 'female').length;
+  Widget _buildSexPieChart() {
+    final males = allCattle.where((c) => c.sex.toLowerCase() == 'male').length;
+    final females = allCattle.where((c) => c.sex.toLowerCase() == 'female').length;
     final total = allCattle.length;
 
     if (total == 0) {
@@ -1604,7 +1598,7 @@ class _DashboardScreenState extends State<DashboardScreen>
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const Text(
-              'Cattle Gender',
+              'Cattle Sex',
               style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.w600,
@@ -1644,7 +1638,7 @@ class _DashboardScreenState extends State<DashboardScreen>
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const Text(
-            'Cattle Gender',
+            'Cattle Sex',
             style: TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.w600,

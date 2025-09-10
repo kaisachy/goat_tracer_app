@@ -82,7 +82,7 @@ class CattleService {
         }
       }
 
-      log('Found cattle: ${foundCattle.name} (${foundCattle.tagNo}) - Gender: ${foundCattle.gender}');
+      log('Found cattle: ${foundCattle.tagNo} - Gender: ${foundCattle.sex}');
       return foundCattle;
 
     } catch (e, stackTrace) {
@@ -300,7 +300,7 @@ class CattleService {
         orElse: () => throw Exception('Cattle not found'),
       );
 
-      log('Found cattle by ID: ${foundCattle.name} (${foundCattle.tagNo})');
+      log('Found cattle by ID: ${foundCattle.tagNo}');
       return foundCattle;
     } catch (e) {
       log('Error in getCattleById: $e');
@@ -328,7 +328,7 @@ class CattleService {
   static Future<Cattle?> getCattleWithImage(int id) async {
     final cattle = await getCattleById(id);
     if (cattle != null) {
-      log('Retrieved cattle with image data: ${cattle.name}');
+      log('Retrieved cattle with image data: ${cattle.tagNo}');
     }
     return cattle;
   }

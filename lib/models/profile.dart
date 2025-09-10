@@ -3,7 +3,7 @@ class Farmer {
   final int userId;
   final String? profilePicture;
   final String birthdate;
-  final String gender;
+  final String sex;
   final String maritalStatus;
   final String contactNumber;
 
@@ -12,7 +12,7 @@ class Farmer {
     required this.userId,
     this.profilePicture,
     required this.birthdate,
-    required this.gender,
+    required this.sex,
     required this.maritalStatus,
     required this.contactNumber,
   });
@@ -23,7 +23,7 @@ class Farmer {
       userId: json['user_id'],
       profilePicture: json['profile_picture'],
       birthdate: json['birthdate'],
-      gender: json['gender'],
+      sex: json['sex'],
       maritalStatus: json['marital_status'],
       contactNumber: json['contact_number'],
     );
@@ -36,7 +36,7 @@ class FarmDetail {
   final String farmName;
   final String farmType;
   final String farmClassification;
-  final double farmLandArea;
+  final String farmLandArea;
   final String cooperativeAffiliation;
   final String farmLocation;
 
@@ -58,7 +58,7 @@ class FarmDetail {
       farmName: json['farm_name'],
       farmType: json['farm_type'],
       farmClassification: json['farm_classification'],
-      farmLandArea: (json['farm_land_area'] as num).toDouble(),
+      farmLandArea: json['farm_land_area']?.toString() ?? '',
       cooperativeAffiliation: json['cooperative_affiliation'],
       farmLocation: json['farm_location'],
     );

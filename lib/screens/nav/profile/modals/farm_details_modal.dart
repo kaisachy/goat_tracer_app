@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:cattle_tracer_app/constants/app_colors.dart';
 import 'package:cattle_tracer_app/services/profile/farm_details_service.dart';
+import 'package:cattle_tracer_app/services/address_service.dart';
 
 class FarmDetailsModal extends StatefulWidget {
   final Map<String, dynamic>? farmDetails;
@@ -29,6 +30,39 @@ class _FarmDetailsModalState extends State<FarmDetailsModal> {
   late TextEditingController coopController;
   late TextEditingController farmLocationController;
   bool _isLoading = false;
+  final List<String> _farmTypeOptions = const ['Beef Cattle', 'Dairy Cattle'];
+  String? _selectedFarmType;
+  
+  final List<String> _farmLandAreaOptions = const [
+    'Below 1 hectare',
+    '1-2 hectares',
+    '2-3 hectares',
+    '3-5 hectares',
+    '5-10 hectares',
+    '10-20 hectares',
+    '20 hectares above'
+  ];
+  String? _selectedFarmLandArea;
+  
+  final List<String> _farmClassificationOptions = const [
+    'Backyard - 1-15 cows',
+    'Commercial - 16 and above cows'
+  ];
+  String? _selectedFarmClassification;
+  
+  // Address validation state variables
+  List<dynamic> _municipalities = [];
+  List<dynamic> _barangays = [];
+  Map<String, dynamic>? _selectedMunicipality;
+  Map<String, dynamic>? _selectedBarangay;
+  bool _isLoadingMunicipalities = false;
+  bool _isLoadingBarangays = false;
+  
+  // Fixed province data for Isabela
+  final Map<String, dynamic> _isabelaProvince = {
+    'name': 'Isabela',
+    'code': '020000000'
+  };
 
   @override
   void initState() {
@@ -40,6 +74,79 @@ class _FarmDetailsModalState extends State<FarmDetailsModal> {
     farmAreaController = TextEditingController(text: farm?['farm_land_area']?.toString() ?? '');
     coopController = TextEditingController(text: farm?['cooperative_affiliation'] ?? '');
     farmLocationController = TextEditingController(text: farm?['farm_location'] ?? '');
+    _selectedFarmType = (farm?['farm_type'] is String && farm!['farm_type'].toString().isNotEmpty)
+        ? farm['farm_type']
+        : null;
+    
+    // Initialize farm land area dropdown
+    final farmLandArea = farm?['farm_land_area'];
+    if (farmLandArea != null && farmLandArea.toString().isNotEmpty) {
+      // Handle numeric values by converting to appropriate text
+      String areaText = farmLandArea.toString();
+      
+      // If it's a numeric value, try to map it to our dropdown options
+      if (double.tryParse(areaText) != null) {
+        final numericValue = double.parse(areaText);
+        if (numericValue < 1) {
+          _selectedFarmLandArea = 'Below 1 hectare';
+        } else if (numericValue >= 1 && numericValue <= 2) {
+          _selectedFarmLandArea = '1-2 hectares';
+        } else if (numericValue > 2 && numericValue <= 3) {
+          _selectedFarmLandArea = '2-3 hectares';
+        } else if (numericValue > 3 && numericValue <= 5) {
+          _selectedFarmLandArea = '3-5 hectares';
+        } else if (numericValue > 5 && numericValue <= 10) {
+          _selectedFarmLandArea = '5-10 hectares';
+        } else if (numericValue > 10 && numericValue <= 20) {
+          _selectedFarmLandArea = '10-20 hectares';
+        } else if (numericValue > 20) {
+          _selectedFarmLandArea = '20 hectares above';
+        } else {
+          _selectedFarmLandArea = null;
+        }
+      } else {
+        // If it's already text, try to match with dropdown options
+        _selectedFarmLandArea = _farmLandAreaOptions.firstWhere(
+          (option) => option.toLowerCase().contains(areaText.toLowerCase()) ||
+                     areaText.toLowerCase().contains(option.toLowerCase()),
+          orElse: () => '', // Return empty string if no match found
+        );
+        // If no match found, set to null
+        if (_selectedFarmLandArea == '') {
+          _selectedFarmLandArea = null;
+        }
+      }
+    } else {
+      _selectedFarmLandArea = null;
+    }
+    
+    // Initialize farm classification dropdown
+    final farmClassification = farm?['farm_classification']?.toString();
+    if (farmClassification != null && farmClassification.isNotEmpty) {
+      // Try to match existing value with dropdown options
+      _selectedFarmClassification = _farmClassificationOptions.firstWhere(
+        (option) => option.toLowerCase().contains(farmClassification.toLowerCase()) ||
+                   farmClassification.toLowerCase().contains(option.toLowerCase()),
+        orElse: () => '', // Return empty string if no match found
+      );
+      // If no match found, set to null
+      if (_selectedFarmClassification == '') {
+        _selectedFarmClassification = null;
+      }
+    } else {
+      _selectedFarmClassification = null;
+    }
+    
+    // Load municipalities on initialization
+    _loadMunicipalities();
+    
+    // Initialize address fields if farm location exists
+    final farmLocation = farm?['farm_location']?.toString();
+    if (farmLocation != null && farmLocation.isNotEmpty) {
+      // Try to parse existing address data
+      // This is a simple approach - you might want to enhance this based on your data format
+      _initializeAddressFromLocation(farmLocation);
+    }
   }
 
   @override
@@ -214,50 +321,16 @@ class _FarmDetailsModalState extends State<FarmDetailsModal> {
           controller: farmNameController,
           label: 'Farm Name',
           icon: FontAwesomeIcons.leaf,
-          validator: (value) {
-            if (value?.isEmpty ?? true) {
-              return 'Please enter farm name';
-            }
-            return null;
-          },
         ),
         const SizedBox(height: 20),
 
-        _buildStyledTextField(
-          controller: farmTypeController,
-          label: 'Farm Type',
-          icon: FontAwesomeIcons.tractor,
-          validator: (value) {
-            if (value?.isEmpty ?? true) {
-              return 'Please enter farm type';
-            }
-            return null;
-          },
-        ),
+        _buildFarmTypeDropdown(),
         const SizedBox(height: 20),
 
-        _buildStyledTextField(
-          controller: farmClassificationController,
-          label: 'Farm Classification',
-          icon: FontAwesomeIcons.shapes,
-        ),
+        _buildFarmClassificationDropdown(),
         const SizedBox(height: 20),
 
-        _buildStyledTextField(
-          controller: farmAreaController,
-          label: 'Farm Land Area (hectares)',
-          icon: FontAwesomeIcons.expand,
-          keyboardType: TextInputType.number,
-          validator: (value) {
-            if (value?.isNotEmpty == true) {
-              final number = double.tryParse(value!);
-              if (number == null || number <= 0) {
-                return 'Please enter a valid area';
-              }
-            }
-            return null;
-          },
-        ),
+        _buildFarmLandAreaDropdown(),
         const SizedBox(height: 20),
 
         _buildStyledTextField(
@@ -267,13 +340,241 @@ class _FarmDetailsModalState extends State<FarmDetailsModal> {
         ),
         const SizedBox(height: 20),
 
-        _buildStyledTextField(
-          controller: farmLocationController,
-          label: 'Farm Location',
-          icon: FontAwesomeIcons.mapLocation,
-        ),
+        // Farm Location Section
+        _buildFarmLocationSection(),
         const SizedBox(height: 32),
       ],
+    );
+  }
+
+  Widget _buildFarmTypeDropdown() {
+    return Container(
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: DropdownButtonFormField<String>(
+        value: _selectedFarmType,
+        items: _farmTypeOptions
+            .map((e) => DropdownMenuItem<String>(value: e, child: Text(e)))
+            .toList(),
+        onChanged: (val) {
+          setState(() {
+            _selectedFarmType = val;
+            farmTypeController.text = val ?? '';
+          });
+        },
+        validator: (val) {
+          if (val == null || val.isEmpty) {
+            return 'Please select farm type';
+          }
+          return null;
+        },
+        decoration: InputDecoration(
+          labelText: 'Farm Type',
+          labelStyle: TextStyle(
+            color: AppColors.textSecondary,
+            fontSize: 16,
+            fontWeight: FontWeight.w500,
+          ),
+          prefixIcon: Container(
+            margin: const EdgeInsets.all(12),
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: AppColors.lightGreen.withOpacity(0.2),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: const FaIcon(
+              FontAwesomeIcons.tractor,
+              size: 18,
+              color: AppColors.primary,
+            ),
+          ),
+          filled: true,
+          fillColor: Colors.white,
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(16),
+            borderSide: BorderSide(color: Colors.grey[200]!, width: 1.5),
+          ),
+          enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(16),
+            borderSide: BorderSide(color: Colors.grey[200]!, width: 1.5),
+          ),
+          focusedBorder: const OutlineInputBorder(
+            borderRadius: BorderRadius.all(Radius.circular(16)),
+            borderSide: BorderSide(color: AppColors.primary, width: 2),
+          ),
+          errorBorder: const OutlineInputBorder(
+            borderRadius: BorderRadius.all(Radius.circular(16)),
+            borderSide: BorderSide(color: Colors.red, width: 2),
+          ),
+          focusedErrorBorder: const OutlineInputBorder(
+            borderRadius: BorderRadius.all(Radius.circular(16)),
+            borderSide: BorderSide(color: Colors.red, width: 2),
+          ),
+          contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildFarmLandAreaDropdown() {
+    return Container(
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: DropdownButtonFormField<String>(
+        value: _selectedFarmLandArea,
+        items: _farmLandAreaOptions
+            .map((e) => DropdownMenuItem<String>(value: e, child: Text(e)))
+            .toList(),
+        onChanged: (val) {
+          setState(() {
+            _selectedFarmLandArea = val;
+            farmAreaController.text = val ?? '';
+          });
+        },
+        validator: (val) {
+          if (val == null || val.isEmpty) {
+            return 'Please select farm land area';
+          }
+          return null;
+        },
+        decoration: InputDecoration(
+          labelText: 'Farm Land Area',
+          labelStyle: TextStyle(
+            color: AppColors.textSecondary,
+            fontSize: 16,
+            fontWeight: FontWeight.w500,
+          ),
+          prefixIcon: Container(
+            margin: const EdgeInsets.all(12),
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: AppColors.lightGreen.withOpacity(0.2),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: const FaIcon(
+              FontAwesomeIcons.expand,
+              size: 18,
+              color: AppColors.primary,
+            ),
+          ),
+          filled: true,
+          fillColor: Colors.white,
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(16),
+            borderSide: BorderSide(color: Colors.grey[200]!, width: 1.5),
+          ),
+          enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(16),
+            borderSide: BorderSide(color: Colors.grey[200]!, width: 1.5),
+          ),
+          focusedBorder: const OutlineInputBorder(
+            borderRadius: BorderRadius.all(Radius.circular(16)),
+            borderSide: BorderSide(color: AppColors.primary, width: 2),
+          ),
+          errorBorder: const OutlineInputBorder(
+            borderRadius: BorderRadius.all(Radius.circular(16)),
+            borderSide: BorderSide(color: Colors.red, width: 2),
+          ),
+          focusedErrorBorder: const OutlineInputBorder(
+            borderRadius: BorderRadius.all(Radius.circular(16)),
+            borderSide: BorderSide(color: Colors.red, width: 2),
+          ),
+          contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildFarmClassificationDropdown() {
+    return Container(
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: DropdownButtonFormField<String>(
+        value: _selectedFarmClassification,
+        items: _farmClassificationOptions
+            .map((e) => DropdownMenuItem<String>(value: e, child: Text(e)))
+            .toList(),
+        onChanged: (val) {
+          setState(() {
+            _selectedFarmClassification = val;
+            farmClassificationController.text = val ?? '';
+          });
+        },
+        validator: (val) {
+          if (val == null || val.isEmpty) {
+            return 'Please select farm classification';
+          }
+          return null;
+        },
+        decoration: InputDecoration(
+          labelText: 'Farm Classification',
+          labelStyle: TextStyle(
+            color: AppColors.textSecondary,
+            fontSize: 16,
+            fontWeight: FontWeight.w500,
+          ),
+          prefixIcon: Container(
+            margin: const EdgeInsets.all(12),
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: AppColors.lightGreen.withOpacity(0.2),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: const FaIcon(
+              FontAwesomeIcons.shapes,
+              size: 18,
+              color: AppColors.primary,
+            ),
+          ),
+          filled: true,
+          fillColor: Colors.white,
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(16),
+            borderSide: BorderSide(color: Colors.grey[200]!, width: 1.5),
+          ),
+          enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(16),
+            borderSide: BorderSide(color: Colors.grey[200]!, width: 1.5),
+          ),
+          focusedBorder: const OutlineInputBorder(
+            borderRadius: BorderRadius.all(Radius.circular(16)),
+            borderSide: BorderSide(color: AppColors.primary, width: 2),
+          ),
+          errorBorder: const OutlineInputBorder(
+            borderRadius: BorderRadius.all(Radius.circular(16)),
+            borderSide: BorderSide(color: Colors.red, width: 2),
+          ),
+          focusedErrorBorder: const OutlineInputBorder(
+            borderRadius: BorderRadius.all(Radius.circular(16)),
+            borderSide: BorderSide(color: Colors.red, width: 2),
+          ),
+          contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
+        ),
+      ),
     );
   }
 
@@ -352,6 +653,366 @@ class _FarmDetailsModalState extends State<FarmDetailsModal> {
     );
   }
 
+  // Address validation methods
+  Future<void> _loadMunicipalities() async {
+    setState(() => _isLoadingMunicipalities = true);
+    try {
+      final municipalities = await AddressService.getIsabelaMunicipalities();
+      setState(() {
+        _municipalities = municipalities;
+        _isLoadingMunicipalities = false;
+      });
+    } catch (e) {
+      setState(() => _isLoadingMunicipalities = false);
+      _showMessage('Failed to load municipalities: $e', Colors.red);
+    }
+  }
+
+  Future<void> _loadBarangays(String municipalityCode) async {
+    setState(() => _isLoadingBarangays = true);
+    try {
+      final barangays = await AddressService.getBarangays(municipalityCode);
+      setState(() {
+        _barangays = barangays;
+        _isLoadingBarangays = false;
+      });
+    } catch (e) {
+      setState(() => _isLoadingBarangays = false);
+      _showMessage('Failed to load barangays: $e', Colors.red);
+    }
+  }
+
+  void _showMessage(String message, Color color) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: color,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        margin: const EdgeInsets.all(16),
+        duration: const Duration(seconds: 3),
+      ),
+    );
+  }
+
+  Future<void> _initializeAddressFromLocation(String location) async {
+    // This is a simple implementation - you might want to enhance this
+    // based on how your existing address data is formatted
+    try {
+      // Wait for municipalities to load first
+      if (_municipalities.isEmpty) {
+        await _loadMunicipalities();
+      }
+      
+      // Try to find municipality and barangay from the location string
+      // This is a basic implementation - you might need to adjust based on your data format
+      for (var municipality in _municipalities) {
+        if (location.toLowerCase().contains(municipality['name'].toString().toLowerCase())) {
+          _selectedMunicipality = municipality;
+          await _loadBarangays(municipality['code']);
+          
+          // Try to find barangay
+          for (var barangay in _barangays) {
+            if (location.toLowerCase().contains(barangay['name'].toString().toLowerCase())) {
+              _selectedBarangay = barangay;
+              break;
+            }
+          }
+          break;
+        }
+      }
+    } catch (e) {
+      // If parsing fails, just leave fields empty
+      print('Failed to parse address from location: $e');
+    }
+  }
+
+  Widget _buildProvinceField() {
+    return Container(
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: TextFormField(
+        readOnly: true,
+        initialValue: _isabelaProvince['name'],
+        style: const TextStyle(
+          fontSize: 16,
+          color: AppColors.textPrimary,
+          fontWeight: FontWeight.w500,
+        ),
+        decoration: InputDecoration(
+          labelText: 'Province',
+          labelStyle: TextStyle(
+            color: AppColors.textSecondary,
+            fontSize: 16,
+            fontWeight: FontWeight.w500,
+          ),
+          prefixIcon: Container(
+            margin: const EdgeInsets.all(12),
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: AppColors.lightGreen.withOpacity(0.2),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: const FaIcon(
+              FontAwesomeIcons.mapLocation,
+              size: 18,
+              color: AppColors.primary,
+            ),
+          ),
+          filled: true,
+          fillColor: Colors.grey[50],
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(16),
+            borderSide: BorderSide(color: Colors.grey[200]!, width: 1.5),
+          ),
+          enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(16),
+            borderSide: BorderSide(color: Colors.grey[200]!, width: 1.5),
+          ),
+          contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildMunicipalityDropdown() {
+    return Container(
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: DropdownButtonFormField<Map<String, dynamic>>(
+        value: _selectedMunicipality,
+        decoration: InputDecoration(
+          labelText: 'Municipality/City',
+          labelStyle: TextStyle(
+            color: AppColors.textSecondary,
+            fontSize: 16,
+            fontWeight: FontWeight.w500,
+          ),
+          prefixIcon: Container(
+            margin: const EdgeInsets.all(12),
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: AppColors.lightGreen.withOpacity(0.2),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: const FaIcon(
+              FontAwesomeIcons.city,
+              size: 18,
+              color: AppColors.primary,
+            ),
+          ),
+          filled: true,
+          fillColor: Colors.white,
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(16),
+            borderSide: BorderSide(color: Colors.grey[200]!, width: 1.5),
+          ),
+          enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(16),
+            borderSide: BorderSide(color: Colors.grey[200]!, width: 1.5),
+          ),
+          focusedBorder: const OutlineInputBorder(
+            borderRadius: BorderRadius.all(Radius.circular(16)),
+            borderSide: BorderSide(color: AppColors.primary, width: 2),
+          ),
+          errorBorder: const OutlineInputBorder(
+            borderRadius: BorderRadius.all(Radius.circular(16)),
+            borderSide: BorderSide(color: Colors.red, width: 2),
+          ),
+          focusedErrorBorder: const OutlineInputBorder(
+            borderRadius: BorderRadius.all(Radius.circular(16)),
+            borderSide: BorderSide(color: Colors.red, width: 2),
+          ),
+          contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
+        ),
+        items: _municipalities.map<DropdownMenuItem<Map<String, dynamic>>>((municipality) {
+          return DropdownMenuItem<Map<String, dynamic>>(
+            value: municipality,
+            child: Text(municipality['name'] ?? 'Unknown Municipality'),
+          );
+        }).toList(),
+        onChanged: (Map<String, dynamic>? newValue) {
+          setState(() {
+            _selectedMunicipality = newValue;
+            _barangays = [];
+            _selectedBarangay = null;
+          });
+          if (newValue != null) {
+            _loadBarangays(newValue['code']);
+          }
+        },
+        validator: (Map<String, dynamic>? value) {
+          if (value == null) {
+            return 'Please select a municipality';
+          }
+          return null;
+        },
+        hint: _isLoadingMunicipalities ? const Text('Loading municipalities...') : const Text('Municipality'),
+      ),
+    );
+  }
+
+  Widget _buildBarangayDropdown() {
+    return Container(
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: DropdownButtonFormField<Map<String, dynamic>>(
+        value: _selectedBarangay,
+        decoration: InputDecoration(
+          labelText: 'Barangay',
+          labelStyle: TextStyle(
+            color: AppColors.textSecondary,
+            fontSize: 16,
+            fontWeight: FontWeight.w500,
+          ),
+          prefixIcon: Container(
+            margin: const EdgeInsets.all(12),
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: AppColors.lightGreen.withOpacity(0.2),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: const FaIcon(
+              FontAwesomeIcons.home,
+              size: 18,
+              color: AppColors.primary,
+            ),
+          ),
+          filled: true,
+          fillColor: _selectedMunicipality == null ? Colors.grey[50] : Colors.white,
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(16),
+            borderSide: BorderSide(color: Colors.grey[200]!, width: 1.5),
+          ),
+          enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(16),
+            borderSide: BorderSide(color: Colors.grey[200]!, width: 1.5),
+          ),
+          focusedBorder: const OutlineInputBorder(
+            borderRadius: BorderRadius.all(Radius.circular(16)),
+            borderSide: BorderSide(color: AppColors.primary, width: 2),
+          ),
+          errorBorder: const OutlineInputBorder(
+            borderRadius: BorderRadius.all(Radius.circular(16)),
+            borderSide: BorderSide(color: Colors.red, width: 2),
+          ),
+          focusedErrorBorder: const OutlineInputBorder(
+            borderRadius: BorderRadius.all(Radius.circular(16)),
+            borderSide: BorderSide(color: Colors.red, width: 2),
+          ),
+          contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
+        ),
+        items: _barangays.map<DropdownMenuItem<Map<String, dynamic>>>((barangay) {
+          return DropdownMenuItem<Map<String, dynamic>>(
+            value: barangay,
+            child: Text(barangay['name'] ?? 'Unknown Barangay'),
+          );
+        }).toList(),
+        onChanged: _isLoadingBarangays || _selectedMunicipality == null
+            ? null
+            : (Map<String, dynamic>? newValue) {
+                setState(() {
+                  _selectedBarangay = newValue;
+                });
+              },
+        validator: (Map<String, dynamic>? value) {
+          if (_selectedMunicipality != null && (value == null || value.isEmpty)) {
+            return 'Please select a barangay';
+          }
+          return null;
+        },
+        hint: _isLoadingBarangays
+            ? const Text('Loading barangays...')
+            : _selectedMunicipality == null
+                ? const Text('Select municipality first')
+                : const Text('Barangay'),
+      ),
+    );
+  }
+
+  Widget _buildFarmLocationSection() {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AppColors.lightGreen.withOpacity(0.3), width: 1.5),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Section Header
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: AppColors.lightGreen.withOpacity(0.2),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: const FaIcon(
+                  FontAwesomeIcons.mapLocation,
+                  size: 16,
+                  color: AppColors.primary,
+                ),
+              ),
+              const SizedBox(width: 12),
+              const Text(
+                'Farm Location',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.textPrimary,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 20),
+          
+          // Address Fields
+          _buildProvinceField(),
+          const SizedBox(height: 16),
+
+          _buildMunicipalityDropdown(),
+          const SizedBox(height: 16),
+
+          _buildBarangayDropdown(),
+        ],
+      ),
+    );
+  }
+
   Widget _buildViewContent() {
     return Column(
       children: [
@@ -364,16 +1025,26 @@ class _FarmDetailsModalState extends State<FarmDetailsModal> {
         _buildInfoCard('Farm Classification', widget.farmDetails?['farm_classification'] ?? 'N/A', FontAwesomeIcons.shapes),
         const SizedBox(height: 16),
 
-        _buildInfoCard('Farm Land Area', '${widget.farmDetails?['farm_land_area'] ?? 'N/A'} hectares', FontAwesomeIcons.expand),
+        _buildInfoCard('Farm Land Area', widget.farmDetails?['farm_land_area'] ?? 'N/A', FontAwesomeIcons.expand),
         const SizedBox(height: 16),
 
         _buildInfoCard('Cooperative Affiliation', widget.farmDetails?['cooperative_affiliation'] ?? 'N/A', FontAwesomeIcons.handshake),
         const SizedBox(height: 16),
 
-        _buildInfoCard('Farm Location', widget.farmDetails?['farm_location'] ?? 'N/A', FontAwesomeIcons.mapLocation),
+        _buildInfoCard('Farm Location', _formatFarmLocation(), FontAwesomeIcons.mapLocation),
         const SizedBox(height: 24),
       ],
     );
+  }
+
+  String _formatFarmLocation() {
+    if (_selectedMunicipality != null && _selectedBarangay != null) {
+      return '${_selectedBarangay!['name']}, ${_selectedMunicipality!['name']}, ${_isabelaProvince['name']}';
+    } else if (_selectedMunicipality != null) {
+      return '${_selectedMunicipality!['name']}, ${_isabelaProvince['name']}';
+    } else {
+      return widget.farmDetails?['farm_location'] ?? 'N/A';
+    }
   }
 
   Widget _buildInfoCard(String label, String value, IconData icon) {
@@ -439,13 +1110,21 @@ class _FarmDetailsModalState extends State<FarmDetailsModal> {
     if (formKey.currentState!.validate()) {
       setState(() => _isLoading = true);
 
+      // Build address string from selected values
+      String farmLocation = '';
+      if (_selectedMunicipality != null && _selectedBarangay != null) {
+        farmLocation = '${_selectedBarangay!['name']}, ${_selectedMunicipality!['name']}, ${_isabelaProvince['name']}';
+      } else if (_selectedMunicipality != null) {
+        farmLocation = '${_selectedMunicipality!['name']}, ${_isabelaProvince['name']}';
+      }
+
       final Map<String, dynamic> updateData = {
         'farm_name': farmNameController.text,
         'farm_type': farmTypeController.text,
-        'farm_classification': farmClassificationController.text,
-        'farm_land_area': farmAreaController.text,
+        'farm_classification': _selectedFarmClassification ?? '',
+        'farm_land_area': _selectedFarmLandArea ?? '',
         'cooperative_affiliation': coopController.text,
-        'farm_location': farmLocationController.text,
+        'farm_location': farmLocation,
       };
 
       bool success = false;

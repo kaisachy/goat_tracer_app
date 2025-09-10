@@ -75,6 +75,7 @@ class _CattleHeroSectionState extends State<CattleHeroSection> {
   Widget build(BuildContext context) {
     return Container(
       width: double.infinity,
+      margin: const EdgeInsets.only(bottom: 20),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: const BorderRadius.only(
@@ -103,17 +104,6 @@ class _CattleHeroSectionState extends State<CattleHeroSection> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
-                        widget.cattle.name ?? 'Unnamed Cattle',
-                        style: const TextStyle(
-                          fontSize: 28,
-                          fontWeight: FontWeight.bold,
-                          color: AppColors.textPrimary,
-                          letterSpacing: -0.5,
-                        ),
-                        overflow: TextOverflow.ellipsis,
-                        maxLines: 1,
-                      ),
                       const SizedBox(height: 6),
                       Row(
                         children: [
@@ -505,14 +495,6 @@ class _CattleHeroSectionState extends State<CattleHeroSection> {
                               ),
                             ),
                             const SizedBox(height: 4),
-                            Text(
-                              'For ${widget.cattle.name ?? "Unnamed Cattle"}',
-                              style: TextStyle(
-                                fontSize: 14,
-                                color: Colors.white.withOpacity(0.9),
-                                fontWeight: FontWeight.w500,
-                              ),
-                            ),
                           ],
                         ),
                       ),

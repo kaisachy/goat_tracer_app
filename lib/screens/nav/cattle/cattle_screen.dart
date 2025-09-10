@@ -23,7 +23,7 @@ class _CattleScreenState extends State<CattleScreen>
   List<Cattle> _filteredCattleList = [];
   bool _isLoading = true;
   String _searchQuery = '';
-  String _selectedGender = 'All';
+  String _selectedSex = 'All';
   String _selectedClassification = 'All';
   String _selectedStatus = 'All';
   String _selectedBreed = 'All';
@@ -106,9 +106,9 @@ class _CattleScreenState extends State<CattleScreen>
     _filterCattle();
   }
 
-  void _handleFiltersChanged(String gender, String classification, String status, String breed, String groupName) {
+  void _handleFiltersChanged(String sex, String classification, String status, String breed, String groupName) {
     setState(() {
-      _selectedGender = gender;
+      _selectedSex = sex;
       _selectedClassification = classification;
       _selectedStatus = status;
       _selectedBreed = breed;
@@ -122,13 +122,12 @@ class _CattleScreenState extends State<CattleScreen>
       _filteredCattleList = _cattleList.where((cattle) {
         final matchesSearch = _searchQuery.isEmpty ||
             cattle.tagNo.toLowerCase().contains(_searchQuery.toLowerCase()) ||
-            (cattle.name?.toLowerCase().contains(_searchQuery.toLowerCase()) ?? false) ||
             cattle.status.toLowerCase().contains(_searchQuery.toLowerCase()) ||
             (cattle.breed?.toLowerCase().contains(_searchQuery.toLowerCase()) ?? false) ||
             (cattle.groupName?.toLowerCase().contains(_searchQuery.toLowerCase()) ?? false);
 
-        final matchesGender = _selectedGender == 'All' ||
-            cattle.gender == _selectedGender;
+        final matchesSex = _selectedSex == 'All' ||
+            cattle.sex == _selectedSex;
 
         final matchesClassification = _selectedClassification == 'All' ||
             cattle.classification == _selectedClassification;
@@ -142,7 +141,7 @@ class _CattleScreenState extends State<CattleScreen>
         final matchesGroupName = _selectedGroupName == 'All' ||
             (cattle.groupName != null && cattle.groupName == _selectedGroupName);
 
-        return matchesSearch && matchesGender && matchesClassification &&
+        return matchesSearch && matchesSex && matchesClassification &&
             matchesStatus && matchesBreed && matchesGroupName;
       }).toList();
     });
@@ -438,32 +437,15 @@ class _CattleScreenState extends State<CattleScreen>
                                         ),
                                         const SizedBox(width: 6),
                                         Icon(
-                                          cattle.gender == 'Male' ? Icons.male : Icons.female,
+                                          cattle.sex == 'Male' ? Icons.male : Icons.female,
                                           size: 18,
-                                          color: cattle.gender == 'Male'
+                                          color: cattle.sex == 'Male'
                                               ? AppColors.primary
                                               : AppColors.accent,
                                         ),
                                       ],
                                     ),
                                   ),
-                                  if (cattle.name != null && cattle.name!.isNotEmpty)
-                                    Container(
-                                      margin: const EdgeInsets.only(left: 8),
-                                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                                      decoration: BoxDecoration(
-                                        color: AppColors.accent.withOpacity(0.2),
-                                        borderRadius: BorderRadius.circular(8),
-                                      ),
-                                      child: Text(
-                                        cattle.name!,
-                                        style: TextStyle(
-                                          fontSize: 12,
-                                          fontWeight: FontWeight.w600,
-                                          color: AppColors.textPrimary,
-                                        ),
-                                      ),
-                                    ),
                                 ],
                               ),
                               const SizedBox(height: 4),
@@ -544,7 +526,7 @@ class _CattleScreenState extends State<CattleScreen>
 
   Widget _buildEmptyState() {
     bool hasActiveFilters = _searchQuery.isNotEmpty ||
-        _selectedGender != 'All' ||
+        _selectedSex != 'All' ||
         _selectedClassification != 'All' ||
         _selectedStatus != 'All' ||
         _selectedBreed != 'All' ||
@@ -639,7 +621,7 @@ class _CattleScreenState extends State<CattleScreen>
             CattleSearchFilterWidget(
               onSearchChanged: _handleSearchChanged,
               onFiltersChanged: _handleFiltersChanged,
-              initialGender: _selectedGender,
+              initialSex: _selectedSex,
               initialClassification: _selectedClassification,
               initialStatus: _selectedStatus,
               initialBreed: _selectedBreed,

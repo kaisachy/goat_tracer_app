@@ -26,7 +26,6 @@ class _CattleFormScreenState extends State<CattleFormScreen> {
 
   // Controllers for all form fields
   final _tagNoController = TextEditingController();
-  final _nameController = TextEditingController();
   final _weightController = TextEditingController();
   final _notesController = TextEditingController();
 
@@ -35,7 +34,7 @@ class _CattleFormScreenState extends State<CattleFormScreen> {
   // State variables for dates and dropdowns
   String? _dateOfBirth;
   String? _joinedDate;
-  String? _gender;
+  String? _sex;
   String? _classification;
   String? _source;
   String? _sourceDetails; // For storing additional source information
@@ -43,6 +42,21 @@ class _CattleFormScreenState extends State<CattleFormScreen> {
   String? _fatherTag;
   String? _breed;
   String? _groupName;
+
+  // Breed specific controls
+  final List<String> defaultBreedOptions = [
+    'Native',
+    'Pure Brahman',
+    'Upgraded Brahman',
+    'Pure Angus',
+    'Upgraded Angus',
+    'Holstein Friesian',
+    'Upgraded Holstein Friesian',
+    'Sahiwal',
+    'Upgraded Sahiwal',
+    'Other',
+  ];
+  final TextEditingController _otherBreedController = TextEditingController();
 
   // NEW: State variables to hold the original parent tags for updates
   String? _originalMotherTag;
@@ -62,21 +76,23 @@ class _CattleFormScreenState extends State<CattleFormScreen> {
   List<String> _groupNameOptions = [];
 
   // Options for dropdowns
-  final List<String> genderOptions = ['Male', 'Female'];
+  final List<String> sexOptions = ['Male', 'Female'];
   final List<String> maleClassificationOptions = ['Calf', 'Steer', 'Growers', 'Bull'];
   final List<String> femaleClassificationOptions = ['Calf', 'Growers', 'Heifer', 'Cow'];
   final List<String> sourceOptions = ['Born on farm', 'Purchased', 'Other'];
 
-  // Helper to get correct classification options based on selected gender
+  // Helper to get correct classification options based on selected sex
   List<String> get classificationOptions {
-    if (_gender == 'Male') return maleClassificationOptions;
-    if (_gender == 'Female') return femaleClassificationOptions;
+    if (_sex == 'Male') return maleClassificationOptions;
+    if (_sex == 'Female') return femaleClassificationOptions;
     return [];
   }
 
   @override
   void initState() {
     super.initState();
+    // Initialize breed options with defaults immediately
+    _breedOptions = List<String>.from(defaultBreedOptions);
     _loadUserPreferences();
     _populateFormFields();
     _fetchParentData();
@@ -219,26 +235,15 @@ class _CattleFormScreenState extends State<CattleFormScreen> {
     }
 
     final prefs = await SharedPreferences.getInstance();
-    final breedJson = prefs.getString('breed_options_$userId') ?? '[]';
     final groupJson = prefs.getString('group_name_options_$userId') ?? '[]';
 
     setState(() {
-      _breedOptions = List<String>.from(jsonDecode(breedJson));
+      // Enforce fixed breed options with "Other"
+      _breedOptions = List<String>.from(defaultBreedOptions);
       _groupNameOptions = List<String>.from(jsonDecode(groupJson));
     });
   }
 
-  /// Save breed options to SharedPreferences for the current user
-  Future<void> _saveBreedsToPreferences() async {
-    final userId = await _currentUserId;
-    if (userId == null) {
-      print('Warning: User not logged in, cannot save preferences');
-      return;
-    }
-
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString('breed_options_$userId', jsonEncode(_breedOptions));
-  }
 
   /// Save group name options to SharedPreferences for the current user
   Future<void> _saveGroupNamesToPreferences() async {
@@ -252,25 +257,6 @@ class _CattleFormScreenState extends State<CattleFormScreen> {
     await prefs.setString('group_name_options_$userId', jsonEncode(_groupNameOptions));
   }
 
-  /// Add new breed option for the current user
-  Future<void> _addNewBreed(String breed) async {
-    final userId = await _currentUserId;
-    if (userId == null) {
-      _showErrorSnackBar('Please log in to save preferences');
-      return;
-    }
-
-    if (breed.isNotEmpty && !_breedOptions.contains(breed)) {
-      setState(() {
-        _breedOptions.add(breed);
-        _breedOptions.sort();
-      });
-      await _saveBreedsToPreferences();
-      _showSuccessSnackBar('Breed added successfully');
-    } else if (_breedOptions.contains(breed)) {
-      _showErrorSnackBar('Breed already exists');
-    }
-  }
 
   /// Add new group name option for the current user
   Future<void> _addNewGroupName(String groupName) async {
@@ -293,33 +279,6 @@ class _CattleFormScreenState extends State<CattleFormScreen> {
   }
 
   /// Edit existing breed option for the current user
-  Future<void> _editBreed(String oldBreed, String newBreed) async {
-    final userId = await _currentUserId;
-    if (userId == null) {
-      _showErrorSnackBar('Please log in to save preferences');
-      return;
-    }
-
-    if (newBreed.isNotEmpty && newBreed != oldBreed) {
-      if (_breedOptions.contains(newBreed)) {
-        _showErrorSnackBar('Breed name already exists');
-        return;
-      }
-
-      setState(() {
-        final index = _breedOptions.indexOf(oldBreed);
-        if (index != -1) {
-          _breedOptions[index] = newBreed;
-          _breedOptions.sort();
-          if (_breed == oldBreed) {
-            _breed = newBreed;
-          }
-        }
-      });
-      await _saveBreedsToPreferences();
-      _showSuccessSnackBar('Breed updated successfully');
-    }
-  }
 
   /// Edit existing group name option for the current user
   Future<void> _editGroupName(String oldGroupName, String newGroupName) async {
@@ -351,22 +310,6 @@ class _CattleFormScreenState extends State<CattleFormScreen> {
   }
 
   /// Delete breed option for the current user
-  Future<void> _deleteBreed(String breed) async {
-    final userId = await _currentUserId;
-    if (userId == null) {
-      _showErrorSnackBar('Please log in to save preferences');
-      return;
-    }
-
-    setState(() {
-      _breedOptions.remove(breed);
-      if (_breed == breed) {
-        _breed = null;
-      }
-    });
-    await _saveBreedsToPreferences();
-    _showSuccessSnackBar('Breed deleted successfully');
-  }
 
   /// Delete group name option for the current user
   Future<void> _deleteGroupName(String groupName) async {
@@ -663,12 +606,16 @@ class _CattleFormScreenState extends State<CattleFormScreen> {
     final c = widget.cattle;
     if (c != null) {
       _tagNoController.text = c.tagNo;
-      _nameController.text = c.name ?? '';
       _weightController.text = c.weight?.toString() ?? '';
       _notesController.text = c.notes ?? '';
 
       // Set breed and group name
       _breed = c.breed;
+      // If existing breed isn't in fixed options, map to Other and prefill
+      if (_breed != null && _breed!.isNotEmpty && !_breedOptions.contains(_breed)) {
+        _otherBreedController.text = _breed!;
+        _breed = 'Other';
+      }
       _groupName = c.groupName;
 
       // Set initial parent tags
@@ -683,8 +630,8 @@ class _CattleFormScreenState extends State<CattleFormScreen> {
       _joinedDate = c.joinedDate;
 
       // Set dropdown values, ensuring they exist in the options list
-      _gender = genderOptions.contains(c.gender) ? c.gender : null;
-      if (_gender != null) {
+      _sex = sexOptions.contains(c.sex) ? c.sex : null;
+      if (_sex != null) {
         final currentClassificationOptions = classificationOptions;
         _classification = currentClassificationOptions.contains(c.classification)
             ? c.classification
@@ -712,8 +659,8 @@ class _CattleFormScreenState extends State<CattleFormScreen> {
 
     if (mounted) {
       setState(() {
-        _femaleCattle = potentialParents.where((c) => c.gender == 'Female').toList();
-        _maleCattle = potentialParents.where((c) => c.gender == 'Male').toList();
+        _femaleCattle = potentialParents.where((c) => c.sex == 'Female').toList();
+        _maleCattle = potentialParents.where((c) => c.sex == 'Male').toList();
 
         // Validate parent tags - if they don't exist in the current cattle list, set them to null
         if (_motherTag != null && !_femaleCattle.any((c) => c.tagNo == _motherTag)) {
@@ -815,15 +762,27 @@ class _CattleFormScreenState extends State<CattleFormScreen> {
       return text != null && text.isNotEmpty ? text : null;
     }
 
+    // Resolve breed value (handle Other)
+    String? resolvedBreed;
+    if (_breed == 'Other') {
+      final other = _otherBreedController.text.trim();
+      if (other.isEmpty) {
+        _showErrorSnackBar('Please enter the other breed');
+        return;
+      }
+      resolvedBreed = other;
+    } else {
+      resolvedBreed = _breed;
+    }
+
     // Common data for both create and update
     final Map<String, dynamic> data = {
       'tag_no': _tagNoController.text.trim(),
-      'name': textOrNull(_nameController.text),
       'date_of_birth': _dateOfBirth,
-      'gender': _gender,
+      'sex': _sex,
       'weight': double.tryParse(_weightController.text),
       'classification': _classification,
-      'breed': textOrNull(_breed),
+      'breed': textOrNull(resolvedBreed),
       'group_name': textOrNull(_groupName),
       'joined_date': _joinedDate,
       'source': _source,
@@ -960,20 +919,6 @@ class _CattleFormScreenState extends State<CattleFormScreen> {
                     overflow: TextOverflow.ellipsis,
                   ),
                 ),
-                if (cattle.name != null && cattle.name!.isNotEmpty) ...[
-                  const SizedBox(width: 8),
-                  Expanded(
-                    flex: 3,
-                    child: Text(
-                      cattle.name!,
-                      style: TextStyle(
-                        color: Colors.grey[600],
-                        fontSize: 13,
-                      ),
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ),
-                ],
               ],
             ),
           );
@@ -1199,6 +1144,74 @@ class _CattleFormScreenState extends State<CattleFormScreen> {
     );
   }
 
+  /// Build fixed Breed dropdown with Other text field
+  Widget _buildBreedField() {
+    final List<String> options = List<String>.from(_breedOptions);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        DropdownButtonFormField<String>(
+          value: options.contains(_breed) ? _breed : null,
+          isExpanded: true,
+          decoration: InputDecoration(
+            labelText: 'Breed',
+            prefixIcon: Icon(FontAwesomeIcons.cow, color: AppColors.primary),
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(color: AppColors.primary, width: 2),
+            ),
+            fillColor: AppColors.cardBackground,
+            filled: true,
+          ),
+          hint: const Text('Select Breed'),
+          items: [
+            const DropdownMenuItem<String>(
+              value: null,
+              child: Text('None'),
+            ),
+            ...options.map((option) => DropdownMenuItem<String>(
+              value: option,
+              child: Text(option, overflow: TextOverflow.ellipsis),
+            )),
+          ],
+          onChanged: (value) {
+            setState(() {
+              _breed = value;
+              if (value != 'Other') {
+                _otherBreedController.clear();
+              }
+            });
+          },
+          menuMaxHeight: MediaQuery.of(context).size.height * 0.3,
+        ),
+        if (_breed == 'Other') ...[
+          const SizedBox(height: 12),
+          TextFormField(
+            controller: _otherBreedController,
+            decoration: InputDecoration(
+              labelText: 'Specify Breed',
+              prefixIcon: Icon(Icons.edit, color: AppColors.primary),
+              border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide(color: AppColors.primary, width: 2),
+              ),
+              fillColor: AppColors.cardBackground,
+              filled: true,
+            ),
+            validator: (value) {
+              if (_breed == 'Other' && (value == null || value.trim().isEmpty)) {
+                return 'Please specify the breed';
+              }
+              return null;
+            },
+          ),
+        ],
+      ],
+    );
+  }
+
   Widget _buildTextField({
     required TextEditingController controller,
     required String label,
@@ -1299,12 +1312,6 @@ class _CattleFormScreenState extends State<CattleFormScreen> {
                   children: [
                     _buildAutoTagField(), // NEW: Use the auto-generated tag field
                     const SizedBox(height: 16),
-                    _buildTextField(
-                      controller: _nameController,
-                      label: 'Name (Optional)',
-                      icon: FontAwesomeIcons.signature,
-                    ),
-                    const SizedBox(height: 16),
                     // Use Column instead of Row for better responsive design
                     Column(
                       children: [
@@ -1316,13 +1323,13 @@ class _CattleFormScreenState extends State<CattleFormScreen> {
                         ),
                         const SizedBox(height: 16),
                         _buildDropdown(
-                          label: 'Gender *',
-                          value: _gender,
-                          options: genderOptions,
-                          validator: (value) => value == null ? 'Gender is required' : null,
+                          label: 'Sex *',
+                          value: _sex,
+                          options: sexOptions,
+                          validator: (value) => value == null ? 'Sex is required' : null,
                           onChanged: (value) {
                             setState(() {
-                              _gender = value;
+                              _sex = value;
                               _classification = null;
                             });
                           },
@@ -1355,16 +1362,7 @@ class _CattleFormScreenState extends State<CattleFormScreen> {
                       icon: Icons.category,
                     ),
                     const SizedBox(height: 16),
-                    _buildDynamicDropdown(
-                      label: 'Breed',
-                      value: _breed,
-                      options: _breedOptions,
-                      onChanged: (value) => setState(() => _breed = value),
-                      icon: FontAwesomeIcons.cow,
-                      onAdd: _addNewBreed,
-                      onEdit: _editBreed,
-                      onDelete: _deleteBreed,
-                    ),
+                    _buildBreedField(),
                     const SizedBox(height: 16),
                     _buildDynamicDropdown(
                       label: 'Group Name',
@@ -1560,7 +1558,6 @@ class _CattleFormScreenState extends State<CattleFormScreen> {
   @override
   void dispose() {
     _tagNoController.dispose();
-    _nameController.dispose();
     _weightController.dispose();
     _notesController.dispose();
     super.dispose();

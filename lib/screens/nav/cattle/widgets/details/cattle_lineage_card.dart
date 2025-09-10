@@ -123,31 +123,37 @@ class CattleLineageCard extends StatelessWidget {
           return const Center(child: CircularProgressIndicator());
         } else if (snapshot.hasError) {
           log('Error fetching offspring: ${snapshot.error}');
-          return const Text(
-            'Error loading offspring data.',
-            style: TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.bold,
-              color: AppColors.textSecondary,
-              fontStyle: FontStyle.italic,
+          return const Center(
+            child: Text(
+              'Error loading offspring data.',
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.bold,
+                color: AppColors.textSecondary,
+                fontStyle: FontStyle.italic,
+              ),
             ),
           );
         } else if (snapshot.data == null || snapshot.data!.isEmpty) {
-          return const Text(
-            'No offspring recorded',
-            style: TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.bold,
-              color: AppColors.textSecondary,
-              fontStyle: FontStyle.italic,
+          return const Center(
+            child: Text(
+              'No offspring recorded',
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.bold,
+                color: AppColors.textSecondary,
+                fontStyle: FontStyle.italic,
+              ),
             ),
           );
         } else {
           List<String> offspringTags = snapshot.data!;
-          return Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: offspringTags.map((tag) => _buildOffspringTag(context, tag)).toList(),
+          return Center(
+            child: Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: offspringTags.map((tag) => _buildOffspringTag(context, tag)).toList(),
+            ),
           );
         }
       },

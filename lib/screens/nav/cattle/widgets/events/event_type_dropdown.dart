@@ -29,8 +29,8 @@ class EventTypeDropdown extends StatefulWidget {
 
 class EventTypeDropdownState extends State<EventTypeDropdown> {
   List<String> get eventTypes {
-    return EventTypeUtils.getEventTypesForGender(
-      widget.cattleDetails?.gender,
+    return EventTypeUtils.getEventTypesForSex(
+      widget.cattleDetails?.sex,
       classification: widget.cattleDetails?.classification,
     );
   }

@@ -13,8 +13,8 @@ class AppColors {
   static const Color success = Color(0xFF43A047); // Green
 
   // Suggested main roles
-  static const Color primary = darkGreen;
-  static const Color accent = gold;
+  static const Color primary = Color(0xFF006630); // darkGreen
+  static const Color accent = Color(0xFFDEB700); // gold
 
   static const Color pageBackground = Color(0xFFFDFDFD);
   static const Color cardBackground = Colors.white;

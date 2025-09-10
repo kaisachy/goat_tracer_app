@@ -21,7 +21,7 @@ class PersonalInformationModal extends StatefulWidget {
 class _PersonalInformationModalState extends State<PersonalInformationModal> with TickerProviderStateMixin {
   final formKey = GlobalKey<FormState>();
 
-  late final TextEditingController genderController;
+  late final TextEditingController sexController;
   late final TextEditingController birthdateController;
   late final TextEditingController statusController;
   late final TextEditingController contactController;
@@ -38,10 +38,10 @@ class _PersonalInformationModalState extends State<PersonalInformationModal> wit
   bool _isLoading = true;
   bool _isSaving = false;
   Map<String, dynamic>? _personalInformation;
-  String? _selectedGender;
+  String? _selectedSex;
   String? _selectedStatus;
 
-  final List<String> _genderOptions = ['Male', 'Female', 'Other'];
+  final List<String> _sexOptions = ['Male', 'Female', 'Other'];
   final List<String> _statusOptions = ['Single', 'Married', 'Divorced', 'Widowed'];
 
   @override
@@ -53,7 +53,7 @@ class _PersonalInformationModalState extends State<PersonalInformationModal> wit
   }
 
   void _initializeControllers() {
-    genderController = TextEditingController();
+    sexController = TextEditingController();
     birthdateController = TextEditingController();
     statusController = TextEditingController();
     contactController = TextEditingController();
@@ -122,11 +122,11 @@ class _PersonalInformationModalState extends State<PersonalInformationModal> wit
   }
 
   void _populateControllers(Map<String, dynamic>? data) {
-    genderController.text = data?['gender'] ?? '';
+    sexController.text = data?['sex'] ?? '';
     birthdateController.text = data?['birthdate'] ?? '';
     statusController.text = data?['marital_status'] ?? '';
     contactController.text = data?['contact_number'] ?? '';
-    _selectedGender = data?['gender'];
+    _selectedSex = data?['sex'];
     _selectedStatus = data?['marital_status'];
   }
 
@@ -134,7 +134,7 @@ class _PersonalInformationModalState extends State<PersonalInformationModal> wit
   void dispose() {
     _animationController.dispose();
     _slideController.dispose();
-    genderController.dispose();
+    sexController.dispose();
     birthdateController.dispose();
     statusController.dispose();
     contactController.dispose();
@@ -354,7 +354,7 @@ class _PersonalInformationModalState extends State<PersonalInformationModal> wit
                 icon: Icons.account_circle_outlined,
                 children: [
                   if (widget.isEditingMode) ...[
-                    _buildGenderDropdown(),
+                    _buildSexDropdown(),
                     const SizedBox(height: 16),
                     _buildDateField(),
                     const SizedBox(height: 16),
@@ -362,7 +362,7 @@ class _PersonalInformationModalState extends State<PersonalInformationModal> wit
                     const SizedBox(height: 16),
                     _buildContactField(),
                   ] else ...[
-                    _buildModernInfoTile('Gender', _personalInformation?['gender'] ?? 'N/A', Icons.wc_rounded),
+                    _buildModernInfoTile('Sex', _personalInformation?['sex'] ?? 'N/A', Icons.wc_rounded),
                     _buildModernInfoTile('Birthdate', _personalInformation?['birthdate'] ?? 'N/A', Icons.cake_rounded),
                     _buildModernInfoTile('Status', _personalInformation?['marital_status'] ?? 'N/A', Icons.favorite_rounded),
                     _buildModernInfoTile('Contact', _personalInformation?['contact_number'] ?? 'N/A', Icons.phone_rounded),
@@ -412,21 +412,21 @@ class _PersonalInformationModalState extends State<PersonalInformationModal> wit
     );
   }
 
-  Widget _buildGenderDropdown() {
+  Widget _buildSexDropdown() {
     return DropdownButtonFormField<String>(
-      value: _selectedGender,
-      decoration: _getInputDecoration('Gender', Icons.wc_rounded),
-      items: _genderOptions.map((gender) => DropdownMenuItem(
-        value: gender,
-        child: Text(gender),
+      value: _selectedSex,
+      decoration: _getInputDecoration('Sex', Icons.wc_rounded),
+      items: _sexOptions.map((sex) => DropdownMenuItem(
+        value: sex,
+        child: Text(sex),
       )).toList(),
       onChanged: (value) {
         setState(() {
-          _selectedGender = value;
-          genderController.text = value ?? '';
+          _selectedSex = value;
+          sexController.text = value ?? '';
         });
       },
-      validator: (value) => value?.isEmpty == true ? 'Gender is required' : null,
+      validator: (value) => value?.isEmpty == true ? 'Sex is required' : null,
     );
   }
 
@@ -659,7 +659,7 @@ class _PersonalInformationModalState extends State<PersonalInformationModal> wit
 
     try {
       final Map<String, dynamic> updateData = {
-        'gender': genderController.text.trim(),
+        'sex': sexController.text.trim(),
         'birthdate': birthdateController.text.trim(),
         'marital_status': statusController.text.trim(),
         'contact_number': contactController.text.trim(),

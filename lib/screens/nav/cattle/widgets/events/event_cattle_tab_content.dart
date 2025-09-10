@@ -45,9 +45,9 @@ class _EventCattleTabContentState extends State<EventCattleTabContent> {
       'Hoof Trimming', 'Castrated', 'Weaned', 'Deceased', 'Other',
     ];
 
-    // Check cattle gender and return appropriate event types
-    final gender = widget.cattle.gender.toLowerCase();
-    return gender == 'female' ? femaleEventTypes : maleEventTypes;
+    // Check cattle sex and return appropriate event types
+    final sex = widget.cattle.sex.toLowerCase();
+    return sex == 'female' ? femaleEventTypes : maleEventTypes;
   }
 
   // List of event types that can be duplicated
@@ -308,17 +308,17 @@ class _EventCattleTabContentState extends State<EventCattleTabContent> {
       final matchesFilter = selectedEventType == 'All' ||
           type == selectedEventType.toLowerCase();
 
-      // Additional filter: only show event that are valid for the cattle's gender
-      final gender = widget.cattle.gender.toLowerCase();
-      final validEventTypes = gender == 'female'
+      // Additional filter: only show event that are valid for the cattle's sex
+      final sex = widget.cattle.sex.toLowerCase();
+      final validEventTypes = sex == 'female'
           ? ['dry off', 'treated', 'breeding', 'weighed', 'gives birth', 'vaccinated',
         'pregnant', 'aborted pregnancy', 'deworming', 'hoof trimming', 'deceased', 'other']
           : ['treated', 'breeding', 'weighed', 'vaccinated', 'deworming', 'hoof trimming',
         'castrated', 'weaned', 'deceased', 'other'];
 
-      final matchesGender = validEventTypes.contains(type);
+      final matchesSex = validEventTypes.contains(type);
 
-      return matchesSearch && matchesFilter && matchesGender;
+      return matchesSearch && matchesFilter && matchesSex;
     }).toList();
   }
 
@@ -727,14 +727,7 @@ class _EventCattleTabContentState extends State<EventCattleTabContent> {
             child: Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [
-                    eventColor.withOpacity(0.1),
-                    eventColor.withOpacity(0.05),
-                  ],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ),
+                color: Colors.white,
                 borderRadius: BorderRadius.circular(16),
               ),
               child: Row(
@@ -817,13 +810,13 @@ class _EventCattleTabContentState extends State<EventCattleTabContent> {
           AnimatedContainer(
             duration: const Duration(milliseconds: 300),
             curve: Curves.easeInOut,
-            height: isExpanded && details.isNotEmpty ? null : 0,
-            child: isExpanded && details.isNotEmpty
+            height: isExpanded && details.isNotEmpty && eventType.toLowerCase() != 'other' ? null : 0,
+            child: isExpanded && details.isNotEmpty && eventType.toLowerCase() != 'other'
                 ? Container(
               width: double.infinity,
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: Colors.grey.shade50,
+                color: Colors.white,
                 borderRadius: const BorderRadius.only(
                   bottomLeft: Radius.circular(16),
                   bottomRight: Radius.circular(16),
@@ -952,10 +945,10 @@ class _EventCattleTabContentState extends State<EventCattleTabContent> {
         }
         
         // Show estimated return to heat date for female cattle
-        final cattleGender = widget.cattle.gender.toLowerCase();
-        if (cattleGender == 'female' && event['estimated_return_date'] != null && event['estimated_return_date'].toString().isNotEmpty && event['estimated_return_date'] != 'N/A') {
+        final cattleSex = widget.cattle.sex.toLowerCase();
+        if (cattleSex == 'female' && event['estimated_return_date'] != null && event['estimated_return_date'].toString().isNotEmpty && event['estimated_return_date'] != 'N/A') {
           relevantDetails['Est. Return to Heat'] = _formatDate(event['estimated_return_date']);
-        } else if (cattleGender == 'male') {
+        } else if (cattleSex == 'male') {
           relevantDetails['Est. Return to Heat'] = 'Not Applicable';
         }
         break;
@@ -970,8 +963,23 @@ class _EventCattleTabContentState extends State<EventCattleTabContent> {
         if (event['bull_tag'] != null && event['bull_tag'].toString().isNotEmpty && event['bull_tag'] != 'N/A') {
           relevantDetails['Bull Tag (Father)'] = event['bull_tag'].toString();
         }
-        if (event['calf_tag'] != null && event['calf_tag'].toString().isNotEmpty && event['calf_tag'] != 'N/A') {
-          relevantDetails['Calf Tag'] = event['calf_tag'].toString();
+        
+        // Handle calf tags and calculate litter size
+        final calfTagValue = event['calf_tag']?.toString();
+        if (calfTagValue != null && calfTagValue.isNotEmpty && calfTagValue != 'N/A') {
+          if (calfTagValue.contains(',')) {
+            // Multiple calves - split by comma and count
+            final calfTags = calfTagValue.split(',').map((tag) => tag.trim()).where((tag) => tag.isNotEmpty).toList();
+            relevantDetails['Calf Tags'] = calfTags.join(', ');
+            relevantDetails['Litter Size'] = '${calfTags.length}';
+          } else {
+            // Single calf
+            relevantDetails['Calf Tag'] = calfTagValue;
+            relevantDetails['Litter Size'] = '1';
+          }
+        } else {
+          // No calf tags found - show 0 litter size
+          relevantDetails['Litter Size'] = '0';
         }
         break;
 
@@ -1027,17 +1035,10 @@ class _EventCattleTabContentState extends State<EventCattleTabContent> {
         break;
 
       case 'other':
+        // For 'other' events, only show notes (no additional details)
+        break;
       default:
-      // For 'other' event, show all available fields that have data
-        if (event['bull_tag'] != null && event['bull_tag'].toString().isNotEmpty && event['bull_tag'] != 'N/A') {
-          relevantDetails['Bull Tag'] = event['bull_tag'].toString();
-        }
-        if (event['calf_tag'] != null && event['calf_tag'].toString().isNotEmpty && event['calf_tag'] != 'N/A') {
-          relevantDetails['Calf Tag'] = event['calf_tag'].toString();
-        }
-        if (event['technician'] != null && event['technician'].toString().isNotEmpty && event['technician'] != 'N/A') {
-          relevantDetails['Technician'] = event['technician'].toString();
-        }
+        // For any other event types, show basic information
         break;
     }
 

@@ -1,7 +1,7 @@
 // lib/screens/nav/profile/modals/trainings_seminars_modal.dart
 import 'package:flutter/material.dart';
 import 'package:cattle_tracer_app/services/profile/trainings_seminars_service.dart';
-import 'package:cattle_tracer_app/screens/nav/profile/modals/trainings_seminars_form_modal.dart';
+// Removed free-form form modal import since we now use fixed checkboxes
 
 import '../../../../constants/app_colors.dart';
 
@@ -21,6 +21,20 @@ class TrainingsSeminarsModal extends StatefulWidget {
 
 class _TrainingsSeminarsModalState extends State<TrainingsSeminarsModal> {
   late Future<List<Map<String, dynamic>>> trainingFuture;
+  final List<String> _options = const [
+    'Beef Cattle Raising',
+    'Dairy Cattle Raising',
+    'Feedlot Fattening',
+    'Silage Making',
+    'Slaughtering & Cutting',
+    'Meat Processing',
+    'Cattle Enterprise Development',
+  ];
+
+  final Set<String> _selectedTitles = <String>{};
+  final Map<String, int> _existingTitleToId = <String, int>{};
+  final Map<String, Map<String, dynamic>> _detailsByTitle = <String, Map<String, dynamic>>{};
+  bool _saving = false;
 
   @override
   void initState() {
@@ -30,6 +44,31 @@ class _TrainingsSeminarsModalState extends State<TrainingsSeminarsModal> {
 
   void _loadTrainings() {
     trainingFuture = TrainingsSeminarsService.getTrainingsAndSeminars();
+    trainingFuture.then((list) {
+      if (!mounted) return;
+      _selectedTitles.clear();
+      _existingTitleToId.clear();
+      for (final item in list) {
+        final dynamic rawTitle = item['title'];
+        if (rawTitle is String && rawTitle.trim().isNotEmpty) {
+          final String title = rawTitle.trim();
+          _selectedTitles.add(title);
+          final dynamic idVal = item['id'];
+          if (idVal is int) {
+            _existingTitleToId[title] = idVal;
+          } else if (idVal is String) {
+            final parsed = int.tryParse(idVal);
+            if (parsed != null) _existingTitleToId[title] = parsed;
+          }
+          _detailsByTitle[title] = {
+            'conducted_by': item['conducted_by'],
+            'location': item['location'],
+            'certificate_issued': (item['certificate_issued'] == true || item['certificate_issued'] == 1) ? 1 : 0,
+          };
+        }
+      }
+      setState(() {});
+    });
   }
 
   @override
@@ -49,12 +88,19 @@ class _TrainingsSeminarsModalState extends State<TrainingsSeminarsModal> {
               Row(
                 children: [
                   if (widget.isEditingMode)
-                    IconButton(
-                      onPressed: () {
-                        Navigator.pop(context);
-                        _showTrainingFormModal();
-                      },
-                      icon: const Icon(Icons.add),
+                    TextButton.icon(
+                      onPressed: _saving ? null : _saveSelection,
+                      style: TextButton.styleFrom(
+                        foregroundColor: AppColors.primary,
+                      ),
+                      icon: _saving
+                          ? const SizedBox(
+                              width: 16,
+                              height: 16,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            )
+                          : const Icon(Icons.save),
+                      label: const Text('Save'),
                     ),
                   IconButton(
                     onPressed: () => Navigator.pop(context),
@@ -73,92 +119,101 @@ class _TrainingsSeminarsModalState extends State<TrainingsSeminarsModal> {
                   return const Center(child: CircularProgressIndicator());
                 }
 
-                final trainingList = snapshot.data ?? [];
-
-                if (trainingList.isEmpty) {
-                  return const Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(Icons.workspace_premium, size: 64, color: Colors.grey),
-                        SizedBox(height: 16),
-                        Text('No trainings added yet'),
-                      ],
-                    ),
-                  );
-                }
-
-                return ListView.builder(
-                  itemCount: trainingList.length,
+                return ListView.separated(
+                  itemCount: _options.length,
+                  separatorBuilder: (_, __) => const SizedBox(height: 6),
                   itemBuilder: (context, index) {
-                    final training = trainingList[index];
-                    final certificateIssued = training['certificate_issued'] == true ||
-                        training['certificate_issued'] == 1;
+                    final title = _options[index];
+                    final bool checked = _selectedTitles.contains(title);
+                    _detailsByTitle.putIfAbsent(title, () => {
+                      'conducted_by': null,
+                      'location': null,
+                      'certificate_issued': 0,
+                    });
+                    final details = _detailsByTitle[title]!;
 
                     return Card(
-                      margin: const EdgeInsets.only(bottom: 12),
-                      child: ListTile(
-                        leading: CircleAvatar(
-                          backgroundColor: AppColors.lightGreen.withOpacity(0.2),
-                          child: const Icon(Icons.workspace_premium, color: AppColors.primary),
-                        ),
-                        title: Text(
-                          training['title'] ?? 'No Title',
-                          style: const TextStyle(fontWeight: FontWeight.w600),
-                        ),
-                        subtitle: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(training['conducted_by'] ?? 'N/A'),
-                            Text(training['location'] ?? 'N/A'),
-                            if (certificateIssued)
-                              Container(
-                                margin: const EdgeInsets.only(top: 4),
-                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                                decoration: BoxDecoration(
-                                  color: Colors.green[100],
-                                  borderRadius: BorderRadius.circular(12),
-                                ),
-                                child: Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    Icon(Icons.verified, size: 12, color: Colors.green[700]),
-                                    const SizedBox(width: 4),
-                                    Text(
-                                      'Certified',
-                                      style: TextStyle(
-                                        fontSize: 12,
-                                        color: Colors.green[700],
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                          ],
-                        ),
-                        trailing: widget.isEditingMode
-                            ? SizedBox(
-                          width: 96,
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.end,
+                      child: Theme(
+                        data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
+                        child: ExpansionTile(
+                          initiallyExpanded: checked,
+                          tilePadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 0),
+                          title: Row(
                             children: [
-                              IconButton(
-                                icon: const Icon(Icons.delete, color: Colors.red),
-                                tooltip: 'Delete',
-                                onPressed: () => _deleteTraining(training, index),
+                              Checkbox(
+                                value: checked,
+                                onChanged: widget.isEditingMode
+                                    ? (val) {
+                                        setState(() {
+                                          if (val == true) {
+                                            _selectedTitles.add(title);
+                                          } else {
+                                            _selectedTitles.remove(title);
+                                          }
+                                        });
+                                      }
+                                    : null,
+                                activeColor: AppColors.primary,
                               ),
-                              IconButton(
-                                icon: const Icon(Icons.edit, color: Colors.green),
-                                tooltip: 'Edit',
-                                onPressed: () {
-                                  Navigator.pop(context);
-                                  _showTrainingFormModal(trainingMap: training);
-                                },
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Text(
+                                  title,
+                                  style: const TextStyle(fontWeight: FontWeight.w600),
+                                ),
                               ),
                             ],
                           ),
-                        )
-                            : null,
+                          childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+                          children: [
+                            _buildLabeledTextField(
+                              label: 'Conducted By',
+                              value: details['conducted_by']?.toString() ?? '',
+                              enabled: widget.isEditingMode && checked,
+                              onChanged: (val) {
+                                details['conducted_by'] = val.trim().isEmpty ? null : val.trim();
+                              },
+                              icon: Icons.person_outline,
+                            ),
+                            const SizedBox(height: 12),
+                            _buildLabeledTextField(
+                              label: 'Location',
+                              value: details['location']?.toString() ?? '',
+                              enabled: widget.isEditingMode && checked,
+                              onChanged: (val) {
+                                details['location'] = val.trim().isEmpty ? null : val.trim();
+                              },
+                              icon: Icons.location_on_outlined,
+                            ),
+                            const SizedBox(height: 12),
+                            Row(
+                              children: [
+                                Icon(
+                                  Icons.verified_outlined,
+                                  color: (details['certificate_issued'] == 1)
+                                      ? AppColors.gold
+                                      : Colors.grey,
+                                ),
+                                const SizedBox(width: 8),
+                                const Expanded(
+                                  child: Text('Certificate Issued',
+                                      style: TextStyle(fontWeight: FontWeight.w600)),
+                                ),
+                                Checkbox(
+                                  value: (details['certificate_issued'] == 1),
+                                  onChanged: (widget.isEditingMode && checked)
+                                      ? (val) {
+                                          setState(() {
+                                            details['certificate_issued'] = (val == true) ? 1 : 0;
+                                          });
+                                        }
+                                      : null,
+                                  activeColor: AppColors.primary,
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
                       ),
                     );
                   },
@@ -171,69 +226,128 @@ class _TrainingsSeminarsModalState extends State<TrainingsSeminarsModal> {
     );
   }
 
-  void _showTrainingFormModal({Map<String, dynamic>? trainingMap}) {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (context) => TrainingsSeminarsFormModal(
-        trainingMap: trainingMap,
-        onSaveSuccess: () {
-          setState(() {
-            _loadTrainings();
-          });
-          widget.onSaveSuccess();
-        },
-      ),
+  Widget _buildLabeledTextField({
+    required String label,
+    required String value,
+    required bool enabled,
+    required ValueChanged<String> onChanged,
+    required IconData icon,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Icon(icon, size: 18, color: enabled ? AppColors.vibrantGreen : Colors.grey),
+            const SizedBox(width: 8),
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+                color: enabled ? Colors.black87 : Colors.black54,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 6),
+        TextFormField(
+          initialValue: value,
+          enabled: enabled,
+          onChanged: onChanged,
+          style: const TextStyle(fontSize: 16),
+          decoration: InputDecoration(
+            isDense: true,
+            filled: true,
+            fillColor: enabled ? AppColors.pageBackground : Colors.grey.shade100,
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(color: Colors.grey.withOpacity(0.2)),
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(color: Colors.grey.withOpacity(0.2)),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: const BorderSide(color: AppColors.vibrantGreen, width: 2),
+            ),
+            contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+          ),
+        ),
+      ],
     );
   }
 
-  Future<void> _deleteTraining(Map<String, dynamic> training, int index) async {
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Confirm Deletion'),
-        content: const Text('Are you sure you want to delete this training/seminar?'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Cancel'),
-          ),
-          ElevatedButton(
-            onPressed: () => Navigator.pop(ctx, true),
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
-            child: const Text('Delete'),
-          ),
-        ],
-      ),
-    );
+  Future<void> _saveSelection() async {
+    setState(() {
+      _saving = true;
+    });
 
-    if (confirmed == true) {
-      final success = await TrainingsSeminarsService.deleteTrainingsAndSeminars(training['id']);
-      if (context.mounted) {
-        if (success) {
-          // Refresh the list
-          setState(() {
-            _loadTrainings();
+    try {
+      // Compute differences
+      final Set<String> current = Set<String>.from(_existingTitleToId.keys);
+      final Set<String> desired = Set<String>.from(_selectedTitles);
+
+      final toCreate = desired.difference(current);
+      final toDelete = current.difference(desired);
+      final toUpdate = desired.intersection(current);
+
+      bool allOk = true;
+
+      // Create new ones
+      for (final title in toCreate) {
+        final ok = await TrainingsSeminarsService.storeTrainingsAndSeminars({
+          'title': title,
+          'conducted_by': _detailsByTitle[title]?['conducted_by'],
+          'location': _detailsByTitle[title]?['location'],
+          'certificate_issued': 0,
+        });
+        if (!ok) allOk = false;
+      }
+
+      // Update existing selected ones with details
+      for (final title in toUpdate) {
+        final id = _existingTitleToId[title];
+        if (id != null) {
+          final ok = await TrainingsSeminarsService.updateTrainingsAndSeminars({
+            'id': id,
+            'title': title,
+            'conducted_by': _detailsByTitle[title]?['conducted_by'],
+            'location': _detailsByTitle[title]?['location'],
+            'certificate_issued': (_detailsByTitle[title]?['certificate_issued'] == 1) ? 1 : 0,
           });
-          widget.onSaveSuccess();
-
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Training deleted successfully!'),
-              backgroundColor: Colors.green,
-            ),
-          );
-        } else {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Failed to delete training.'),
-              backgroundColor: Colors.red,
-            ),
-          );
+          if (!ok) allOk = false;
         }
+      }
+
+      // Delete removed ones
+      for (final title in toDelete) {
+        final id = _existingTitleToId[title];
+        if (id != null) {
+          final ok = await TrainingsSeminarsService.deleteTrainingsAndSeminars(id);
+          if (!ok) allOk = false;
+        }
+      }
+
+      if (!mounted) return;
+      // Reload and notify
+      setState(() {
+        _loadTrainings();
+      });
+      widget.onSaveSuccess();
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(allOk ? 'Saved trainings selection.' : 'Some changes failed to save.'),
+          backgroundColor: allOk ? Colors.green : Colors.orange,
+        ),
+      );
+    } finally {
+      if (mounted) {
+        setState(() {
+          _saving = false;
+        });
       }
     }
   }

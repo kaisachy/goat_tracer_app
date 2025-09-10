@@ -50,9 +50,7 @@ class _CattleMultiSelectDialogState extends State<CattleMultiSelectDialog> {
   List<Cattle> get filteredCattle {
     return widget.cattleList.where((cattle) {
       final matchesSearch = searchQuery.isEmpty ||
-          cattle.tagNo.toLowerCase().contains(searchQuery.toLowerCase()) ||
-          (cattle.name != null &&
-              cattle.name!.toLowerCase().contains(searchQuery.toLowerCase()));
+          cattle.tagNo.toLowerCase().contains(searchQuery.toLowerCase());
 
       final matchesClassification = selectedClassification == 'All' ||
           cattle.classification == selectedClassification;

@@ -5,25 +5,25 @@ import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import '../../../../constants/app_colors.dart';
 
 class EventTypeUtils {
-  static List<String> getEventTypesForGender(String? gender, {String? classification}) {
+  static List<String> getEventTypesForSex(String? sex, {String? classification}) {
     final baseTypes = ['Select type of event'];
 
-    if (gender == null) {
+    if (sex == null) {
       return [...baseTypes, 'Loading cattle information...'];
     }
 
-    final genderLower = gender.toLowerCase().trim();
+    final sexLower = sex.toLowerCase().trim();
     final classificationLower = classification?.toLowerCase().trim();
 
     // Debug logging
-    print('DEBUG: Gender: $gender, Classification: $classification');
-    print('DEBUG: Gender lower: $genderLower, Classification lower: $classificationLower');
+    print('DEBUG: Sex: $sex, Classification: $classification');
+    print('DEBUG: Sex lower: $sexLower, Classification lower: $classificationLower');
 
     // If cattle is a Calf, exclude breeding-related events
     final isCalf = classificationLower == 'calf';
     print('DEBUG: Is Calf: $isCalf');
 
-    if (genderLower == 'female') {
+    if (sexLower == 'female') {
       final femaleEvents = [
         ...baseTypes,
         'Dry off',
@@ -56,7 +56,7 @@ class EventTypeUtils {
 
       print('DEBUG: Final female events: ${femaleEvents.join(', ')}');
       return femaleEvents;
-    } else if (genderLower == 'male') {
+    } else if (sexLower == 'male') {
       final maleEvents = [
         ...baseTypes,
         'Treated',

@@ -452,14 +452,7 @@ class _EventContentState extends State<EventContent> {
             child: Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [
-                    eventColor.withOpacity(0.1),
-                    eventColor.withOpacity(0.05),
-                  ],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ),
+                color: Colors.white,
                 borderRadius: BorderRadius.circular(16),
               ),
               child: Row(
@@ -561,7 +554,7 @@ class _EventContentState extends State<EventContent> {
             secondChild: Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: Colors.grey.shade50,
+                color: Colors.white,
                 borderRadius: const BorderRadius.only(
                   bottomLeft: Radius.circular(16),
                   bottomRight: Radius.circular(16),
@@ -724,8 +717,25 @@ class _EventContentState extends State<EventContent> {
         if (event['weighed_result'] != null) details.add({'label': 'Weight', 'value': '${event['weighed_result']} kg'});
         break;
       case 'gives birth':
-        if (event['bull_tag'] != null) details.add({'label': 'Bull Tag', 'value': event['bull_tag']});
-        if (event['calf_tag'] != null) details.add({'label': 'Calf Tag', 'value': event['calf_tag']});
+        if (event['bull_tag'] != null) details.add({'label': 'Bull Tag (Father)', 'value': event['bull_tag']});
+        
+        // Handle calf tags and calculate litter size
+        final calfTagValue = event['calf_tag']?.toString();
+        if (calfTagValue != null && calfTagValue.isNotEmpty && calfTagValue != 'N/A') {
+          if (calfTagValue.contains(',')) {
+            // Multiple calves - split by comma and count
+            final calfTags = calfTagValue.split(',').map((tag) => tag.trim()).where((tag) => tag.isNotEmpty).toList();
+            details.add({'label': 'Calf Tags', 'value': calfTags.join(', ')});
+            details.add({'label': 'Litter Size', 'value': '${calfTags.length}'});
+          } else {
+            // Single calf
+            details.add({'label': 'Calf Tag', 'value': calfTagValue});
+            details.add({'label': 'Litter Size', 'value': '1'});
+          }
+        } else {
+          // No calf tags found - show 0 litter size
+          details.add({'label': 'Litter Size', 'value': '0'});
+        }
         break;
       case 'vaccinated':
         if (event['medicine_given'] != null) details.add({'label': 'Vaccine', 'value': event['medicine_given']});

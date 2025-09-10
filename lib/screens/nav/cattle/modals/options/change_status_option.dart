@@ -29,16 +29,16 @@ class ChangeStatusOption {
   ];
 
   static void show(BuildContext context, Cattle cattle, VoidCallback? onCattleUpdated) {
-    // ✨ NEW: Dynamically select the list of statuses based on gender
-    final List<String> statusesForGender =
-    cattle.gender == 'Male' ? _maleStatuses : _allStatuses;
+    // ✨ NEW: Dynamically select the list of statuses based on sex
+    final List<String> statusesForSex =
+    cattle.sex == 'Male' ? _maleStatuses : _allStatuses;
 
-    // ✨ NEW: Ensure the initial selection is valid for the gender
+    // ✨ NEW: Ensure the initial selection is valid for the sex
     String selectedStatus;
-    if (cattle.status.isNotEmpty && statusesForGender.contains(cattle.status)) {
+    if (cattle.status.isNotEmpty && statusesForSex.contains(cattle.status)) {
       selectedStatus = cattle.status;
     } else {
-      selectedStatus = statusesForGender.first; // Default to 'Healthy'
+      selectedStatus = statusesForSex.first; // Default to 'Healthy'
     }
 
     showDialog(
@@ -75,7 +75,7 @@ class ChangeStatusOption {
                     const SizedBox(height: 20),
                     // 🔧 MODIFIED: Pass the dynamic list and update function
                     _buildStatusSelector(
-                      statusesForGender,
+                      statusesForSex,
                       selectedStatus,
                       updateSelectedStatus,
                     ),
@@ -149,7 +149,7 @@ class ChangeStatusOption {
                 ),
                 children: [
                   TextSpan(
-                    text: '${cattle.gender}: ',
+                    text: '${cattle.sex}: ',
                     style: const TextStyle(
                       fontWeight: FontWeight.w600,
                       color: AppColors.textPrimary,

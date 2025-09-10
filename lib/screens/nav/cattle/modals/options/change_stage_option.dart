@@ -17,23 +17,23 @@ class ChangeStageOption {
   ];
 
   static void show(BuildContext context, Cattle cattle, VoidCallback? onCattleUpdated) {
-    // ✨ NEW: Dynamically select the list of stages based on gender
-    List<String> stagesForGender;
-    if (cattle.gender == 'Male') {
-      stagesForGender = _maleStages;
-    } else if (cattle.gender == 'Female') {
-      stagesForGender = _femaleStages;
+    // ✨ NEW: Dynamically select the list of stages based on sex
+    List<String> stagesForSex;
+    if (cattle.sex == 'Male') {
+      stagesForSex = _maleStages;
+    } else if (cattle.sex == 'Female') {
+      stagesForSex = _femaleStages;
     } else {
-      // Fallback for unknown or other genders
-      stagesForGender = _allStages;
+      // Fallback for unknown or other sexes
+      stagesForSex = _allStages;
     }
 
-    // ✨ NEW: Ensure the initial selection is valid for the gender
+    // ✨ NEW: Ensure the initial selection is valid for the sex
     String selectedStage;
-    if (cattle.classification.isNotEmpty && stagesForGender.contains(cattle.classification)) {
+    if (cattle.classification.isNotEmpty && stagesForSex.contains(cattle.classification)) {
       selectedStage = cattle.classification;
     } else {
-      selectedStage = stagesForGender.first;
+      selectedStage = stagesForSex.first;
     }
 
     showDialog(
@@ -75,7 +75,7 @@ class ChangeStageOption {
                        const SizedBox(height: 20),
                     // 🔧 MODIFIED: Pass the dynamic list and the update function
                     _buildStageSelector(
-                      stagesForGender,
+                      stagesForSex,
                       selectedStage,
                       updateSelectedStage,
                     ),
@@ -137,7 +137,7 @@ class ChangeStageOption {
       child: Row(
         children: [
           Icon(
-            cattle.gender == 'Male' ? Icons.male : (cattle.gender == 'Female' ? Icons.female : Icons.transgender),
+            cattle.sex == 'Male' ? Icons.male : (cattle.sex == 'Female' ? Icons.female : Icons.transgender),
             color: AppColors.textSecondary,
             size: 20,
           ),
@@ -153,7 +153,7 @@ class ChangeStageOption {
                 ),
                 children: [
                   TextSpan(
-                    text: '${cattle.gender}: ',
+                    text: '${cattle.sex}: ',
                     style: const TextStyle(
                       fontWeight: FontWeight.w600,
                       color: AppColors.textPrimary,

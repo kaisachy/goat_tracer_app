@@ -66,9 +66,9 @@
       }
     }
   
-    /// Gets gender icon based on gender string
-    static IconData getGenderIcon(String gender) {
-      switch (gender.toLowerCase()) {
+    /// Gets sex icon based on sex string
+    static IconData getGenderIcon(String sex) {
+      switch (sex.toLowerCase()) {
         case 'male':
           return Icons.male;
         case 'female':
@@ -78,9 +78,9 @@
       }
     }
   
-    /// Gets gender color based on gender string
-    static Color getGenderColor(String? gender) {
-      switch (gender?.toLowerCase()) {
+    /// Gets sex color based on sex string
+    static Color getGenderColor(String? sex) {
+      switch (sex?.toLowerCase()) {
         case 'male':
           return Colors.blue;
         case 'female':
@@ -90,9 +90,9 @@
       }
     }
   
-    /// Gets gender symbol based on gender string
-    static String getGenderSymbol(String? gender) {
-      switch (gender?.toLowerCase()) {
+    /// Gets sex symbol based on sex string
+    static String getGenderSymbol(String? sex) {
+      switch (sex?.toLowerCase()) {
         case 'male':
           return '♂';
         case 'female':

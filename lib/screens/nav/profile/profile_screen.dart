@@ -857,7 +857,7 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
     if (farmSize == null || farmSize.toString().isEmpty) {
       return 'Size not specified';
     }
-    return '$farmSize hectares';
+    return farmSize.toString();
   }
 
 

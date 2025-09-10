@@ -4,9 +4,8 @@ import 'dart:typed_data';
 class Cattle {
   final int id;
   final String tagNo;
-  final String? name;
   final String? dateOfBirth;
-  final String gender;
+  final String sex;
   final double? weight;
   final String classification;
   final String status;
@@ -25,9 +24,8 @@ class Cattle {
   Cattle({
     required this.id,
     required this.tagNo,
-    this.name,
     this.dateOfBirth,
-    required this.gender,
+    required this.sex,
     this.weight,
     required this.classification,
     required this.status,
@@ -48,9 +46,8 @@ class Cattle {
     return Cattle(
       id: json['id'],
       tagNo: json['tag_no'] ?? '',
-      name: json['name'],
       dateOfBirth: json['date_of_birth'],
-      gender: json['gender'] ?? '',
+      sex: json['sex'] ?? '',
       weight: json['weight'] != null ? double.tryParse(json['weight'].toString()) : null,
       classification: json['classification'] ?? '',
       status: json['status'] ?? 'Healthy',
@@ -72,9 +69,8 @@ class Cattle {
     return {
       'id': id,
       'tag_no': tagNo,
-      'name': name,
       'date_of_birth': dateOfBirth,
-      'gender': gender,
+      'sex': sex,
       'weight': weight,
       'classification': classification,
       'status': status,
@@ -143,9 +139,8 @@ class Cattle {
   Cattle copyWith({
     int? id,
     String? tagNo,
-    String? name,
     String? dateOfBirth,
-    String? gender,
+    String? sex,
     double? weight,
     String? classification,
     String? status,
@@ -164,9 +159,8 @@ class Cattle {
     return Cattle(
       id: id ?? this.id,
       tagNo: tagNo ?? this.tagNo,
-      name: name ?? this.name,
       dateOfBirth: dateOfBirth ?? this.dateOfBirth,
-      gender: gender ?? this.gender,
+      sex: sex ?? this.sex,
       weight: weight ?? this.weight,
       classification: classification ?? this.classification,
       status: status ?? this.status,
@@ -186,7 +180,7 @@ class Cattle {
 
   @override
   String toString() {
-    return 'Cattle{id: $id, tagNo: $tagNo, name: $name, gender: $gender, offspring: $offspring, classification: $classification, status: $status, hasPicture: $hasPicture}';
+    return 'Cattle{id: $id, tagNo: $tagNo, sex: $sex, offspring: $offspring, classification: $classification, status: $status, hasPicture: $hasPicture}';
   }
 }
 

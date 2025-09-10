@@ -105,43 +105,228 @@ class _CattleEventFormScreenState extends State<CattleEventFormScreen>
     }
   }
 
+  Future<Map<String, dynamic>?> _getLatestEvent({
+    required String cattleTag,
+    required String eventType,
+  }) async {
+    try {
+      final all = await CattleEventService.getCattleEvent();
+      final filtered = all
+          .where((e) =>
+              e['cattle_tag'] == cattleTag &&
+              (e['event_type']?.toString().toLowerCase() ?? '') ==
+                  eventType.toLowerCase())
+          .toList();
+      if (filtered.isEmpty) return null;
+      filtered.sort((a, b) {
+        try {
+          final da = DateTime.parse(a['event_date']);
+          final db = DateTime.parse(b['event_date']);
+          return db.compareTo(da);
+        } catch (_) {
+          return 0;
+        }
+      });
+      return filtered.first;
+    } catch (e) {
+      return null;
+    }
+  }
+
+  Future<void> _handleEventTypeChanged(String value) async {
+    setState(() => selectedEventType = value);
+
+    if (_cattleDetails == null) return;
+    final cattleTag = _cattleDetails!.tagNo;
+
+    // Clear autofill targets before applying
+    _controllers['breeding_date']?.text = _controllers['breeding_date']?.text ?? '';
+    _controllers['expected_delivery_date']?.text = _controllers['expected_delivery_date']?.text ?? '';
+
+    // Pregnant requires latest Breeding; autofill breeding_date, expected_delivery_date, bull/semen
+    if (value.toLowerCase() == 'pregnant') {
+      final latestBreeding = await _getLatestEvent(cattleTag: cattleTag, eventType: 'Breeding');
+      if (latestBreeding == null) {
+        _showWarningMessage('No recent Breeding event found. Cannot create Pregnant event.');
+        setState(() => selectedEventType = 'Select type of event');
+        return;
+      }
+
+      final breedingDateStr = latestBreeding['event_date']?.toString();
+      if (breedingDateStr != null && breedingDateStr.isNotEmpty) {
+        _controllers['breeding_date']?.text = breedingDateStr;
+        try {
+          final breedingDate = DateTime.parse(breedingDateStr);
+          final expectedDelivery = breedingDate.add(const Duration(days: 283));
+          final formatted = '${expectedDelivery.year.toString().padLeft(4, '0')}-'
+              '${expectedDelivery.month.toString().padLeft(2, '0')}-'
+              '${expectedDelivery.day.toString().padLeft(2, '0')}';
+          _controllers['expected_delivery_date']?.text = formatted;
+          // Also trigger UI-side calculation to refresh dependent widgets
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            _eventSpecificFieldsKey.currentState?.calculateAndDisplayDeliveryDate(breedingDate);
+          });
+        } catch (_) {}
+      }
+      // Autofill bull/semen and technician if present
+      final bullTag = latestBreeding['bull_tag']?.toString();
+      final semen = latestBreeding['semen_used']?.toString();
+
+      // If semen is present (AI), treat semen's bull as the bull selection
+      if (semen != null && semen.isNotEmpty) {
+        _controllers['semen_used']?.text = semen;
+        // Try to extract the bull tag from semen label like "TAG123 (Name) Semen"
+        String extractedBullTag = semen.split(' ').first;
+        if (extractedBullTag.isNotEmpty) {
+          _controllers['bull_tag']?.text = extractedBullTag;
+        }
+      } else if (bullTag != null && bullTag.isNotEmpty) {
+        _controllers['bull_tag']?.text = bullTag;
+        _controllers['semen_used']?.text = '';
+      }
+      final tech = latestBreeding['technician']?.toString();
+      if (tech != null && tech.isNotEmpty) {
+        _controllers['technician']?.text = tech;
+      }
+    }
+
+    // Gives Birth requires latest Pregnant; autofill breeding_date and expected_delivery_date
+    if (value.toLowerCase() == 'gives birth') {
+      final latestPregnant = await _getLatestEvent(cattleTag: cattleTag, eventType: 'Pregnant');
+      if (latestPregnant == null) {
+        _showWarningMessage('No Pregnant event found. Cannot create Gives Birth event.');
+        setState(() => selectedEventType = 'Select type of event');
+        return;
+      }
+
+      final breedingDate = latestPregnant['breeding_date']?.toString();
+      if (breedingDate != null && breedingDate.isNotEmpty) {
+        _controllers['breeding_date']?.text = breedingDate;
+      }
+      final due = latestPregnant['expected_delivery_date']?.toString();
+      if (due != null && due.isNotEmpty) {
+        _controllers['expected_delivery_date']?.text = due;
+      }
+
+      // Autofill sire info from latest Pregnant (preferred) or fallback to latest Breeding
+      String? semen = latestPregnant['semen_used']?.toString();
+      String? bull = latestPregnant['bull_tag']?.toString();
+      if ((semen == null || semen.isEmpty) && (bull == null || bull.isEmpty)) {
+        final latestBreeding = await _getLatestEvent(cattleTag: cattleTag, eventType: 'Breeding');
+        semen = latestBreeding?['semen_used']?.toString();
+        bull = latestBreeding?['bull_tag']?.toString();
+      }
+
+      if (semen != null && semen.isNotEmpty) {
+        _controllers['semen_used']?.text = semen;
+        // Extract bull tag from semen label like "TAG123 (Name) Semen"
+        String extracted = semen.trim();
+        if (extracted.toLowerCase().endsWith('semen')) {
+          extracted = extracted.substring(0, extracted.length - 5).trim();
+        }
+        int stop = extracted.indexOf(' ');
+        int paren = extracted.indexOf('(');
+        if (stop == -1 || (paren != -1 && paren < stop)) {
+          stop = paren;
+        }
+        final bullTag = stop == -1 ? extracted : extracted.substring(0, stop).trim();
+        if (bullTag.isNotEmpty) {
+          _controllers['bull_tag']?.text = bullTag;
+        }
+      } else if (bull != null && bull.isNotEmpty) {
+        _controllers['bull_tag']?.text = bull;
+        _controllers['semen_used']?.text = '';
+      }
+
+      // Force UI refresh so dropdowns pick up controller values
+      if (mounted) setState(() {});
+
+      // If no calf data yet, prompt user to add calf when saving
+    }
+  }
+
   // Load existing calf data for editing
   Future<void> _loadExistingCalfData() async {
     if (widget.event == null || widget.event!.calfTag == null) return;
 
     try {
-      final calf = await CattleService.getCattleByTag(widget.event!.calfTag!);
-      if (calf != null && mounted) {
-        setState(() {
-          _temporaryCalfData = {
-            'tag_no': calf.tagNo,
-            'name': calf.name,
-            'gender': calf.gender,
-            'registered': true, // Mark as already registered since it exists
-            'isEditMode': true,
-            'calfId': calf.id,
-            'pendingOperation': 'update',
-            'fullCalfData': {
-              'id': calf.id,
+      final calfTagString = widget.event!.calfTag!;
+      print('Loading calf data for tag string: $calfTagString');
+      
+      // Check if there are multiple calf tags (comma-separated)
+      if (calfTagString.contains(',')) {
+        // Multiple calves - split by comma and load the first one for now
+        final calfTags = calfTagString.split(',').map((tag) => tag.trim()).where((tag) => tag.isNotEmpty).toList();
+        print('Found multiple calf tags: $calfTags');
+        
+        if (calfTags.isNotEmpty) {
+          // Load the first calf for editing
+          final firstCalfTag = calfTags.first;
+          final calf = await CattleService.getCattleByTag(firstCalfTag);
+          if (calf != null && mounted) {
+            setState(() {
+              _temporaryCalfData = {
+                'tag_no': calf.tagNo,
+                'sex': calf.sex,
+                'registered': true, // Mark as already registered since it exists
+                'isEditMode': true,
+                'calfId': calf.id,
+                'pendingOperation': 'update',
+                'fullCalfData': {
+                  'id': calf.id,
+                  'tag_no': calf.tagNo,
+                  'sex': calf.sex,
+                  'date_of_birth': calf.dateOfBirth,
+                  'classification': calf.classification,
+                  'status': calf.status,
+                  'breed': calf.breed,
+                  'source': calf.source,
+                  'mother_tag': calf.motherTag,
+                  'father_tag': calf.fatherTag,
+                  'weight': calf.weight,
+                  'group_name': calf.groupName,
+                  'joined_date': calf.joinedDate,
+                  'notes': calf.notes,
+                },
+              };
+              _controllers['calf_tag']?.text = calfTagString; // Keep the full string for display
+            });
+            print('Loaded first calf data: ${calf.tagNo} with ID: ${calf.id}');
+          }
+        }
+      } else {
+        // Single calf
+        final calf = await CattleService.getCattleByTag(calfTagString);
+        if (calf != null && mounted) {
+          setState(() {
+            _temporaryCalfData = {
               'tag_no': calf.tagNo,
-              'name': calf.name,
-              'gender': calf.gender,
-              'date_of_birth': calf.dateOfBirth,
-              'classification': calf.classification,
-              'status': calf.status,
-              'breed': calf.breed,
-              'source': calf.source,
-              'mother_tag': calf.motherTag,
-              'father_tag': calf.fatherTag,
-              'weight': calf.weight,
-              'group_name': calf.groupName,
-              'joined_date': calf.joinedDate,
-              'notes': calf.notes,
-            },
-          };
-          _controllers['calf_tag']?.text = calf.tagNo;
-        });
-        print('Loaded existing calf data: ${calf.tagNo} with ID: ${calf.id}');
+              'sex': calf.sex,
+              'registered': true, // Mark as already registered since it exists
+              'isEditMode': true,
+              'calfId': calf.id,
+              'pendingOperation': 'update',
+              'fullCalfData': {
+                'id': calf.id,
+                'tag_no': calf.tagNo,
+                'sex': calf.sex,
+                'date_of_birth': calf.dateOfBirth,
+                'classification': calf.classification,
+                'status': calf.status,
+                'breed': calf.breed,
+                'source': calf.source,
+                'mother_tag': calf.motherTag,
+                'father_tag': calf.fatherTag,
+                'weight': calf.weight,
+                'group_name': calf.groupName,
+                'joined_date': calf.joinedDate,
+                'notes': calf.notes,
+              },
+            };
+            _controllers['calf_tag']?.text = calf.tagNo;
+          });
+          print('Loaded existing calf data: ${calf.tagNo} with ID: ${calf.id}');
+        }
       }
     } catch (e) {
       print('Error loading calf data: $e');
@@ -224,7 +409,7 @@ class _CattleEventFormScreenState extends State<CattleEventFormScreen>
     final editEventType = widget.event!.eventType;
     await Future.delayed(Duration.zero);
 
-    final eventTypes = _getEventTypesForGender(cattle.gender, classification: cattle.classification);
+    final eventTypes = _getEventTypesForSex(cattle.sex, classification: cattle.classification);
 
     if (eventTypes.contains(editEventType)) {
       setState(() {
@@ -237,14 +422,14 @@ class _CattleEventFormScreenState extends State<CattleEventFormScreen>
 
       if (mounted) {
         _showWarningMessage(
-            'Event type "$editEventType" is not valid for ${cattle.gender.toLowerCase()} cattle. Please select a valid event type.');
+            'Event type "$editEventType" is not valid for ${cattle.sex.toLowerCase()} cattle. Please select a valid event type.');
       }
     }
   }
 
-  List<String> _getEventTypesForGender(String gender, {String? classification}) {
+  List<String> _getEventTypesForSex(String sex, {String? classification}) {
     // Use the centralized utility method instead of duplicating logic
-    return EventTypeUtils.getEventTypesForGender(gender, classification: classification);
+    return EventTypeUtils.getEventTypesForSex(sex, classification: classification);
   }
 
   void _showErrorMessage(String message) {
@@ -348,7 +533,40 @@ class _CattleEventFormScreenState extends State<CattleEventFormScreen>
       String calfStatus = '';
 
       // Execute calf operations
-      calfHandled = await _executeCalfOperations();
+      // Prefer multi-calf from EventSpecificFields if available
+      final multiCalves = _eventSpecificFieldsKey.currentState?.getCalves();
+      if (multiCalves != null && multiCalves.isNotEmpty) {
+        bool allOk = true;
+        for (final calf in multiCalves) {
+          // Expect structure similar to _temporaryCalfData
+          final Map<String, dynamic> full = Map<String, dynamic>.from(calf['fullCalfData'] ?? calf);
+          // Ensure parent links
+          full['mother_tag'] = _cattleDetails?.tagNo ?? full['mother_tag'];
+          full['father_tag'] = _controllers['bull_tag']?.text.isNotEmpty == true
+              ? _controllers['bull_tag']!.text
+              : full['father_tag'];
+
+          // Enforce create or update explicitly
+          final String pending = (calf['pendingOperation'] ?? 'create').toString();
+          if (pending == 'create') {
+            full.remove('id');
+          }
+
+          final Map<String, dynamic> op = {
+            'pendingOperation': pending,
+            'fullCalfData': full,
+            'tag_no': full['tag_no'],
+            'calfId': full['id'],
+            'isEditMode': pending == 'update',
+          };
+          _temporaryCalfData = op;
+          final ok = await _executeCalfOperations();
+          allOk = allOk && ok;
+        }
+        calfHandled = allOk;
+      } else {
+        calfHandled = await _executeCalfOperations();
+      }
 
       if (_temporaryCalfData != null) {
         final calfTag = _temporaryCalfData!['tag_no'] ?? 'unknown';
@@ -445,7 +663,7 @@ class _CattleEventFormScreenState extends State<CattleEventFormScreen>
         // Copy basic fields with safe conversion
         existingCalfData['tag_no'] = _safeParseString(_temporaryCalfData!['tag_no']);
         existingCalfData['name'] = _safeParseString(_temporaryCalfData!['name']);
-        existingCalfData['gender'] = _safeParseString(_temporaryCalfData!['gender']);
+        existingCalfData['sex'] = _safeParseString(_temporaryCalfData!['sex']);
         existingCalfData['registered'] = _temporaryCalfData!['registered'] ?? false;
         existingCalfData['isEditMode'] = _temporaryCalfData!['isEditMode'] ?? false;
 
@@ -464,7 +682,7 @@ class _CattleEventFormScreenState extends State<CattleEventFormScreen>
           final fullData = existingCalfData['fullCalfData'] as Map<String, dynamic>;
           fullData['tag_no'] = _safeParseString(originalFullData['tag_no']);
           fullData['name'] = _safeParseString(originalFullData['name']);
-          fullData['gender'] = _safeParseString(originalFullData['gender']);
+          fullData['sex'] = _safeParseString(originalFullData['sex']);
           fullData['date_of_birth'] = _safeParseString(originalFullData['date_of_birth']);
           fullData['classification'] = _safeParseString(originalFullData['classification']);
           fullData['status'] = _safeParseString(originalFullData['status']);
@@ -572,10 +790,27 @@ class _CattleEventFormScreenState extends State<CattleEventFormScreen>
         'notes': _controllers['notes']!.text.trim(),
       };
 
+      // Handle calf_tag specially for Gives Birth events with multiple calves
+      String calfTagValue = _controllers['calf_tag']!.text.trim();
+      if (selectedEventType.toLowerCase() == 'gives birth') {
+        final multiCalves = _eventSpecificFieldsKey.currentState?.getCalves();
+        if (multiCalves != null && multiCalves.isNotEmpty) {
+          // Collect all calf tags from multiple calves
+          final calfTags = multiCalves
+              .map((calf) => calf['tag_no']?.toString())
+              .where((tag) => tag != null && tag.isNotEmpty)
+              .toList();
+          if (calfTags.isNotEmpty) {
+            calfTagValue = calfTags.join(', ');
+            print('DEBUG: Multiple calf tags collected: $calfTagValue');
+          }
+        }
+      }
+
       // Add optional fields only if they have values
       final optionalFields = {
         'bull_tag': _controllers['bull_tag']!.text.trim(),
-        'calf_tag': _controllers['calf_tag']!.text.trim(),
+        'calf_tag': calfTagValue,
         'sickness_symptoms': _controllers['sickness_symptoms']!.text.trim(),
         'diagnosis': _controllers['diagnosis']!.text.trim(),
         'technician': _controllers['technician']!.text.trim(),
@@ -633,12 +868,41 @@ class _CattleEventFormScreenState extends State<CattleEventFormScreen>
       }
 
       // Additional validation for specific event types
-      if (selectedEventType.toLowerCase() == 'gives birth' &&
-          _controllers['calf_tag']!.text.trim().isEmpty &&
-          _temporaryCalfData == null) {
-        _showErrorMessage('Please register or specify a calf for birth events.');
-        setState(() => _isLoading = false);
-        return;
+      // Enforce prerequisite: Pregnant requires latest Breeding
+      if (selectedEventType.toLowerCase() == 'pregnant') {
+        final latestBreeding = await _getLatestEvent(
+          cattleTag: data['cattle_tag'],
+          eventType: 'Breeding',
+        );
+        if (latestBreeding == null) {
+          _showErrorMessage('Cannot create Pregnant event: no Breeding event found.');
+          setState(() => _isLoading = false);
+          return;
+        }
+      }
+
+      // Enforce prerequisite: Gives Birth requires latest Pregnant
+      if (selectedEventType.toLowerCase() == 'gives birth') {
+        final latestPregnant = await _getLatestEvent(
+          cattleTag: data['cattle_tag'],
+          eventType: 'Pregnant',
+        );
+        if (latestPregnant == null) {
+          _showErrorMessage('Cannot create Gives Birth event: no Pregnant event found.');
+          setState(() => _isLoading = false);
+          return;
+        }
+      }
+
+      if (selectedEventType.toLowerCase() == 'gives birth') {
+        final multiCalves = _eventSpecificFieldsKey.currentState?.getCalves();
+        final hasMulti = multiCalves != null && multiCalves.isNotEmpty;
+        final hasSingle = _controllers['calf_tag']!.text.trim().isNotEmpty || _temporaryCalfData != null;
+        if (!hasMulti && !hasSingle) {
+          _showErrorMessage('Please add at least one calf for birth events.');
+          setState(() => _isLoading = false);
+          return;
+        }
       }
 
       if (selectedEventType.toLowerCase() == 'breeding') {
@@ -795,7 +1059,7 @@ class _CattleEventFormScreenState extends State<CattleEventFormScreen>
   }
 
   bool _shouldShowReturnToHeatField() {
-    return _cattleDetails?.gender.toLowerCase() == 'female' &&
+    return _cattleDetails?.sex.toLowerCase() == 'female' &&
         selectedEventType.toLowerCase() == 'breeding';
   }
 
@@ -1125,7 +1389,7 @@ class _CattleEventFormScreenState extends State<CattleEventFormScreen>
                               controllers: _controllers,
                               onEventTypeChanged: (value) {
                                 if (value != null) {
-                                  setState(() => selectedEventType = value);
+                                  _handleEventTypeChanged(value);
                                 }
                               },
                               onEventDateSelected: _handleEventDateSelected,
@@ -1165,7 +1429,7 @@ class _CattleEventFormScreenState extends State<CattleEventFormScreen>
                                     borderRadius: BorderRadius.circular(20),
                                   ),
                                   shadowColor:
-                                  AppColors.vibrantGreen.withOpacity(0.3),
+                                  AppColors.vibrantGreen.withValues(alpha: 0.3),
                                 ),
                                 icon: _isLoading
                                     ? const SizedBox(

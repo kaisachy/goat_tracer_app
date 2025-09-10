@@ -56,6 +56,8 @@ abstract class BaseEventFieldsState<T extends BaseEventFields> extends State<T> 
   bool needsFarmers() => false;
   void setupEventDateListeners() {}
   void removeEventDateListeners() {}
+  // Optional hooks for subclasses
+  void onBullsLoaded() {}
 
   Future<void> fetchBulls() async {
     setState(() => loadingBulls = true);
@@ -70,6 +72,9 @@ abstract class BaseEventFieldsState<T extends BaseEventFields> extends State<T> 
         bulls = bullsList;
         loadingBulls = false;
       });
+
+      // Notify subclasses that bulls have been loaded
+      onBullsLoaded();
     } catch (e) {
       setState(() => loadingBulls = false);
       if (mounted) {
@@ -392,7 +397,7 @@ abstract class BaseEventFieldsState<T extends BaseEventFields> extends State<T> 
             child: SizedBox(
               width: double.infinity,
               child: Text(
-                '${bull.tagNo} ${bull.name != null ? '(${bull.name})' : ''}',
+                'Cattle #${bull.tagNo}',
                 overflow: TextOverflow.ellipsis,
                 maxLines: 1,
               ),
@@ -452,7 +457,7 @@ abstract class BaseEventFieldsState<T extends BaseEventFields> extends State<T> 
             child: SizedBox(
               width: double.infinity,
               child: Text(
-                '${bull.tagNo} ${bull.name != null ? '(${bull.name})' : ''}',
+                'Cattle #${bull.tagNo}',
                 overflow: TextOverflow.ellipsis,
                 maxLines: 1,
               ),
@@ -669,9 +674,7 @@ abstract class BaseEventFieldsState<T extends BaseEventFields> extends State<T> 
 
     for (var bull in bulls) {
       String bullSemenOption = '${bull.tagNo} Semen';
-      if (bull.name != null && bull.name!.isNotEmpty) {
-        bullSemenOption = '${bull.tagNo} (${bull.name}) Semen';
-      }
+      bullSemenOption = 'Cattle #${bull.tagNo} Semen';
       allSemenOptions.add(bullSemenOption);
     }
 

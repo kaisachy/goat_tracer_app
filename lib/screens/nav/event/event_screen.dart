@@ -53,8 +53,10 @@ class _EventScreenState extends State<EventScreen> {
 
   Future<void> _loadAllCattleEvents() async {
     try {
+      print('DEBUG: _loadAllCattleEvents started');
       setState(() => isLoading = true);
       final events = await CattleEventService.getCattleEvent();
+      print('DEBUG: Loaded ${events.length} events from service');
 
       // Remove duplicates and delete them from database
       final uniqueEvents = await _removeDuplicateEventsFromDB(events);
@@ -65,6 +67,9 @@ class _EventScreenState extends State<EventScreen> {
         final dateB = DateTime.tryParse(b['event_date'] ?? '1900-01-01') ?? DateTime(1900);
         return dateB.compareTo(dateA); // Descending order (latest first)
       });
+
+      // Calf tags are now stored directly in the database as comma-separated values
+      // No need for complex aggregation logic
 
       if (mounted) {
         setState(() {
@@ -86,6 +91,12 @@ class _EventScreenState extends State<EventScreen> {
         });
       }
     }
+  }
+
+  Future<void> _refreshEvents() async {
+    print('DEBUG: _refreshEvents called');
+    await _loadAllCattleEvents();
+    print('DEBUG: _refreshEvents completed');
   }
 
   // Helper method to remove duplicate events and delete them from database
@@ -257,7 +268,6 @@ class _EventScreenState extends State<EventScreen> {
     return stringValue.toLowerCase();
   }
 
-  Future<void> _refreshEvents() async => await _loadAllCattleEvents();
 
   List<Map<String, dynamic>> get _filteredEvents {
     return allEvents.where((event) {
@@ -672,13 +682,32 @@ class _EventScreenState extends State<EventScreen> {
         padding: const EdgeInsets.all(16),
         child: Column(
           children: [
-            EventSearchFilterBar(
-              initialSearchQuery: searchQuery,
-              initialEventType: selectedEventType,
-              eventTypes: eventTypes,
-              onSearchChanged: _onSearchChanged,
-              onFilterChanged: _onFilterChanged,
-              onClearFilter: _onClearFilter,
+            Row(
+              children: [
+                Expanded(
+                  child: EventSearchFilterBar(
+                    initialSearchQuery: searchQuery,
+                    initialEventType: selectedEventType,
+                    eventTypes: eventTypes,
+                    onSearchChanged: _onSearchChanged,
+                    onFilterChanged: _onFilterChanged,
+                    onClearFilter: _onClearFilter,
+                  ),
+                ),
+                const SizedBox(width: 8),
+                IconButton(
+                  onPressed: () async {
+                    print('DEBUG: Manual refresh triggered');
+                    await _refreshEvents();
+                  },
+                  icon: const Icon(Icons.refresh_rounded),
+                  tooltip: 'Refresh Events',
+                  style: IconButton.styleFrom(
+                    backgroundColor: AppColors.vibrantGreen,
+                    foregroundColor: Colors.white,
+                  ),
+                ),
+              ],
             ),
             const SizedBox(height: 16),
             _buildEventsSummary(),
@@ -858,14 +887,7 @@ class _EventScreenState extends State<EventScreen> {
             child: Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [
-                    eventColor.withOpacity(0.1),
-                    eventColor.withOpacity(0.05),
-                  ],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ),
+                color: Colors.white,
                 borderRadius: BorderRadius.circular(16),
               ),
               child: Row(
@@ -897,9 +919,9 @@ class _EventScreenState extends State<EventScreen> {
                         Container(
                           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                           decoration: BoxDecoration(
-                            color: AppColors.primary.withOpacity(0.1),
+                            color: eventColor.withOpacity(0.1),
                             borderRadius: BorderRadius.circular(12),
-                            border: Border.all(color: AppColors.primary.withOpacity(0.3)),
+                            border: Border.all(color: eventColor.withOpacity(0.3)),
                           ),
                           child: Text(
                             cattleTag,
@@ -965,13 +987,13 @@ class _EventScreenState extends State<EventScreen> {
           AnimatedContainer(
             duration: const Duration(milliseconds: 300),
             curve: Curves.easeInOut,
-            height: isExpanded && details.isNotEmpty ? null : 0,
-            child: isExpanded && details.isNotEmpty
+            height: isExpanded && details.isNotEmpty && eventType.toLowerCase() != 'other' ? null : 0,
+            child: isExpanded && details.isNotEmpty && eventType.toLowerCase() != 'other'
                 ? Container(
               width: double.infinity,
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: Colors.grey.shade50,
+                color: Colors.white,
                 borderRadius: const BorderRadius.only(
                   bottomLeft: Radius.circular(16),
                   bottomRight: Radius.circular(16),
@@ -1041,11 +1063,37 @@ class _EventScreenState extends State<EventScreen> {
 
   List<MapEntry<String, String>> _getEventDetails(Map<String, dynamic> event) {
     final eventType = (event['event_type'] ?? '').toString().toLowerCase();
+    final originalEventType = event['event_type']?.toString();
     final Map<String, String?> relevantDetails = {};
 
     // Always show notes if available
     if (event['notes'] != null && event['notes'].toString().isNotEmpty && event['notes'] != 'N/A') {
       relevantDetails['Notes'] = event['notes'].toString();
+    }
+
+    // Special handling for Gives Birth events (check both lowercase and original case)
+    if (eventType == 'gives birth' || originalEventType?.toLowerCase() == 'gives birth') {
+      if (event['bull_tag'] != null && event['bull_tag'].toString().isNotEmpty && event['bull_tag'] != 'N/A') {
+        relevantDetails['Bull Tag (Father)'] = event['bull_tag'].toString();
+      }
+      
+      // Handle calf tags - check if it's comma-separated (multiple calves)
+      final calfTagValue = event['calf_tag']?.toString();
+      if (calfTagValue != null && calfTagValue.isNotEmpty && calfTagValue != 'N/A') {
+        if (calfTagValue.contains(',')) {
+          // Multiple calves - split by comma and count
+          final calfTags = calfTagValue.split(',').map((tag) => tag.trim()).where((tag) => tag.isNotEmpty).toList();
+          relevantDetails['Calf Tags'] = calfTags.join(', ');
+          relevantDetails['Litter Size'] = '${calfTags.length}';
+        } else {
+          // Single calf
+          relevantDetails['Calf Tag'] = calfTagValue;
+          relevantDetails['Litter Size'] = '1';
+        }
+      } else {
+        // No calf tags found - show 0 litter size
+        relevantDetails['Litter Size'] = '0';
+      }
     }
 
     // Add event-specific fields based on event type
@@ -1091,12 +1139,7 @@ class _EventScreenState extends State<EventScreen> {
         break;
 
       case 'gives birth':
-        if (event['bull_tag'] != null && event['bull_tag'].toString().isNotEmpty && event['bull_tag'] != 'N/A') {
-          relevantDetails['Bull Tag (Father)'] = event['bull_tag'].toString();
-        }
-        if (event['calf_tag'] != null && event['calf_tag'].toString().isNotEmpty && event['calf_tag'] != 'N/A') {
-          relevantDetails['Calf Tag'] = event['calf_tag'].toString();
-        }
+        // Already handled above in the special Gives Birth section
         break;
 
       case 'vaccinated':
@@ -1139,23 +1182,19 @@ class _EventScreenState extends State<EventScreen> {
         break;
 
       case 'other':
+        // For 'other' events, only show notes (no additional details)
+        break;
+
       default:
-      // For 'other' events, show all available fields that have data
-        if (event['bull_tag'] != null && event['bull_tag'].toString().isNotEmpty && event['bull_tag'] != 'N/A') {
-          relevantDetails['Bull Tag'] = event['bull_tag'].toString();
-        }
-        if (event['calf_tag'] != null && event['calf_tag'].toString().isNotEmpty && event['calf_tag'] != 'N/A') {
-          relevantDetails['Calf Tag'] = event['calf_tag'].toString();
-        }
-        if (event['technician'] != null && event['technician'].toString().isNotEmpty && event['technician'] != 'N/A') {
-          relevantDetails['Technician'] = event['technician'].toString();
-        }
+        // For any other event types, show basic information
         break;
     }
 
-    return relevantDetails.entries
+    final result = relevantDetails.entries
         .map((entry) => MapEntry(entry.key, entry.value!))
         .toList();
+    
+    return result;
   }
 
   String _formatDate(String? dateString) {

@@ -9,23 +9,23 @@ class CattleAgeClassification {
   static const int HEIFER_STEER_MAX_AGE = 24; // Upper bound is exclusive in logic below
   static const int COW_BULL_MIN_AGE = 24; // Inclusive: >= 24 months is Cow/Bull
 
-  /// Get the expected classification based on age and gender
-  static String getExpectedClassification(int ageInMonths, String gender) {
+  /// Get the expected classification based on age and sex
+  static String getExpectedClassification(int ageInMonths, String sex) {
     if (ageInMonths <= CALF_MAX_AGE) {
       return 'Calf';
     } else if (ageInMonths > GROWER_MIN_AGE && ageInMonths <= GROWER_MAX_AGE) {
       return 'Growers';
     } else if (ageInMonths > HEIFER_STEER_MIN_AGE && ageInMonths < HEIFER_STEER_MAX_AGE) {
-      if (gender == 'Female') {
+      if (sex == 'Female') {
         return 'Heifer';
-      } else if (gender == 'Male') {
+      } else if (sex == 'Male') {
         return 'Steer';
       }
       return 'Heifer'; // Default fallback
     } else if (ageInMonths >= COW_BULL_MIN_AGE) {
-      if (gender == 'Female') {
+      if (sex == 'Female') {
         return 'Cow';
-      } else if (gender == 'Male') {
+      } else if (sex == 'Male') {
         return 'Bull';
       }
       return 'Cow'; // Default fallback
@@ -48,7 +48,7 @@ class CattleAgeClassification {
         return true; // Can't parse age, assume accurate
       }
       
-      final expectedClassification = getExpectedClassification(ageInMonths, cattle.gender);
+      final expectedClassification = getExpectedClassification(ageInMonths, cattle.sex);
       return cattle.classification == expectedClassification;
     } catch (e) {
       // If age parsing fails, assume it's accurate
@@ -121,7 +121,7 @@ class CattleAgeClassification {
         return 'Unable to parse age format: $displayAge';
       }
       
-      final expectedClassification = getExpectedClassification(ageInMonths, cattle.gender);
+      final expectedClassification = getExpectedClassification(ageInMonths, cattle.sex);
       
       if (cattle.classification == expectedClassification) {
         return 'Classification is accurate for age';
