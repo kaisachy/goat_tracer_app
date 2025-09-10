@@ -996,13 +996,14 @@ class _DashboardScreenState extends State<DashboardScreen>
     final eventType = event['event_type'] ?? 'Unknown';
     final cattleTag = event['cattle_tag'] ?? 'N/A';
     final eventDate = event['event_date'];
+    // Restore per-event color usage but remove main card background color
     final color = _getEventTypeColor(eventType);
 
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.05),
+        color: Colors.transparent,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: color.withOpacity(0.2)),
       ),
