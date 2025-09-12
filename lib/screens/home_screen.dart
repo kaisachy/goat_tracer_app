@@ -12,7 +12,6 @@ import 'nav/dashboard/dashboard_screen.dart';
 import 'nav/profile/profile_screen.dart';
 import 'nav/milk/milk_screen.dart';
 import 'nav/event_schedule/event_schedule_screen.dart';
-import 'nav/vaccination/vaccination_schedule_screen.dart';
 import 'nav/setting/setting_screen.dart';
 import 'nav/map/map_screen.dart';
 import 'package:cattle_tracer_app/services/cattle/cattle_status_service.dart';
