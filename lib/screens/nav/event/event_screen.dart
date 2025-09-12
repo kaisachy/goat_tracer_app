@@ -30,7 +30,7 @@ class _EventScreenState extends State<EventScreen> {
     return [
       'All', 'Dry off', 'Treated', 'Breeding', 'Weighed', 'Gives Birth',
       'Vaccinated', 'Pregnant', 'Aborted Pregnancy', 'Deworming',
-      'Hoof Trimming', 'Castrated', 'Weaned', 'Deceased', 'Other',
+      'Hoof Trimming', 'Castrated', 'Weaned', 'Deceased', 'Lost', 'Other',
     ];
   }
 
@@ -43,6 +43,7 @@ class _EventScreenState extends State<EventScreen> {
     'deworming',
     'hoof trimming',
     'deceased',
+    'lost',
   ];
 
   @override
@@ -1178,6 +1179,12 @@ class _EventScreenState extends State<EventScreen> {
       case 'deceased':
         if (event['cause_of_death'] != null && event['cause_of_death'].toString().isNotEmpty && event['cause_of_death'].toString() != 'N/A') {
           relevantDetails['Cause of Death'] = event['cause_of_death'].toString();
+        }
+        break;
+
+      case 'lost':
+        if (event['last_known_location'] != null && event['last_known_location'].toString().isNotEmpty && event['last_known_location'].toString() != 'N/A') {
+          relevantDetails['Last Known Location'] = event['last_known_location'].toString();
         }
         break;
 

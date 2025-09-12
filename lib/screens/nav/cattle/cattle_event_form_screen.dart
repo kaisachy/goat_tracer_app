@@ -92,7 +92,8 @@ class _CattleEventFormScreenState extends State<CattleEventFormScreen>
       'bull_tag', 'calf_tag', 'event_date', 'sickness_symptoms',
       'diagnosis', 'technician', 'medicine_given', 'semen_used',
       'estimated_return_date', 'weighed_result', 'breeding_date',
-      'expected_delivery_date', 'cause_of_death', 'notes'
+      'expected_delivery_date', 'cause_of_death', 'notes',
+      'last_known_location'
     ];
 
     for (var field in fields) {
@@ -820,6 +821,7 @@ class _CattleEventFormScreenState extends State<CattleEventFormScreen>
         'breeding_date': _controllers['breeding_date']!.text.trim(),
         'expected_delivery_date': _controllers['expected_delivery_date']!.text.trim(),
         'cause_of_death': _controllers['cause_of_death']!.text.trim(),
+        'last_known_location': _controllers['last_known_location']!.text.trim(),
       };
 
       // Add breeding type for breeding events
@@ -990,6 +992,8 @@ class _CattleEventFormScreenState extends State<CattleEventFormScreen>
             await _handleCastratedEvent();
           } else if (selectedEventType.toLowerCase() == 'deceased') {
             await _handleDeceasedEvent();
+          } else if (selectedEventType.toLowerCase() == 'lost') {
+            await _handleLostEvent();
           } else if (selectedEventType.toLowerCase() == 'weighed') {
             await _handleWeighedEvent();
           }
@@ -1286,6 +1290,56 @@ class _CattleEventFormScreenState extends State<CattleEventFormScreen>
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Warning: Failed to update cattle weight'),
+            backgroundColor: Colors.orange[600],
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+            duration: const Duration(seconds: 3),
+          ),
+        );
+      }
+    }
+  }
+
+  Future<void> _handleLostEvent() async {
+    try {
+      bool cattleStatusUpdated = false;
+      String cattleStatus = '';
+
+      // Update cattle status to Lost
+      if (_cattleDetails != null) {
+        final cattleUpdateData = Map<String, dynamic>.from(_cattleDetails!.toJson());
+        cattleUpdateData['status'] = 'Lost';
+        cattleStatusUpdated = await CattleService.updateCattleInformation(cattleUpdateData);
+        cattleStatus = cattleStatusUpdated
+            ? 'Cattle ${_cattleDetails!.tagNo} status updated to Lost'
+            : 'Failed to update cattle ${_cattleDetails!.tagNo} status to Lost';
+      }
+
+      // Log the result for debugging
+      print('Lost event result: $cattleStatus');
+
+      // Optional: Show success feedback to user
+      if (mounted && cattleStatusUpdated) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Cattle status updated to Lost'),
+            backgroundColor: Colors.amber[600],
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+            duration: const Duration(seconds: 2),
+          ),
+        );
+      }
+
+    } catch (e) {
+      // Log any errors that occur during the process
+      print('Error in _handleLostEvent: $e');
+
+      // Optional: Show error message to user
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Warning: Failed to update cattle status to Lost'),
             backgroundColor: Colors.orange[600],
             behavior: SnackBarBehavior.floating,
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),

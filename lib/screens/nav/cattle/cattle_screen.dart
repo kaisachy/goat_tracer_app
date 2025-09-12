@@ -4,6 +4,7 @@ import 'package:cattle_tracer_app/models/cattle.dart';
 import 'package:cattle_tracer_app/services/cattle/cattle_service.dart';
 import 'package:cattle_tracer_app/screens/nav/cattle/cattle_form_screen.dart';
 import 'package:cattle_tracer_app/screens/nav/cattle/cattle_detail_screen.dart';
+import 'package:cattle_tracer_app/screens/nav/cattle/archived_cattle_screen.dart';
 import 'package:cattle_tracer_app/constants/app_colors.dart';
 import 'package:intl/intl.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
@@ -121,10 +122,7 @@ class _CattleScreenState extends State<CattleScreen>
     setState(() {
       _filteredCattleList = _cattleList.where((cattle) {
         final matchesSearch = _searchQuery.isEmpty ||
-            cattle.tagNo.toLowerCase().contains(_searchQuery.toLowerCase()) ||
-            cattle.status.toLowerCase().contains(_searchQuery.toLowerCase()) ||
-            (cattle.breed?.toLowerCase().contains(_searchQuery.toLowerCase()) ?? false) ||
-            (cattle.groupName?.toLowerCase().contains(_searchQuery.toLowerCase()) ?? false);
+            cattle.tagNo.toLowerCase().contains(_searchQuery.toLowerCase());
 
         final matchesSex = _selectedSex == 'All' ||
             cattle.sex == _selectedSex;
@@ -628,6 +626,14 @@ class _CattleScreenState extends State<CattleScreen>
               initialGroupName: _selectedGroupName,
               breedOptions: _getUniqueBreedOptions(),
               groupNameOptions: _getUniqueGroupNameOptions(),
+              onArchivePressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const ArchivedCattleScreen(),
+                  ),
+                );
+              },
             ),
           ],
 

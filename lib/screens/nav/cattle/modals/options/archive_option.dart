@@ -3,9 +3,11 @@
 import 'package:flutter/material.dart';
 import 'package:cattle_tracer_app/constants/app_colors.dart';
 import 'package:cattle_tracer_app/screens/nav/cattle/modals/options/common/ui_helpers.dart';
+import 'package:cattle_tracer_app/models/cattle.dart';
+import 'package:cattle_tracer_app/services/cattle/cattle_service.dart';
 
 class ArchiveOption {
-  static void show(BuildContext context) {
+  static void show(BuildContext context, {required Cattle cattle, VoidCallback? onCattleUpdated}) {
     showDialog(
       context: context,
       builder: (BuildContext context) {
@@ -71,7 +73,7 @@ class ArchiveOption {
                       child: ElevatedButton(
                         onPressed: () {
                           Navigator.pop(context);
-                          _showArchiveOptions(context);
+                          _showArchiveOptions(context, cattle: cattle, onCattleUpdated: onCattleUpdated);
                         },
                         style: ElevatedButton.styleFrom(
                           backgroundColor: AppColors.gold,
@@ -101,7 +103,7 @@ class ArchiveOption {
     );
   }
 
-  static void _showArchiveOptions(BuildContext context) {
+  static void _showArchiveOptions(BuildContext context, {required Cattle cattle, VoidCallback? onCattleUpdated}) {
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
@@ -152,7 +154,7 @@ class ArchiveOption {
               color: AppColors.gold,
               onTap: () {
                 Navigator.pop(context);
-                _archiveAsSold(context);
+                _archiveAsSold(context, cattle: cattle, onCattleUpdated: onCattleUpdated);
               },
             ),
             _buildArchiveOption(
@@ -163,7 +165,7 @@ class ArchiveOption {
               color: Colors.red[600]!,
               onTap: () {
                 Navigator.pop(context);
-                _archiveAsDeceased(context);
+                _archiveAsDeceased(context, cattle: cattle, onCattleUpdated: onCattleUpdated);
               },
             ),
             const SizedBox(height: 24),
@@ -246,23 +248,69 @@ class ArchiveOption {
     );
   }
 
-  static void _archiveAsSold(BuildContext context) {
-    UIHelpers.showEnhancedSnackbar(
-      context,
-      Icons.sell,
-      'Cattle marked as sold and archived',
-      AppColors.gold,
-      isSuccess: true,
-    );
+  static void _archiveAsSold(BuildContext context, {required Cattle cattle, VoidCallback? onCattleUpdated}) async {
+    try {
+      final success = await CattleService.archiveCattle(cattle.id, 'Sold');
+      
+      if (success) {
+        UIHelpers.showEnhancedSnackbar(
+          context,
+          Icons.sell,
+          'Cattle marked as sold and archived',
+          AppColors.gold,
+          isSuccess: true,
+        );
+        onCattleUpdated?.call();
+      } else {
+        UIHelpers.showEnhancedSnackbar(
+          context,
+          Icons.error,
+          'Failed to archive cattle',
+          Colors.red[600]!,
+          isSuccess: false,
+        );
+      }
+    } catch (e) {
+      UIHelpers.showEnhancedSnackbar(
+        context,
+        Icons.error,
+        'Error archiving cattle: $e',
+        Colors.red[600]!,
+        isSuccess: false,
+      );
+    }
   }
 
-  static void _archiveAsDeceased(BuildContext context) {
-    UIHelpers.showEnhancedSnackbar(
-      context,
-      Icons.dangerous,
-      'Cattle marked as deceased and archived',
-      Colors.red[600]!,
-      isSuccess: true,
-    );
+  static void _archiveAsDeceased(BuildContext context, {required Cattle cattle, VoidCallback? onCattleUpdated}) async {
+    try {
+      final success = await CattleService.archiveCattle(cattle.id, 'Deceased');
+      
+      if (success) {
+        UIHelpers.showEnhancedSnackbar(
+          context,
+          Icons.dangerous,
+          'Cattle marked as deceased and archived',
+          Colors.red[600]!,
+          isSuccess: true,
+        );
+        onCattleUpdated?.call();
+      } else {
+        UIHelpers.showEnhancedSnackbar(
+          context,
+          Icons.error,
+          'Failed to archive cattle',
+          Colors.red[600]!,
+          isSuccess: false,
+        );
+      }
+    } catch (e) {
+      UIHelpers.showEnhancedSnackbar(
+        context,
+        Icons.error,
+        'Error archiving cattle: $e',
+        Colors.red[600]!,
+        isSuccess: false,
+      );
+    }
   }
 }

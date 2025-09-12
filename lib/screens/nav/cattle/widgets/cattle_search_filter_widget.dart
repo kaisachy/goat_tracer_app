@@ -15,6 +15,8 @@ class CattleSearchFilterWidget extends StatefulWidget {
   // NEW: Lists for breed and group options (dynamic from cattle data)
   final List<String> breedOptions;
   final List<String> groupNameOptions;
+  // NEW: Archive button callback
+  final VoidCallback? onArchivePressed;
 
   const CattleSearchFilterWidget({
     super.key,
@@ -27,6 +29,7 @@ class CattleSearchFilterWidget extends StatefulWidget {
     required this.initialGroupName,
     required this.breedOptions,
     required this.groupNameOptions,
+    this.onArchivePressed,
   });
 
   @override
@@ -63,7 +66,8 @@ class _CattleSearchFilterWidgetState extends State<CattleSearchFilterWidget> {
     'Pregnant',
     'Lactating & Pregnant',
     'Sold',
-    'Deceased'
+    'Deceased',
+    'Lost'
   ];
 
   @override
@@ -100,7 +104,7 @@ class _CattleSearchFilterWidgetState extends State<CattleSearchFilterWidget> {
     switch (_selectedSex) {
       case 'Male':
       // Removes female-specific statuses
-        return ['All', 'Healthy', 'Sick', 'Sold', 'Deceased'];
+        return ['All', 'Healthy', 'Sick', 'Sold', 'Deceased', 'Lost'];
       default: // 'Female', 'All', 'Other'
         return _allStatusOptions;
     }
@@ -1331,7 +1335,7 @@ class _CattleSearchFilterWidgetState extends State<CattleSearchFilterWidget> {
                 controller: _searchController,
                 onChanged: widget.onSearchChanged,
                 decoration: InputDecoration(
-                  hintText: 'Search by tag, name, breed, group, or status...',
+                  hintText: 'Search by tag no.',
                   hintStyle: TextStyle(color: AppColors.textSecondary),
                   prefixIcon: Icon(Icons.search, color: AppColors.primary),
                   border: InputBorder.none,
@@ -1410,6 +1414,40 @@ class _CattleSearchFilterWidgetState extends State<CattleSearchFilterWidget> {
               ),
             ),
           ),
+
+          const SizedBox(width: 12),
+
+          // Archive Button
+          if (widget.onArchivePressed != null)
+            Container(
+              decoration: BoxDecoration(
+                color: AppColors.cardBackground,
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: AppColors.gold.withOpacity(0.3)),
+                boxShadow: [
+                  BoxShadow(
+                    color: AppColors.gold.withOpacity(0.1),
+                    blurRadius: 8,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
+              ),
+              child: Material(
+                color: Colors.transparent,
+                child: InkWell(
+                  onTap: widget.onArchivePressed,
+                  borderRadius: BorderRadius.circular(16),
+                  child: Container(
+                    padding: const EdgeInsets.all(16),
+                    child: Icon(
+                      Icons.archive_outlined,
+                      color: AppColors.gold,
+                      size: 24,
+                    ),
+                  ),
+                ),
+              ),
+            ),
         ],
       ),
     );

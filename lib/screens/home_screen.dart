@@ -65,11 +65,10 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
 
   void _initializePages() {
     _pages = [
-      AuthGuard(child: MapScreen()),
       AuthGuard(child: DashboardScreen()),
+      AuthGuard(child: MapScreen()),
       const AuthGuard(child: CattleScreen()),
       AuthGuard(child: EventScheduleScreen(initialTabIndex:  widget.initialEventScheduleTabIndex ?? 0)),
-      AuthGuard(child: VaccinationScheduleScreen()),
       AuthGuard(child: MilkScreen()),
       AuthGuard(child: ProfileScreen(userEmail: widget.userEmail ?? '')),
       AuthGuard(child: SettingScreen()),
@@ -532,9 +531,9 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   String _getAppBarTitle() {
     switch (_selectedIndex) {
       case 0:
-        return 'Map';
-      case 1:
         return 'Dashboard';
+      case 1:
+        return 'Map';
       case 2:
         return 'Production Record';
       case 3:
@@ -560,14 +559,14 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
               padding: EdgeInsets.zero,
               children: [
                 _buildDrawerItem(
-                  icon: Icons.map_rounded,
-                  text: 'Map',
+                  icon: Icons.dashboard_rounded,
+                  text: 'Dashboard',
                   index: 0,
                   onTap: () => _onNavItemTapped(0),
                 ),
                 _buildDrawerItem(
-                  icon: Icons.dashboard_rounded,
-                  text: 'Dashboard',
+                  icon: Icons.map_rounded,
+                  text: 'Map',
                   index: 1,
                   onTap: () => _onNavItemTapped(1),
                 ),
@@ -587,19 +586,19 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                   icon: Icons.opacity_rounded,
                   text: 'Milk Production',
                   index: 4,
-                  onTap: () => _onNavItemTapped(5),
+                  onTap: () => _onNavItemTapped(4),
                 ),
                 _buildDrawerItem(
                   icon: Icons.person_rounded,
                   text: 'Profile',
                   index: 5,
-                  onTap: () => _onNavItemTapped(6),
+                  onTap: () => _onNavItemTapped(5),
                 ),
                 _buildDrawerItem(
                   icon: Icons.settings_rounded,
                   text: 'Settings',
                   index: 6,
-                  onTap: () => _onNavItemTapped(7),
+                  onTap: () => _onNavItemTapped(6),
                 ),
               ],
             ),

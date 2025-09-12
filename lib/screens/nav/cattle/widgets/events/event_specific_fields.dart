@@ -15,6 +15,7 @@ import 'event-fields/pregnant_event_fields.dart';
 import 'event-fields/deworming_event_fields.dart';
 import 'event-fields/castrated_event_fields.dart';
 import 'event-fields/deceased_event_fields.dart';
+import 'event-fields/lost_event_fields.dart';
 import 'event-fields/other_event_fields.dart';
 
 class EventSpecificFields extends StatefulWidget {
@@ -131,6 +132,11 @@ class EventSpecificFieldsState extends State<EventSpecificFields> {
 
       case 'deceased':
         return DeceasedEventFields(
+          controllers: widget.controllers,
+        );
+
+      case 'lost':
+        return LostEventFields(
           controllers: widget.controllers,
         );
 

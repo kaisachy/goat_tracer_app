@@ -18,6 +18,7 @@ class ChangeStatusOption {
     'Lactating & Pregnant',
     'Sold',
     'Deceased',
+    'Lost',
   ];
 
   static final List<String> _maleStatuses = [
@@ -26,6 +27,7 @@ class ChangeStatusOption {
     'Breeding',
     'Sold',
     'Deceased',
+    'Lost',
   ];
 
   static void show(BuildContext context, Cattle cattle, VoidCallback? onCattleUpdated) {
@@ -344,6 +346,10 @@ class ChangeStatusOption {
       case 'deceased':
         iconData = FontAwesomeIcons.bookDead;
         iconColor = Colors.black;
+        break;
+      case 'lost':
+        iconData = FontAwesomeIcons.magnifyingGlass;
+        iconColor = Colors.amber;
         break;
       default:
         iconData = Icons.circle_outlined;

@@ -46,9 +46,9 @@ class _CattleFormScreenState extends State<CattleFormScreen> {
   // Breed specific controls
   final List<String> defaultBreedOptions = [
     'Native',
-    'Pure Brahman',
+    'Brahman',
     'Upgraded Brahman',
-    'Pure Angus',
+    'Angus',
     'Upgraded Angus',
     'Holstein Friesian',
     'Upgraded Holstein Friesian',

@@ -202,6 +202,7 @@ class CattleEvent {
   final String? breedingDate;
   final String? expectedDeliveryDate;
   final String? notes;
+  final String? lastKnownLocation;
   final String? createdAt;
 
   CattleEvent({
@@ -222,6 +223,7 @@ class CattleEvent {
     this.breedingDate,
     this.expectedDeliveryDate,
     this.notes,
+    this.lastKnownLocation,
     this.createdAt,
   });
 
@@ -246,6 +248,7 @@ class CattleEvent {
       breedingDate: json['breeding_date'],
       expectedDeliveryDate: json['expected_delivery_date'],
       notes: json['notes'],
+      lastKnownLocation: json['last_known_location'],
       createdAt: json['created_at'],
     );
   }
@@ -269,6 +272,7 @@ class CattleEvent {
       'breeding_date': breedingDate,
       'expected_delivery_date': expectedDeliveryDate,
       'notes': notes,
+      'last_known_location': lastKnownLocation,
       'created_at': createdAt,
     };
   }

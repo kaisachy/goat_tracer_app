@@ -240,7 +240,7 @@ class CattleOptionsModal {
         ExportPdfOption.show(context);
         break;
       case 'archive':
-        ArchiveOption.show(context);
+        ArchiveOption.show(context, cattle: cattle, onCattleUpdated: onCattleUpdated);
         break;
       case 'delete':
         DeleteOption.show(context);

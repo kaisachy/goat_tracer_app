@@ -36,13 +36,13 @@ class _EventCattleTabContentState extends State<EventCattleTabContent> {
     final femaleEventTypes = [
       'All', 'Dry off', 'Treated', 'Breeding', 'Weighed', 'Gives Birth',
       'Vaccinated', 'Pregnant', 'Aborted Pregnancy', 'Deworming',
-      'Hoof Trimming', 'Weaned', 'Deceased', 'Other',
+      'Hoof Trimming', 'Weaned', 'Deceased', 'Lost', 'Other',
     ];
 
     // Comprehensive event types for male cattle - includes all available event types
     final maleEventTypes = [
       'All', 'Treated', 'Breeding', 'Weighed', 'Vaccinated', 'Deworming',
-      'Hoof Trimming', 'Castrated', 'Weaned', 'Deceased', 'Other',
+      'Hoof Trimming', 'Castrated', 'Weaned', 'Deceased', 'Lost', 'Other',
     ];
 
     // Check cattle sex and return appropriate event types
@@ -59,6 +59,7 @@ class _EventCattleTabContentState extends State<EventCattleTabContent> {
     'deworming',
     'hoof trimming',
     'deceased',
+    'lost',
   ];
 
   @override
@@ -312,9 +313,9 @@ class _EventCattleTabContentState extends State<EventCattleTabContent> {
       final sex = widget.cattle.sex.toLowerCase();
       final validEventTypes = sex == 'female'
           ? ['dry off', 'treated', 'breeding', 'weighed', 'gives birth', 'vaccinated',
-        'pregnant', 'aborted pregnancy', 'deworming', 'hoof trimming', 'deceased', 'other']
+        'pregnant', 'aborted pregnancy', 'deworming', 'hoof trimming', 'deceased', 'lost', 'other']
           : ['treated', 'breeding', 'weighed', 'vaccinated', 'deworming', 'hoof trimming',
-        'castrated', 'weaned', 'deceased', 'other'];
+        'castrated', 'weaned', 'deceased', 'lost', 'other'];
 
       final matchesSex = validEventTypes.contains(type);
 
@@ -458,6 +459,7 @@ class _EventCattleTabContentState extends State<EventCattleTabContent> {
         breedingDate: event['breeding_date']?.toString(),
         expectedDeliveryDate: event['expected_delivery_date']?.toString(),
         notes: event['notes']?.toString(),
+        lastKnownLocation: event['last_known_location']?.toString(),
       );
 
       // Navigate to edit screen
@@ -1031,6 +1033,12 @@ class _EventCattleTabContentState extends State<EventCattleTabContent> {
       case 'deceased':
         if (event['cause_of_death'] != null && event['cause_of_death'].toString().isNotEmpty && event['cause_of_death'] != 'N/A') {
           relevantDetails['Cause of Death'] = event['cause_of_death'].toString();
+        }
+        break;
+
+      case 'lost':
+        if (event['last_known_location'] != null && event['last_known_location'].toString().isNotEmpty && event['last_known_location'] != 'N/A') {
+          relevantDetails['Last Known Location'] = event['last_known_location'].toString();
         }
         break;
 

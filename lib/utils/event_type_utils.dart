@@ -33,6 +33,7 @@ class EventTypeUtils {
         'Deworming',
         'Hoof Trimming',
         'Deceased',
+        'Lost',
         'Other',
       ];
 
@@ -66,6 +67,7 @@ class EventTypeUtils {
         'Hoof Trimming',
         'Castrated',
         'Deceased',
+        'Lost',
         'Other'
       ];
       // Add Weaned event only for Calf classification (not adult bulls)
@@ -82,6 +84,7 @@ class EventTypeUtils {
         'Deworming',
         'Hoof Trimming',
         'Deceased',
+        'Lost',
         'Other'
       ];
     }
@@ -115,6 +118,8 @@ class EventTypeUtils {
         return FontAwesomeIcons.bottleWater;
       case 'deceased':
         return FontAwesomeIcons.skull;
+      case 'lost':
+        return FontAwesomeIcons.magnifyingGlass;
       case 'other':
         return FontAwesomeIcons.ellipsis;
       case 'loading cattle information...':
@@ -139,6 +144,7 @@ class EventTypeUtils {
       case 'weaned': return Colors.teal.shade400;
       case 'aborted pregnancy': return Colors.red.shade600;
       case 'deceased': return Colors.grey.shade700;
+      case 'lost': return Colors.amber.shade600;
       case 'other': return Colors.blueGrey.shade400;
       case 'loading cattle information...': return Colors.grey.shade400;
       default: return AppColors.lightGreen;

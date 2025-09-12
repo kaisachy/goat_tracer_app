@@ -5,8 +5,8 @@ import 'package:cattle_tracer_app/constants/app_colors.dart';
 import 'package:cattle_tracer_app/services/cattle/cattle_service.dart';
 import 'package:cattle_tracer_app/services/cattle/cattle_event_service.dart';
 import 'package:fl_chart/fl_chart.dart';
-import 'breeding_success_card.dart';
 import 'widgets/vaccination_dashboard_widget.dart';
+import 'widgets/breeding_analytics_widget.dart';
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
@@ -214,6 +214,52 @@ class _DashboardScreenState extends State<DashboardScreen>
   }
 
   Widget _buildDashboardContent() {
+    // Check if there's any data to display
+    if (allCattle.isEmpty && allEvents.isEmpty) {
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.all(32),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(24),
+                decoration: BoxDecoration(
+                  color: AppColors.vibrantGreen.withOpacity(0.1),
+                  shape: BoxShape.circle,
+                  border: Border.all(color: AppColors.vibrantGreen.withOpacity(0.3)),
+                ),
+                child: Icon(
+                  FontAwesomeIcons.cow,
+                  size: 64,
+                  color: AppColors.vibrantGreen,
+                ),
+              ),
+              const SizedBox(height: 24),
+              Text(
+                'No Data Available',
+                style: TextStyle(
+                  fontSize: 24,
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.textPrimary,
+                ),
+              ),
+              const SizedBox(height: 12),
+              Text(
+                'Start by adding cattle to your herd to see analytics and insights.',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 16,
+                  color: AppColors.textSecondary,
+                  height: 1.4,
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
     return CustomScrollView(
       physics: const AlwaysScrollableScrollPhysics(),
       slivers: [
@@ -225,9 +271,11 @@ class _DashboardScreenState extends State<DashboardScreen>
               const SizedBox(height: 20),
               _buildClassificationDistribution(),
               const SizedBox(height: 20),
+              _buildCalfGrowerSexCharts(),
+              const SizedBox(height: 20),
               _buildStatusBreakdown(),
               const SizedBox(height: 20),
-              _buildBreedingSuccessCard(),
+              _buildBreedingAnalytics(),
               const SizedBox(height: 20),
               _buildVaccinationDashboard(),
               const SizedBox(height: 20),
@@ -694,28 +742,15 @@ class _DashboardScreenState extends State<DashboardScreen>
     final activeCattle = allCattle.where((c) => 
       c.status.toLowerCase() != 'sold' && c.status.toLowerCase() != 'deceased').length;
 
-    return Row(
-      children: [
-        Expanded(
-          child: _buildAnimatedCard(
-            delay: 0,
-            child: _buildOverviewCard(
-              title: 'Total Cattle',
-              value: totalCattle.toString(),
-              icon: FontAwesomeIcons.cow,
-              color: AppColors.vibrantGreen,
-              subtitle: '$activeCattle active',
-            ),
-          ),
-        ),
-        const SizedBox(width: 16),
-        Expanded(
-          child: _buildAnimatedCard(
-            delay: 100,
-            child: _buildSexPieChart(),
-          ),
-        ),
-      ],
+    return _buildAnimatedCard(
+      delay: 0,
+      child: _buildOverviewCard(
+        title: 'Total Cattle',
+        value: totalCattle.toString(),
+        icon: FontAwesomeIcons.cow,
+        color: AppColors.vibrantGreen,
+        subtitle: '$activeCattle active',
+      ),
     );
   }
 
@@ -800,7 +835,7 @@ class _DashboardScreenState extends State<DashboardScreen>
 
   Widget _buildStatusBreakdown() {
     // Define all 8 status types
-    final allStatuses = ['Healthy', 'Sick', 'Breeding', 'Pregnant', 'Lactating', 'Lactating & Pregnant', 'Sold', 'Deceased'];
+    final allStatuses = ['Healthy', 'Sick', 'Breeding', 'Pregnant', 'Lactating', 'Lactating & Pregnant', 'Sold', 'Deceased', 'Lost'];
     
     final statusCount = <String, int>{};
     
@@ -1142,6 +1177,26 @@ class _DashboardScreenState extends State<DashboardScreen>
     );
   }
 
+  Widget _buildCalfGrowerSexCharts() {
+    return Row(
+      children: [
+        Expanded(
+          child: _buildAnimatedCard(
+            delay: 100,
+            child: _buildCalfChart(),
+          ),
+        ),
+        const SizedBox(width: 16),
+        Expanded(
+          child: _buildAnimatedCard(
+            delay: 200,
+            child: _buildGrowerChart(),
+          ),
+        ),
+      ],
+    );
+  }
+
   Widget _buildClassificationDistribution() {
     // Define all 6 classifications
     final allClassifications = ['Calf', 'Grower', 'Heifer', 'Steer', 'Cow', 'Bull'];
@@ -1201,7 +1256,7 @@ class _DashboardScreenState extends State<DashboardScreen>
             if (sortedClassifications.isNotEmpty)
               Column(
                 children: sortedClassifications.map((entry) {
-                  final percentage = (entry.value / total * 100);
+                  final percentage = total > 0 ? (entry.value / total * 100) : 0.0;
                   final color = _getClassificationColor(entry.key);
 
                   return Padding(
@@ -1261,7 +1316,7 @@ class _DashboardScreenState extends State<DashboardScreen>
                             borderRadius: BorderRadius.circular(3),
                           ),
                           child: FractionallySizedBox(
-                            widthFactor: percentage / 100,
+                            widthFactor: (percentage / 100).clamp(0.0, 1.0),
                             alignment: Alignment.centerLeft,
                             child: Container(
                               decoration: BoxDecoration(
@@ -1500,6 +1555,8 @@ class _DashboardScreenState extends State<DashboardScreen>
         return Colors.teal.shade400;
       case 'aborted pregnancy':
         return Colors.red.shade600;
+      case 'lost':
+        return Colors.amber.shade600;
       case 'other':
         return Colors.blueGrey.shade400;
       default:
@@ -1533,6 +1590,8 @@ class _DashboardScreenState extends State<DashboardScreen>
         return Icons.rss_feed_rounded;
       case 'aborted pregnancy':
         return Icons.heart_broken_rounded;
+      case 'lost':
+        return Icons.search_rounded;
       case 'other':
         return Icons.more_horiz_rounded;
       default:
@@ -1559,10 +1618,10 @@ class _DashboardScreenState extends State<DashboardScreen>
     }
   }
 
-  Widget _buildBreedingSuccessCard() {
+  Widget _buildBreedingAnalytics() {
     return _buildAnimatedCard(
       delay: 150,
-      child: const BreedingSuccessCard(),
+      child: const BreedingAnalyticsWidget(),
     );
   }
 
@@ -1576,12 +1635,14 @@ class _DashboardScreenState extends State<DashboardScreen>
     );
   }
 
-  Widget _buildSexPieChart() {
-    final males = allCattle.where((c) => c.sex.toLowerCase() == 'male').length;
-    final females = allCattle.where((c) => c.sex.toLowerCase() == 'female').length;
-    final total = allCattle.length;
+  Widget _buildCalfChart() {
+    final calfMales = allCattle.where((c) => 
+      c.classification.toLowerCase() == 'calf' && c.sex.toLowerCase() == 'male').length;
+    final calfFemales = allCattle.where((c) => 
+      c.classification.toLowerCase() == 'calf' && c.sex.toLowerCase() == 'female').length;
+    final totalCalves = calfMales + calfFemales;
 
-    if (total == 0) {
+    if (totalCalves == 0) {
       return Container(
         padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
@@ -1599,28 +1660,42 @@ class _DashboardScreenState extends State<DashboardScreen>
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const Text(
-              'Cattle Sex',
+              'Calf Sex',
               style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.w600,
                 color: AppColors.textPrimary,
               ),
             ),
-            const SizedBox(height: 4),
-            const Text(
-              'No data available',
-              style: TextStyle(
-                fontSize: 14,
-                color: AppColors.textSecondary,
+            const SizedBox(height: 8),
+            SizedBox(
+              height: 80, // Same height as pie chart
+              child: Center(
+                child: Text(
+                  'No calves',
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: Colors.grey[600],
+                  ),
+                ),
               ),
+            ),
+            const SizedBox(height: 12),
+            // Empty legend space to maintain same height
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              children: [
+                _buildLegendItem('M', 0, AppColors.darkGreen),
+                _buildLegendItem('F', 0, AppColors.gold),
+              ],
             ),
           ],
         ),
       );
     }
 
-    final malePercentage = total > 0 ? ((males / total) * 100).toStringAsFixed(0) : '0';
-    final femalePercentage = total > 0 ? ((females / total) * 100).toStringAsFixed(0) : '0';
+    final malePercentage = ((calfMales / totalCalves) * 100).toStringAsFixed(0);
+    final femalePercentage = ((calfFemales / totalCalves) * 100).toStringAsFixed(0);
 
     return Container(
       padding: const EdgeInsets.all(20),
@@ -1639,7 +1714,7 @@ class _DashboardScreenState extends State<DashboardScreen>
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const Text(
-            'Cattle Sex',
+            'Calf Sex',
             style: TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.w600,
@@ -1654,7 +1729,7 @@ class _DashboardScreenState extends State<DashboardScreen>
                 sections: [
                   PieChartSectionData(
                     color: AppColors.darkGreen,
-                    value: males.toDouble(),
+                    value: calfMales.toDouble(),
                     title: '${malePercentage}%',
                     radius: 25,
                     titleStyle: const TextStyle(
@@ -1665,7 +1740,7 @@ class _DashboardScreenState extends State<DashboardScreen>
                   ),
                   PieChartSectionData(
                     color: AppColors.gold,
-                    value: females.toDouble(),
+                    value: calfFemales.toDouble(),
                     title: '${femalePercentage}%',
                     radius: 25,
                     titleStyle: const TextStyle(
@@ -1684,8 +1759,141 @@ class _DashboardScreenState extends State<DashboardScreen>
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
             children: [
-              _buildLegendItem('M', males, AppColors.darkGreen),
-              _buildLegendItem('F', females, AppColors.gold),
+              _buildLegendItem('M', calfMales, AppColors.darkGreen),
+              _buildLegendItem('F', calfFemales, AppColors.gold),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildGrowerChart() {
+    final growerMales = allCattle.where((c) => 
+      c.classification.toLowerCase() == 'grower' && c.sex.toLowerCase() == 'male').length;
+    final growerFemales = allCattle.where((c) => 
+      c.classification.toLowerCase() == 'grower' && c.sex.toLowerCase() == 'female').length;
+    final totalGrowers = growerMales + growerFemales;
+
+    if (totalGrowers == 0) {
+      return Container(
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(20),
+          boxShadow: [
+            BoxShadow(
+              color: AppColors.darkGreen.withOpacity(0.1),
+              blurRadius: 20,
+              offset: const Offset(0, 8),
+            ),
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Grower Sex',
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+                color: AppColors.textPrimary,
+              ),
+            ),
+            const SizedBox(height: 8),
+            SizedBox(
+              height: 80, // Same height as pie chart
+              child: Center(
+                child: Text(
+                  'No growers',
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: Colors.grey[600],
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(height: 12),
+            // Empty legend space to maintain same height
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              children: [
+                _buildLegendItem('M', 0, AppColors.darkGreen),
+                _buildLegendItem('F', 0, AppColors.gold),
+              ],
+            ),
+          ],
+        ),
+      );
+    }
+
+    final malePercentage = ((growerMales / totalGrowers) * 100).toStringAsFixed(0);
+    final femalePercentage = ((growerFemales / totalGrowers) * 100).toStringAsFixed(0);
+
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.darkGreen.withOpacity(0.1),
+            blurRadius: 20,
+            offset: const Offset(0, 8),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Grower Sex',
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w600,
+              color: AppColors.textPrimary,
+            ),
+          ),
+          const SizedBox(height: 8),
+          SizedBox(
+            height: 80,
+            child: PieChart(
+              PieChartData(
+                sections: [
+                  PieChartSectionData(
+                    color: AppColors.darkGreen,
+                    value: growerMales.toDouble(),
+                    title: '${malePercentage}%',
+                    radius: 25,
+                    titleStyle: const TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
+                  ),
+                  PieChartSectionData(
+                    color: AppColors.gold,
+                    value: growerFemales.toDouble(),
+                    title: '${femalePercentage}%',
+                    radius: 25,
+                    titleStyle: const TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
+                  ),
+                ],
+                centerSpaceRadius: 12,
+                sectionsSpace: 2,
+              ),
+            ),
+          ),
+          const SizedBox(height: 12),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            children: [
+              _buildLegendItem('M', growerMales, AppColors.darkGreen),
+              _buildLegendItem('F', growerFemales, AppColors.gold),
             ],
           ),
         ],

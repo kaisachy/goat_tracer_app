@@ -31,7 +31,7 @@ class _EventContentState extends State<EventContent> {
     return [
       'All', 'Dry off', 'Treated', 'Breeding', 'Weighed', 'Gives Birth',
       'Vaccinated', 'Pregnant', 'Aborted Pregnancy', 'Deworming',
-      'Hoof Trimming', 'Castrated', 'Weaned', 'Deceased', 'Other',
+      'Hoof Trimming', 'Castrated', 'Weaned', 'Deceased', 'Lost', 'Other',
     ];
   }
 
@@ -44,6 +44,7 @@ class _EventContentState extends State<EventContent> {
     'deworming',
     'hoof trimming',
     'deceased',
+    'lost',
   ];
 
   @override
@@ -754,6 +755,11 @@ class _EventContentState extends State<EventContent> {
         break;
       case 'deceased':
         if (event['cause_of_death'] != null) details.add({'label': 'Cause of Death', 'value': event['cause_of_death']});
+        break;
+      case 'lost':
+        if (event['last_known_location'] != null && event['last_known_location'].toString().isNotEmpty && event['last_known_location'] != 'N/A') {
+          details.add({'label': 'Last Known Location', 'value': event['last_known_location']});
+        }
         break;
     }
 

@@ -332,4 +332,118 @@ class CattleService {
     }
     return cattle;
   }
+
+  /// Archive a cattle record
+  static Future<bool> archiveCattle(int id, String reason, {String? notes}) async {
+    final token = await AuthService.getToken();
+    if (token == null) {
+      log('Archive failed: No token found.');
+      return false;
+    }
+
+    final data = {
+      'id': id,
+      'reason': reason,
+      if (notes != null) 'notes': notes,
+    };
+
+    try {
+      final response = await http.post(
+        Uri.parse('$_baseUrl/cattles/archive'),
+        headers: {
+          'Content-Type': 'application/json; charset=UTF-8',
+          'Authorization': 'Bearer $token',
+        },
+        body: jsonEncode(data),
+      );
+
+      log('Archive cattle response status: ${response.statusCode}');
+      log('Archive cattle response body: ${response.body}');
+
+      if (response.statusCode == 200) {
+        log('Cattle archived successfully.');
+        return true;
+      } else {
+        log('Failed to archive cattle. Status: ${response.statusCode}, Body: ${response.body}');
+        return false;
+      }
+    } catch (e, stackTrace) {
+      log('Error in archiveCattle: $e', stackTrace: stackTrace);
+      return false;
+    }
+  }
+
+  /// Unarchive a cattle record
+  static Future<bool> unarchiveCattle(int id) async {
+    final token = await AuthService.getToken();
+    if (token == null) {
+      log('Unarchive failed: No token found.');
+      return false;
+    }
+
+    final data = {
+      'id': id,
+    };
+
+    try {
+      final response = await http.post(
+        Uri.parse('$_baseUrl/cattles/unarchive'),
+        headers: {
+          'Content-Type': 'application/json; charset=UTF-8',
+          'Authorization': 'Bearer $token',
+        },
+        body: jsonEncode(data),
+      );
+
+      log('Unarchive cattle response status: ${response.statusCode}');
+      log('Unarchive cattle response body: ${response.body}');
+
+      if (response.statusCode == 200) {
+        log('Cattle unarchived successfully.');
+        return true;
+      } else {
+        log('Failed to unarchive cattle. Status: ${response.statusCode}, Body: ${response.body}');
+        return false;
+      }
+    } catch (e, stackTrace) {
+      log('Error in unarchiveCattle: $e', stackTrace: stackTrace);
+      return false;
+    }
+  }
+
+  /// Get archived cattle
+  static Future<List<Cattle>> getArchivedCattle() async {
+    final token = await AuthService.getToken();
+
+    if (token == null) {
+      log('getArchivedCattle failed: No token found.');
+      return [];
+    }
+
+    try {
+      final response = await http.get(
+        Uri.parse('$_baseUrl/cattles/archived'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+      );
+
+      log('getArchivedCattle response status: ${response.statusCode}');
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        final cattleList = List<Map<String, dynamic>>.from(data['data']);
+
+        return cattleList.map((cattleData) => Cattle.fromJson(cattleData)).toList();
+      } else {
+        log('Failed to load archived cattle. Status code: ${response.statusCode}');
+        log('Response body: ${response.body}');
+      }
+    } catch (e, stackTrace) {
+      log('Error in getArchivedCattle: $e', stackTrace: stackTrace);
+    }
+
+    return [];
+  }
 }

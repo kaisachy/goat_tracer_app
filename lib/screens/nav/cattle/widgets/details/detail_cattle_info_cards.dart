@@ -84,7 +84,7 @@ class _CattleBasicInfoCardState extends State<CattleBasicInfoCard> {
             ),
             InfoItemData(
               icon: CattleDetailUtils.getGenderIcon(widget.cattle.sex),
-              title: 'Gender',
+              title: 'Sex',
               value: widget.cattle.sex,
             ),
             InfoItemData(
