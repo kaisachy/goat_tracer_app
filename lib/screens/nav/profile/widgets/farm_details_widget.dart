@@ -88,5 +88,4 @@ class FarmDetailsWidget extends StatelessWidget {
         onSaveSuccess: onRefresh,
       ),
     );
-  }
-}
+  }}

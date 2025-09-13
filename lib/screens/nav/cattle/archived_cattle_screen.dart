@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:cattle_tracer_app/models/cattle.dart';
 import 'package:cattle_tracer_app/services/cattle/cattle_service.dart';
 import 'package:cattle_tracer_app/constants/app_colors.dart';
-import 'package:intl/intl.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 
 class ArchivedCattleScreen extends StatefulWidget {
@@ -55,13 +54,6 @@ class _ArchivedCattleScreenState extends State<ArchivedCattleScreen> {
   void _handleSearchChanged(String query) {
     setState(() {
       _searchQuery = query;
-    });
-    _filterCattle();
-  }
-
-  void _handleStatusFilterChanged(String status) {
-    setState(() {
-      _selectedStatus = status;
     });
     _filterCattle();
   }

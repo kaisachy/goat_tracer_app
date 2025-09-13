@@ -795,8 +795,8 @@ class _FarmDetailsModalState extends State<FarmDetailsModal> {
           ),
         ],
       ),
-      child: DropdownButtonFormField<Map<String, dynamic>>(
-        value: _selectedMunicipality,
+      child: DropdownButtonFormField<String>(
+        value: _selectedMunicipality?['code'],
         decoration: InputDecoration(
           labelText: 'Municipality/City',
           labelStyle: TextStyle(
@@ -841,24 +841,36 @@ class _FarmDetailsModalState extends State<FarmDetailsModal> {
           ),
           contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
         ),
-        items: _municipalities.map<DropdownMenuItem<Map<String, dynamic>>>((municipality) {
-          return DropdownMenuItem<Map<String, dynamic>>(
-            value: municipality,
+        items: _municipalities.map<DropdownMenuItem<String>>((municipality) {
+          return DropdownMenuItem<String>(
+            value: municipality['code']?.toString(),
             child: Text(municipality['name'] ?? 'Unknown Municipality'),
           );
         }).toList(),
-        onChanged: (Map<String, dynamic>? newValue) {
-          setState(() {
-            _selectedMunicipality = newValue;
-            _barangays = [];
-            _selectedBarangay = null;
-          });
+        onChanged: (String? newValue) {
           if (newValue != null) {
-            _loadBarangays(newValue['code']);
+            final selectedMunicipality = _municipalities.firstWhere(
+              (municipality) => municipality['code']?.toString() == newValue,
+              orElse: () => {},
+            );
+            setState(() {
+              _selectedMunicipality = selectedMunicipality.isNotEmpty ? selectedMunicipality : null;
+              _barangays = [];
+              _selectedBarangay = null;
+            });
+            if (selectedMunicipality.isNotEmpty) {
+              _loadBarangays(selectedMunicipality['code']);
+            }
+          } else {
+            setState(() {
+              _selectedMunicipality = null;
+              _barangays = [];
+              _selectedBarangay = null;
+            });
           }
         },
-        validator: (Map<String, dynamic>? value) {
-          if (value == null) {
+        validator: (String? value) {
+          if (value == null || value.isEmpty) {
             return 'Please select a municipality';
           }
           return null;
@@ -880,8 +892,8 @@ class _FarmDetailsModalState extends State<FarmDetailsModal> {
           ),
         ],
       ),
-      child: DropdownButtonFormField<Map<String, dynamic>>(
-        value: _selectedBarangay,
+      child: DropdownButtonFormField<String>(
+        value: _selectedBarangay?['code']?.toString(),
         decoration: InputDecoration(
           labelText: 'Barangay',
           labelStyle: TextStyle(
@@ -926,20 +938,30 @@ class _FarmDetailsModalState extends State<FarmDetailsModal> {
           ),
           contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
         ),
-        items: _barangays.map<DropdownMenuItem<Map<String, dynamic>>>((barangay) {
-          return DropdownMenuItem<Map<String, dynamic>>(
-            value: barangay,
+        items: _barangays.map<DropdownMenuItem<String>>((barangay) {
+          return DropdownMenuItem<String>(
+            value: barangay['code']?.toString(),
             child: Text(barangay['name'] ?? 'Unknown Barangay'),
           );
         }).toList(),
         onChanged: _isLoadingBarangays || _selectedMunicipality == null
             ? null
-            : (Map<String, dynamic>? newValue) {
-                setState(() {
-                  _selectedBarangay = newValue;
-                });
+            : (String? newValue) {
+                if (newValue != null) {
+                  final selectedBarangay = _barangays.firstWhere(
+                    (barangay) => barangay['code']?.toString() == newValue,
+                    orElse: () => {},
+                  );
+                  setState(() {
+                    _selectedBarangay = selectedBarangay.isNotEmpty ? selectedBarangay : null;
+                  });
+                } else {
+                  setState(() {
+                    _selectedBarangay = null;
+                  });
+                }
               },
-        validator: (Map<String, dynamic>? value) {
+        validator: (String? value) {
           if (_selectedMunicipality != null && (value == null || value.isEmpty)) {
             return 'Please select a barangay';
           }

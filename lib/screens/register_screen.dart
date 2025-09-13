@@ -318,29 +318,41 @@ class _RegisterScreenState extends State<RegisterScreen> {
   Widget _buildMunicipalityDropdown() {
     return Stack(
       children: [
-        DropdownButtonFormField<Map<String, dynamic>>(
-          value: _selectedMunicipality,
+        DropdownButtonFormField<String>(
+          value: _selectedMunicipality?['code']?.toString(),
           decoration: _inputDecoration('Municipality/City', Icons.location_city),
           items: _municipalities
-              .map((municipality) => DropdownMenuItem<Map<String, dynamic>>(
-            value: municipality,
+              .map((municipality) => DropdownMenuItem<String>(
+            value: municipality['code']?.toString(),
             child: Text(municipality['name'] ?? 'Unknown Municipality'),
           ))
               .toList(),
           onChanged: _isLoadingMunicipalities
               ? null
-              : (Map<String, dynamic>? newValue) {
-            setState(() {
-              _selectedMunicipality = newValue;
-              _barangays = [];
-              _selectedBarangay = null;
-            });
+              : (String? newValue) {
             if (newValue != null) {
-              _loadBarangays(newValue['code']);
+              final selectedMunicipality = _municipalities.firstWhere(
+                (municipality) => municipality['code']?.toString() == newValue,
+                orElse: () => {},
+              );
+              setState(() {
+                _selectedMunicipality = selectedMunicipality.isNotEmpty ? selectedMunicipality : null;
+                _barangays = [];
+                _selectedBarangay = null;
+              });
+              if (selectedMunicipality.isNotEmpty) {
+                _loadBarangays(selectedMunicipality['code']);
+              }
+            } else {
+              setState(() {
+                _selectedMunicipality = null;
+                _barangays = [];
+                _selectedBarangay = null;
+              });
             }
           },
           validator: (value) =>
-          value == null ? 'Please select a municipality' : null,
+          value == null || value.isEmpty ? 'Please select a municipality' : null,
         ),
         if (_isLoadingMunicipalities)
           Positioned.fill(
@@ -361,22 +373,32 @@ class _RegisterScreenState extends State<RegisterScreen> {
   Widget _buildBarangayDropdown() {
     return Stack(
       children: [
-        DropdownButtonFormField<Map<String, dynamic>>(
-          value: _selectedBarangay,
+        DropdownButtonFormField<String>(
+          value: _selectedBarangay?['code']?.toString(),
           decoration:
           _inputDecoration('Barangay', Icons.home),
           items: _barangays
-              .map((barangay) => DropdownMenuItem<Map<String, dynamic>>(
-            value: barangay,
+              .map((barangay) => DropdownMenuItem<String>(
+            value: barangay['code']?.toString(),
             child: Text(barangay['name'] ?? 'Unknown Barangay'),
           ))
               .toList(),
           onChanged: _isLoadingBarangays
               ? null
-              : (Map<String, dynamic>? newValue) {
-            setState(() {
-              _selectedBarangay = newValue;
-            });
+              : (String? newValue) {
+            if (newValue != null) {
+              final selectedBarangay = _barangays.firstWhere(
+                (barangay) => barangay['code']?.toString() == newValue,
+                orElse: () => {},
+              );
+              setState(() {
+                _selectedBarangay = selectedBarangay.isNotEmpty ? selectedBarangay : null;
+              });
+            } else {
+              setState(() {
+                _selectedBarangay = null;
+              });
+            }
           },
           validator: (value) {
             return null;
