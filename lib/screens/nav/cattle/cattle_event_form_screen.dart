@@ -41,6 +41,10 @@ class _CattleEventFormScreenState extends State<CattleEventFormScreen>
   // Cattle details
   Cattle? _cattleDetails;
 
+  // Partner linkage for unified editing when editing bull reciprocal breeding
+  String? _partnerTagForEdit;
+  int? _partnerEventIdForEdit;
+
   // Animation controllers
   late AnimationController _fadeController;
   late AnimationController _slideController;
@@ -63,6 +67,24 @@ class _CattleEventFormScreenState extends State<CattleEventFormScreen>
     // Load existing calf data if editing birth event
     if (isEditing && widget.event != null && widget.event!.eventType == 'Gives Birth') {
       _loadExistingCalfData();
+    }
+    
+    // Load breeding event data if editing breeding event
+    print('DEBUG: Checking if should load breeding event data');
+    print('DEBUG: isEditing: $isEditing');
+    print('DEBUG: widget.event: ${widget.event}');
+    if (widget.event != null) {
+      print('DEBUG: widget.event!.eventType: "${widget.event!.eventType}"');
+    }
+    
+    if (isEditing && widget.event != null && widget.event!.eventType == 'Breeding') {
+      print('DEBUG: Loading breeding event data...');
+      // Use post-frame callback to ensure controllers are initialized
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _loadBreedingEventData();
+      });
+    } else {
+      print('DEBUG: Not loading breeding event data - conditions not met');
     }
   }
 
@@ -93,7 +115,7 @@ class _CattleEventFormScreenState extends State<CattleEventFormScreen>
       'diagnosis', 'technician', 'medicine_given', 'semen_used',
       'estimated_return_date', 'weighed_result', 'breeding_date',
       'expected_delivery_date', 'cause_of_death', 'notes',
-      'last_known_location'
+      'last_known_location', 'breeding_type'
     ];
 
     for (var field in fields) {
@@ -341,6 +363,244 @@ class _CattleEventFormScreenState extends State<CattleEventFormScreen>
     }
   }
 
+  Future<void> _loadBreedingEventData() async {
+    try {
+      if (widget.event == null) {
+        print('DEBUG: No event to load breeding data from');
+        return;
+      }
+      
+      final eventJson = widget.event!.toJson();
+      print('DEBUG: Loading breeding event data: $eventJson');
+      print('DEBUG: Event type: ${widget.event!.eventType}');
+      print('DEBUG: Available fields in event: ${eventJson.keys.toList()}');
+      
+      // Set breeding type (map human-readable <-> snake_case)
+      final breedingType = eventJson['breeding_type']?.toString();
+      print('DEBUG: Found breeding_type in event: $breedingType');
+      if (breedingType != null && breedingType.isNotEmpty) {
+        final btLower = breedingType.toLowerCase().trim();
+        String normalized;
+        if (btLower == 'artificial insemination') {
+          normalized = 'artificial_insemination';
+        } else if (btLower == 'natural breeding') {
+          normalized = 'natural_breeding';
+        } else {
+          // Already snake_case or unknown variant
+          normalized = btLower.replaceAll(' ', '_');
+        }
+        _controllers['breeding_type']?.text = normalized;
+        print('DEBUG: Set breeding type controller to (normalized): $normalized');
+      } else {
+        print('DEBUG: No breeding_type found in event data');
+        // Fallback inference based on available fields
+        final semenUsedVal = eventJson['semen_used']?.toString() ?? '';
+        final bullTagVal = eventJson['bull_tag']?.toString() ?? '';
+        if (semenUsedVal.isNotEmpty) {
+          _controllers['breeding_type']?.text = 'artificial_insemination';
+          print('DEBUG: Inferred breeding_type as artificial_insemination from semen_used');
+        } else if (bullTagVal.isNotEmpty) {
+          _controllers['breeding_type']?.text = 'natural_breeding';
+          print('DEBUG: Inferred breeding_type as natural_breeding from bull_tag');
+        }
+      }
+      
+      // Set semen used
+      final semenUsed = eventJson['semen_used']?.toString();
+      print('DEBUG: Found semen_used in event: $semenUsed');
+      if (semenUsed != null && semenUsed.isNotEmpty) {
+        _controllers['semen_used']?.text = semenUsed;
+        print('DEBUG: Set semen_used controller to: $semenUsed');
+      } else {
+        print('DEBUG: No semen_used found in event data');
+        // Fallback for AI: if breeding_type is AI and bull_tag exists, use bull_tag as semen_used
+        final currentBreedingType = _controllers['breeding_type']?.text ?? '';
+        final bullTagVal = eventJson['bull_tag']?.toString() ?? '';
+        if (currentBreedingType == 'artificial_insemination' && bullTagVal.isNotEmpty) {
+          _controllers['semen_used']?.text = bullTagVal;
+          print('DEBUG: Inferred semen_used from bull_tag for AI: $bullTagVal');
+        }
+      }
+      
+      // Set bull tag
+      final bullTag = eventJson['bull_tag']?.toString();
+      print('DEBUG: Found bull_tag in event: $bullTag');
+      if (bullTag != null && bullTag.isNotEmpty) {
+        _controllers['bull_tag']?.text = bullTag;
+        print('DEBUG: Set bull_tag controller to: $bullTag');
+      } else {
+        print('DEBUG: No bull_tag found in event data');
+      }
+      
+      // Set technician
+      final technician = eventJson['technician']?.toString();
+      print('DEBUG: Found technician in event: $technician');
+      if (technician != null && technician.isNotEmpty) {
+        _controllers['technician']?.text = technician;
+        print('DEBUG: Set technician controller to: $technician');
+      } else {
+        print('DEBUG: No technician found in event data');
+      }
+      
+      // Bull-side reciprocal hydration: if subject is male and fields are missing, try to fetch partner cow/heifer event on same date
+      try {
+        final isMaleSubject = (_cattleDetails?.sex.toLowerCase() == 'male');
+        final isBreeding = (widget.event!.eventType.toLowerCase() == 'breeding');
+        final currentBreedingType = (_controllers['breeding_type']?.text ?? '').trim();
+        final currentSemen = (_controllers['semen_used']?.text ?? '').trim();
+        final currentTechnician = (_controllers['technician']?.text ?? '').trim();
+        final eventDate = (eventJson['event_date']?.toString() ?? '').trim();
+        if (isMaleSubject && isBreeding && eventDate.isNotEmpty) {
+          final notes = (eventJson['notes']?.toString() ?? '');
+          // Expect notes like: "Breeding with <TAG>"
+          String? partnerTag;
+          final marker = 'Breeding with ';
+          final idx = notes.indexOf(marker);
+          if (idx != -1) {
+            partnerTag = notes.substring(idx + marker.length).trim();
+          }
+          if (partnerTag != null && partnerTag.isNotEmpty) {
+            print('DEBUG: Hydration - attempting to fetch partner event for tag: $partnerTag on $eventDate');
+            final allPartnerEvents = await CattleEventService.getCattleEventsByTag(partnerTag);
+            // Client-side filter by cattle_tag to be safe
+            final partnerEvents = allPartnerEvents.where((e) => (e['cattle_tag']?.toString() ?? '') == partnerTag).toList();
+            // Normalize dates to day precision
+            DateTime? targetDate;
+            try { targetDate = DateTime.parse(eventDate); } catch (_) { targetDate = null; }
+            Map<String, dynamic> partner = {};
+            if (targetDate != null) {
+              final sameDay = partnerEvents.firstWhere(
+                (e) {
+                  try {
+                    if ((e['event_type']?.toString().toLowerCase() ?? '') != 'breeding') return false;
+                    final d = DateTime.parse(e['event_date']?.toString() ?? '');
+                    return d.year == targetDate!.year && d.month == targetDate!.month && d.day == targetDate!.day;
+                  } catch (_) { return false; }
+                },
+                orElse: () => {},
+              );
+              partner = sameDay;
+              // Fallback: nearest breeding event on/before date
+              if (partner.isEmpty) {
+                final breedingEvents = partnerEvents.where((e) => (e['event_type']?.toString().toLowerCase() ?? '') == 'breeding').toList();
+                breedingEvents.sort((a, b) {
+                  DateTime? ad, bd;
+                  try { ad = DateTime.parse(a['event_date']?.toString() ?? ''); } catch (_) {}
+                  try { bd = DateTime.parse(b['event_date']?.toString() ?? ''); } catch (_) {}
+                  if (ad == null || bd == null) return 0;
+                  return bd.compareTo(ad);
+                });
+                for (final e in breedingEvents) {
+                  try {
+                    final d = DateTime.parse(e['event_date']?.toString() ?? '');
+                    if (!d.isAfter(targetDate)) { partner = e; break; }
+                  } catch (_) {}
+                }
+              }
+            }
+            if (partner.isNotEmpty) {
+              // Save partner identifiers for unified editing on save
+              _partnerTagForEdit = partnerTag;
+              try {
+                _partnerEventIdForEdit = partner['id'] is int
+                    ? partner['id'] as int
+                    : int.tryParse((partner['id']?.toString() ?? ''));
+              } catch (_) {
+                _partnerEventIdForEdit = int.tryParse((partner['id']?.toString() ?? ''));
+              }
+              // Prefer partner values to hydrate UI-only fields
+              final partnerBT = partner['breeding_type']?.toString();
+              if (partnerBT != null && partnerBT.isNotEmpty) {
+                final btLower = partnerBT.toLowerCase();
+                String normalized;
+                if (btLower == 'artificial insemination') {
+                  normalized = 'artificial_insemination';
+                } else if (btLower == 'natural breeding') {
+                  normalized = 'natural_breeding';
+                } else {
+                  normalized = btLower.replaceAll(' ', '_');
+                }
+                _controllers['breeding_type']?.text = normalized;
+                print('DEBUG: Hydration - set breeding_type from partner: $normalized');
+              }
+              final semenPartner = partner['semen_used']?.toString();
+              if (semenPartner != null && semenPartner.isNotEmpty) {
+                _controllers['semen_used']?.text = semenPartner;
+                print('DEBUG: Hydration - set semen_used from partner: $semenPartner');
+              }
+              final techPartner = partner['technician']?.toString();
+              if (techPartner != null && techPartner.isNotEmpty) {
+                _controllers['technician']?.text = techPartner;
+                print('DEBUG: Hydration - set technician from partner: $techPartner');
+              }
+              // Copy date fields if missing
+              final estReturn = (_controllers['estimated_return_date']?.text ?? '').trim();
+              if (estReturn.isEmpty) {
+                final pEst = partner['estimated_return_date']?.toString();
+                if (pEst != null && pEst.isNotEmpty) {
+                  _controllers['estimated_return_date']?.text = pEst;
+                  print('DEBUG: Hydration - set estimated_return_date from partner: $pEst');
+                }
+              }
+              final breedingDate = (_controllers['breeding_date']?.text ?? '').trim();
+              if (breedingDate.isEmpty) {
+                final pBreed = partner['breeding_date']?.toString();
+                if (pBreed != null && pBreed.isNotEmpty) {
+                  _controllers['breeding_date']?.text = pBreed;
+                  print('DEBUG: Hydration - set breeding_date from partner: $pBreed');
+                }
+              }
+              final expectedDelivery = (_controllers['expected_delivery_date']?.text ?? '').trim();
+              if (expectedDelivery.isEmpty) {
+                final pEDD = partner['expected_delivery_date']?.toString();
+                if (pEDD != null && pEDD.isNotEmpty) {
+                  _controllers['expected_delivery_date']?.text = pEDD;
+                  print('DEBUG: Hydration - set expected_delivery_date from partner: $pEDD');
+                }
+              }
+              // For Natural breeding on bull-side, prefill bull dropdown with current bull tag (UI only)
+              final btNow = (_controllers['breeding_type']?.text ?? '').trim();
+              if (btNow == 'natural_breeding') {
+                final bullCtrl = _controllers['bull_tag'];
+                if (bullCtrl != null && bullCtrl.text.trim().isEmpty) {
+                  final bullTagSelf = _cattleDetails?.tagNo ?? '';
+                  if (bullTagSelf.isNotEmpty) {
+                    bullCtrl.text = bullTagSelf;
+                    print('DEBUG: Hydration - set bull_tag to self for natural breeding UI: $bullTagSelf');
+                  }
+                }
+              }
+            } else {
+              print('DEBUG: Hydration - no matching partner breeding event found');
+              // Fallback: assume Natural on bull-side for completeness in UI
+              _controllers['breeding_type']?.text = 'natural_breeding';
+              final bullCtrl = _controllers['bull_tag'];
+              if (bullCtrl != null && bullCtrl.text.trim().isEmpty) {
+                final bullTagSelf = _cattleDetails?.tagNo ?? '';
+                if (bullTagSelf.isNotEmpty) {
+                  bullCtrl.text = bullTagSelf;
+                  print('DEBUG: Hydration Fallback - set breeding_type to natural_breeding and bull_tag to self: $bullTagSelf');
+                }
+              }
+            }
+          } else {
+            print('DEBUG: Hydration - could not extract partner tag from notes: "$notes"');
+          }
+        }
+      } catch (e) {
+        print('DEBUG: Error hydrating bull reciprocal fields from partner: $e');
+      }
+
+      // Force UI refresh so dropdowns pick up controller values
+      if (mounted) {
+        setState(() {});
+      }
+      
+    } catch (e) {
+      print('Error loading breeding event data: $e');
+    }
+  }
+
   void _handleEventDateSelected(DateTime selectedDate) {
     if (selectedEventType.toLowerCase() == 'breeding') {
       WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -386,8 +646,12 @@ class _CattleEventFormScreenState extends State<CattleEventFormScreen>
           _cattleDetails = cattle;
         });
 
-        if (isEditing && widget.event != null) {
-          await _setEditEventType(cattle);
+        if (isEditing && widget.event != null && _cattleDetails != null) {
+          await _setEditEventType(_cattleDetails!);
+          // Ensure breeding data hydration runs after cattle details are available
+          if (widget.event!.eventType == 'Breeding') {
+            await _loadBreedingEventData();
+          }
         }
       } else {
         if (mounted) {
@@ -840,6 +1104,9 @@ class _CattleEventFormScreenState extends State<CattleEventFormScreen>
         }
       });
 
+      // Note: We remove estimated_return_date only from the bull-side payload later,
+      // to ensure the partner cow/heifer keeps it when updated.
+
       // Handle weight field specially
       if (_controllers['weighed_result']!.text.trim().isNotEmpty) {
         final weight = double.tryParse(_controllers['weighed_result']!.text.trim());
@@ -952,6 +1219,91 @@ class _CattleEventFormScreenState extends State<CattleEventFormScreen>
             throw Exception('Event ID is required for editing');
           }
           data['id'] = widget.event!.id;
+
+          // Unified editing: if editing a bull reciprocal breeding, first update the partner cow/heifer event with full details
+          final isBullSubject = _cattleDetails?.sex.toLowerCase() == 'male';
+          final isBreedingEdit = selectedEventType.toLowerCase() == 'breeding';
+          if (isBullSubject && isBreedingEdit && _partnerTagForEdit != null && _partnerEventIdForEdit != null) {
+            // Build partner payload mirroring current UI values
+            final partnerData = Map<String, dynamic>.from(data);
+            partnerData['id'] = _partnerEventIdForEdit;
+            partnerData['cattle_tag'] = _partnerTagForEdit;
+            // Do not propagate notes into the partner event
+            partnerData.remove('notes');
+            // Ensure breeding_type mirrors UI selection
+            final breedingFieldsKey = _eventSpecificFieldsKey.currentState;
+            final partnerBT = breedingFieldsKey?.getBreedingType();
+            if (partnerBT != null) {
+              partnerData['breeding_type'] = partnerBT;
+            }
+            // For AI, partner needs semen_used and technician; for Natural, partner needs bull_tag (self)
+            if ((partnerBT ?? '').toLowerCase() == 'artificial_insemination') {
+              // keep semen_used, technician from current controllers
+              partnerData.remove('bull_tag');
+            } else if ((partnerBT ?? '').toLowerCase() == 'natural_breeding') {
+              // set bull_tag to this bull's tag; remove semen/technician
+              final bullSelf = _cattleDetails?.tagNo ?? '';
+              if (bullSelf.isNotEmpty) partnerData['bull_tag'] = bullSelf;
+              partnerData.remove('semen_used');
+              partnerData.remove('technician');
+            }
+            // Remove return-to-heat only from bull payload (current 'data'), not from partnerData
+            data.remove('estimated_return_date');
+            // Execute partner update before saving the bull event
+            final partnerOk = await CattleEventService.updateCattleEvent(partnerData);
+            print('Unified edit: partner update result: $partnerOk');
+          }
+
+          // Unified editing: if editing a female breeding event, update the bull reciprocal as well
+          final isFemaleSubject = _cattleDetails?.sex.toLowerCase() == 'female';
+          if (isFemaleSubject && isBreedingEdit) {
+            // Determine partner bull tag based on breeding_type
+            final breedingFieldsKey = _eventSpecificFieldsKey.currentState;
+            final bt = breedingFieldsKey?.getBreedingType() ?? data['breeding_type']?.toString();
+            String? partnerBullTag;
+            if ((bt ?? '').toLowerCase() == 'natural_breeding') {
+              partnerBullTag = _controllers['bull_tag']?.text.trim();
+            } else if ((bt ?? '').toLowerCase() == 'artificial_insemination') {
+              // For AI, bull tag is not used; reciprocal exists but without sire fields
+              partnerBullTag = null;
+            }
+
+            if (partnerBullTag != null && partnerBullTag.isNotEmpty) {
+              // Fetch partner bull events and find matching breeding by date
+              final allPartnerEvents = await CattleEventService.getCattleEventsByTag(partnerBullTag);
+              final partnerEvents = allPartnerEvents.where((e) => (e['cattle_tag']?.toString() ?? '') == partnerBullTag).toList();
+              Map<String, dynamic> partner = {};
+              try {
+                final targetDate = DateTime.parse(data['event_date']);
+                partner = partnerEvents.firstWhere(
+                  (e) {
+                    try {
+                      if ((e['event_type']?.toString().toLowerCase() ?? '') != 'breeding') return false;
+                      final d = DateTime.parse(e['event_date']?.toString() ?? '');
+                      return d.year == targetDate.year && d.month == targetDate.month && d.day == targetDate.day;
+                    } catch (_) { return false; }
+                  },
+                  orElse: () => {},
+                );
+              } catch (_) {}
+
+              if (partner.isNotEmpty) {
+                // Build bull-side payload with limited fields and explicitly omit return-to-heat
+                final bullData = <String, dynamic>{
+                  'id': partner['id'],
+                  'cattle_tag': partnerBullTag,
+                  'event_type': 'Breeding',
+                  'event_date': data['event_date'],
+                  'breeding_type': 'Natural Breeding',
+                  // Do not overwrite partner bull notes
+                };
+                // Execute bull update
+                final bullOk = await CattleEventService.updateCattleEvent(bullData);
+                print('Unified edit: bull reciprocal update result: $bullOk');
+              }
+            }
+          }
+
           print('Updating event with ID: ${widget.event!.id}');
           eventSuccess = await CattleEventService.updateCattleEvent(data);
         } else {
@@ -982,20 +1334,30 @@ class _CattleEventFormScreenState extends State<CattleEventFormScreen>
 
         // Event saved successfully, now handle specific event types
         try {
+          print('🎯 Event type handling - selectedEventType: "$selectedEventType"');
           if (selectedEventType.toLowerCase() == 'gives birth') {
+            print('🎯 Handling Gives Birth event');
             await _handleGivesBirthEvent();
           } else if (selectedEventType.toLowerCase() == 'breeding') {
+            print('🎯 Handling Breeding event');
             await _handleBreedingEvent();
           } else if (selectedEventType.toLowerCase() == 'pregnant') {
+            print('🎯 Handling Pregnant event');
             await _handlePregnantEvent();
           } else if (selectedEventType.toLowerCase() == 'castrated') {
+            print('🎯 Handling Castrated event');
             await _handleCastratedEvent();
           } else if (selectedEventType.toLowerCase() == 'deceased') {
+            print('🎯 Handling Deceased event');
             await _handleDeceasedEvent();
           } else if (selectedEventType.toLowerCase() == 'lost') {
+            print('🎯 Handling Lost event');
             await _handleLostEvent();
           } else if (selectedEventType.toLowerCase() == 'weighed') {
+            print('🎯 Handling Weighed event');
             await _handleWeighedEvent();
+          } else {
+            print('🎯 No specific event handler for: "$selectedEventType"');
           }
         } catch (eventSpecificError) {
           // Log but don't fail the entire operation for event-specific errors
@@ -1068,6 +1430,7 @@ class _CattleEventFormScreenState extends State<CattleEventFormScreen>
   }
 
   Future<void> _handleBreedingEvent() async {
+    print('🚀🚀🚀 _handleBreedingEvent() CALLED! 🚀🚀🚀');
     try {
       bool cowStatusUpdated = false;
       String cowStatus = '';
@@ -1114,6 +1477,14 @@ class _CattleEventFormScreenState extends State<CattleEventFormScreen>
         }
       }
 
+      // Create reciprocal breeding event for the male cattle
+      print('DEBUG: About to create reciprocal breeding event');
+      print('DEBUG: Current cattle details: ${_cattleDetails?.tagNo}');
+      print('DEBUG: Breeding type controller value: ${_controllers['breeding_type']?.text}');
+      print('DEBUG: Semen used controller value: ${_controllers['semen_used']?.text}');
+      print('DEBUG: Bull tag controller value: ${_controllers['bull_tag']?.text}');
+      await _createReciprocalBreedingEvent();
+
       // Log the results for debugging
       print('Breeding event results:');
       print('- Cow: $cowStatus');
@@ -1154,6 +1525,168 @@ class _CattleEventFormScreenState extends State<CattleEventFormScreen>
     }
   }
 
+  Future<void> _createReciprocalBreedingEvent() async {
+    print('🔥🔥🔥 _createReciprocalBreedingEvent() CALLED! 🔥🔥🔥');
+    try {
+      final breedingType = _controllers['breeding_type']?.text ?? '';
+      String? partnerCattleTag;
+      
+      print('DEBUG: Creating reciprocal breeding event');
+      print('DEBUG: Breeding type: $breedingType');
+      print('DEBUG: All controller values:');
+      print('  - breeding_type: ${_controllers['breeding_type']?.text}');
+      print('  - semen_used: ${_controllers['semen_used']?.text}');
+      print('  - bull_tag: ${_controllers['bull_tag']?.text}');
+      print('  - event_date: ${_controllers['event_date']?.text}');
+      
+      // Determine the partner cattle based on breeding type
+      if (breedingType == 'artificial_insemination') {
+        final semenUsed = _controllers['semen_used']?.text ?? '';
+        print('DEBUG: Semen used: $semenUsed');
+        if (semenUsed.isNotEmpty) {
+          // We now store pure tag. If any old label format slips through, fall back to parsing.
+          if (semenUsed.contains(' Semen')) {
+            String tagPart = semenUsed.replaceAll(' Semen', '');
+            if (tagPart.contains(' (') && tagPart.contains(')')) {
+              partnerCattleTag = tagPart.split(' (')[0];
+            } else {
+              partnerCattleTag = tagPart;
+            }
+            print('DEBUG: Extracted bull tag from semen label: $partnerCattleTag');
+          } else {
+            partnerCattleTag = semenUsed.trim();
+            print('DEBUG: Using semen_used as pure tag for partner: $partnerCattleTag');
+          }
+        }
+      } else if (breedingType == 'natural_breeding') {
+        partnerCattleTag = _controllers['bull_tag']?.text ?? '';
+        print('DEBUG: Bull tag from natural breeding: $partnerCattleTag');
+      } else {
+        // Fallback: try to determine from available fields
+        print('DEBUG: Unknown breeding type, trying fallback detection');
+        final semenUsed = _controllers['semen_used']?.text ?? '';
+        final bullTag = _controllers['bull_tag']?.text ?? '';
+        
+        if (semenUsed.isNotEmpty) {
+          print('DEBUG: Fallback - using semen field');
+          if (semenUsed.contains(' Semen')) {
+            String tagPart = semenUsed.replaceAll(' Semen', '');
+            if (tagPart.contains(' (') && tagPart.contains(')')) {
+              partnerCattleTag = tagPart.split(' (')[0];
+            } else {
+              partnerCattleTag = tagPart;
+            }
+          }
+        } else if (bullTag.isNotEmpty) {
+          print('DEBUG: Fallback - using bull tag field');
+          partnerCattleTag = bullTag;
+        }
+      }
+      
+      if (partnerCattleTag == null || partnerCattleTag.isEmpty) {
+        print('DEBUG: No partner cattle found for reciprocal breeding event');
+        print('DEBUG: Breeding type was: $breedingType');
+        print('DEBUG: Semen used was: ${_controllers['semen_used']?.text}');
+        print('DEBUG: Bull tag was: ${_controllers['bull_tag']?.text}');
+        return;
+      }
+      
+      // Find the partner cattle
+      final partnerCattle = await CattleService.getCattleByTag(partnerCattleTag);
+      if (partnerCattle == null) {
+        print('Partner cattle not found: $partnerCattleTag');
+        return;
+      }
+      
+      // Check if partner cattle is male (Bull)
+      final partnerSex = partnerCattle.sex.toLowerCase().trim();
+      if (partnerSex != 'male') {
+        print('Partner cattle is not male, skipping reciprocal breeding event');
+        return;
+      }
+      
+      // Check if a breeding event already exists for this partner on the same date
+      final eventDate = _controllers['event_date']?.text ?? '';
+      if (eventDate.isNotEmpty) {
+        final existingEvents = await CattleEventService.getCattleEventsByTag(partnerCattleTag);
+        print('DEBUG: Checking for existing events for partner: $partnerCattleTag');
+        print('DEBUG: Found ${existingEvents.length} events for partner');
+        
+        // Filter events to only include those for the specific partner cattle
+        final partnerEvents = existingEvents.where((event) => 
+          event['cattle_tag']?.toString() == partnerCattleTag
+        ).toList();
+        
+        print('DEBUG: Filtered to ${partnerEvents.length} events for partner cattle');
+        
+        final hasExistingBreedingEvent = partnerEvents.any((event) => 
+          event['event_type']?.toString().toLowerCase() == 'breeding' && 
+          event['event_date']?.toString() == eventDate
+        );
+        
+        if (hasExistingBreedingEvent) {
+          print('DEBUG: Breeding event already exists for partner cattle on this date');
+          return;
+        } else {
+          print('DEBUG: No existing breeding event found for partner on this date');
+        }
+      }
+      
+      // Create reciprocal breeding event for the male
+      final reciprocalEventData = {
+        'cattle_tag': partnerCattleTag,
+        // Use proper case to match backend ENUM
+        'event_type': 'Breeding',
+        'event_date': _controllers['event_date']?.text ?? '',
+        // Map to human-readable for backend storage
+        'breeding_type': (breedingType == 'artificial_insemination')
+            ? 'Artificial Insemination'
+            : (breedingType == 'natural_breeding')
+                ? 'Natural Breeding'
+                : breedingType,
+        'notes': 'Breeding with ${_cattleDetails?.tagNo ?? 'unknown'}',
+        'user_id': 1, // Use default user ID for now
+      };
+      
+      // Add breeding-specific fields
+      if (breedingType == 'artificial_insemination') {
+        // Do not include semen_used for reciprocal bull event
+        reciprocalEventData['technician'] = _controllers['technician']?.text ?? '';
+      } else if (breedingType == 'natural_breeding') {
+        reciprocalEventData['bull_tag'] = _controllers['bull_tag']?.text ?? '';
+      }
+      
+      final result = await CattleEventService.storeCattleEvent(reciprocalEventData);
+      
+      if (result) {
+        print('Successfully created reciprocal breeding event for $partnerCattleTag');
+        
+        // Update partner cattle status to Breeding
+        final partnerUpdateData = Map<String, dynamic>.from(partnerCattle.toJson());
+        partnerUpdateData['status'] = 'Breeding';
+        await CattleService.updateCattleInformation(partnerUpdateData);
+        
+        // Show success message
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Reciprocal breeding event created for $partnerCattleTag'),
+              backgroundColor: Colors.blue[600],
+              behavior: SnackBarBehavior.floating,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+              duration: const Duration(seconds: 3),
+            ),
+          );
+        }
+      } else {
+        print('Failed to create reciprocal breeding event for $partnerCattleTag');
+      }
+      
+    } catch (e) {
+      print('Error creating reciprocal breeding event: $e');
+      // Don't show error to user as this is a secondary operation
+    }
+  }
 
   Future<void> _handlePregnantEvent() async {
     try {

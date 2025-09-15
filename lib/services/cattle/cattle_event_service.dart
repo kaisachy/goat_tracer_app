@@ -198,4 +198,38 @@ class CattleEventService {
       return false;
     }
   }
+
+  /// Get cattle events by cattle tag
+  static Future<List<Map<String, dynamic>>> getCattleEventsByTag(String cattleTag) async {
+    final token = await AuthService.getToken();
+
+    if (token == null) {
+      log('getCattleEventsByTag: No token found');
+      return [];
+    }
+
+    try {
+      final response = await http.get(
+        Uri.parse('$_baseUrl/cattles/event?cattle_tag=$cattleTag'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+      );
+
+      log('getCattleEventsByTag Response - Status: ${response.statusCode}, Body: ${response.body}');
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        return List<Map<String, dynamic>>.from(data['data']);
+      } else {
+        log('Failed to load cattle events by tag. Status code: ${response.statusCode}');
+        log('Response body: ${response.body}');
+      }
+    } catch (e, stackTrace) {
+      log('Error in getCattleEventsByTag: $e', stackTrace: stackTrace);
+    }
+
+    return [];
+  }
 }

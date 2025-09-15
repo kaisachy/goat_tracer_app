@@ -8,86 +8,64 @@ class EventTypeUtils {
   static List<String> getEventTypesForSex(String? sex, {String? classification}) {
     final baseTypes = ['Select type of event'];
 
-    if (sex == null) {
+    if (classification == null) {
       return [...baseTypes, 'Loading cattle information...'];
     }
 
-    final sexLower = sex.toLowerCase().trim();
-    final classificationLower = classification?.toLowerCase().trim();
+    final classificationLower = classification.toLowerCase().trim();
 
     // Debug logging
-    print('DEBUG: Sex: $sex, Classification: $classification');
-    print('DEBUG: Sex lower: $sexLower, Classification lower: $classificationLower');
+    print('DEBUG: Classification: $classification');
+    print('DEBUG: Classification lower: $classificationLower');
 
-    // If cattle is a Calf, exclude breeding-related events
-    final isCalf = classificationLower == 'calf';
-    print('DEBUG: Is Calf: $isCalf');
+    // Determine event types based on classification only (matching PHP web logic)
+    List<String> eventTypes = [];
 
-    if (sexLower == 'female') {
-      final femaleEvents = [
-        ...baseTypes,
-        'Dry off',
-        'Treated',
-        'Weighed',
-        'Vaccinated',
-        'Deworming',
-        'Hoof Trimming',
-        'Deceased',
-        'Lost',
-        'Other',
-      ];
-
-      // Only add breeding-related events if not a Calf
-      if (!isCalf) {
-        femaleEvents.addAll([
-          'Breeding',
-          'Gives Birth',
-          'Pregnant',
-          'Aborted Pregnancy',
-        ]);
-        print('DEBUG: Added breeding events for non-calf female');
-      } else {
-        print('DEBUG: Excluded breeding events for calf female');
-      }
-
-      // Add Weaned event only for Calf classification
-      if (isCalf) {
-        femaleEvents.add('Weaned');
-      }
-
-      print('DEBUG: Final female events: ${femaleEvents.join(', ')}');
-      return femaleEvents;
-    } else if (sexLower == 'male') {
-      final maleEvents = [
-        ...baseTypes,
-        'Treated',
-        'Weighed',
-        'Vaccinated',
-        'Deworming',
-        'Hoof Trimming',
-        'Castrated',
-        'Deceased',
-        'Lost',
-        'Other'
-      ];
-      // Add Weaned event only for Calf classification (not adult bulls)
-      if (isCalf) {
-        maleEvents.add('Weaned');
-      }
-      return maleEvents;
-    } else {
-      return [
-        ...baseTypes,
-        'Treated',
-        'Weighed',
-        'Vaccinated',
-        'Deworming',
-        'Hoof Trimming',
-        'Deceased',
-        'Lost',
-        'Other'
-      ];
+    switch (classificationLower) {
+      case 'calf':
+      case 'calves':
+        eventTypes = ['Treated', 'Weighed', 'Vaccinated', 'Deworming', 'Hoof Trimming', 'Castrated', 'Weaned', 'Lost', 'Deceased', 'Other'];
+        print('DEBUG: Using Calf event types');
+        break;
+        
+      case 'heifer':
+      case 'heifers':
+        eventTypes = ['Treated', 'Weighed', 'Vaccinated', 'Breeding', 'Pregnant', 'Gives Birth', 'Aborted Pregnancy', 'Deworming', 'Hoof Trimming', 'Sold', 'Lost', 'Deceased', 'Other'];
+        print('DEBUG: Using Heifer event types');
+        break;
+        
+      case 'cow':
+      case 'cows':
+        eventTypes = ['Dry off', 'Treated', 'Breeding', 'Weighed', 'Gives Birth', 'Vaccinated', 'Pregnant', 'Aborted Pregnancy', 'Deworming', 'Hoof Trimming', 'Sold', 'Lost', 'Deceased', 'Other'];
+        print('DEBUG: Using Cow event types');
+        break;
+        
+      case 'bull':
+      case 'bulls':
+        eventTypes = ['Treated', 'Weighed', 'Breeding', 'Vaccinated', 'Deworming', 'Hoof Trimming', 'Sold', 'Lost', 'Deceased', 'Other'];
+        print('DEBUG: Using Bull event types');
+        break;
+        
+      case 'steer':
+      case 'steers':
+        eventTypes = ['Treated', 'Weighed', 'Vaccinated', 'Deworming', 'Hoof Trimming', 'Sold', 'Lost', 'Deceased', 'Other'];
+        print('DEBUG: Using Steer event types');
+        break;
+        
+      case 'growers':
+      case 'grower':
+        eventTypes = ['Treated', 'Weighed', 'Vaccinated', 'Deworming', 'Hoof Trimming', 'Sold', 'Lost', 'Deceased', 'Other'];
+        print('DEBUG: Using Growers event types');
+        break;
+        
+      default:
+        eventTypes = ['Treated', 'Weighed', 'Vaccinated', 'Deworming', 'Hoof Trimming', 'Lost', 'Deceased', 'Other'];
+        print('DEBUG: Using default event types for classification: $classificationLower');
+        break;
     }
+
+    print('DEBUG: Final event types: ${eventTypes.join(', ')}');
+    return [...baseTypes, ...eventTypes];
   }
 
   static IconData getEventIcon(String eventType) {

@@ -138,7 +138,7 @@ class EventCattleInfoEventCard extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Cattle #${cattleDetails!.tagNo}',
+                      '${cattleDetails!.tagNo}',
                       style: const TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.bold,
@@ -149,7 +149,9 @@ class EventCattleInfoEventCard extends StatelessWidget {
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      '#${cattleDetails!.tagNo}',
+                      cattleDetails!.classification?.isNotEmpty == true
+                          ? cattleDetails!.classification!
+                          : 'Classification',
                       style: const TextStyle(
                         fontSize: 14,
                         color: AppColors.textSecondary,

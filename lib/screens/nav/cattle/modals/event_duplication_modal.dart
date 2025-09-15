@@ -134,21 +134,51 @@ class _EventDuplicationModalState extends State<EventDuplicationModal> {
 
     switch (eventType) {
       case 'breeding':
-      // For breeding event, only allow Bull, Growers, Heifer, Cow
-        final allowedClassifications = ['bull', 'growers', 'heifer', 'cow'];
+        // For breeding event, only allow Bull, Heifer, Cow (matching PHP logic)
+        final allowedClassifications = ['bull', 'heifer', 'cow'];
         return allowedClassifications.contains(classificationLower);
 
       case 'dry off':
-      // Dry off is typically for cows and heifers
-        final allowedForDryOff = ['heifer', 'cow'];
-        return allowedForDryOff.contains(classificationLower);
+        // Dry off is only for Cow (matching PHP logic)
+        return classificationLower == 'cow';
+
+      case 'gives birth':
+        // Gives Birth is only for Heifer and Cow (matching PHP logic)
+        final allowedForGivesBirth = ['heifer', 'cow'];
+        return allowedForGivesBirth.contains(classificationLower);
+
+      case 'pregnant':
+        // Pregnant is only for Heifer and Cow (matching PHP logic)
+        final allowedForPregnant = ['heifer', 'cow'];
+        return allowedForPregnant.contains(classificationLower);
+
+      case 'aborted pregnancy':
+        // Aborted Pregnancy is only for Heifer and Cow (matching PHP logic)
+        final allowedForAborted = ['heifer', 'cow'];
+        return allowedForAborted.contains(classificationLower);
+
+      case 'castrated':
+        // Castrated is only for Calf (matching PHP logic)
+        return classificationLower == 'calf';
+
+      case 'weaned':
+        // Weaned is only for Calf (matching PHP logic)
+        return classificationLower == 'calf';
+
+      case 'sold':
+        // Sold is not available for Calf (matching PHP logic)
+        return classificationLower != 'calf';
 
       case 'treated':
+      case 'weighed':
       case 'vaccinated':
       case 'deworming':
       case 'hoof trimming':
+      case 'deceased':
+      case 'lost':
+      case 'other':
       default:
-      // Other event are valid for all classifications
+        // Other events are valid for all classifications
         return true;
     }
   }

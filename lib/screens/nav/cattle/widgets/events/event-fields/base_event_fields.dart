@@ -363,9 +363,14 @@ abstract class BaseEventFieldsState<T extends BaseEventFields> extends State<T> 
       margin: const EdgeInsets.only(bottom: 16),
       width: double.infinity,
       child: DropdownButtonFormField<String>(
-        value: widget.controllers['bull_tag']?.text.isEmpty == true
-            ? null
-            : widget.controllers['bull_tag']?.text,
+        value: () {
+          final currentRaw = widget.controllers['bull_tag']?.text ?? '';
+          final current = currentRaw.trim();
+          if (current.isEmpty) return null;
+          final options = bulls.map((b) => b.tagNo.trim()).toList();
+          final lowerToOriginal = { for (final o in options) o.toLowerCase(): o };
+          return lowerToOriginal[current.toLowerCase()] ?? current;
+        }(),
         decoration: InputDecoration(
           labelText: 'Bull Tag (Father)',
           prefixIcon: const Icon(FontAwesomeIcons.mars, color: AppColors.primary),
@@ -397,7 +402,7 @@ abstract class BaseEventFieldsState<T extends BaseEventFields> extends State<T> 
             child: SizedBox(
               width: double.infinity,
               child: Text(
-                'Cattle #${bull.tagNo}',
+                bull.tagNo,
                 overflow: TextOverflow.ellipsis,
                 maxLines: 1,
               ),
@@ -423,9 +428,21 @@ abstract class BaseEventFieldsState<T extends BaseEventFields> extends State<T> 
       margin: const EdgeInsets.only(bottom: 16),
       width: double.infinity,
       child: DropdownButtonFormField<String>(
-        value: widget.controllers['bull_tag']?.text.isEmpty == true
-            ? null
-            : widget.controllers['bull_tag']?.text,
+        value: () {
+          final currentRaw = widget.controllers['bull_tag']?.text ?? '';
+          final current = currentRaw.trim();
+          if (current.isEmpty) return null;
+          List<String> options = bulls.map((b) => b.tagNo.trim()).toList();
+          if (!options.map((o) => o.toLowerCase()).contains(current.toLowerCase())) {
+            options = [current, ...options];
+          }
+          final lowerToOriginal = { for (final o in options) o.toLowerCase(): o };
+          final match = lowerToOriginal[current.toLowerCase()];
+          // Debug
+          // ignore: avoid_print
+          print('Bull dropdown - current: "$current", options: ${options.join(', ')}');
+          return match ?? current;
+        }(),
         decoration: InputDecoration(
           labelText: 'Bull', // Simplified label for natural breeding
           prefixIcon: const Icon(FontAwesomeIcons.mars, color: AppColors.primary),
@@ -451,21 +468,27 @@ abstract class BaseEventFieldsState<T extends BaseEventFields> extends State<T> 
         ),
         hint: Text(loadingBulls ? 'Loading bulls...' : 'Select bull'),
         isExpanded: true,
-        items: bulls.map((bull) {
-          return DropdownMenuItem<String>(
-            value: bull.tagNo,
+        items: () {
+          final current = (widget.controllers['bull_tag']?.text ?? '').trim();
+          List<String> options = bulls.map((b) => b.tagNo.trim()).toList();
+          if (current.isNotEmpty && !options.map((o) => o.toLowerCase()).contains(current.toLowerCase())) {
+            options = [current, ...options];
+          }
+          return options.map((tag) => DropdownMenuItem<String>(
+            value: tag,
             child: SizedBox(
               width: double.infinity,
               child: Text(
-                'Cattle #${bull.tagNo}',
+                tag,
                 overflow: TextOverflow.ellipsis,
                 maxLines: 1,
               ),
             ),
-          );
-        }).toList(),
+          )).toList();
+        }(),
         onChanged: loadingBulls ? null : (value) {
-          widget.controllers['bull_tag']?.text = value ?? '';
+          final val = (value ?? '').trim();
+          widget.controllers['bull_tag']?.text = val;
         },
         validator: (value) {
           if (value == null || value.isEmpty) {
@@ -492,6 +515,7 @@ abstract class BaseEventFieldsState<T extends BaseEventFields> extends State<T> 
     print('Controller value: "$currentValue"');
     print('Loading technicians: $loadingTechnicians');
     print('Technicians count: ${technicians.length}');
+    print('Technicians: ${technicians.map((t) => '${t.firstName} ${t.lastName} (ID: ${t.id})').join(', ')}');
 
     // If still loading technicians, show loading state
     if (loadingTechnicians) {
@@ -531,8 +555,10 @@ abstract class BaseEventFieldsState<T extends BaseEventFields> extends State<T> 
     // Create dropdown items with enhanced styling
     List<DropdownMenuItem<String>> dropdownItems = technicians.map((technician) {
       final displayName = '${technician.firstName} ${technician.lastName}'.trim();
+      // Create unique value by combining name and ID to avoid duplicates
+      final uniqueValue = '$displayName (ID: ${technician.id})';
       return DropdownMenuItem<String>(
-        value: displayName,
+        value: uniqueValue,
         child: Container(
           padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 4), // Increased vertical padding
           width: double.infinity,
@@ -570,6 +596,8 @@ abstract class BaseEventFieldsState<T extends BaseEventFields> extends State<T> 
       );
     }).toList();
 
+    print('Dropdown items: ${dropdownItems.map((item) => item.value).join(', ')}');
+
     // Check if the current value exists in the available options
     bool valueExists = false;
     if (currentValue != null) {
@@ -577,7 +605,8 @@ abstract class BaseEventFieldsState<T extends BaseEventFields> extends State<T> 
         // Trim and compare both values
         final itemValue = item.value?.trim() ?? '';
         final currentVal = currentValue?.trim() ?? '';
-        return itemValue == currentVal;
+        // Check if the current value matches either the full unique value or just the display name
+        return itemValue == currentVal || itemValue.startsWith('$currentVal (ID: ');
       });
       print('Checking if "$currentValue" exists in dropdown items: $valueExists');
     }
@@ -585,7 +614,16 @@ abstract class BaseEventFieldsState<T extends BaseEventFields> extends State<T> 
     // Determine the dropdown value to use
     String? dropdownValue;
     if (currentValue != null && valueExists) {
-      dropdownValue = currentValue.trim();
+      // Find the matching unique value from dropdown items
+      final matchingItem = dropdownItems.firstWhere(
+        (item) {
+          final itemValue = item.value?.trim() ?? '';
+          final currentVal = currentValue?.trim() ?? '';
+          return itemValue == currentVal || itemValue.startsWith('$currentVal (ID: ');
+        },
+        orElse: () => dropdownItems.first, // Fallback, shouldn't happen
+      );
+      dropdownValue = matchingItem.value;
       print('Using existing value: "$dropdownValue"');
     } else {
       dropdownValue = null;
@@ -630,8 +668,13 @@ abstract class BaseEventFieldsState<T extends BaseEventFields> extends State<T> 
         items: dropdownItems,
         onChanged: (value) {
           print('Technician dropdown changed to: "$value"');
+          // Extract display name from unique value (remove ID part)
+          String displayName = value ?? '';
+          if (displayName.contains(' (ID: ')) {
+            displayName = displayName.split(' (ID: ')[0];
+          }
           // Update the controller with the display name
-          widget.controllers['technician']?.text = value ?? '';
+          widget.controllers['technician']?.text = displayName;
           print('Controller updated to: "${widget.controllers['technician']?.text}"');
 
           // Force a rebuild to ensure the UI reflects the change
@@ -673,18 +716,27 @@ abstract class BaseEventFieldsState<T extends BaseEventFields> extends State<T> 
     List<String> allSemenOptions = [];
 
     for (var bull in bulls) {
-      String bullSemenOption = '${bull.tagNo} Semen';
-      bullSemenOption = 'Cattle #${bull.tagNo} Semen';
-      allSemenOptions.add(bullSemenOption);
+      // Use pure tag only
+      allSemenOptions.add(bull.tagNo.trim());
     }
+
+    final currentValueRaw = widget.controllers['semen_used']?.text ?? '';
+    final currentValue = currentValueRaw.trim();
+    // If the current stored value isn't present in options (e.g., bulls filtered or not healthy), include it so it can preselect
+    if (currentValue.isNotEmpty && !allSemenOptions.contains(currentValue)) {
+      allSemenOptions = [currentValue, ...allSemenOptions];
+    }
+    final exists = allSemenOptions.contains(currentValue);
+    final dropdownValue = currentValue.isNotEmpty && exists ? currentValue : null;
+    // Debug
+    // ignore: avoid_print
+    print('Semen dropdown - current: "$currentValue", exists: $exists, options: ${allSemenOptions.join(', ')}');
 
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
       width: double.infinity,
       child: DropdownButtonFormField<String>(
-        value: widget.controllers['semen_used']?.text.isEmpty == true
-            ? null
-            : widget.controllers['semen_used']?.text,
+        value: dropdownValue,
         decoration: InputDecoration(
           labelText: 'Semen Used',
           prefixIcon: const Icon(FontAwesomeIcons.dna, color: AppColors.primary),
@@ -724,7 +776,8 @@ abstract class BaseEventFieldsState<T extends BaseEventFields> extends State<T> 
           );
         }).toList(),
         onChanged: loadingBulls ? null : (value) {
-          widget.controllers['semen_used']?.text = value ?? '';
+          final val = (value ?? '').trim();
+          widget.controllers['semen_used']?.text = val;
         },
         validator: (value) {
           if (value == null || value.isEmpty) {
@@ -828,6 +881,8 @@ abstract class BaseEventFieldsState<T extends BaseEventFields> extends State<T> 
       );
     }).toList();
 
+    print('Dropdown items: ${dropdownItems.map((item) => item.value).join(', ')}');
+
     // Check if the current value exists in the available options
     bool valueExists = false;
     if (currentValue != null) {
@@ -835,7 +890,8 @@ abstract class BaseEventFieldsState<T extends BaseEventFields> extends State<T> 
         // Trim and compare both values
         final itemValue = item.value?.trim() ?? '';
         final currentVal = currentValue?.trim() ?? '';
-        return itemValue == currentVal;
+        // Check if the current value matches either the full unique value or just the display name
+        return itemValue == currentVal || itemValue.startsWith('$currentVal (ID: ');
       });
       print('Checking if "$currentValue" exists in dropdown items: $valueExists');
     }

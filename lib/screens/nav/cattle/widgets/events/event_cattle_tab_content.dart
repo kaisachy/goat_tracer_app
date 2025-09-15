@@ -929,29 +929,36 @@ class _EventCattleTabContentState extends State<EventCattleTabContent> {
             relevantDetails['Technician'] = event['technician'].toString();
           }
         } else if (breedingType == 'natural_breeding') {
-          // For natural breeding, show bull tag
-          if (event['bull_tag'] != null && event['bull_tag'].toString().isNotEmpty && event['bull_tag'] != 'N/A') {
-            relevantDetails['Bull'] = event['bull_tag'].toString();
+          // For natural breeding, show bull tag only when viewing a female (cow/heifer) profile
+          final cattleSex = widget.cattle.sex.toLowerCase();
+          if (cattleSex == 'female') {
+            if (event['bull_tag'] != null && event['bull_tag'].toString().isNotEmpty && event['bull_tag'] != 'N/A') {
+              relevantDetails['Bull'] = event['bull_tag'].toString();
+            }
           }
         } else {
           // Fallback for events without breeding_type (backward compatibility)
-          if (event['semen_used'] != null && event['semen_used'].toString().isNotEmpty && event['semen_used'] != 'N/A') {
+          final hasSemen = event['semen_used'] != null && event['semen_used'].toString().isNotEmpty && event['semen_used'] != 'N/A';
+          if (hasSemen) {
+            // If semen is present, prefer showing semen and not Bull
             relevantDetails['Semen Used'] = event['semen_used'].toString();
           }
           if (event['technician'] != null && event['technician'].toString().isNotEmpty && event['technician'] != 'N/A') {
             relevantDetails['Technician'] = event['technician'].toString();
           }
-          if (event['bull_tag'] != null && event['bull_tag'].toString().isNotEmpty && event['bull_tag'] != 'N/A') {
-            relevantDetails['Bull'] = event['bull_tag'].toString();
+          // Only show Bull when semen is not available and viewing a female profile
+          final cattleSex = widget.cattle.sex.toLowerCase();
+          if (cattleSex == 'female') {
+            if (!hasSemen && event['bull_tag'] != null && event['bull_tag'].toString().isNotEmpty && event['bull_tag'] != 'N/A') {
+              relevantDetails['Bull'] = event['bull_tag'].toString();
+            }
           }
         }
         
         // Show estimated return to heat date for female cattle
         final cattleSex = widget.cattle.sex.toLowerCase();
         if (cattleSex == 'female' && event['estimated_return_date'] != null && event['estimated_return_date'].toString().isNotEmpty && event['estimated_return_date'] != 'N/A') {
-          relevantDetails['Est. Return to Heat'] = _formatDate(event['estimated_return_date']);
-        } else if (cattleSex == 'male') {
-          relevantDetails['Est. Return to Heat'] = 'Not Applicable';
+          relevantDetails['Return to Heat'] = _formatDate(event['estimated_return_date']);
         }
         break;
 

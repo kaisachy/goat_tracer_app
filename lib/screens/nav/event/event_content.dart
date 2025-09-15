@@ -706,7 +706,7 @@ class _EventContentState extends State<EventContent> {
       case 'breeding':
         if (event['bull_tag'] != null) details.add({'label': 'Bull Tag', 'value': event['bull_tag']});
         if (event['semen_used'] != null) details.add({'label': 'Semen Used', 'value': event['semen_used']});
-        if (event['estimated_return_date'] != null) details.add({'label': 'Return Date', 'value': _formatDate(event['estimated_return_date'])});
+        if (event['estimated_return_date'] != null) details.add({'label': 'Return to Heat', 'value': _formatDate(event['estimated_return_date'])});
         break;
       case 'treated':
         if (event['sickness_symptoms'] != null) details.add({'label': 'Symptoms', 'value': event['sickness_symptoms']});

@@ -31,6 +31,16 @@ class _CattleFormScreenState extends State<CattleFormScreen> {
 
   bool get _isEditing => widget.cattle != null;
 
+  // Helper: sanitize tag text to remove prefixes like 'Cattle' and '#'
+  String _cleanTagText(String? raw) {
+    if (raw == null) return '';
+    String t = raw;
+    t = t.replaceAll(RegExp(r'(?i)\bcattle\b'), '');
+    t = t.replaceAll('#', '');
+    t = t.replaceAll(RegExp(r'\s+'), ' ').trim();
+    return t;
+  }
+
   // State variables for dates and dropdowns
   String? _dateOfBirth;
   String? _joinedDate;
@@ -113,7 +123,7 @@ class _CattleFormScreenState extends State<CattleFormScreen> {
     try {
       final allCattle = await CattleService.getAllCattle();
       setState(() {
-        _existingTags = allCattle.map((cattle) => cattle.tagNo.toLowerCase()).toList();
+        _existingTags = allCattle.map((cattle) => _cleanTagText(cattle.tagNo).toLowerCase()).toList();
       });
     } catch (e) {
       print('Error loading existing tags: $e');
@@ -605,7 +615,7 @@ class _CattleFormScreenState extends State<CattleFormScreen> {
   void _populateFormFields() {
     final c = widget.cattle;
     if (c != null) {
-      _tagNoController.text = c.tagNo;
+      _tagNoController.text = _cleanTagText(c.tagNo);
       _weightController.text = c.weight?.toString() ?? '';
       _notesController.text = c.notes ?? '';
 
@@ -663,10 +673,10 @@ class _CattleFormScreenState extends State<CattleFormScreen> {
         _maleCattle = potentialParents.where((c) => c.sex == 'Male').toList();
 
         // Validate parent tags - if they don't exist in the current cattle list, set them to null
-        if (_motherTag != null && !_femaleCattle.any((c) => c.tagNo == _motherTag)) {
+        if (_motherTag != null && !_femaleCattle.any((c) => _cleanTagText(c.tagNo) == _cleanTagText(_motherTag))) {
           _motherTag = null;
         }
-        if (_fatherTag != null && !_maleCattle.any((c) => c.tagNo == _fatherTag)) {
+        if (_fatherTag != null && !_maleCattle.any((c) => _cleanTagText(c.tagNo) == _cleanTagText(_fatherTag))) {
           _fatherTag = null;
         }
 
@@ -711,7 +721,7 @@ class _CattleFormScreenState extends State<CattleFormScreen> {
   Future<void> _submitForm() async {
     if (!_formKey.currentState!.validate()) return;
 
-    final tagToCheck = _tagNoController.text.trim();
+    final tagToCheck = _cleanTagText(_tagNoController.text.trim());
     print('Checking tag: $tagToCheck');
 
     // Check if tag already exists (only for new cattle or when tag is changed)
@@ -732,7 +742,7 @@ class _CattleFormScreenState extends State<CattleFormScreen> {
       try {
         final allCattle = await CattleService.getAllCattle();
         final duplicateExists = allCattle.any((cattle) =>
-        cattle.tagNo.toLowerCase() == tagToCheck.toLowerCase() &&
+        _cleanTagText(cattle.tagNo).toLowerCase() == tagToCheck.toLowerCase() &&
             (!_isEditing || cattle.id != widget.cattle!.id));
 
         if (mounted) Navigator.pop(context);
@@ -777,7 +787,7 @@ class _CattleFormScreenState extends State<CattleFormScreen> {
 
     // Common data for both create and update
     final Map<String, dynamic> data = {
-      'tag_no': _tagNoController.text.trim(),
+      'tag_no': tagToCheck,
       'date_of_birth': _dateOfBirth,
       'sex': _sex,
       'weight': double.tryParse(_weightController.text),
@@ -787,8 +797,8 @@ class _CattleFormScreenState extends State<CattleFormScreen> {
       'joined_date': _joinedDate,
       'source': _source,
       'source_details': _sourceDetails,
-      'mother_tag': _motherTag,
-      'father_tag': _fatherTag,
+      'mother_tag': _motherTag != null ? _cleanTagText(_motherTag) : null,
+      'father_tag': _fatherTag != null ? _cleanTagText(_fatherTag) : null,
       'notes': textOrNull(_notesController.text),
       'status': widget.cattle?.status ?? 'Healthy',
     };
@@ -805,7 +815,7 @@ class _CattleFormScreenState extends State<CattleFormScreen> {
         data['original_father_tag'] = _originalFatherTag;
 
         // IMPORTANT: Also add the original tag number for backend reference updates
-        data['original_tag_no'] = widget.cattle!.tagNo;
+        data['original_tag_no'] = _cleanTagText(widget.cattle!.tagNo);
 
         success = await CattleService.updateCattleInformation(data);
       } else {
@@ -871,7 +881,7 @@ class _CattleFormScreenState extends State<CattleFormScreen> {
     required IconData icon,
   }) {
     // Check if the current value exists in the options
-    bool valueExists = value == null || options.any((cattle) => cattle.tagNo == value);
+    bool valueExists = value == null || options.any((cattle) => _cleanTagText(cattle.tagNo) == _cleanTagText(value));
     String? safeValue = valueExists ? value : null;
 
     return DropdownButtonFormField<String>(
@@ -914,7 +924,7 @@ class _CattleFormScreenState extends State<CattleFormScreen> {
                 Expanded(
                   flex: 2,
                   child: Text(
-                    cattle.tagNo,
+                    _cleanTagText(cattle.tagNo),
                     style: const TextStyle(fontWeight: FontWeight.w500),
                     overflow: TextOverflow.ellipsis,
                   ),
@@ -925,7 +935,7 @@ class _CattleFormScreenState extends State<CattleFormScreen> {
         }),
       ],
       onChanged: _isLoadingParents ? null : (newValue) {
-        onChanged(newValue);
+        onChanged(_cleanTagText(newValue));
       },
       menuMaxHeight: MediaQuery.of(context).size.height * 0.4,
       selectedItemBuilder: (context) {
@@ -933,7 +943,7 @@ class _CattleFormScreenState extends State<CattleFormScreen> {
           const Text('None'),
           ...options.toSet().map((cattle) {
             return Text(
-              cattle.tagNo,
+              _cleanTagText(cattle.tagNo),
               overflow: TextOverflow.ellipsis,
             );
           }),

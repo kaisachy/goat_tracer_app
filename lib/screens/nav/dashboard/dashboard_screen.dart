@@ -1070,7 +1070,7 @@ class _DashboardScreenState extends State<DashboardScreen>
                   ),
                 ),
                 Text(
-                  'Cattle #$cattleTag',
+                  '$cattleTag',
                   style: const TextStyle(
                     fontSize: 13,
                     color: AppColors.textSecondary,
