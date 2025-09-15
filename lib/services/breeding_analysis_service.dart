@@ -9,21 +9,68 @@ class BreedingAnalysisService {
     String? selectedBreedingType, String? successStatus, DateTimeRange<DateTime>? dateRange,
   }) async {
     try {
+      // Load cattle directory to mirror web JOINs (sex/classification by tag)
+      final allCattleModels = await CattleService.getAllCattle();
+      final Map<String, Map<String, String>> tagToProfile = {};
+      for (final c in allCattleModels) {
+        final tag = c.tagNo.toString();
+        if (tag.isEmpty) continue;
+        tagToProfile[tag] = {
+          'sex': c.sex.toString(),
+          'classification': c.classification.toString(),
+        };
+      }
       // Get all breeding events
       final allEvents = await CattleEventService.getCattleEvent();
-      final breedingEvents = allEvents.where((event) =>
-          event['event_type']?.toString().toLowerCase() == 'breeding').toList();
+      final breedingEvents = allEvents.where((event) {
+        if (event['event_type']?.toString().toLowerCase() != 'breeding') return false;
+        final tag = event['cattle_tag']?.toString() ?? '';
+        final prof = tagToProfile[tag];
+        if (prof == null) return false;
+        final sex = prof['sex']?.toLowerCase();
+        final cls = prof['classification']?.toLowerCase();
+        return sex == 'female' && (cls == 'cow' || cls == 'heifer');
+      }).toList();
 
-      // Get all pregnancy events
-      final pregnancyEvents = allEvents.where((event) =>
-          event['event_type']?.toString().toLowerCase() == 'pregnant').toList();
+      // Get pregnancy events (female cow/heifer only, align with web)
+      final pregnancyEvents = allEvents.where((event) {
+        if (event['event_type']?.toString().toLowerCase() != 'pregnant') return false;
+        final tag = event['cattle_tag']?.toString() ?? '';
+        final prof = tagToProfile[tag];
+        if (prof == null) return false;
+        final sex = prof['sex']?.toLowerCase();
+        final cls = prof['classification']?.toLowerCase();
+        return sex == 'female' && (cls == 'cow' || cls == 'heifer');
+      }).toList();
 
-      // Get all birth events
-      final birthEvents = allEvents.where((event) =>
-          event['event_type']?.toString().toLowerCase() == 'gives birth').toList();
+      // Get birth events (female cow/heifer only, align with web)
+      final birthEvents = allEvents.where((event) {
+        if (event['event_type']?.toString().toLowerCase() != 'gives birth') return false;
+        final tag = event['cattle_tag']?.toString() ?? '';
+        final prof = tagToProfile[tag];
+        if (prof == null) return false;
+        final sex = prof['sex']?.toLowerCase();
+        final cls = prof['classification']?.toLowerCase();
+        return sex == 'female' && (cls == 'cow' || cls == 'heifer');
+      }).toList();
 
       // Filter by selected parameters
       List<Map<String, dynamic>> filteredBreedingEvents = breedingEvents;
+      // Apply date range to breeding events (retain same logic as web)
+      if (dateRange != null) {
+        final start = dateRange.start;
+        final end = dateRange.end;
+        filteredBreedingEvents = filteredBreedingEvents.where((event) {
+          final dateStr = event['event_date']?.toString();
+          if (dateStr == null || dateStr.isEmpty) return false;
+          try {
+            final date = DateTime.parse(dateStr);
+            return !date.isBefore(start) && !date.isAfter(end);
+          } catch (_) {
+            return false;
+          }
+        }).toList();
+      }
       if (selectedCowTag != null && selectedCowTag.isNotEmpty) {
         filteredBreedingEvents = filteredBreedingEvents.where((event) =>
             event['cattle_tag']?.toString() == selectedCowTag).toList();
@@ -39,6 +86,17 @@ class BreedingAnalysisService {
         print('DEBUG: Events before filter: ${filteredBreedingEvents.length}');
         filteredBreedingEvents = filteredBreedingEvents.where((event) {
           String eventType = event['breeding_type']?.toString() ?? '';
+          // Normalize human-readable types to snake_case for comparison
+          if (eventType.isNotEmpty) {
+            final lower = eventType.toLowerCase();
+            if (lower == 'artificial insemination' || lower == 'artificial_insemination') {
+              eventType = 'artificial_insemination';
+            } else if (lower == 'natural breeding' || lower == 'natural_breeding') {
+              eventType = 'natural_breeding';
+            } else {
+              eventType = lower.replaceAll(' ', '_');
+            }
+          }
           // Apply the same fallback logic for filtering
           if (eventType.isEmpty) {
             if (event['semen_used'] != null && event['semen_used'].toString().isNotEmpty) {
@@ -153,6 +211,16 @@ class BreedingAnalysisService {
           } else {
             breedingType = 'unknown';
           }
+        } else {
+          // Normalize to snake_case for consistency with web
+          final lower = breedingType.toLowerCase();
+          if (lower == 'artificial insemination' || lower == 'artificial_insemination') {
+            breedingType = 'artificial_insemination';
+          } else if (lower == 'natural breeding' || lower == 'natural_breeding') {
+            breedingType = 'natural_breeding';
+          } else {
+            breedingType = lower.replaceAll(' ', '_');
+          }
         }
 
         print('DEBUG: Analyzing breeding for cow $cowTag on ${breeding['event_date']} (${daysSinceBreeding} days ago)');
@@ -196,31 +264,7 @@ class BreedingAnalysisService {
           }
         }
 
-        // If no pregnancy found, check birth events
-        if (!foundPregnancy) {
-          for (final birth in cowBirths) {
-            final birthDate = DateTime.parse(birth['event_date'] ?? '1900-01-01');
-            final daysDifference = birthDate.difference(breedingDate).inDays;
-            final birthBull = _getResponsibleBull(birth);
-            
-            print('DEBUG: Checking birth on ${birth['event_date']} (${daysDifference} days later)');
-            print('DEBUG: Birth bull: $birthBull');
-            
-            if (daysDifference >= 280 && daysDifference <= 300) { // Normal gestation period
-              if (_isSameBull(responsibleBull, birthBull)) {
-                foundPregnancy = true;
-                print('DEBUG: ✅ Birth match found!');
-                successfulBreedings.add({
-                  'event_date': breeding['event_date'],
-                  'breeding_type': breeding['breeding_type'],
-                  'birth_date': birth['event_date'],
-                  'days_to_birth': daysDifference,
-                });
-                break;
-              }
-            }
-          }
-        }
+        // Success is determined by pregnancy only; do not use birth events to mark success
 
         if (!foundPregnancy) {
           // Only mark as failed if enough time has passed (more than 60 days)
@@ -347,13 +391,17 @@ class BreedingAnalysisService {
     
     // For artificial insemination, extract bull from semen_used
     final semenUsed = event['semen_used']?.toString() ?? '';
-    if (semenUsed.isNotEmpty && semenUsed.contains(' Semen')) {
-      String tagPart = semenUsed.replaceAll(' Semen', '');
-      if (tagPart.contains(' (') && tagPart.contains(')')) {
-        return tagPart.split(' (')[0];
-      } else {
-        return tagPart;
+    if (semenUsed.isNotEmpty) {
+      if (semenUsed.contains(' Semen')) {
+        String tagPart = semenUsed.replaceAll(' Semen', '');
+        if (tagPart.contains(' (') && tagPart.contains(')')) {
+          return tagPart.split(' (')[0];
+        } else {
+          return tagPart;
+        }
       }
+      // If semen_used provided without label, treat it as already-clean tag
+      return semenUsed;
     }
     
     // For pregnancy and birth events, use bull_tag

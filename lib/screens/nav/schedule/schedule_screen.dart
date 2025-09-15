@@ -212,6 +212,7 @@ class _ScheduleScreenState extends State<ScheduleScreen> with TickerProviderStat
                 setState(() => _searchQuery = '');
                 _applyFilters();
               },
+              onScheduleAdded: _loadSchedules,
               child: const SizedBox.shrink(),
             ),
           ),

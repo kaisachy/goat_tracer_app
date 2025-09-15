@@ -280,7 +280,7 @@ class _EventContentState extends State<EventContent> {
                 icon: Icons.calendar_today_rounded,
                 label: 'Latest Event',
                 value: _formatDate(recentEvent['event_date']),
-                color: Colors.orange,
+                color: AppColors.gold,
               ),
             ),
         ],
@@ -772,6 +772,7 @@ class _EventContentState extends State<EventContent> {
   }
 
   void _showEventMenu(BuildContext context, Map<String, dynamic> event, int index) {
+    final eventTypeLower = (event['event_type'] ?? '').toString().toLowerCase();
     final RenderBox button = context.findRenderObject() as RenderBox;
     final RenderBox overlay = Overlay.of(context).context.findRenderObject() as RenderBox;
     final RelativeRect position = RelativeRect.fromRect(
@@ -786,17 +787,18 @@ class _EventContentState extends State<EventContent> {
       context: context,
       position: position,
       items: [
-        const PopupMenuItem(
-          value: 'edit',
-          child: Row(
-            children: [
-              Icon(Icons.edit_rounded, size: 18),
-              SizedBox(width: 8),
-              Text('Edit'),
-            ],
+        if (eventTypeLower != 'vaccinated')
+          const PopupMenuItem(
+            value: 'edit',
+            child: Row(
+              children: [
+                Icon(Icons.edit_rounded, size: 18),
+                SizedBox(width: 8),
+                Text('Edit'),
+              ],
+            ),
           ),
-        ),
-        if (_duplicatableEventTypes.contains((event['event_type'] ?? '').toString().toLowerCase()))
+        if (eventTypeLower != 'vaccinated' && _duplicatableEventTypes.contains(eventTypeLower))
           const PopupMenuItem(
             value: 'duplicate',
             child: Row(

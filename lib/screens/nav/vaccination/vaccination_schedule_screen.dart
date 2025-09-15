@@ -11,7 +11,8 @@ import 'package:cattle_tracer_app/services/schedule/schedule_service.dart';
 
 
 class VaccinationScheduleScreen extends StatefulWidget {
-  const VaccinationScheduleScreen({super.key});
+  final VoidCallback? onAnyScheduleAdded;
+  const VaccinationScheduleScreen({super.key, this.onAnyScheduleAdded});
 
   @override
   State<VaccinationScheduleScreen> createState() => _VaccinationScheduleScreenState();
@@ -55,6 +56,8 @@ class _VaccinationScheduleScreenState extends State<VaccinationScheduleScreen>
           onScheduleAdded: () {
             // Reload data when schedule is added
             _loadVaccinationData();
+            // Notify parent (e.g., EventScheduleScreen Schedule tab) to reload
+            widget.onAnyScheduleAdded?.call();
           },
         ),
       ),

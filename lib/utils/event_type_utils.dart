@@ -24,42 +24,42 @@ class EventTypeUtils {
     switch (classificationLower) {
       case 'calf':
       case 'calves':
-        eventTypes = ['Treated', 'Weighed', 'Vaccinated', 'Deworming', 'Hoof Trimming', 'Castrated', 'Weaned', 'Lost', 'Deceased', 'Other'];
+        eventTypes = ['Treated', 'Weighed', 'Deworming', 'Hoof Trimming', 'Castrated', 'Weaned', 'Lost', 'Deceased', 'Other'];
         print('DEBUG: Using Calf event types');
         break;
         
       case 'heifer':
       case 'heifers':
-        eventTypes = ['Treated', 'Weighed', 'Vaccinated', 'Breeding', 'Pregnant', 'Gives Birth', 'Aborted Pregnancy', 'Deworming', 'Hoof Trimming', 'Sold', 'Lost', 'Deceased', 'Other'];
+        eventTypes = ['Treated', 'Weighed', 'Breeding', 'Pregnant', 'Gives Birth', 'Aborted Pregnancy', 'Deworming', 'Hoof Trimming', 'Sold', 'Lost', 'Deceased', 'Other'];
         print('DEBUG: Using Heifer event types');
         break;
         
       case 'cow':
       case 'cows':
-        eventTypes = ['Dry off', 'Treated', 'Breeding', 'Weighed', 'Gives Birth', 'Vaccinated', 'Pregnant', 'Aborted Pregnancy', 'Deworming', 'Hoof Trimming', 'Sold', 'Lost', 'Deceased', 'Other'];
+        eventTypes = ['Dry off', 'Treated', 'Breeding', 'Weighed', 'Gives Birth', 'Pregnant', 'Aborted Pregnancy', 'Deworming', 'Hoof Trimming', 'Sold', 'Lost', 'Deceased', 'Other'];
         print('DEBUG: Using Cow event types');
         break;
         
       case 'bull':
       case 'bulls':
-        eventTypes = ['Treated', 'Weighed', 'Breeding', 'Vaccinated', 'Deworming', 'Hoof Trimming', 'Sold', 'Lost', 'Deceased', 'Other'];
+        eventTypes = ['Treated', 'Weighed', 'Breeding', 'Deworming', 'Hoof Trimming', 'Sold', 'Lost', 'Deceased', 'Other'];
         print('DEBUG: Using Bull event types');
         break;
         
       case 'steer':
       case 'steers':
-        eventTypes = ['Treated', 'Weighed', 'Vaccinated', 'Deworming', 'Hoof Trimming', 'Sold', 'Lost', 'Deceased', 'Other'];
+        eventTypes = ['Treated', 'Weighed', 'Deworming', 'Hoof Trimming', 'Sold', 'Lost', 'Deceased', 'Other'];
         print('DEBUG: Using Steer event types');
         break;
         
       case 'growers':
       case 'grower':
-        eventTypes = ['Treated', 'Weighed', 'Vaccinated', 'Deworming', 'Hoof Trimming', 'Sold', 'Lost', 'Deceased', 'Other'];
+        eventTypes = ['Treated', 'Weighed', 'Deworming', 'Hoof Trimming', 'Sold', 'Lost', 'Deceased', 'Other'];
         print('DEBUG: Using Growers event types');
         break;
         
       default:
-        eventTypes = ['Treated', 'Weighed', 'Vaccinated', 'Deworming', 'Hoof Trimming', 'Lost', 'Deceased', 'Other'];
+        eventTypes = ['Treated', 'Weighed', 'Deworming', 'Hoof Trimming', 'Lost', 'Deceased', 'Other'];
         print('DEBUG: Using default event types for classification: $classificationLower');
         break;
     }

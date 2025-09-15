@@ -10,6 +10,7 @@ class ScheduleHeader extends StatefulWidget {
   final Function(String) onSearchChanged;
   final VoidCallback onSearchClear;
   final Widget child;
+  final VoidCallback? onScheduleAdded; // Notified when a schedule is added via modal
 
   const ScheduleHeader({
     super.key,
@@ -17,6 +18,7 @@ class ScheduleHeader extends StatefulWidget {
     required this.onSearchChanged,
     required this.onSearchClear,
     required this.child,
+    this.onScheduleAdded,
   });
 
   @override
@@ -281,8 +283,10 @@ class _ScheduleHeaderState extends State<ScheduleHeader> {
             ),
             const Divider(height: 1),
             // Vaccination content
-            const Expanded(
-              child: VaccinationScheduleScreen(),
+            Expanded(
+              child: VaccinationScheduleScreen(
+                onAnyScheduleAdded: widget.onScheduleAdded,
+              ),
             ),
           ],
         ),

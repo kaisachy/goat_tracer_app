@@ -251,6 +251,7 @@ class _ScheduleContentWidgetState extends State<ScheduleContentWidget> with Tick
                 setState(() => _searchQuery = '');
                 _applyFilters();
               },
+              onScheduleAdded: loadSchedules,
               child: ScheduleStatsRow(tabCounts: _tabCounts),
             ),
             // Tab Bar

@@ -352,7 +352,8 @@ class _EventCattleTabContentState extends State<EventCattleTabContent> {
     );
 
     final eventType = event['event_type']?.toString() ?? '';
-    final canDuplicate = _canDuplicateEvent(eventType);
+    final eventTypeLower = eventType.toLowerCase();
+    final canDuplicate = eventTypeLower != 'vaccinated' && _canDuplicateEvent(eventType);
 
     showMenu(
       context: context,
@@ -374,23 +375,24 @@ class _EventCattleTabContentState extends State<EventCattleTabContent> {
               ],
             ),
           ),
-        PopupMenuItem(
-          value: 'edit',
-          child: Row(
-            children: [
-              Icon(Icons.edit_rounded, color: AppColors.vibrantGreen, size: 20),
-              const SizedBox(width: 12),
-              const Text('Edit Event'),
-            ],
+        if (eventTypeLower != 'vaccinated')
+          PopupMenuItem(
+            value: 'edit',
+            child: Row(
+              children: [
+                Icon(Icons.edit_rounded, color: AppColors.vibrantGreen, size: 20),
+                const SizedBox(width: 12),
+                const Text('Edit Event'),
+              ],
+            ),
           ),
-        ),
         PopupMenuItem(
           value: 'delete',
           child: Row(
             children: [
               Icon(Icons.delete_rounded, color: Colors.red.shade400, size: 20),
               const SizedBox(width: 12),
-              Text('Delete Event', style: TextStyle(color: Colors.red.shade400)),
+              Text('Delete', style: TextStyle(color: Colors.red.shade400)),
             ],
           ),
         ),
