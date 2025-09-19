@@ -335,7 +335,7 @@ class _FarmDetailsModalState extends State<FarmDetailsModal> {
 
         _buildStyledTextField(
           controller: coopController,
-          label: 'Cooperative Affiliation',
+          label: 'Cooperative Membership',
           icon: FontAwesomeIcons.handshake,
         ),
         const SizedBox(height: 20),

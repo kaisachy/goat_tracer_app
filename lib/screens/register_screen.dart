@@ -128,7 +128,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
         final data = jsonDecode(response.body);
 
         if (response.statusCode == 201) {
-          _showMessage('Registration Successful! Please login.', AppColors.vibrantGreen);
+          final message = data['message'] ?? 'Registration Successful! You can now login to your account.';
+          _showMessage(message, AppColors.vibrantGreen);
           // Navigate back to the login screen
           if (Navigator.canPop(context)) {
             Navigator.pop(context);
@@ -244,7 +245,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       : ElevatedButton(
                     onPressed: _registerUser,
                     style: _buttonStyle(),
-                    child: _buttonText('CREATE ACCOUNT'),
+                    child: _buttonText('Submit'),
                   ),
                   const SizedBox(height: 24),
 
