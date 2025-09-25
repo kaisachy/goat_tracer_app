@@ -29,6 +29,8 @@ class _TrainingsSeminarsModalState extends State<TrainingsSeminarsModal> {
     'Slaughtering & Cutting',
     'Meat Processing',
     'Cattle Enterprise Development',
+    'Forage Production',
+    'Health Management',
   ];
 
   final Set<String> _selectedTitles = <String>{};
@@ -88,19 +90,34 @@ class _TrainingsSeminarsModalState extends State<TrainingsSeminarsModal> {
               Row(
                 children: [
                   if (widget.isEditingMode)
-                    TextButton.icon(
+                    ElevatedButton.icon(
                       onPressed: _saving ? null : _saveSelection,
-                      style: TextButton.styleFrom(
-                        foregroundColor: AppColors.primary,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.primary,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        elevation: 2,
+                        shadowColor: AppColors.primary.withOpacity(0.2),
                       ),
                       icon: _saving
                           ? const SizedBox(
                               width: 16,
                               height: 16,
-                              child: CircularProgressIndicator(strokeWidth: 2),
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                              ),
                             )
-                          : const Icon(Icons.save),
-                      label: const Text('Save'),
+                          : const Icon(Icons.check_rounded, size: 18, color: Colors.white),
+                      label: Text(
+                        _saving ? 'Saving...' : 'Save',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.w600,
+                          fontSize: 16,
+                        ),
+                      ),
                     ),
                   IconButton(
                     onPressed: () => Navigator.pop(context),

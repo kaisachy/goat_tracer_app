@@ -219,8 +219,8 @@ class _FarmDetailsModalState extends State<FarmDetailsModal> {
             color: AppColors.lightGreen.withOpacity(0.2),
             borderRadius: BorderRadius.circular(12),
           ),
-          child: const FaIcon(
-            FontAwesomeIcons.seedling,
+          child: const Icon(
+            Icons.agriculture,
             color: AppColors.primary,
             size: 24,
           ),
@@ -257,58 +257,32 @@ class _FarmDetailsModalState extends State<FarmDetailsModal> {
   }
 
   Widget _buildSaveButton() {
-    return Container(
-      decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [AppColors.primary, AppColors.vibrantGreen],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: AppColors.primary.withOpacity(0.3),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
+    return ElevatedButton.icon(
+      onPressed: _isLoading ? null : _saveFarmDetails,
+      style: ElevatedButton.styleFrom(
+        backgroundColor: AppColors.primary,
+        foregroundColor: Colors.white,
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        elevation: 2,
+        shadowColor: AppColors.primary.withOpacity(0.2),
       ),
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          borderRadius: BorderRadius.circular(12),
-          onTap: _isLoading ? null : _saveFarmDetails,
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-            child: _isLoading
-                ? const SizedBox(
-              width: 20,
-              height: 20,
+      icon: _isLoading
+          ? const SizedBox(
+              width: 16,
+              height: 16,
               child: CircularProgressIndicator(
                 strokeWidth: 2,
                 valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
               ),
             )
-                : const Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                FaIcon(
-                  FontAwesomeIcons.floppyDisk,
-                  size: 16,
-                  color: Colors.white,
-                ),
-                SizedBox(width: 8),
-                Text(
-                  'Save',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.w600,
-                    fontSize: 16,
-                  ),
-                ),
-              ],
-            ),
-          ),
+          : const Icon(Icons.check_rounded, size: 18, color: Colors.white),
+      label: const Text(
+        'Save',
+        style: TextStyle(
+          color: Colors.white,
+          fontWeight: FontWeight.w600,
+          fontSize: 16,
         ),
       ),
     );
@@ -1038,19 +1012,19 @@ class _FarmDetailsModalState extends State<FarmDetailsModal> {
   Widget _buildViewContent() {
     return Column(
       children: [
-        _buildInfoCard('Farm Name', widget.farmDetails?['farm_name'] ?? 'N/A', FontAwesomeIcons.leaf),
+        _buildInfoCard('Farm Name', widget.farmDetails?['farm_name'] ?? 'None', FontAwesomeIcons.leaf),
         const SizedBox(height: 16),
 
-        _buildInfoCard('Farm Type', widget.farmDetails?['farm_type'] ?? 'N/A', FontAwesomeIcons.tractor),
+        _buildInfoCard('Farm Type', widget.farmDetails?['farm_type'] ?? 'None', FontAwesomeIcons.tractor),
         const SizedBox(height: 16),
 
-        _buildInfoCard('Farm Classification', widget.farmDetails?['farm_classification'] ?? 'N/A', FontAwesomeIcons.shapes),
+        _buildInfoCard('Farm Classification', widget.farmDetails?['farm_classification'] ?? 'None', FontAwesomeIcons.shapes),
         const SizedBox(height: 16),
 
-        _buildInfoCard('Farm Land Area', widget.farmDetails?['farm_land_area'] ?? 'N/A', FontAwesomeIcons.expand),
+        _buildInfoCard('Farm Land Area', widget.farmDetails?['farm_land_area'] ?? 'None', FontAwesomeIcons.expand),
         const SizedBox(height: 16),
 
-        _buildInfoCard('Cooperative Affiliation', widget.farmDetails?['cooperative_affiliation'] ?? 'N/A', FontAwesomeIcons.handshake),
+        _buildInfoCard('Cooperative Membership', widget.farmDetails?['cooperative_affiliation'] ?? 'None', FontAwesomeIcons.handshake),
         const SizedBox(height: 16),
 
         _buildInfoCard('Farm Location', _formatFarmLocation(), FontAwesomeIcons.mapLocation),
@@ -1065,7 +1039,7 @@ class _FarmDetailsModalState extends State<FarmDetailsModal> {
     } else if (_selectedMunicipality != null) {
       return '${_selectedMunicipality!['name']}, ${_isabelaProvince['name']}';
     } else {
-      return widget.farmDetails?['farm_location'] ?? 'N/A';
+      return widget.farmDetails?['farm_location'] ?? 'None';
     }
   }
 

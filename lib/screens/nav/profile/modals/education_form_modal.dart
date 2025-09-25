@@ -24,7 +24,8 @@ class _EducationFormModalState extends State<EducationFormModal> {
   late TextEditingController schoolController;
   late TextEditingController courseController;
   late TextEditingController yearController;
-  late TextEditingController honorsController;
+  late TextEditingController startYearController;
+  late TextEditingController endYearController;
   bool isLoading = false;
 
   @override
@@ -42,8 +43,23 @@ class _EducationFormModalState extends State<EducationFormModal> {
           ? eduMap['year_graduated'].toString()
           : '',
     );
-
-    honorsController = TextEditingController(text: eduMap?['honors_received'] ?? '');
+    // Initialize start/end year (avoid 0/0000)
+    startYearController = TextEditingController(
+      text: (eduMap?['start_year'] != null &&
+          eduMap!['start_year'].toString().isNotEmpty &&
+          eduMap['start_year'].toString() != '0' &&
+          eduMap['start_year'].toString() != '0000')
+          ? eduMap['start_year'].toString()
+          : '',
+    );
+    endYearController = TextEditingController(
+      text: (eduMap?['end_year'] != null &&
+          eduMap!['end_year'].toString().isNotEmpty &&
+          eduMap['end_year'].toString() != '0' &&
+          eduMap['end_year'].toString() != '0000')
+          ? eduMap['end_year'].toString()
+          : '',
+    );
   }
 
   @override
@@ -51,7 +67,8 @@ class _EducationFormModalState extends State<EducationFormModal> {
     schoolController.dispose();
     courseController.dispose();
     yearController.dispose();
-    honorsController.dispose();
+    startYearController.dispose();
+    endYearController.dispose();
     super.dispose();
   }
 
@@ -153,41 +170,40 @@ class _EducationFormModalState extends State<EducationFormModal> {
 
                 const SizedBox(height: 20),
 
-                _buildTextField(
-                  controller: courseController,
-                  label: 'Course/Program',
-                  icon: Icons.menu_book_outlined,
-                  hint: 'Enter your course or program',
+                if (widget.level.toLowerCase() != 'elementary')
+                  _buildTextField(
+                    controller: courseController,
+                    label: 'Course/Program',
+                    icon: Icons.menu_book_outlined,
+                    hint: 'Enter your course or program',
+                  ),
+
+                const SizedBox(height: 20),
+
+                // Start/End Year (year-only picker)
+                Row(
+                  children: [
+                    Expanded(
+                      child: _buildYearPickerField(
+                        controller: startYearController,
+                        label: 'Start Year',
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: _buildYearPickerField(
+                        controller: endYearController,
+                        label: 'End Year',
+                      ),
+                    ),
+                  ],
                 ),
 
                 const SizedBox(height: 20),
 
-                _buildTextField(
+                _buildYearPickerField(
                   controller: yearController,
                   label: 'Year Graduated',
-                  icon: Icons.calendar_today_outlined,
-                  hint: 'e.g., 2023',
-                  keyboardType: TextInputType.number,
-                  validator: (value) {
-                    if (value != null && value.isNotEmpty) {
-                      final year = int.tryParse(value);
-                      if (year == null) return 'Enter a valid year';
-                      if (year < 1900 || year > DateTime.now().year + 5) {
-                        return 'Enter a valid year between 1900-${DateTime.now().year + 5}';
-                      }
-                    }
-                    return null;
-                  },
-                ),
-
-                const SizedBox(height: 20),
-
-                _buildTextField(
-                  controller: honorsController,
-                  label: 'Honors & Awards',
-                  icon: Icons.emoji_events_outlined,
-                  hint: 'Any honors, awards, or distinctions',
-                  maxLines: 2,
                 ),
 
                 const SizedBox(height: 32),
@@ -228,24 +244,25 @@ class _EducationFormModalState extends State<EducationFormModal> {
                             borderRadius: BorderRadius.circular(12),
                           ),
                           elevation: 2,
-                          shadowColor: AppColors.primary.withOpacity(0.3),
+                          shadowColor: AppColors.primary.withOpacity(0.2),
                         ),
                         child: isLoading
                             ? const SizedBox(
-                          height: 20,
-                          width: 20,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                          ),
-                        )
+                                height: 20,
+                                width: 20,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                ),
+                              )
                             : const Text(
-                          'Save Education',
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
+                                'Save Education',
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w600,
+                                  color: Colors.white,
+                                ),
+                              ),
                       ),
                     ),
                   ],
@@ -343,6 +360,174 @@ class _EducationFormModalState extends State<EducationFormModal> {
           ),
         ),
       ],
+    );
+  }
+
+  Widget _buildYearDropdown({
+    required TextEditingController controller,
+    required String label,
+  }) {
+    final int currentYear = DateTime.now().year;
+    final List<int> years = [
+      for (int y = currentYear + 5; y >= 1900; y--) y,
+    ];
+
+    int? selectedYear;
+    if (controller.text.isNotEmpty) {
+      selectedYear = int.tryParse(controller.text);
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: const TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.w600,
+            color: AppColors.textPrimary,
+          ),
+        ),
+        const SizedBox(height: 8),
+        Container(
+          decoration: BoxDecoration(
+            color: AppColors.pageBackground,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: AppColors.textSecondary.withOpacity(0.1)),
+          ),
+          padding: const EdgeInsets.symmetric(horizontal: 12),
+          child: DropdownButtonFormField<int>(
+            value: selectedYear,
+            isExpanded: true,
+            decoration: const InputDecoration(
+              border: InputBorder.none,
+            ),
+            hint: const Text('Select year'),
+            items: [
+              const DropdownMenuItem<int>(
+                value: null,
+                child: Text(''),
+              ),
+              ...years.map(
+                (y) => DropdownMenuItem<int>(
+                  value: y,
+                  child: Text(y.toString()),
+                ),
+              ),
+            ],
+            onChanged: (val) {
+              if (val == null) {
+                controller.text = '';
+              } else {
+                controller.text = val.toString();
+              }
+            },
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildYearPickerField({
+    required TextEditingController controller,
+    required String label,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: const TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.w600,
+            color: AppColors.textPrimary,
+          ),
+        ),
+        const SizedBox(height: 8),
+        InkWell(
+          onTap: () async {
+            final picked = await _pickYear(context, controller.text);
+            if (picked != null) {
+              controller.text = picked.toString();
+              setState(() {});
+            }
+          },
+          child: InputDecorator(
+            decoration: InputDecoration(
+              prefixIcon: const Icon(Icons.calendar_today_outlined, color: AppColors.vibrantGreen, size: 22),
+              filled: true,
+              fillColor: AppColors.pageBackground,
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide(
+                  color: AppColors.textSecondary.withOpacity(0.1),
+                ),
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide(
+                  color: AppColors.textSecondary.withOpacity(0.1),
+                ),
+              ),
+              contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+            ),
+            child: Text(
+              controller.text.isEmpty ? 'Select year' : controller.text,
+              style: const TextStyle(fontSize: 16, color: AppColors.textPrimary),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Future<int?> _pickYear(BuildContext context, String current) async {
+    final now = DateTime.now();
+    final initialYear = int.tryParse(current) ?? now.year;
+    int? selectedYear = initialYear;
+    return showDialog<int>(
+      context: context,
+      builder: (ctx) {
+        return AlertDialog(
+          backgroundColor: AppColors.cardBackground,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          contentPadding: EdgeInsets.zero,
+          content: SizedBox(
+            width: 340,
+            height: 320,
+            child: Column(
+              children: [
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  decoration: BoxDecoration(
+                    color: AppColors.pageBackground,
+                    borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+                  ),
+                  child: const Text('Select Year', style: TextStyle(fontWeight: FontWeight.w700, color: AppColors.textPrimary)),
+                ),
+                Expanded(
+                  child: YearPicker(
+                    firstDate: DateTime(1900),
+                    lastDate: DateTime(now.year),
+                    selectedDate: DateTime(initialYear),
+                    onChanged: (date) {
+                      selectedYear = date.year;
+                      Navigator.of(ctx).pop(selectedYear);
+                    },
+                  ),
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(ctx).pop(null),
+              child: const Text('Clear'),
+            ),
+          ],
+        );
+      },
     );
   }
 
@@ -472,7 +657,8 @@ class _EducationFormModalState extends State<EducationFormModal> {
       final allFieldsEmpty = schoolController.text.isEmpty &&
           courseController.text.isEmpty &&
           yearController.text.isEmpty &&
-          honorsController.text.isEmpty;
+          startYearController.text.isEmpty &&
+          endYearController.text.isEmpty;
 
       // Don't save if all fields are empty
       if (allFieldsEmpty) {
@@ -512,8 +698,8 @@ class _EducationFormModalState extends State<EducationFormModal> {
       final Map<String, dynamic> updateData = {
         'level': widget.level,
         'school_name': schoolController.text,
-        'course': courseController.text,
-        'honors_received': honorsController.text,
+        // Only send course when level is not Elementary
+        if (widget.level.toLowerCase() != 'elementary') 'course': courseController.text,
       };
 
       // Add year only if it's non-empty and valid
@@ -521,6 +707,20 @@ class _EducationFormModalState extends State<EducationFormModal> {
         final year = int.tryParse(yearController.text);
         if (year != null && year > 0) {
           updateData['year_graduated'] = year.toString();
+        }
+      }
+
+      // Add start/end year if valid
+      if (startYearController.text.isNotEmpty) {
+        final sy = int.tryParse(startYearController.text);
+        if (sy != null && sy > 0) {
+          updateData['start_year'] = sy.toString();
+        }
+      }
+      if (endYearController.text.isNotEmpty) {
+        final ey = int.tryParse(endYearController.text);
+        if (ey != null && ey > 0) {
+          updateData['end_year'] = ey.toString();
         }
       }
 

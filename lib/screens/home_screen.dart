@@ -13,7 +13,6 @@ import 'nav/profile/profile_screen.dart';
 import 'nav/milk/milk_screen.dart';
 import 'nav/event_schedule/event_schedule_screen.dart';
 import 'nav/setting/setting_screen.dart';
-import 'nav/map/map_screen.dart';
 import 'package:cattle_tracer_app/services/cattle/cattle_status_service.dart';
 import 'package:cattle_tracer_app/services/refresh_service.dart';
 
@@ -64,12 +63,11 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
 
   void _initializePages() {
     _pages = [
-      AuthGuard(child: DashboardScreen()),
-      AuthGuard(child: MapScreen()),
+      AuthGuard(child: ProfileScreen(userEmail: widget.userEmail ?? '')),
       const AuthGuard(child: CattleScreen()),
+      AuthGuard(child: DashboardScreen()),
       AuthGuard(child: EventScheduleScreen(initialTabIndex:  widget.initialEventScheduleTabIndex ?? 0)),
       AuthGuard(child: MilkScreen()),
-      AuthGuard(child: ProfileScreen(userEmail: widget.userEmail ?? '')),
       AuthGuard(child: SettingScreen()),
     ];
   }
@@ -530,21 +528,19 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   String _getAppBarTitle() {
     switch (_selectedIndex) {
       case 0:
-        return 'Dashboard';
+        return 'User Profile';
       case 1:
-        return 'Map';
-      case 2:
         return 'Production Record';
+      case 2:
+        return 'Dashboard';
       case 3:
         return 'Events & Schedule';
       case 4:
         return 'Milk Production';
       case 5:
-        return 'User Profile';
-      case 6:
         return 'Settings';
       default:
-        return 'Cattle Tracer';
+        return 'Cattalyze';
     }
   }
 
@@ -558,20 +554,20 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
               padding: EdgeInsets.zero,
               children: [
                 _buildDrawerItem(
-                  icon: Icons.dashboard_rounded,
-                  text: 'Dashboard',
+                  icon: Icons.person_rounded,
+                  text: 'Profile',
                   index: 0,
                   onTap: () => _onNavItemTapped(0),
                 ),
                 _buildDrawerItem(
-                  icon: Icons.map_rounded,
-                  text: 'Map',
+                  icon: FontAwesomeIcons.cow,
+                  text: 'Production Record',
                   index: 1,
                   onTap: () => _onNavItemTapped(1),
                 ),
                 _buildDrawerItem(
-                  icon: FontAwesomeIcons.cow,
-                  text: 'Production Record',
+                  icon: Icons.dashboard_rounded,
+                  text: 'Dashboard',
                   index: 2,
                   onTap: () => _onNavItemTapped(2),
                 ),
@@ -588,16 +584,10 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                   onTap: () => _onNavItemTapped(4),
                 ),
                 _buildDrawerItem(
-                  icon: Icons.person_rounded,
-                  text: 'Profile',
-                  index: 5,
-                  onTap: () => _onNavItemTapped(5),
-                ),
-                _buildDrawerItem(
                   icon: Icons.settings_rounded,
                   text: 'Settings',
-                  index: 6,
-                  onTap: () => _onNavItemTapped(6),
+                  index: 5,
+                  onTap: () => _onNavItemTapped(5),
                 ),
               ],
             ),

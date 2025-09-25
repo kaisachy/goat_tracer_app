@@ -74,7 +74,6 @@ class EducationalBackground {
   final int? endYear;
   final int? yearGraduated;
   final String? course;
-  final String? honorsReceived;
 
   EducationalBackground({
     required this.id,
@@ -85,7 +84,6 @@ class EducationalBackground {
     this.endYear,
     this.yearGraduated,
     this.course,
-    this.honorsReceived,
   });
 
   factory EducationalBackground.fromJson(Map<String, dynamic> json) {
@@ -98,7 +96,6 @@ class EducationalBackground {
       endYear: json['end_year'] != null ? int.tryParse(json['end_year'].toString()) : null,
       yearGraduated: json['year_graduated'] != null ? int.tryParse(json['year_graduated'].toString()) : null,
       course: json['course'],
-      honorsReceived: json['honors_received'],
     );
   }
 }
