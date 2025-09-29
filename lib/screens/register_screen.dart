@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
@@ -36,6 +37,12 @@ class _RegisterScreenState extends State<RegisterScreen> {
   Map<String, dynamic>? _selectedMunicipality;
   Map<String, dynamic>? _selectedBarangay;
 
+  // Latitude and longitude fields
+  double? _latitude;
+  double? _longitude;
+  bool _isGeocodingInProgress = false;
+  Timer? _geocodeTimer;
+
   // Fixed province data for Isabela
   final Map<String, dynamic> _isabelaProvince = {
     'name': 'Isabela',
@@ -55,6 +62,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
     _emailController.dispose();
     _passwordController.dispose();
     _confirmPasswordController.dispose();
+    _geocodeTimer?.cancel();
     super.dispose();
   }
 
@@ -87,9 +95,95 @@ class _RegisterScreenState extends State<RegisterScreen> {
         _selectedBarangay = null;
         _isLoadingBarangays = false;
       });
+      // Only trigger geocoding if a barangay is already selected (for edit mode)
+      if (_selectedBarangay != null && _selectedBarangay!['name'] != null) {
+        print('Barangays loaded, existing barangay selected: ${_selectedBarangay!['name']}, triggering geocoding...');
+        _debounceGeocode();
+      } else {
+        print('Barangays loaded, no barangay selected yet - waiting for user selection');
+      }
     } catch (e) {
       setState(() => _isLoadingBarangays = false);
       _showMessage('Failed to load barangays: $e', Colors.red);
+    }
+  }
+
+  // Debounced geocoding (matches JavaScript implementation)
+  void _debounceGeocode() {
+    _geocodeTimer?.cancel();
+    _geocodeTimer = Timer(const Duration(milliseconds: 500), () {
+      _performGeocode();
+    });
+  }
+
+  // Geocoding functionality
+  Future<void> _performGeocode() async {
+    if (_isGeocodingInProgress) return;
+    
+    final province = _isabelaProvince['name'];
+    final municipality = _selectedMunicipality?['name'];
+    final barangay = _selectedBarangay?['name'];
+    
+    if (province == null || municipality == null) return;
+    
+    setState(() => _isGeocodingInProgress = true);
+    
+    try {
+      print('=== FLUTTER GEOCODING DEBUG ===');
+      print('Province: $province');
+      print('Municipality: $municipality');
+      print('Barangay: $barangay');
+      
+      final queryParams = {
+        'province': province,
+        'municipality': municipality,
+        if (barangay != null && barangay.isNotEmpty) 'barangay': barangay,
+      };
+      
+      final uri = Uri.parse('${AppConfig.baseUrl}/api/geocode')
+          .replace(queryParameters: queryParams);
+      
+      print('Geocoding URL: $uri');
+      
+      final response = await http.get(
+        uri,
+        headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json',
+        },
+      );
+      
+      print('Geocoding response status: ${response.statusCode}');
+      
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        print('Geocoding response data: $data');
+        
+        if (data['success'] == true && 
+            data['data'] != null && 
+            data['data']['latitude'] != null && 
+            data['data']['longitude'] != null) {
+          
+          final lat = double.tryParse(data['data']['latitude'].toString());
+          final lng = double.tryParse(data['data']['longitude'].toString());
+          
+          if (lat != null && lng != null) {
+            setState(() {
+              _latitude = lat;
+              _longitude = lng;
+            });
+            print('Coordinates set successfully: $lat, $lng');
+          }
+        } else {
+          print('No coordinates found in response');
+        }
+      } else {
+        print('Geocoding failed with status: ${response.statusCode}');
+      }
+    } catch (e) {
+      print('Geocoding error: $e');
+    } finally {
+      setState(() => _isGeocodingInProgress = false);
     }
   }
 
@@ -100,27 +194,45 @@ class _RegisterScreenState extends State<RegisterScreen> {
     if (_formKey.currentState!.validate()) {
       // Additional validation for required address fields
       if (_selectedMunicipality == null) {
-        _showMessage('Please select a municipality.', Colors.red);
+        _showMessage('Select a municipality.', Colors.red);
         return;
       }
 
       setState(() => _isLoading = true);
 
+      // Attempt geocoding before submission if coordinates are empty
+      if (_latitude == null || _longitude == null) {
+        print('Coordinates empty before submit, attempting geocoding...');
+        await _performGeocode();
+        // Wait a bit for geocoding to complete
+        await Future.delayed(const Duration(milliseconds: 1000));
+      }
+
       try {
         final url = Uri.parse('${AppConfig.baseUrl}/auth/register');
+        final requestBody = {
+          'first_name': _firstNameController.text.trim(),
+          'last_name': _lastNameController.text.trim(),
+          'email': _emailController.text.trim(),
+          'password': _passwordController.text,
+          'role': 'farmer', // Default role
+          'province': _isabelaProvince['name'], // Fixed to Isabela
+          'municipality': _selectedMunicipality?['name'],
+          'barangay': _selectedBarangay?['name'],
+        };
+        
+        // Add coordinates if available
+        if (_latitude != null && _longitude != null) {
+          requestBody['latitude'] = _latitude!.toStringAsFixed(7);
+          requestBody['longitude'] = _longitude!.toStringAsFixed(7);
+        }
+        
+        print('Registration request body: $requestBody');
+        
         final response = await http.post(
           url,
           headers: {'Content-Type': 'application/json'},
-          body: jsonEncode({
-            'first_name': _firstNameController.text.trim(),
-            'last_name': _lastNameController.text.trim(),
-            'email': _emailController.text.trim(),
-            'password': _passwordController.text,
-            'role': 'farmer', // Default role
-            'province': _isabelaProvince['name'], // Fixed to Isabela
-            'municipality': _selectedMunicipality?['name'],
-            'barangay': _selectedBarangay?['name'],
-          }),
+          body: jsonEncode(requestBody),
         );
 
         if (!mounted) return;
@@ -192,6 +304,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
             padding: const EdgeInsets.symmetric(horizontal: 24.0),
             child: Form(
               key: _formKey,
+              autovalidateMode: AutovalidateMode.onUserInteraction,
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -218,6 +331,20 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       color: AppColors.textSecondary,
                     ),
                   ),
+                  const SizedBox(height: 8),
+                  Align(
+                    alignment: Alignment.centerLeft,
+                    child: RichText(
+                      text: const TextSpan(
+                        style: TextStyle(color: AppColors.textSecondary),
+                        children: [
+                          TextSpan(text: 'Fields marked with '),
+                          TextSpan(text: '*', style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold)),
+                          TextSpan(text: ' are required.'),
+                        ],
+                      ),
+                    ),
+                  ),
                   const SizedBox(height: 40),
 
                   // Form Fields
@@ -226,7 +353,13 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   TextFormField(
                     controller: _emailController,
                     keyboardType: TextInputType.emailAddress,
-                    decoration: _inputDecoration('Email', Icons.email_outlined),
+                    decoration: _inputDecoration(
+                      'Email',
+                      Icons.email_outlined,
+                      hint: 'name@example.com',
+                      helper: 'Must be a valid email format (we\'ll send a verification link)'.replaceAll("'", "'"),
+                      requiredField: true,
+                    ),
                     validator: _validateEmail,
                     textInputAction: TextInputAction.next,
                   ),
@@ -268,9 +401,15 @@ class _RegisterScreenState extends State<RegisterScreen> {
         Expanded(
           child: TextFormField(
             controller: _firstNameController,
-            decoration: _inputDecoration('First Name', Icons.person_outline),
+            textCapitalization: TextCapitalization.words,
+            decoration: _inputDecoration(
+              'First Name',
+              Icons.person_outline,
+              hint: 'e.g. Juan',
+              requiredField: true,
+            ),
             validator: (value) =>
-            value == null || value.trim().isEmpty ? 'Required' : null,
+            value == null || value.trim().isEmpty ? 'Enter first name' : null,
             textInputAction: TextInputAction.next,
           ),
         ),
@@ -278,9 +417,15 @@ class _RegisterScreenState extends State<RegisterScreen> {
         Expanded(
           child: TextFormField(
             controller: _lastNameController,
-            decoration: _inputDecoration('Last Name', Icons.person_outline),
+            textCapitalization: TextCapitalization.words,
+            decoration: _inputDecoration(
+              'Last Name',
+              Icons.person_outline,
+              hint: 'e.g. Dela Cruz',
+              requiredField: true,
+            ),
             validator: (value) =>
-            value == null || value.trim().isEmpty ? 'Required' : null,
+            value == null || value.trim().isEmpty ? 'Enter last name' : null,
             textInputAction: TextInputAction.next,
           ),
         ),
@@ -294,7 +439,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
         // Province Field (styled like other input fields)
         TextFormField(
           readOnly: true,
-          decoration: _inputDecoration('Province', Icons.location_on)
+          decoration: _inputDecoration('Province', Icons.location_on, helper: 'Fixed to Isabela')
               .copyWith(
             suffixIcon: Padding(
               padding: const EdgeInsets.all(12.0),
@@ -321,7 +466,12 @@ class _RegisterScreenState extends State<RegisterScreen> {
       children: [
         DropdownButtonFormField<String>(
           value: _selectedMunicipality?['code']?.toString(),
-          decoration: _inputDecoration('Municipality/City', Icons.location_city),
+          decoration: _inputDecoration(
+            'Municipality/City',
+            Icons.location_city,
+            helper: 'Select your municipality',
+            requiredField: true,
+          ),
           items: _municipalities
               .map((municipality) => DropdownMenuItem<String>(
             value: municipality['code']?.toString(),
@@ -340,20 +490,28 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 _selectedMunicipality = selectedMunicipality.isNotEmpty ? selectedMunicipality : null;
                 _barangays = [];
                 _selectedBarangay = null;
+                // Clear coordinates when municipality changes (will be updated when barangay is selected)
+                _latitude = null;
+                _longitude = null;
               });
               if (selectedMunicipality.isNotEmpty) {
+                print('🏙️ Municipality selected: ${selectedMunicipality['name']}, loading barangays...');
                 _loadBarangays(selectedMunicipality['code']);
+                // Note: _debounceGeocode() is called in _loadBarangays only if barangay is already selected
               }
             } else {
               setState(() {
                 _selectedMunicipality = null;
                 _barangays = [];
                 _selectedBarangay = null;
+                // Clear coordinates when municipality is cleared
+                _latitude = null;
+                _longitude = null;
               });
             }
           },
           validator: (value) =>
-          value == null || value.isEmpty ? 'Please select a municipality' : null,
+          value == null || value.isEmpty ? 'Select a municipality' : null,
         ),
         if (_isLoadingMunicipalities)
           Positioned.fill(
@@ -376,8 +534,12 @@ class _RegisterScreenState extends State<RegisterScreen> {
       children: [
         DropdownButtonFormField<String>(
           value: _selectedBarangay?['code']?.toString(),
-          decoration:
-          _inputDecoration('Barangay', Icons.home),
+          decoration: _inputDecoration(
+            'Barangay',
+            Icons.home,
+            helper: 'Select your barangay',
+            requiredField: true,
+          ),
           items: _barangays
               .map((barangay) => DropdownMenuItem<String>(
             value: barangay['code']?.toString(),
@@ -395,15 +557,37 @@ class _RegisterScreenState extends State<RegisterScreen> {
               setState(() {
                 _selectedBarangay = selectedBarangay.isNotEmpty ? selectedBarangay : null;
               });
+              // Stop any ongoing geocoding and start fresh
+              _geocodeTimer?.cancel();
+              
+              // Trigger debounced geocoding when barangay is selected (coordinates will be updated)
+              if (selectedBarangay.isNotEmpty) {
+                print('🎯 Barangay selected: ${selectedBarangay['name']}, starting fresh geocoding...');
+                // Clear previous coordinates immediately
+                setState(() {
+                  _latitude = null;
+                  _longitude = null;
+                });
+                _debounceGeocode();
+              } else {
+                // Only clear coordinates when barangay is cleared/empty
+                print('Barangay cleared, clearing coordinates');
+                setState(() {
+                  _latitude = null;
+                  _longitude = null;
+                });
+              }
             } else {
               setState(() {
                 _selectedBarangay = null;
+                // Clear coordinates when barangay is cleared
+                _latitude = null;
+                _longitude = null;
               });
             }
           },
-          validator: (value) {
-            return null;
-          },
+          validator: (value) =>
+              value == null || value.isEmpty ? 'Select a barangay' : null,
         ),
         if (_isLoadingBarangays)
           Positioned.fill(
@@ -428,6 +612,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
       decoration: _inputDecoration(
         'Password',
         Icons.lock_outline,
+        hint: 'At least 6 characters',
+        helper: 'Minimum 6 characters',
+        requiredField: true,
         suffixIcon: IconButton(
           icon: Icon(
             _isPasswordVisible
@@ -452,6 +639,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
       decoration: _inputDecoration(
         'Confirm Password',
         Icons.lock_outline,
+        hint: 'Re-enter your password',
+        helper: 'Must match the password',
+        requiredField: true,
         suffixIcon: IconButton(
           icon: Icon(
             _isConfirmPasswordVisible
@@ -471,10 +661,19 @@ class _RegisterScreenState extends State<RegisterScreen> {
   }
 
   InputDecoration _inputDecoration(String label, IconData icon,
-      {Widget? suffixIcon}) {
+      {Widget? suffixIcon, String? hint, String? helper, bool requiredField = false}) {
     return InputDecoration(
-      labelText: label,
-      labelStyle: const TextStyle(color: AppColors.textSecondary),
+      label: RichText(
+        text: TextSpan(
+          text: label,
+          style: const TextStyle(color: AppColors.textSecondary),
+          children: requiredField
+              ? const [TextSpan(text: ' *', style: TextStyle(color: Colors.red))]
+              : const [],
+        ),
+      ),
+      hintText: hint,
+      helperText: helper,
       prefixIcon: Icon(icon, color: AppColors.primary),
       suffixIcon: suffixIcon,
       filled: true,
@@ -558,4 +757,5 @@ class _RegisterScreenState extends State<RegisterScreen> {
       ],
     );
   }
+
 }

@@ -1,9 +1,13 @@
 // lib/screens/nav/profile/modals/farm_details_modal.dart
+import 'dart:async';
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import 'package:http/http.dart' as http;
 import 'package:cattle_tracer_app/constants/app_colors.dart';
 import 'package:cattle_tracer_app/services/profile/farm_details_service.dart';
 import 'package:cattle_tracer_app/services/address_service.dart';
+import 'package:cattle_tracer_app/config.dart';
 
 class FarmDetailsModal extends StatefulWidget {
   final Map<String, dynamic>? farmDetails;
@@ -63,6 +67,14 @@ class _FarmDetailsModalState extends State<FarmDetailsModal> {
     'name': 'Isabela',
     'code': '020000000'
   };
+
+  // Farm latitude and longitude fields
+  double? _farmLatitude;
+  double? _farmLongitude;
+  bool _isGeocodingInProgress = false;
+  Timer? _farmGeocodeTimer;
+  int _geocodeRequestCounter = 0; // Guards against stale responses
+  int _activeGeocodeRequestId = 0;
 
   @override
   void initState() {
@@ -157,6 +169,7 @@ class _FarmDetailsModalState extends State<FarmDetailsModal> {
     farmAreaController.dispose();
     coopController.dispose();
     farmLocationController.dispose();
+    _farmGeocodeTimer?.cancel();
     super.dispose();
   }
 
@@ -650,6 +663,13 @@ class _FarmDetailsModalState extends State<FarmDetailsModal> {
         _barangays = barangays;
         _isLoadingBarangays = false;
       });
+      // Only trigger geocoding if a barangay is already selected (for edit mode)
+      if (_selectedBarangay != null && _selectedBarangay!['name'] != null) {
+        print('Barangays loaded, existing barangay selected: ${_selectedBarangay!['name']}, triggering geocoding...');
+        _debounceFarmGeocode();
+      } else {
+        print('Barangays loaded, no barangay selected yet - waiting for user selection');
+      }
     } catch (e) {
       setState(() => _isLoadingBarangays = false);
       _showMessage('Failed to load barangays: $e', Colors.red);
@@ -668,6 +688,97 @@ class _FarmDetailsModalState extends State<FarmDetailsModal> {
       ),
     );
   }
+
+  // Debounced farm geocoding (mirror JS: single-shot request after 500ms)
+  void _debounceFarmGeocode() {
+    _farmGeocodeTimer?.cancel();
+
+    _farmGeocodeTimer = Timer(const Duration(milliseconds: 500), () {
+      _performSingleGeocode();
+    });
+  }
+
+  // Remove persistent/fallback logic to match JS exactly
+
+  // Single-shot geocoding (JS parity)
+  Future<void> _performSingleGeocode() async {
+    final province = _isabelaProvince['name'];
+    final municipality = _selectedMunicipality?['name'];
+    final barangay = _selectedBarangay?['name'];
+
+    // Clear coordinates if incomplete selection
+    if (municipality == null || barangay == null || barangay.isEmpty) {
+      setState(() {
+        _farmLatitude = null;
+        _farmLongitude = null;
+        _isGeocodingInProgress = false;
+      });
+      return;
+    }
+
+    setState(() {
+      _isGeocodingInProgress = true;
+    });
+
+    final currentRequestId = ++_geocodeRequestCounter;
+    _activeGeocodeRequestId = currentRequestId;
+
+    try {
+      final queryParams = <String, String>{
+        'province': province!,
+        'municipality': municipality,
+        'barangay': barangay,
+      };
+      final uri = Uri.parse('${AppConfig.baseUrl}/api/geocode')
+          .replace(queryParameters: queryParams);
+
+      final response = await http.get(
+        uri,
+        headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json',
+        },
+      ).timeout(const Duration(seconds: 10));
+
+      // Ignore stale responses
+      if (!mounted || currentRequestId != _activeGeocodeRequestId) return;
+
+      if (response.statusCode == 200 && response.body.isNotEmpty) {
+        final data = jsonDecode(response.body);
+        if (data['success'] == true &&
+            data['data'] != null &&
+            data['data']['latitude'] != null &&
+            data['data']['longitude'] != null) {
+          final lat = double.tryParse(data['data']['latitude'].toString());
+          final lng = double.tryParse(data['data']['longitude'].toString());
+          if (lat != null && lng != null) {
+            setState(() {
+              _farmLatitude = lat;
+              _farmLongitude = lng;
+              _isGeocodingInProgress = false;
+            });
+            return;
+          }
+        }
+      }
+
+      // Fallback: clear on failure
+      setState(() {
+        _farmLatitude = null;
+        _farmLongitude = null;
+        _isGeocodingInProgress = false;
+      });
+    } catch (e) {
+      if (!mounted || currentRequestId != _activeGeocodeRequestId) return;
+      setState(() {
+        _farmLatitude = null;
+        _farmLongitude = null;
+        _isGeocodingInProgress = false;
+      });
+    }
+  }
+
+  // Manual retry no longer needed (JS parity: single-shot on change)
 
   Future<void> _initializeAddressFromLocation(String location) async {
     // This is a simple implementation - you might want to enhance this
@@ -827,19 +938,30 @@ class _FarmDetailsModalState extends State<FarmDetailsModal> {
               (municipality) => municipality['code']?.toString() == newValue,
               orElse: () => {},
             );
+            // Stop any ongoing geocoding when municipality changes
+            _farmGeocodeTimer?.cancel();
+            
             setState(() {
               _selectedMunicipality = selectedMunicipality.isNotEmpty ? selectedMunicipality : null;
               _barangays = [];
               _selectedBarangay = null;
+              // Clear farm coordinates when municipality changes (will be updated when barangay is selected)
+              _farmLatitude = null;
+              _farmLongitude = null;
             });
             if (selectedMunicipality.isNotEmpty) {
+              print('🏙️ Municipality selected: ${selectedMunicipality['name']}, loading barangays...');
               _loadBarangays(selectedMunicipality['code']);
+              // Note: _debounceFarmGeocode() is called in _loadBarangays after barangays are loaded
             }
           } else {
             setState(() {
               _selectedMunicipality = null;
               _barangays = [];
               _selectedBarangay = null;
+              // Clear farm coordinates when municipality is cleared
+              _farmLatitude = null;
+              _farmLongitude = null;
             });
           }
         },
@@ -929,9 +1051,32 @@ class _FarmDetailsModalState extends State<FarmDetailsModal> {
                   setState(() {
                     _selectedBarangay = selectedBarangay.isNotEmpty ? selectedBarangay : null;
                   });
+                  // Stop any ongoing geocoding and start fresh
+                  _farmGeocodeTimer?.cancel();
+                  
+                  // Trigger debounced geocoding when barangay is selected (coordinates will be updated)
+                  if (selectedBarangay.isNotEmpty) {
+                    print('🎯 Barangay selected: ${selectedBarangay['name']}, starting fresh geocoding...');
+                    // Clear previous coordinates immediately
+                    setState(() {
+                      _farmLatitude = null;
+                      _farmLongitude = null;
+                    });
+                    _debounceFarmGeocode();
+                  } else {
+                    // Only clear coordinates when barangay is cleared/empty
+                    print('Barangay cleared, clearing farm coordinates');
+                    setState(() {
+                      _farmLatitude = null;
+                      _farmLongitude = null;
+                    });
+                  }
                 } else {
                   setState(() {
                     _selectedBarangay = null;
+                    // Clear farm coordinates when barangay is cleared
+                    _farmLatitude = null;
+                    _farmLongitude = null;
                   });
                 }
               },
@@ -1004,6 +1149,77 @@ class _FarmDetailsModalState extends State<FarmDetailsModal> {
           const SizedBox(height: 16),
 
           _buildBarangayDropdown(),
+          const SizedBox(height: 16),
+
+          // Farm coordinates status (for debugging - can be hidden in production)
+          if (_isGeocodingInProgress || _farmLatitude != null)
+            _buildFarmCoordinatesStatus(),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildFarmCoordinatesStatus() {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.grey[100],
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: Colors.grey[300]!),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(
+                Icons.location_on,
+                size: 16,
+                color: _farmLatitude != null && _farmLongitude != null 
+                    ? AppColors.vibrantGreen 
+                    : Colors.grey,
+              ),
+              const SizedBox(width: 8),
+              Text(
+                'Farm Coordinates',
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w500,
+                  color: Colors.grey[700],
+                ),
+              ),
+              const Spacer(),
+          if (_isGeocodingInProgress)
+            const SizedBox(
+              width: 12,
+              height: 12,
+              child: CircularProgressIndicator(
+                strokeWidth: 2,
+              ),
+            ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          if (_farmLatitude != null && _farmLongitude != null)
+            Text(
+              'Lat: ${_farmLatitude!.toStringAsFixed(6)}, Lng: ${_farmLongitude!.toStringAsFixed(6)}',
+              style: TextStyle(
+                fontSize: 11,
+                color: Colors.grey[600],
+                fontFamily: 'monospace',
+              ),
+            )
+          else
+            Text(
+              (_selectedMunicipality != null && _selectedBarangay != null)
+                  ? 'Fetching coordinates...'
+                  : 'Farm coordinates will be fetched automatically',
+              style: TextStyle(
+                fontSize: 11,
+                color: Colors.grey[500],
+                fontStyle: FontStyle.italic,
+              ),
+            ),
         ],
       ),
     );
@@ -1032,6 +1248,7 @@ class _FarmDetailsModalState extends State<FarmDetailsModal> {
       ],
     );
   }
+
 
   String _formatFarmLocation() {
     if (_selectedMunicipality != null && _selectedBarangay != null) {
@@ -1114,6 +1331,11 @@ class _FarmDetailsModalState extends State<FarmDetailsModal> {
         farmLocation = '${_selectedMunicipality!['name']}, ${_isabelaProvince['name']}';
       }
 
+      // Attempt a final single geocode before submission if coordinates are empty (JS parity)
+      if (_farmLatitude == null || _farmLongitude == null) {
+        await _performSingleGeocode();
+      }
+
       final Map<String, dynamic> updateData = {
         'farm_name': farmNameController.text,
         'farm_type': farmTypeController.text,
@@ -1122,6 +1344,14 @@ class _FarmDetailsModalState extends State<FarmDetailsModal> {
         'cooperative_affiliation': coopController.text,
         'farm_location': farmLocation,
       };
+      
+      // Add farm coordinates if available
+      if (_farmLatitude != null && _farmLongitude != null) {
+        updateData['farm_latitude'] = _farmLatitude!.toStringAsFixed(7);
+        updateData['farm_longitude'] = _farmLongitude!.toStringAsFixed(7);
+      }
+      
+      print('Farm details update data: $updateData');
 
       bool success = false;
       try {

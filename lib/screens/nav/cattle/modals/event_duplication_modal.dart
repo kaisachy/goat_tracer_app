@@ -290,13 +290,13 @@ class _EventDuplicationModalState extends State<EventDuplicationModal> {
 
       for (final cattleTag in _selectedCattleTags) {
         try {
-          final eventData = {
+            final eventData = {
             'cattle_tag': cattleTag,
             'bull_tag': widget.originalEvent['bull_tag'],
             'calf_tag': widget.originalEvent['calf_tag'],
             'event_type': widget.originalEvent['event_type'],
             'event_date': _eventDateController.text,
-            'sickness_symptoms': widget.originalEvent['sickness_symptoms'],
+              'disease_type': widget.originalEvent['disease_type'],
             'diagnosis': widget.originalEvent['diagnosis'],
             'technician': widget.originalEvent['technician'],
             'medicine_given': widget.originalEvent['medicine_given'],

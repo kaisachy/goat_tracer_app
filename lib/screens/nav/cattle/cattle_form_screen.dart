@@ -11,10 +11,12 @@ import '../../../services/auth_service.dart';
 
 class CattleFormScreen extends StatefulWidget {
   final Cattle? cattle;
+  final String? preSelectedClassification;
 
   const CattleFormScreen({
     super.key,
     this.cattle,
+    this.preSelectedClassification,
   });
 
   @override
@@ -35,7 +37,7 @@ class _CattleFormScreenState extends State<CattleFormScreen> {
   String _cleanTagText(String? raw) {
     if (raw == null) return '';
     String t = raw;
-    t = t.replaceAll(RegExp(r'(?i)\bcattle\b'), '');
+    t = t.replaceAll(RegExp(r'\bcattle\b', caseSensitive: false), '');
     t = t.replaceAll('#', '');
     t = t.replaceAll(RegExp(r'\s+'), ' ').trim();
     return t;
@@ -80,6 +82,7 @@ class _CattleFormScreenState extends State<CattleFormScreen> {
   // NEW: For tag generation
   bool _isGeneratingTag = false;
   List<String> _existingTags = [];
+  List<String> _recentlyGeneratedTags = []; // Track tags generated in current session
 
   // NEW: Dynamic options from user preferences
   List<String> _breedOptions = [];
@@ -93,9 +96,17 @@ class _CattleFormScreenState extends State<CattleFormScreen> {
 
   // Helper to get correct classification options based on selected sex
   List<String> get classificationOptions {
+    // If we have a pre-selected classification, include it in options
+    if (widget.preSelectedClassification != null) {
+      if (_sex == 'Male') return maleClassificationOptions;
+      if (_sex == 'Female') return femaleClassificationOptions;
+      // If sex is not selected yet, return all options for pre-selected classification
+      return ['Cow', 'Bull', 'Heifer', 'Steer', 'Growers', 'Calf'];
+    }
+    
     if (_sex == 'Male') return maleClassificationOptions;
     if (_sex == 'Female') return femaleClassificationOptions;
-    return [];
+    return ['Cow', 'Bull', 'Heifer', 'Steer', 'Growers', 'Calf']; // Return all options when no sex selected
   }
 
   @override
@@ -138,7 +149,14 @@ class _CattleFormScreenState extends State<CattleFormScreen> {
       // Reload existing tags to ensure we have the latest data
       await _loadExistingTags();
 
-      String newTag = _generateRandomTag();
+      String newTag;
+      if (_classification != null) {
+        // Generate based on classification
+        newTag = _generateTagForClassificationType(_classification!);
+      } else {
+        // Fallback to old method
+        newTag = _generateRandomTag();
+      }
 
       setState(() {
         _tagNoController.text = newTag;
@@ -152,15 +170,18 @@ class _CattleFormScreenState extends State<CattleFormScreen> {
     }
   }
 
-  /// Generate different tag number options
+  /// Generate different tag number options (fallback when no classification is selected)
   String _generateRandomTag() {
+    // Use a generic prefix for fallback tags
+    const String fallbackPrefix = 'CT';
+    
     // Find the highest existing CT- tag number
     int highestNumber = 0;
 
     for (String existingTag in _existingTags) {
       final upperTag = existingTag.toUpperCase();
-      if (upperTag.startsWith('CT-')) {
-        final numberPart = upperTag.substring(3); // Remove 'CT-' prefix
+      if (upperTag.startsWith('$fallbackPrefix-')) {
+        final numberPart = upperTag.substring(fallbackPrefix.length + 1); // Remove 'CT-' prefix
         final number = int.tryParse(numberPart);
         if (number != null && number > highestNumber) {
           highestNumber = number;
@@ -176,15 +197,15 @@ class _CattleFormScreenState extends State<CattleFormScreen> {
 
     // Option 1: Next sequential number
     final nextSequential = highestNumber + 1;
-    possibleTags.add('CT-${nextSequential.toString().padLeft(4, '0')}');
+    possibleTags.add('$fallbackPrefix-${nextSequential.toString().padLeft(4, '0')}');
 
     // Option 2: Skip a few numbers ahead (random jump)
     final jumpAhead = highestNumber + random.nextInt(10) + 2; // Jump 2-11 numbers ahead
-    possibleTags.add('CT-${jumpAhead.toString().padLeft(4, '0')}');
+    possibleTags.add('$fallbackPrefix-${jumpAhead.toString().padLeft(4, '0')}');
 
     // Option 3: Random number in a higher range
     final randomHigh = highestNumber + random.nextInt(50) + 20; // 20-70 numbers ahead
-    possibleTags.add('CT-${randomHigh.toString().padLeft(4, '0')}');
+    possibleTags.add('$fallbackPrefix-${randomHigh.toString().padLeft(4, '0')}');
 
     // Option 4: Round number (next hundred, fifty, etc.)
     int roundNumber;
@@ -195,7 +216,7 @@ class _CattleFormScreenState extends State<CattleFormScreen> {
     } else {
       roundNumber = ((highestNumber / 100).ceil() + 1) * 100;
     }
-    possibleTags.add('CT-${roundNumber.toString().padLeft(4, '0')}');
+    possibleTags.add('$fallbackPrefix-${roundNumber.toString().padLeft(4, '0')}');
 
     // Remove any that might already exist
     possibleTags.removeWhere((tag) => _existingTags.contains(tag.toLowerCase()));
@@ -210,11 +231,11 @@ class _CattleFormScreenState extends State<CattleFormScreen> {
 
     // Fallback: just increment from current or highest
     String fallbackTag;
-    if (currentTag.startsWith('CT-')) {
-      final currentNumber = int.tryParse(currentTag.substring(3)) ?? 0;
-      fallbackTag = 'CT-${(currentNumber + 1).toString().padLeft(4, '0')}';
+    if (currentTag.startsWith('$fallbackPrefix-')) {
+      final currentNumber = int.tryParse(currentTag.substring(fallbackPrefix.length + 1)) ?? 0;
+      fallbackTag = '$fallbackPrefix-${(currentNumber + 1).toString().padLeft(4, '0')}';
     } else {
-      fallbackTag = 'CT-${(highestNumber + 1).toString().padLeft(4, '0')}';
+      fallbackTag = '$fallbackPrefix-${(highestNumber + 1).toString().padLeft(4, '0')}';
     }
 
     return fallbackTag;
@@ -656,7 +677,113 @@ class _CattleFormScreenState extends State<CattleFormScreen> {
         _source = sourceOptions.contains(c.source) ? c.source : null;
         _sourceDetails = null;
       }
+    } else if (widget.preSelectedClassification != null) {
+      // If we have a pre-selected classification for new cattle
+      _classification = widget.preSelectedClassification;
+      _handleClassificationSelection(widget.preSelectedClassification!);
     }
+  }
+
+  /// Handle classification selection and auto-fill related fields
+  void _handleClassificationSelection(String classification) {
+    setState(() {
+      _classification = classification;
+      
+      // Auto-fill sex based on classification (only for new cattle with pre-selected classification)
+      if (widget.preSelectedClassification != null && widget.cattle == null) {
+        if (classification == 'Cow' || classification == 'Heifer') {
+          _sex = 'Female';
+        } else if (classification == 'Bull' || classification == 'Steer') {
+          _sex = 'Male';
+        }
+        // For Growers and Calf, sex remains null for user selection
+      }
+      
+      // Generate tag based on classification (only for new cattle)
+      if (widget.cattle == null) {
+        _generateTagForClassification(classification);
+      }
+    });
+  }
+
+  /// Generate tag number based on classification
+  Future<void> _generateTagForClassification(String classification) async {
+    setState(() => _isGeneratingTag = true);
+
+    try {
+      // Reload existing tags to ensure we have the latest data
+      await _loadExistingTags();
+
+      String newTag = _generateTagForClassificationType(classification);
+
+      setState(() {
+        _tagNoController.text = newTag;
+        _isGeneratingTag = false;
+      });
+
+    } catch (e) {
+      print('Error generating tag: $e');
+      setState(() => _isGeneratingTag = false);
+      _showErrorSnackBar('Failed to generate tag number');
+    }
+  }
+
+  /// Generate tag number based on classification type
+  String _generateTagForClassificationType(String classification) {
+    // Map classifications to their tag prefixes
+    String prefix;
+    switch (classification.toUpperCase()) {
+      case 'COW':
+        prefix = 'COW';
+        break;
+      case 'BULL':
+        prefix = 'BULL';
+        break;
+      case 'HEIFER':
+        prefix = 'HFR';
+        break;
+      case 'STEER':
+        prefix = 'STR';
+        break;
+      case 'GROWERS':
+        prefix = 'GRWR';
+        break;
+      case 'CALF':
+        prefix = 'CALF';
+        break;
+      default:
+        prefix = classification.toUpperCase();
+    }
+    
+    int highestNumber = 0;
+
+    // Find the highest existing number for this classification
+    for (String existingTag in _existingTags) {
+      final upperTag = existingTag.toUpperCase();
+      if (upperTag.startsWith('$prefix-')) {
+        final numberPart = upperTag.substring(prefix.length + 1); // Remove prefix
+        final number = int.tryParse(numberPart);
+        if (number != null && number > highestNumber) {
+          highestNumber = number;
+        }
+      }
+    }
+
+    // Generate next sequential number and ensure it's unique
+    int nextNumber = highestNumber + 1;
+    String newTag = '$prefix-${nextNumber.toString().padLeft(4, '0')}';
+    
+    // Keep generating until we find a unique tag (check both existing and recently generated)
+    while (_existingTags.contains(newTag.toLowerCase()) || 
+           _recentlyGeneratedTags.contains(newTag.toLowerCase())) {
+      nextNumber++;
+      newTag = '$prefix-${nextNumber.toString().padLeft(4, '0')}';
+    }
+    
+    // Add to recently generated tags
+    _recentlyGeneratedTags.add(newTag.toLowerCase());
+    
+    return newTag;
   }
 
   /// Fetches all cattle from the service and filters them by gender for parent selection
@@ -854,22 +981,123 @@ class _CattleFormScreenState extends State<CattleFormScreen> {
       Navigator.pop(context); // Close loading dialog
 
       if (success) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(widget.cattle == null
-                ? 'Cattle added successfully!'
-                : 'Cattle updated successfully!'),
-            backgroundColor: AppColors.vibrantGreen,
-            behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-          ),
-        );
-        Navigator.pop(context, true);
+        if (widget.cattle == null) {
+          // Show "Add Another" dialog for new cattle
+          _showAddAnotherDialog();
+        } else {
+          // For updates, just show success message and close
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: const Text('Cattle updated successfully!'),
+              backgroundColor: AppColors.vibrantGreen,
+              behavior: SnackBarBehavior.floating,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+            ),
+          );
+          Navigator.pop(context, true);
+        }
       } else {
         // If success is false but no exception was thrown, show generic error
         _showErrorSnackBar('Failed to save cattle information. Please try again.');
       }
     }
+  }
+
+  /// Show dialog asking if user wants to add another cattle of the same classification
+  void _showAddAnotherDialog() {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          title: Row(
+            children: [
+              Icon(Icons.add_circle, color: AppColors.primary, size: 28),
+              const SizedBox(width: 12),
+              const Text('Add Another Cattle'),
+            ],
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Cattle added successfully!',
+                style: TextStyle(
+                  color: AppColors.vibrantGreen,
+                  fontWeight: FontWeight.w600,
+                  fontSize: 16,
+                ),
+              ),
+              const SizedBox(height: 16),
+              Text(
+                'Would you like to add another ${_classification?.toLowerCase() ?? 'cattle'}?',
+                style: const TextStyle(fontSize: 16),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.pop(context); // Close dialog
+                Navigator.pop(context, true); // Close form and return to cattle list
+              },
+              child: Text(
+                'No, Done',
+                style: TextStyle(color: Colors.grey[600]),
+              ),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                Navigator.pop(context); // Close dialog
+                _resetFormForNewCattle(); // Reset form for new cattle of same classification
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.primary,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+              ),
+              child: const Text(
+                'Yes, Add Another',
+                style: TextStyle(color: Colors.white),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  /// Reset form for adding another cattle of the same classification
+  void _resetFormForNewCattle() {
+    setState(() {
+      // Reset all form fields
+      _tagNoController.clear();
+      _weightController.clear();
+      _notesController.clear();
+      _otherBreedController.clear();
+      
+      // Reset dropdown values
+      _breed = null;
+      _groupName = null;
+      _motherTag = null;
+      _fatherTag = null;
+      _dateOfBirth = null;
+      _joinedDate = null;
+      _source = null;
+      _sourceDetails = null;
+      
+      // Clear recently generated tags for new cattle
+      _recentlyGeneratedTags.clear();
+      
+      // Keep the same classification and pre-fill sex if applicable
+      if (widget.preSelectedClassification != null) {
+        _handleClassificationSelection(widget.preSelectedClassification!);
+      } else {
+        _sex = null;
+        _classification = null;
+      }
+    });
   }
 
   /// Builds a searchable dropdown for parent selection
@@ -1249,6 +1477,99 @@ class _CattleFormScreenState extends State<CattleFormScreen> {
     );
   }
 
+  /// Build classification field (read-only if pre-selected)
+  Widget _buildClassificationField() {
+    final isPreSelected = widget.preSelectedClassification != null;
+    final isEditing = widget.cattle != null;
+    final preSelectedClassification = widget.preSelectedClassification;
+    
+    // Lock classification for pre-selected classifications (new cattle from FAB menu)
+    // For editing existing cattle, allow classification changes
+    final shouldLockClassification = isPreSelected && !isEditing;
+    
+    return DropdownButtonFormField<String>(
+      value: _classification,
+      validator: (value) => value == null ? 'Classification is required' : null,
+      isExpanded: true,
+      decoration: InputDecoration(
+        labelText: 'Classification *',
+        prefixIcon: Icon(Icons.category, color: AppColors.primary),
+        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(color: AppColors.primary, width: 2),
+        ),
+        fillColor: shouldLockClassification ? Colors.grey[100] : AppColors.cardBackground,
+        filled: true,
+        suffixIcon: shouldLockClassification 
+          ? Icon(Icons.lock, color: Colors.grey[600])
+          : null,
+      ),
+      hint: const Text('Select Classification'),
+      items: (widget.preSelectedClassification != null && !isEditing
+        ? ['Cow', 'Bull', 'Heifer', 'Steer', 'Growers', 'Calf'] 
+        : classificationOptions).map((option) => DropdownMenuItem(
+        value: option,
+        child: Text(option),
+      )).toList(),
+      onChanged: shouldLockClassification ? null : (value) {
+        if (value != null) {
+          _handleClassificationSelection(value);
+        }
+      },
+    );
+  }
+
+  /// Build sex field with conditional logic
+  Widget _buildSexField() {
+    final isPreSelected = widget.preSelectedClassification != null;
+    final isEditing = widget.cattle != null;
+    final preSelectedClassification = widget.preSelectedClassification;
+    
+    // For editing existing cattle, always allow sex selection
+    // For new cattle with pre-selected classification:
+    // - Allow sex selection for Growers and Calf
+    // - Auto-fill and lock for Cow, Bull, Heifer, Steer
+    final allowSexSelection = isEditing || 
+                             preSelectedClassification == 'Growers' || 
+                             preSelectedClassification == 'Calf' || 
+                             preSelectedClassification == null;
+    
+    return DropdownButtonFormField<String>(
+      value: _sex,
+      validator: (value) => value == null ? 'Sex is required' : null,
+      isExpanded: true,
+      decoration: InputDecoration(
+        labelText: 'Sex *',
+        prefixIcon: Icon(Icons.wc, color: AppColors.primary),
+        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(color: AppColors.primary, width: 2),
+        ),
+        fillColor: !allowSexSelection ? Colors.grey[100] : AppColors.cardBackground,
+        filled: true,
+        suffixIcon: !allowSexSelection 
+          ? Icon(Icons.lock, color: Colors.grey[600])
+          : null,
+      ),
+      hint: const Text('Select Sex'),
+      items: sexOptions.map((option) => DropdownMenuItem(
+        value: option,
+        child: Text(option),
+      )).toList(),
+      onChanged: allowSexSelection ? (value) {
+        setState(() {
+          _sex = value;
+          // Reset classification if sex changes and no pre-selected classification
+          if (widget.preSelectedClassification == null) {
+            _classification = null;
+          }
+        });
+      } : null,
+    );
+  }
+
   /// NEW: Build auto-generated tag field with refresh button
   Widget _buildAutoTagField() {
     return TextFormField(
@@ -1320,32 +1641,21 @@ class _CattleFormScreenState extends State<CattleFormScreen> {
               _buildCard(
                 child: Column(
                   children: [
-                    _buildAutoTagField(), // NEW: Use the auto-generated tag field
+                    // Sex field
+                    _buildSexField(),
                     const SizedBox(height: 16),
-                    // Use Column instead of Row for better responsive design
-                    Column(
-                      children: [
-                        _buildDateField(
-                          label: 'Date of Birth',
-                          value: _dateOfBirth,
-                          isDob: true,
-                          icon: Icons.cake,
-                        ),
-                        const SizedBox(height: 16),
-                        _buildDropdown(
-                          label: 'Sex *',
-                          value: _sex,
-                          options: sexOptions,
-                          validator: (value) => value == null ? 'Sex is required' : null,
-                          onChanged: (value) {
-                            setState(() {
-                              _sex = value;
-                              _classification = null;
-                            });
-                          },
-                          icon: Icons.wc,
-                        ),
-                      ],
+                    // Classification field (read-only if pre-selected)
+                    _buildClassificationField(),
+                    const SizedBox(height: 16),
+                    // Tag number field
+                    _buildAutoTagField(),
+                    const SizedBox(height: 16),
+                    // Date of Birth
+                    _buildDateField(
+                      label: 'Date of Birth',
+                      value: _dateOfBirth,
+                      isDob: true,
+                      icon: Icons.cake,
                     ),
                   ],
                 ),
@@ -1361,15 +1671,6 @@ class _CattleFormScreenState extends State<CattleFormScreen> {
                       label: 'Weight (kg)',
                       icon: Icons.monitor_weight,
                       keyboardType: TextInputType.number,
-                    ),
-                    const SizedBox(height: 16),
-                    _buildDropdown(
-                      label: 'Classification *',
-                      value: _classification,
-                      options: classificationOptions,
-                      validator: (value) => value == null ? 'Classification is required' : null,
-                      onChanged: (value) => setState(() => _classification = value),
-                      icon: Icons.category,
                     ),
                     const SizedBox(height: 16),
                     _buildBreedField(),

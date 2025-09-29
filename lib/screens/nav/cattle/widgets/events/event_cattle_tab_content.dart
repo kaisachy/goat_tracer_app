@@ -34,14 +34,14 @@ class _EventCattleTabContentState extends State<EventCattleTabContent> {
   List<String> get eventTypes {
     // Comprehensive event types for female cattle - includes all available event types
     final femaleEventTypes = [
-      'All', 'Dry off', 'Treated', 'Breeding', 'Weighed', 'Gives Birth',
+      'All', 'Dry off', 'Sick', 'Treated', 'Breeding', 'Weighed', 'Gives Birth',
       'Vaccinated', 'Pregnant', 'Aborted Pregnancy', 'Deworming',
       'Hoof Trimming', 'Weaned', 'Deceased', 'Lost', 'Other',
     ];
 
     // Comprehensive event types for male cattle - includes all available event types
     final maleEventTypes = [
-      'All', 'Treated', 'Breeding', 'Weighed', 'Vaccinated', 'Deworming',
+      'All', 'Sick', 'Treated', 'Breeding', 'Weighed', 'Vaccinated', 'Deworming',
       'Hoof Trimming', 'Castrated', 'Weaned', 'Deceased', 'Lost', 'Other',
     ];
 
@@ -207,7 +207,7 @@ class _EventCattleTabContentState extends State<EventCattleTabContent> {
         return true;
 
       case 'treated':
-        return _compareFieldValues(event1['sickness_symptoms'], event2['sickness_symptoms']) &&
+        return _compareFieldValues(event1['disease_type'], event2['disease_type']) &&
             _compareFieldValues(event1['diagnosis'], event2['diagnosis']) &&
             _compareFieldValues(event1['technician'], event2['technician']) &&
             _compareFieldValues(event1['medicine_given'], event2['medicine_given']);
@@ -312,9 +312,9 @@ class _EventCattleTabContentState extends State<EventCattleTabContent> {
       // Additional filter: only show event that are valid for the cattle's sex
       final sex = widget.cattle.sex.toLowerCase();
       final validEventTypes = sex == 'female'
-          ? ['dry off', 'treated', 'breeding', 'weighed', 'gives birth', 'vaccinated',
+          ? ['dry off', 'sick', 'treated', 'breeding', 'weighed', 'gives birth', 'vaccinated',
         'pregnant', 'aborted pregnancy', 'deworming', 'hoof trimming', 'deceased', 'lost', 'other']
-          : ['treated', 'breeding', 'weighed', 'vaccinated', 'deworming', 'hoof trimming',
+          : ['sick', 'treated', 'breeding', 'weighed', 'vaccinated', 'deworming', 'hoof trimming',
         'castrated', 'weaned', 'deceased', 'lost', 'other'];
 
       final matchesSex = validEventTypes.contains(type);
@@ -899,6 +899,11 @@ class _EventCattleTabContentState extends State<EventCattleTabContent> {
 
     // Add event-specific fields based on event type
     switch (eventType) {
+      case 'sick':
+        if (event['disease_type'] != null && event['disease_type'].toString().isNotEmpty && event['disease_type'] != 'N/A') {
+          relevantDetails['Type of Disease'] = event['disease_type'].toString();
+        }
+        break;
       case 'dry off':
       // No additional fields for dry off
         break;

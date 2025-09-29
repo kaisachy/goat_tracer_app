@@ -363,70 +363,7 @@ class _EducationFormModalState extends State<EducationFormModal> {
     );
   }
 
-  Widget _buildYearDropdown({
-    required TextEditingController controller,
-    required String label,
-  }) {
-    final int currentYear = DateTime.now().year;
-    final List<int> years = [
-      for (int y = currentYear + 5; y >= 1900; y--) y,
-    ];
-
-    int? selectedYear;
-    if (controller.text.isNotEmpty) {
-      selectedYear = int.tryParse(controller.text);
-    }
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          label,
-          style: const TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.w600,
-            color: AppColors.textPrimary,
-          ),
-        ),
-        const SizedBox(height: 8),
-        Container(
-          decoration: BoxDecoration(
-            color: AppColors.pageBackground,
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: AppColors.textSecondary.withOpacity(0.1)),
-          ),
-          padding: const EdgeInsets.symmetric(horizontal: 12),
-          child: DropdownButtonFormField<int>(
-            value: selectedYear,
-            isExpanded: true,
-            decoration: const InputDecoration(
-              border: InputBorder.none,
-            ),
-            hint: const Text('Select year'),
-            items: [
-              const DropdownMenuItem<int>(
-                value: null,
-                child: Text(''),
-              ),
-              ...years.map(
-                (y) => DropdownMenuItem<int>(
-                  value: y,
-                  child: Text(y.toString()),
-                ),
-              ),
-            ],
-            onChanged: (val) {
-              if (val == null) {
-                controller.text = '';
-              } else {
-                controller.text = val.toString();
-              }
-            },
-          ),
-        ),
-      ],
-    );
-  }
+  // Removed unused _buildYearDropdown
 
   Widget _buildYearPickerField({
     required TextEditingController controller,

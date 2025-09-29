@@ -60,22 +60,33 @@ abstract class BaseEventFieldsState<T extends BaseEventFields> extends State<T> 
   void onBullsLoaded() {}
 
   Future<void> fetchBulls() async {
+    print('DEBUG: fetchBulls started');
     setState(() => loadingBulls = true);
     try {
       final allCattle = await CattleService.getAllCattle();
+      print('DEBUG: fetchBulls - loaded ${allCattle.length} total cattle');
+      
       final bullsList = allCattle.where((cattle) =>
       cattle.classification.toLowerCase() == 'bull' &&
           cattle.status.toLowerCase() == 'healthy'
       ).toList();
+      
+      print('DEBUG: fetchBulls - found ${bullsList.length} healthy bulls');
+      for (final bull in bullsList) {
+        print('DEBUG: fetchBulls - bull: ${bull.tagNo} (${bull.classification}, ${bull.status})');
+      }
 
       setState(() {
         bulls = bullsList;
         loadingBulls = false;
       });
+      
+      print('DEBUG: fetchBulls - bulls list updated, calling onBullsLoaded');
 
       // Notify subclasses that bulls have been loaded
       onBullsLoaded();
     } catch (e) {
+      print('DEBUG: fetchBulls - error: $e');
       setState(() => loadingBulls = false);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -359,17 +370,38 @@ abstract class BaseEventFieldsState<T extends BaseEventFields> extends State<T> 
   }
 
   Widget buildBullDropdown() {
+    final currentRaw = widget.controllers['bull_tag']?.text ?? '';
+    final current = currentRaw.trim();
+    final isAutoFilled = current.isNotEmpty && !bulls.any((bull) => bull.tagNo.toLowerCase() == current.toLowerCase());
+    
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
       width: double.infinity,
       child: DropdownButtonFormField<String>(
         value: () {
-          final currentRaw = widget.controllers['bull_tag']?.text ?? '';
-          final current = currentRaw.trim();
-          if (current.isEmpty) return null;
+          print('DEBUG: buildBullDropdown - current controller value: "$current"');
+          print('DEBUG: buildBullDropdown - bulls list length: ${bulls.length}');
+          print('DEBUG: buildBullDropdown - bulls tags: ${bulls.map((b) => b.tagNo).join(', ')}');
+          print('DEBUG: buildBullDropdown - isAutoFilled: $isAutoFilled');
+          
+          if (current.isEmpty) {
+            print('DEBUG: buildBullDropdown - current is empty, returning null');
+            return null;
+          }
+          
           final options = bulls.map((b) => b.tagNo.trim()).toList();
           final lowerToOriginal = { for (final o in options) o.toLowerCase(): o };
-          return lowerToOriginal[current.toLowerCase()] ?? current;
+          
+          // If the current value is not in the bulls list, add it as a temporary option
+          if (!lowerToOriginal.containsKey(current.toLowerCase())) {
+            print('DEBUG: buildBullDropdown - current value "$current" not found in bulls list, adding as temporary option');
+            options.add(current);
+            lowerToOriginal[current.toLowerCase()] = current;
+          }
+          
+          final result = lowerToOriginal[current.toLowerCase()] ?? current;
+          print('DEBUG: buildBullDropdown - calculated value: "$result"');
+          return result;
         }(),
         decoration: InputDecoration(
           labelText: 'Bull Tag (Father)',
@@ -383,7 +415,7 @@ abstract class BaseEventFieldsState<T extends BaseEventFields> extends State<T> 
             borderSide: const BorderSide(color: AppColors.primary, width: 2),
           ),
           filled: true,
-          fillColor: Colors.white,
+          fillColor: isAutoFilled ? Colors.grey.shade100 : Colors.white, // Slightly grayed background when read-only
           contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
           suffixIcon: loadingBulls
               ? Container(
@@ -392,24 +424,56 @@ abstract class BaseEventFieldsState<T extends BaseEventFields> extends State<T> 
             padding: const EdgeInsets.all(12),
             child: const CircularProgressIndicator(strokeWidth: 2),
           )
-              : null,
+              : isAutoFilled
+                  ? Container(
+                      width: 20,
+                      height: 20,
+                      padding: const EdgeInsets.all(12),
+                      child: Icon(
+                        Icons.lock,
+                        size: 16,
+                        color: Colors.grey.shade600,
+                      ),
+                    )
+                  : null,
         ),
         hint: Text(loadingBulls ? 'Loading bulls...' : 'Select bull'),
         isExpanded: true,
-        items: bulls.map((bull) {
-          return DropdownMenuItem<String>(
-            value: bull.tagNo,
-            child: SizedBox(
-              width: double.infinity,
-              child: Text(
-                bull.tagNo,
-                overflow: TextOverflow.ellipsis,
-                maxLines: 1,
+        items: () {
+          final items = bulls.map((bull) {
+            return DropdownMenuItem<String>(
+              value: bull.tagNo,
+              child: SizedBox(
+                width: double.infinity,
+                child: Text(
+                  bull.tagNo,
+                  overflow: TextOverflow.ellipsis,
+                  maxLines: 1,
+                ),
               ),
-            ),
-          );
-        }).toList(),
-        onChanged: loadingBulls ? null : (value) {
+            );
+          }).toList();
+          
+          // If current value is not in bulls list, add it as a temporary option
+          if (isAutoFilled) {
+            print('DEBUG: buildBullDropdown - adding temporary item for "$current"');
+            items.insert(0, DropdownMenuItem<String>(
+              value: current,
+              child: SizedBox(
+                width: double.infinity,
+                child: Text(
+                  current, // Show only the bull tag, no "(Auto-filled)" text
+                  overflow: TextOverflow.ellipsis,
+                  maxLines: 1,
+                  // Use normal text color, no special styling
+                ),
+              ),
+            ));
+          }
+          
+          return items;
+        }(),
+        onChanged: (loadingBulls || isAutoFilled) ? null : (value) {
           widget.controllers['bull_tag']?.text = value ?? '';
         },
         validator: (value) {

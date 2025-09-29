@@ -24,37 +24,37 @@ class EventTypeUtils {
     switch (classificationLower) {
       case 'calf':
       case 'calves':
-        eventTypes = ['Treated', 'Weighed', 'Deworming', 'Hoof Trimming', 'Castrated', 'Weaned', 'Lost', 'Deceased', 'Other'];
+        eventTypes = ['Sick', 'Treated', 'Weighed', 'Deworming', 'Hoof Trimming', 'Castrated', 'Weaned', 'Lost', 'Deceased', 'Other'];
         print('DEBUG: Using Calf event types');
         break;
         
       case 'heifer':
       case 'heifers':
-        eventTypes = ['Treated', 'Weighed', 'Breeding', 'Pregnant', 'Gives Birth', 'Aborted Pregnancy', 'Deworming', 'Hoof Trimming', 'Sold', 'Lost', 'Deceased', 'Other'];
+        eventTypes = ['Sick', 'Treated', 'Weighed', 'Breeding', 'Pregnant', 'Gives Birth', 'Aborted Pregnancy', 'Deworming', 'Hoof Trimming', 'Sold', 'Lost', 'Deceased', 'Other'];
         print('DEBUG: Using Heifer event types');
         break;
         
       case 'cow':
       case 'cows':
-        eventTypes = ['Dry off', 'Treated', 'Breeding', 'Weighed', 'Gives Birth', 'Pregnant', 'Aborted Pregnancy', 'Deworming', 'Hoof Trimming', 'Sold', 'Lost', 'Deceased', 'Other'];
+        eventTypes = ['Dry off', 'Sick', 'Treated', 'Breeding', 'Weighed', 'Gives Birth', 'Pregnant', 'Aborted Pregnancy', 'Deworming', 'Hoof Trimming', 'Sold', 'Lost', 'Deceased', 'Other'];
         print('DEBUG: Using Cow event types');
         break;
         
       case 'bull':
       case 'bulls':
-        eventTypes = ['Treated', 'Weighed', 'Breeding', 'Deworming', 'Hoof Trimming', 'Sold', 'Lost', 'Deceased', 'Other'];
+        eventTypes = ['Sick', 'Treated', 'Weighed', 'Breeding', 'Deworming', 'Hoof Trimming', 'Sold', 'Lost', 'Deceased', 'Other'];
         print('DEBUG: Using Bull event types');
         break;
         
       case 'steer':
       case 'steers':
-        eventTypes = ['Treated', 'Weighed', 'Deworming', 'Hoof Trimming', 'Sold', 'Lost', 'Deceased', 'Other'];
+        eventTypes = ['Sick', 'Treated', 'Weighed', 'Deworming', 'Hoof Trimming', 'Sold', 'Lost', 'Deceased', 'Other'];
         print('DEBUG: Using Steer event types');
         break;
         
       case 'growers':
       case 'grower':
-        eventTypes = ['Treated', 'Weighed', 'Deworming', 'Hoof Trimming', 'Sold', 'Lost', 'Deceased', 'Other'];
+        eventTypes = ['Sick', 'Treated', 'Weighed', 'Deworming', 'Hoof Trimming', 'Sold', 'Lost', 'Deceased', 'Other'];
         print('DEBUG: Using Growers event types');
         break;
         
@@ -70,6 +70,8 @@ class EventTypeUtils {
 
   static IconData getEventIcon(String eventType) {
     switch (eventType.toLowerCase()) {
+      case 'sick':
+        return FontAwesomeIcons.virus;
       case 'breeding':
         return FontAwesomeIcons.heart;
       case 'treated':
@@ -109,6 +111,7 @@ class EventTypeUtils {
 
   static Color getEventColor(String eventType) {
     switch (eventType.toLowerCase()) {
+      case 'sick': return Colors.red.shade600;
       case 'breeding': return Colors.pink.shade400;
       case 'weighed': return Colors.orange.shade500;
       case 'gives birth': return Colors.blue.shade400;

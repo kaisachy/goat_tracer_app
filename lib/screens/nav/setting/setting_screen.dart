@@ -288,6 +288,12 @@ class _SettingScreenState extends State<SettingScreen> with TickerProviderStateM
       return;
     }
 
+    // New password must be different from current password
+    if (_newPasswordController.text.trim() == _currentPasswordController.text.trim()) {
+      _showErrorSnackBar('New password must be different from current password');
+      return;
+    }
+
     if (_newPasswordController.text.trim() != _confirmPasswordController.text.trim()) {
       _showErrorSnackBar('New passwords do not match');
       return;
@@ -318,8 +324,20 @@ class _SettingScreenState extends State<SettingScreen> with TickerProviderStateM
       }
     } catch (e) {
       Navigator.of(context, rootNavigator: true).pop(); // Close loading dialog
-      String errorMessage = e.toString().replaceFirst('Exception: ', '');
-      _showErrorSnackBar(errorMessage);
+      String raw = e.toString().replaceFirst('Exception: ', '');
+      final lower = raw.toLowerCase();
+      // Map common API error messages to friendly, specific snackbars
+      if (lower.contains('incorrect current password') || lower.contains('wrong password') || lower.contains('invalid current password')) {
+        _showErrorSnackBar('Incorrect current password');
+      } else if (lower.contains('same as current') || lower.contains('must be different') || lower.contains('reuse')) {
+        _showErrorSnackBar('New password must be different from current password');
+      } else if (lower.contains('at least') && lower.contains('characters')) {
+        _showErrorSnackBar('New password must be at least 6 characters');
+      } else if (lower.contains('session expired') || lower.contains('unauthorized')) {
+        _showErrorSnackBar('Session expired. Login again.');
+      } else {
+        _showErrorSnackBar(raw);
+      }
     }
   }
 
@@ -836,7 +854,7 @@ class _SettingScreenState extends State<SettingScreen> with TickerProviderStateM
                   ),
                   validator: (value) {
                     if (value == null || value.trim().isEmpty) {
-                      return 'Please confirm your new password';
+                      return 'Confirm your new password';
                     }
                     if (value != _newPasswordController.text.trim()) {
                       return 'Passwords do not match';

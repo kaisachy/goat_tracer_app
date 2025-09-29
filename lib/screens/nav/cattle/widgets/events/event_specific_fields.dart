@@ -7,6 +7,7 @@ import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import '../../../../../constants/app_colors.dart';
 import '../../../../../utils/event_type_utils.dart';
 import 'event-fields/treated_event_fields.dart';
+import 'event-fields/sick_event_fields.dart';
 import 'event-fields/breeding_event_fields.dart';
 import 'event-fields/weighed_event_fields.dart';
 import 'event-fields/gives_birth_event_fields.dart';
@@ -85,6 +86,12 @@ class EventSpecificFieldsState extends State<EventSpecificFields> {
 
       case 'treated':
         return TreatedEventFields(
+          controllers: widget.controllers,
+          cattleTag: widget.cattleTag,
+        );
+
+      case 'sick':
+        return SickEventFields(
           controllers: widget.controllers,
         );
 

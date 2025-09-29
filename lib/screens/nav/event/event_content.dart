@@ -29,7 +29,7 @@ class _EventContentState extends State<EventContent> {
   // All possible event types - comprehensive list including all event types from EventTypeUtils
   List<String> get eventTypes {
     return [
-      'All', 'Dry off', 'Treated', 'Breeding', 'Weighed', 'Gives Birth',
+      'All', 'Dry off', 'Sick', 'Treated', 'Breeding', 'Weighed', 'Gives Birth',
       'Vaccinated', 'Pregnant', 'Aborted Pregnancy', 'Deworming',
       'Hoof Trimming', 'Castrated', 'Weaned', 'Deceased', 'Lost', 'Other',
     ];
@@ -703,13 +703,18 @@ class _EventContentState extends State<EventContent> {
     final details = <Map<String, String?>>[];
 
     switch (eventType) {
+      case 'sick':
+        if (event['disease_type'] != null && event['disease_type'].toString().isNotEmpty) {
+          details.add({'label': 'Type of Disease', 'value': event['disease_type']});
+        }
+        break;
       case 'breeding':
         if (event['bull_tag'] != null) details.add({'label': 'Bull Tag', 'value': event['bull_tag']});
         if (event['semen_used'] != null) details.add({'label': 'Semen Used', 'value': event['semen_used']});
         if (event['estimated_return_date'] != null) details.add({'label': 'Return to Heat', 'value': _formatDate(event['estimated_return_date'])});
         break;
       case 'treated':
-        if (event['sickness_symptoms'] != null) details.add({'label': 'Symptoms', 'value': event['sickness_symptoms']});
+        if (event['disease_type'] != null && event['disease_type'].toString().isNotEmpty) details.add({'label': 'Type of Disease', 'value': event['disease_type']});
         if (event['diagnosis'] != null) details.add({'label': 'Diagnosis', 'value': event['diagnosis']});
         if (event['medicine_given'] != null) details.add({'label': 'Medicine', 'value': event['medicine_given']});
         if (event['technician'] != null) details.add({'label': 'Technician', 'value': event['technician']});

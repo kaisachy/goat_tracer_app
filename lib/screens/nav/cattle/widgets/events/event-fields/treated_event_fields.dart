@@ -4,18 +4,54 @@ import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'base_event_fields.dart';
 import '../event_styled_text_field.dart';
+import 'package:cattle_tracer_app/services/cattle/cattle_event_service.dart';
 
 class TreatedEventFields extends BaseEventFields {
   const TreatedEventFields({
     super.key,
     required super.controllers,
+    this.cattleTag,
   });
+
+  final String? cattleTag;
 
   @override
   TreatedEventFieldsState createState() => TreatedEventFieldsState();
 }
 
 class TreatedEventFieldsState extends BaseEventFieldsState<TreatedEventFields> {
+  bool _loadingDisease = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _prefillDiseaseTypeFromLatestSickEvent();
+  }
+
+  Future<void> _prefillDiseaseTypeFromLatestSickEvent() async {
+    final tag = widget.cattleTag?.trim();
+    if (tag == null || tag.isEmpty) return;
+    setState(() => _loadingDisease = true);
+    try {
+      final events = await CattleEventService.getCattleEventsByTag(tag);
+      events.sort((a, b) {
+        final ad = DateTime.tryParse(a['event_date']?.toString() ?? '') ?? DateTime(1900);
+        final bd = DateTime.tryParse(b['event_date']?.toString() ?? '') ?? DateTime(1900);
+        return bd.compareTo(ad);
+      });
+      final latestSick = events.firstWhere(
+        (e) => (e['event_type']?.toString().toLowerCase() ?? '') == 'sick',
+        orElse: () => {},
+      );
+      if (latestSick.isNotEmpty) {
+        final dt = latestSick['disease_type']?.toString() ?? '';
+        if (dt.isNotEmpty) {
+          widget.controllers['disease_type']?.text = dt;
+        }
+      }
+    } catch (_) {}
+    if (mounted) setState(() => _loadingDisease = false);
+  }
   @override
   bool needsTechnicians() => true;
 
@@ -23,12 +59,13 @@ class TreatedEventFieldsState extends BaseEventFieldsState<TreatedEventFields> {
   Widget build(BuildContext context) {
     return Column(
       children: [
+        // Disease type (auto-filled from latest Sick event, locked)
         EventStyledTextField(
-          label: 'Sickness Symptoms',
-          controller: widget.controllers['sickness_symptoms']!,
-          maxLines: 3,
-          hint: 'Describe the symptoms...',
-          icon: FontAwesomeIcons.thermometer,
+          label: 'Type of Disease',
+          controller: widget.controllers['disease_type']!,
+          hint: _loadingDisease ? 'Loading latest disease...' : 'Type of disease',
+          icon: FontAwesomeIcons.virus,
+          readOnly: true,
         ),
         EventStyledTextField(
           label: 'Diagnosis',

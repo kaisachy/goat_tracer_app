@@ -12,6 +12,7 @@ class EventStyledTextField extends StatelessWidget {
   final String? hint;
   final IconData? icon;
   final String? Function(String?)? validator;
+  final bool readOnly;
 
   const EventStyledTextField({
     super.key,
@@ -22,6 +23,7 @@ class EventStyledTextField extends StatelessWidget {
     this.hint,
     this.icon,
     this.validator,
+    this.readOnly = false,
   });
 
   @override
@@ -30,6 +32,7 @@ class EventStyledTextField extends StatelessWidget {
       margin: const EdgeInsets.only(bottom: 20),
       child: TextFormField(
         controller: controller,
+        readOnly: readOnly,
         keyboardType: isNumber ? TextInputType.number : TextInputType.text,
         maxLines: maxLines,
         style: const TextStyle(fontSize: 16),
@@ -47,7 +50,7 @@ class EventStyledTextField extends StatelessWidget {
             fontSize: 14,
           ),
           filled: true,
-          fillColor: AppColors.lightGreen.withValues(alpha: 0.05),
+          fillColor: readOnly ? Colors.grey.shade50 : AppColors.lightGreen.withValues(alpha: 0.05),
           border: OutlineInputBorder(
             borderRadius: BorderRadius.circular(15),
             borderSide: BorderSide.none,

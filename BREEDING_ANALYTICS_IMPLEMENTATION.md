@@ -66,8 +66,8 @@ The system uses the same logic as the Flutter app:
 1. **Event Collection**: Gathers breeding, pregnancy, and birth events
 2. **Timeline Analysis**: Tracks the timeline between breeding and pregnancy/birth
 3. **Success Determination**:
-   - **Pending**: < 30 days since breeding
-   - **Successful**: Pregnancy detected 30-60 days after breeding OR birth 280-300 days after breeding
+   - **Pending**: < 25 days since breeding
+   - **Successful**: Pregnancy detected 25-60 days after breeding OR birth 280-300 days after breeding
    - **Failed**: > 60 days since breeding with no pregnancy/birth detected
 4. **Bull Matching**: Ensures the same bull is responsible for breeding and pregnancy/birth
 5. **Breeding Type Detection**: Automatically determines breeding type from event data
@@ -157,7 +157,7 @@ The system automatically determines breeding type:
 
 ### 2. Pregnancy Tracking
 
-- Tracks pregnancy events 30-60 days after breeding
+- Tracks pregnancy events 25-60 days after breeding
 - Tracks birth events 280-300 days after breeding
 - Ensures bull consistency between breeding and pregnancy/birth
 

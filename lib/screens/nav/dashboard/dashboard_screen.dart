@@ -7,6 +7,7 @@ import 'package:cattle_tracer_app/services/cattle/cattle_event_service.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'widgets/vaccination_dashboard_widget.dart';
 import 'widgets/breeding_analytics_widget.dart';
+import 'package:cattle_tracer_app/screens/nav/cattle/cattle_detail_screen.dart';
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
@@ -287,7 +288,7 @@ class _DashboardScreenState extends State<DashboardScreen>
               const SizedBox(height: 20),
               _buildBreedDistribution(),
               const SizedBox(height: 20),
-              _buildHealthStats(),
+              _buildKeepAnEyeOn(),
               const SizedBox(height: 100), // Bottom padding
             ]),
           ),
@@ -467,6 +468,193 @@ class _DashboardScreenState extends State<DashboardScreen>
               ),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildKeepAnEyeOn() {
+    // Identify cattle that need attention
+    final List<Cattle> sickCattle = allCattle.where((c) => c.status.toLowerCase() == 'sick').toList();
+    final List<Cattle> lostCattle = allCattle.where((c) => c.status.toLowerCase() == 'lost').toList();
+
+    final bool hasItems = sickCattle.isNotEmpty || lostCattle.isNotEmpty;
+
+    return _buildAnimatedCard(
+      delay: 700,
+      child: Container(
+        padding: const EdgeInsets.all(24),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(20),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.05),
+              blurRadius: 20,
+              offset: const Offset(0, 8),
+            ),
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: const [
+                Icon(Icons.visibility_rounded, color: AppColors.darkGreen, size: 24),
+                SizedBox(width: 12),
+                Text(
+                  'Keep an Eye On',
+                  style: TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.textPrimary,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 20),
+            if (!hasItems)
+              Container(
+                padding: const EdgeInsets.all(20),
+                child: Column(
+                  children: [
+                    Icon(
+                      Icons.verified_rounded,
+                      size: 48,
+                      color: Colors.green.shade400,
+                    ),
+                    const SizedBox(height: 12),
+                    Text(
+                      'No issues found. All good!',
+                      style: TextStyle(
+                        color: Colors.grey.shade600,
+                        fontSize: 16,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ],
+                ),
+              )
+            else ...[
+              if (sickCattle.isNotEmpty) _buildAttentionSection(
+                label: 'Sick',
+                color: Colors.red.shade500,
+                icon: Icons.sick_rounded,
+                cattle: sickCattle,
+              ),
+              if (lostCattle.isNotEmpty) _buildAttentionSection(
+                label: 'Lost',
+                color: Colors.amber.shade700,
+                icon: Icons.search_rounded,
+                cattle: lostCattle,
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildAttentionSection({
+    required String label,
+    required Color color,
+    required IconData icon,
+    required List<Cattle> cattle,
+  }) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.05),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: color.withOpacity(0.2)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: color.withOpacity(0.12),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Icon(icon, color: color, size: 20),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  '$label (${cattle.length})',
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.bold,
+                    color: color,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: cattle
+                .take(12)
+                .map((c) => GestureDetector(
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => CattleDetailScreen(cattle: c),
+                          ),
+                        );
+                      },
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(20),
+                          border: Border.all(color: color.withOpacity(0.35)),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.03),
+                              blurRadius: 6,
+                              offset: const Offset(0, 2),
+                            ),
+                          ],
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(Icons.sell_rounded, size: 14, color: color),
+                            const SizedBox(width: 6),
+                            Text(
+                              c.tagNo,
+                              style: TextStyle(
+                                color: color,
+                                fontWeight: FontWeight.w600,
+                                fontSize: 12,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ))
+                .toList(),
+          ),
+          if (cattle.length > 12)
+            Padding(
+              padding: const EdgeInsets.only(top: 8),
+              child: Text(
+                '+${cattle.length - 12} more',
+                style: TextStyle(
+                  color: color.withOpacity(0.8),
+                  fontWeight: FontWeight.w600,
+                  fontSize: 12,
+                ),
+              ),
+            ),
+        ],
       ),
     );
   }
@@ -1364,123 +1552,6 @@ class _DashboardScreenState extends State<DashboardScreen>
     );
   }
 
-  Widget _buildHealthStats() {
-    final treatmentEvents = allEvents.where((e) =>
-    e['event_type']?.toString().toLowerCase() == 'treated').length;
-    final vaccinationEvents = allEvents.where((e) =>
-    e['event_type']?.toString().toLowerCase() == 'vaccinated').length;
-    final dewormingEvents = allEvents.where((e) =>
-    e['event_type']?.toString().toLowerCase() == 'deworming').length;
-
-    return _buildAnimatedCard(
-      delay: 700,
-      child: Container(
-        padding: const EdgeInsets.all(24),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(20),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.05),
-              blurRadius: 20,
-              offset: const Offset(0, 8),
-            ),
-          ],
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                const Icon(Icons.health_and_safety, color: AppColors.darkGreen, size: 24),
-                const SizedBox(width: 12),
-                const Text(
-                  'Health Statistics',
-                  style: TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                    color: AppColors.textPrimary,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 20),
-            Row(
-              children: [
-                Expanded(
-                  child: _buildHealthStatCard(
-                    title: 'Treatments',
-                    count: treatmentEvents,
-                    icon: Icons.medical_services,
-                    color: Colors.red.shade400,
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: _buildHealthStatCard(
-                    title: 'Vaccinations',
-                    count: vaccinationEvents,
-                    icon: Icons.vaccines,
-                    color: Colors.green.shade400,
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: _buildHealthStatCard(
-                    title: 'Deworming',
-                    count: dewormingEvents,
-                    icon: Icons.pest_control,
-                    color: Colors.orange.shade400,
-                  ),
-                ),
-              ],
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildHealthStatCard({
-    required String title,
-    required int count,
-    required IconData icon,
-    required Color color,
-  }) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: color.withOpacity(0.05),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: color.withOpacity(0.2)),
-      ),
-      child: Column(
-        children: [
-          Icon(icon, color: color, size: 24),
-          const SizedBox(height: 8),
-          Text(
-            count.toString(),
-            style: TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.bold,
-              color: color,
-            ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            title,
-            style: const TextStyle(
-              fontSize: 12,
-              color: AppColors.textSecondary,
-              fontWeight: FontWeight.w500,
-            ),
-            textAlign: TextAlign.center,
-          ),
-        ],
-      ),
-    );
-  }
-
   Widget _buildAnimatedCard({
     required Widget child,
     required int delay,
@@ -1531,6 +1602,8 @@ class _DashboardScreenState extends State<DashboardScreen>
 
   Color _getEventTypeColor(String eventType) {
     switch (eventType.toLowerCase()) {
+      case 'sick':
+        return Colors.red.shade600;
       case 'breeding':
         return Colors.pink.shade400;
       case 'weighed':
@@ -1566,6 +1639,8 @@ class _DashboardScreenState extends State<DashboardScreen>
 
   IconData _getEventTypeIcon(String eventType) {
     switch (eventType.toLowerCase()) {
+      case 'sick':
+        return Icons.sick_rounded;
       case 'breeding':
         return Icons.favorite_rounded;
       case 'weighed':

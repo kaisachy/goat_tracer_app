@@ -111,11 +111,11 @@ class _CattleEventFormScreenState extends State<CattleEventFormScreen>
 
   void _initializeControllers() {
     final fields = [
-      'bull_tag', 'calf_tag', 'event_date', 'sickness_symptoms',
+      'bull_tag', 'calf_tag', 'event_date',
       'diagnosis', 'technician', 'medicine_given', 'semen_used',
       'estimated_return_date', 'weighed_result', 'breeding_date',
       'expected_delivery_date', 'cause_of_death', 'notes',
-      'last_known_location', 'breeding_type'
+      'last_known_location', 'breeding_type', 'disease_type', 'disease_type_other'
     ];
 
     for (var field in fields) {
@@ -157,10 +157,15 @@ class _CattleEventFormScreenState extends State<CattleEventFormScreen>
   }
 
   Future<void> _handleEventTypeChanged(String value) async {
+    print('DEBUG: _handleEventTypeChanged called with value: $value');
     setState(() => selectedEventType = value);
 
-    if (_cattleDetails == null) return;
+    if (_cattleDetails == null) {
+      print('DEBUG: _cattleDetails is null, returning early');
+      return;
+    }
     final cattleTag = _cattleDetails!.tagNo;
+    print('DEBUG: Processing event type change for cattle: $cattleTag');
 
     // Clear autofill targets before applying
     _controllers['breeding_date']?.text = _controllers['breeding_date']?.text ?? '';
@@ -168,8 +173,11 @@ class _CattleEventFormScreenState extends State<CattleEventFormScreen>
 
     // Pregnant requires latest Breeding; autofill breeding_date, expected_delivery_date, bull/semen
     if (value.toLowerCase() == 'pregnant') {
+      print('DEBUG: Processing Pregnant event for cattle: $cattleTag');
       final latestBreeding = await _getLatestEvent(cattleTag: cattleTag, eventType: 'Breeding');
+      print('DEBUG: Latest breeding event found: $latestBreeding');
       if (latestBreeding == null) {
+        print('DEBUG: No breeding event found, showing warning');
         _showWarningMessage('No recent Breeding event found. Cannot create Pregnant event.');
         setState(() => selectedEventType = 'Select type of event');
         return;
@@ -194,29 +202,54 @@ class _CattleEventFormScreenState extends State<CattleEventFormScreen>
       // Autofill bull/semen and technician if present
       final bullTag = latestBreeding['bull_tag']?.toString();
       final semen = latestBreeding['semen_used']?.toString();
+      print('DEBUG: Found bull_tag: $bullTag, semen_used: $semen');
 
       // If semen is present (AI), treat semen's bull as the bull selection
       if (semen != null && semen.isNotEmpty) {
+        print('DEBUG: Processing semen: $semen');
         _controllers['semen_used']?.text = semen;
         // Try to extract the bull tag from semen label like "TAG123 (Name) Semen"
-        String extractedBullTag = semen.split(' ').first;
-        if (extractedBullTag.isNotEmpty) {
-          _controllers['bull_tag']?.text = extractedBullTag;
+        String extractedBullTag = semen.trim();
+        if (extractedBullTag.toLowerCase().endsWith('semen')) {
+          extractedBullTag = extractedBullTag.substring(0, extractedBullTag.length - 5).trim();
+        }
+        // Extract tag from format like "TAG123 (Name)" or just "TAG123"
+        int stop = extractedBullTag.indexOf(' ');
+        int paren = extractedBullTag.indexOf('(');
+        if (stop == -1 || (paren != -1 && paren < stop)) {
+          stop = paren;
+        }
+        final finalBullTag = stop == -1 ? extractedBullTag : extractedBullTag.substring(0, stop).trim();
+        print('DEBUG: Extracted bull tag from semen: $finalBullTag');
+        if (finalBullTag.isNotEmpty) {
+          _controllers['bull_tag']?.text = finalBullTag;
+          print('DEBUG: Set bull_tag controller to: $finalBullTag');
         }
       } else if (bullTag != null && bullTag.isNotEmpty) {
+        print('DEBUG: Using direct bull_tag: $bullTag');
         _controllers['bull_tag']?.text = bullTag;
         _controllers['semen_used']?.text = '';
+        print('DEBUG: Set bull_tag controller to: $bullTag');
       }
       final tech = latestBreeding['technician']?.toString();
       if (tech != null && tech.isNotEmpty) {
         _controllers['technician']?.text = tech;
       }
+      
+      // Force UI refresh to ensure dropdowns pick up the controller values
+      if (mounted) {
+        setState(() {});
+        print('DEBUG: Triggered setState after Pregnant auto-fill');
+      }
     }
 
     // Gives Birth requires latest Pregnant; autofill breeding_date and expected_delivery_date
     if (value.toLowerCase() == 'gives birth') {
+      print('DEBUG: Processing Gives Birth event for cattle: $cattleTag');
       final latestPregnant = await _getLatestEvent(cattleTag: cattleTag, eventType: 'Pregnant');
+      print('DEBUG: Latest pregnant event found: $latestPregnant');
       if (latestPregnant == null) {
+        print('DEBUG: No pregnant event found, showing warning');
         _showWarningMessage('No Pregnant event found. Cannot create Gives Birth event.');
         setState(() => selectedEventType = 'Select type of event');
         return;
@@ -234,13 +267,18 @@ class _CattleEventFormScreenState extends State<CattleEventFormScreen>
       // Autofill sire info from latest Pregnant (preferred) or fallback to latest Breeding
       String? semen = latestPregnant['semen_used']?.toString();
       String? bull = latestPregnant['bull_tag']?.toString();
+      print('DEBUG: Found in pregnant event - bull_tag: $bull, semen_used: $semen');
       if ((semen == null || semen.isEmpty) && (bull == null || bull.isEmpty)) {
+        print('DEBUG: No sire info in pregnant event, falling back to latest breeding');
         final latestBreeding = await _getLatestEvent(cattleTag: cattleTag, eventType: 'Breeding');
+        print('DEBUG: Latest breeding event for fallback: $latestBreeding');
         semen = latestBreeding?['semen_used']?.toString();
         bull = latestBreeding?['bull_tag']?.toString();
+        print('DEBUG: Fallback values - bull_tag: $bull, semen_used: $semen');
       }
 
       if (semen != null && semen.isNotEmpty) {
+        print('DEBUG: Processing semen for Gives Birth: $semen');
         _controllers['semen_used']?.text = semen;
         // Extract bull tag from semen label like "TAG123 (Name) Semen"
         String extracted = semen.trim();
@@ -253,16 +291,23 @@ class _CattleEventFormScreenState extends State<CattleEventFormScreen>
           stop = paren;
         }
         final bullTag = stop == -1 ? extracted : extracted.substring(0, stop).trim();
+        print('DEBUG: Extracted bull tag from semen for Gives Birth: $bullTag');
         if (bullTag.isNotEmpty) {
           _controllers['bull_tag']?.text = bullTag;
+          print('DEBUG: Set bull_tag controller for Gives Birth to: $bullTag');
         }
       } else if (bull != null && bull.isNotEmpty) {
+        print('DEBUG: Using direct bull_tag for Gives Birth: $bull');
         _controllers['bull_tag']?.text = bull;
         _controllers['semen_used']?.text = '';
+        print('DEBUG: Set bull_tag controller for Gives Birth to: $bull');
       }
 
       // Force UI refresh so dropdowns pick up controller values
-      if (mounted) setState(() {});
+      if (mounted) {
+        setState(() {});
+        print('DEBUG: Triggered setState after Gives Birth auto-fill');
+      }
 
       // If no calf data yet, prompt user to add calf when saving
     }
@@ -446,9 +491,8 @@ class _CattleEventFormScreenState extends State<CattleEventFormScreen>
       try {
         final isMaleSubject = (_cattleDetails?.sex.toLowerCase() == 'male');
         final isBreeding = (widget.event!.eventType.toLowerCase() == 'breeding');
-        final currentBreedingType = (_controllers['breeding_type']?.text ?? '').trim();
-        final currentSemen = (_controllers['semen_used']?.text ?? '').trim();
-        final currentTechnician = (_controllers['technician']?.text ?? '').trim();
+      final String _ = (_controllers['breeding_type']?.text ?? '').trim();
+      // Values read below directly from controllers when needed; avoid unused locals
         final eventDate = (eventJson['event_date']?.toString() ?? '').trim();
         if (isMaleSubject && isBreeding && eventDate.isNotEmpty) {
           final notes = (eventJson['notes']?.toString() ?? '');
@@ -1076,7 +1120,6 @@ class _CattleEventFormScreenState extends State<CattleEventFormScreen>
       final optionalFields = {
         'bull_tag': _controllers['bull_tag']!.text.trim(),
         'calf_tag': calfTagValue,
-        'sickness_symptoms': _controllers['sickness_symptoms']!.text.trim(),
         'diagnosis': _controllers['diagnosis']!.text.trim(),
         'technician': _controllers['technician']!.text.trim(),
         'medicine_given': _controllers['medicine_given']!.text.trim(),
@@ -1086,6 +1129,12 @@ class _CattleEventFormScreenState extends State<CattleEventFormScreen>
         'expected_delivery_date': _controllers['expected_delivery_date']!.text.trim(),
         'cause_of_death': _controllers['cause_of_death']!.text.trim(),
         'last_known_location': _controllers['last_known_location']!.text.trim(),
+        'disease_type': (() {
+          final disease = _controllers['disease_type']!.text.trim();
+          final other = _controllers['disease_type_other']!.text.trim();
+          if (disease.toLowerCase() == 'other' && other.isNotEmpty) return other;
+          return disease;
+        })(),
       };
 
       // Add breeding type for breeding events
@@ -1137,6 +1186,39 @@ class _CattleEventFormScreenState extends State<CattleEventFormScreen>
       }
 
       // Additional validation for specific event types
+      // If Sick, ensure disease type is provided; if Other, require custom text
+      if (selectedEventType.toLowerCase() == 'sick') {
+        final disease = _controllers['disease_type']!.text.trim();
+        final diseaseOther = _controllers['disease_type_other']!.text.trim();
+        if (disease.isEmpty) {
+          _showErrorMessage('Please select a Type of Disease.');
+          setState(() => _isLoading = false);
+          return;
+        }
+        if (disease.toLowerCase() == 'other' && diseaseOther.isEmpty) {
+          _showErrorMessage('Please specify the disease when selecting Other.');
+          setState(() => _isLoading = false);
+          return;
+        }
+      }
+
+      // If Treated, ensure there is at least one prior Sick event for this cattle
+      if (selectedEventType.toLowerCase() == 'treated') {
+        try {
+          final tag = (data['cattle_tag'] ?? '').toString();
+          final eventsForTag = await CattleEventService.getCattleEventsByTag(tag);
+          final hasSick = eventsForTag.any((e) => (e['event_type']?.toString().toLowerCase() ?? '') == 'sick');
+          if (!hasSick) {
+            _showErrorMessage('Cannot create Treated event: no prior Sick event found for #$tag.');
+            setState(() => _isLoading = false);
+            return;
+          }
+        } catch (_) {
+          _showErrorMessage('Unable to verify prior Sick events. Please try again.');
+          setState(() => _isLoading = false);
+          return;
+        }
+      }
       // Enforce prerequisite: Pregnant requires latest Breeding
       if (selectedEventType.toLowerCase() == 'pregnant') {
         final latestBreeding = await _getLatestEvent(
@@ -1356,6 +1438,9 @@ class _CattleEventFormScreenState extends State<CattleEventFormScreen>
           } else if (selectedEventType.toLowerCase() == 'weighed') {
             print('🎯 Handling Weighed event');
             await _handleWeighedEvent();
+          } else if (selectedEventType.toLowerCase() == 'sick') {
+            print('🎯 Handling Sick event');
+            await _handleSickEvent();
           } else {
             print('🎯 No specific event handler for: "$selectedEventType"');
           }
@@ -1451,7 +1536,7 @@ class _CattleEventFormScreenState extends State<CattleEventFormScreen>
 
       final returnToHeatText = _controllers['estimated_return_date']?.text ?? '';
       if (returnToHeatText.isNotEmpty) {
-        final returnToHeatDate = DateTime.tryParse(returnToHeatText);
+        final DateTime? returnToHeatDate = DateTime.tryParse(returnToHeatText);
         final today = DateTime.now();
         if (returnToHeatDate != null &&
             returnToHeatDate.year == today.year &&
@@ -1873,6 +1958,56 @@ class _CattleEventFormScreenState extends State<CattleEventFormScreen>
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Warning: Failed to update cattle status to Lost'),
+            backgroundColor: Colors.orange[600],
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+            duration: const Duration(seconds: 3),
+          ),
+        );
+      }
+    }
+  }
+
+  Future<void> _handleSickEvent() async {
+    try {
+      bool cattleStatusUpdated = false;
+      String cattleStatus = '';
+
+      // Update cattle status to Sick
+      if (_cattleDetails != null) {
+        final cattleUpdateData = Map<String, dynamic>.from(_cattleDetails!.toJson());
+        cattleUpdateData['status'] = 'Sick';
+        cattleStatusUpdated = await CattleService.updateCattleInformation(cattleUpdateData);
+        cattleStatus = cattleStatusUpdated
+            ? 'Cattle ${_cattleDetails!.tagNo} status updated to Sick'
+            : 'Failed to update cattle ${_cattleDetails!.tagNo} status to Sick';
+      }
+
+      // Log the result for debugging
+      print('Sick event result: $cattleStatus');
+
+      // Optional: Show success feedback to user
+      if (mounted && cattleStatusUpdated) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Cattle status updated to Sick'),
+            backgroundColor: Colors.red[600],
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+            duration: const Duration(seconds: 2),
+          ),
+        );
+      }
+
+    } catch (e) {
+      // Log any errors that occur during the process
+      print('Error in _handleSickEvent: $e');
+
+      // Optional: Show error message to user
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Warning: Failed to update cattle status to Sick'),
             backgroundColor: Colors.orange[600],
             behavior: SnackBarBehavior.floating,
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),

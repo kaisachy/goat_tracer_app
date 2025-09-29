@@ -61,10 +61,14 @@ class PregnantEventFieldsState extends BaseEventFieldsState<PregnantEventFields>
 
   @override
   void onBullsLoaded() {
+    print('DEBUG: PregnantEventFields onBullsLoaded called');
     // If semen_used has a value but bull_tag is empty, try to derive bull tag from semen label
     final semenText = widget.controllers['semen_used']?.text ?? '';
     final bullText = widget.controllers['bull_tag']?.text ?? '';
-    if (semenText.isNotEmpty && (bullText.isEmpty)) {
+    print('DEBUG: Current semen: $semenText, bull: $bullText');
+    
+    if (semenText.isNotEmpty && bullText.isEmpty) {
+      print('DEBUG: Extracting bull tag from semen in onBullsLoaded');
       // Expected semen format examples:
       // - "TAG123 (Name) Semen"
       // - "TAG123 Semen"
@@ -81,8 +85,10 @@ class PregnantEventFieldsState extends BaseEventFieldsState<PregnantEventFields>
         stop = paren;
       }
       final bullTag = stop == -1 ? extracted : extracted.substring(0, stop).trim();
+      print('DEBUG: Extracted bull tag: $bullTag');
       if (bullTag.isNotEmpty) {
         widget.controllers['bull_tag']?.text = bullTag;
+        print('DEBUG: Set bull_tag controller to: $bullTag');
         if (mounted) setState(() {});
       }
     }

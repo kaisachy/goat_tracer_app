@@ -1,5 +1,6 @@
 import 'package:cattle_tracer_app/screens/nav/cattle/widgets/cattle_search_filter_widget.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:cattle_tracer_app/models/cattle.dart';
 import 'package:cattle_tracer_app/services/cattle/cattle_service.dart';
 import 'package:cattle_tracer_app/screens/nav/cattle/cattle_form_screen.dart';
@@ -31,6 +32,11 @@ class _CattleScreenState extends State<CattleScreen>
   String _selectedGroupName = 'All';
   late AnimationController _animationController;
   late Animation<double> _fadeAnimation;
+  
+  // FAB menu state
+  bool _isFabMenuOpen = false;
+  AnimationController? _fabAnimationController;
+  Animation<double>? _fabAnimation;
 
   @override
   void initState() {
@@ -41,6 +47,14 @@ class _CattleScreenState extends State<CattleScreen>
     );
     _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
       CurvedAnimation(parent: _animationController, curve: Curves.easeInOut),
+    );
+    
+    _fabAnimationController = AnimationController(
+      duration: const Duration(milliseconds: 200),
+      vsync: this,
+    );
+    _fabAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(parent: _fabAnimationController!, curve: Curves.easeInOut),
     );
 
 
@@ -53,6 +67,7 @@ class _CattleScreenState extends State<CattleScreen>
   @override
   void dispose() {
     _animationController.dispose();
+    _fabAnimationController?.dispose();
 
     // ✨ ADDED: Remove the observer to prevent memory leaks
     WidgetsBinding.instance.removeObserver(this);
@@ -165,12 +180,15 @@ class _CattleScreenState extends State<CattleScreen>
     return groupNames.toList()..sort();
   }
 
-  void _navigateToForm({Cattle? cattle}) async {
+  void _navigateToForm({Cattle? cattle, String? preSelectedClassification}) async {
     // The await/fetch pattern is kept as a fallback and for immediate refresh
     await Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (_) => CattleFormScreen(cattle: cattle),
+        builder: (_) => CattleFormScreen(
+          cattle: cattle,
+          preSelectedClassification: preSelectedClassification,
+        ),
       ),
     );
     _fetchCattle();
@@ -184,6 +202,102 @@ class _CattleScreenState extends State<CattleScreen>
       ),
     );
     _fetchCattle();
+  }
+
+  void _toggleFabMenu() {
+    print('Toggle FAB menu: $_isFabMenuOpen -> ${!_isFabMenuOpen}');
+    setState(() {
+      _isFabMenuOpen = !_isFabMenuOpen;
+    });
+    
+    if (_isFabMenuOpen) {
+      _fabAnimationController?.forward();
+    } else {
+      _fabAnimationController?.reverse();
+    }
+  }
+
+  void _closeFabMenu() {
+    setState(() {
+      _isFabMenuOpen = false;
+    });
+    _fabAnimationController?.reverse();
+  }
+
+  Widget _buildFabButton(String classification, String iconPath, Color color, int index, IconData fallbackIcon) {
+    if (kDebugMode) print('Building FAB button for $classification at index $index');
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        // Label
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(20),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.1),
+                blurRadius: 4,
+                offset: const Offset(0, 2),
+              ),
+            ],
+          ),
+          child: Text(
+            classification,
+            style: TextStyle(
+              color: color,
+              fontWeight: FontWeight.w600,
+              fontSize: 14,
+            ),
+          ),
+        ),
+        const SizedBox(width: 8),
+        // Button
+        Container(
+          width: 56,
+          height: 56,
+          decoration: BoxDecoration(
+            color: color,
+            borderRadius: BorderRadius.circular(28),
+            boxShadow: [
+              BoxShadow(
+                color: color.withOpacity(0.4),
+                blurRadius: 8,
+                offset: const Offset(0, 4),
+              ),
+            ],
+          ),
+          child: Material(
+            color: Colors.transparent,
+            child: InkWell(
+              borderRadius: BorderRadius.circular(28),
+              onTap: () {
+                _closeFabMenu();
+                _navigateToForm(preSelectedClassification: classification);
+              },
+              child: Center(
+                child: Image.asset(
+                  iconPath,
+                  width: 24,
+                  height: 24,
+                  color: Colors.white,
+                  fit: BoxFit.contain,
+                  errorBuilder: (context, error, stackTrace) {
+                    print('Error loading asset: $iconPath, using fallback icon');
+                    return Icon(
+                      fallbackIcon,
+                      color: Colors.white,
+                      size: 24,
+                    );
+                  },
+                ),
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
   }
 
   void _confirmDelete(int id, String tagNo) {
@@ -594,7 +708,9 @@ class _CattleScreenState extends State<CattleScreen>
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.pageBackground.withOpacity(0.1),
-      body: _isLoading
+      body: GestureDetector(
+        onTap: _isFabMenuOpen ? _closeFabMenu : null,
+        child: _isLoading
           ? Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -653,41 +769,135 @@ class _CattleScreenState extends State<CattleScreen>
           ),
         ],
       ),
-      floatingActionButton: Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [
-              AppColors.primary,
-              AppColors.vibrantGreen,
-            ],
-          ),
-          borderRadius: BorderRadius.circular(16),
-          boxShadow: [
-            BoxShadow(
-              color: AppColors.primary.withOpacity(0.4),
-              blurRadius: 12,
-              offset: const Offset(0, 6),
-            ),
-          ],
-        ),
-        child: FloatingActionButton.extended(
-          onPressed: () => _navigateToForm(),
-          backgroundColor: Colors.transparent,
-          elevation: 0,
-          icon: const Icon(Icons.add, color: Colors.white),
-          label: const Text(
-            'Add Cattle',
-            style: TextStyle(
-              color: Colors.white,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-        ),
       ),
+      floatingActionButton: _isFabMenuOpen 
+        ? Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              // Classification FAB buttons
+              _buildFabButton(
+                'Cow',
+                'assets/images/cattle-icons/cow.png',
+                AppColors.primary,
+                5,
+                FontAwesomeIcons.cow,
+              ),
+              const SizedBox(height: 8),
+              _buildFabButton(
+                'Bull',
+                'assets/images/cattle-icons/bull.png',
+                AppColors.vibrantGreen,
+                4,
+                Icons.male,
+              ),
+              const SizedBox(height: 8),
+              _buildFabButton(
+                'Heifer',
+                'assets/images/cattle-icons/heifer.png',
+                AppColors.accent,
+                3,
+                Icons.female,
+              ),
+              const SizedBox(height: 8),
+              _buildFabButton(
+                'Steer',
+                'assets/images/cattle-icons/steer.png',
+                Colors.blue,
+                2,
+                Icons.pets,
+              ),
+              const SizedBox(height: 8),
+              _buildFabButton(
+                'Growers',
+                'assets/images/cattle-icons/growers.png',
+                AppColors.lightGreen,
+                1,
+                Icons.trending_up,
+              ),
+              const SizedBox(height: 8),
+              _buildFabButton(
+                'Calf',
+                'assets/images/cattle-icons/calf.png',
+                Colors.orange,
+                0,
+                Icons.child_care,
+              ),
+              const SizedBox(height: 16),
+              // Main FAB button
+              Container(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [
+                      AppColors.primary,
+                      AppColors.vibrantGreen,
+                    ],
+                  ),
+                  borderRadius: BorderRadius.circular(16),
+                  boxShadow: [
+                    BoxShadow(
+                      color: AppColors.primary.withOpacity(0.4),
+                      blurRadius: 12,
+                      offset: const Offset(0, 6),
+                    ),
+                  ],
+                ),
+                child: FloatingActionButton(
+                  onPressed: _toggleFabMenu,
+                  backgroundColor: Colors.transparent,
+                  elevation: 0,
+                  child: AnimatedRotation(
+                    turns: _isFabMenuOpen ? 0.25 : 0.0,
+                    duration: const Duration(milliseconds: 200),
+                    child: Icon(
+                      _isFabMenuOpen ? Icons.close : Icons.add,
+                      color: Colors.white,
+                      size: 28,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          )
+        : Container(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [
+                  AppColors.primary,
+                  AppColors.vibrantGreen,
+                ],
+              ),
+              borderRadius: BorderRadius.circular(16),
+              boxShadow: [
+                BoxShadow(
+                  color: AppColors.primary.withOpacity(0.4),
+                  blurRadius: 12,
+                  offset: const Offset(0, 6),
+                ),
+              ],
+            ),
+            child: FloatingActionButton.extended(
+              onPressed: _toggleFabMenu,
+              backgroundColor: Colors.transparent,
+              elevation: 0,
+              icon: const Icon(
+                Icons.add,
+                color: Colors.white,
+                size: 28,
+              ),
+              label: const Text(
+                'Add',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+          ),
     );
   }
-
-
 }

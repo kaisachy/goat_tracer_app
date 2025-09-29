@@ -181,7 +181,6 @@ class BreedingAnalysisService {
     for (final cowTag in cowBreedingHistory.keys) {
       final cowBreedings = cowBreedingHistory[cowTag]!;
       final cowPregnancies = cowPregnancyHistory[cowTag] ?? [];
-      final cowBirths = cowBirthHistory[cowTag] ?? [];
 
       // Sort events by date
       cowBreedings.sort((a, b) => DateTime.parse(a['event_date'] ?? '1900-01-01')
@@ -197,7 +196,7 @@ class BreedingAnalysisService {
         final today = DateTime.now();
         final daysSinceBreeding = today.difference(breedingDate).inDays;
         
-        // Look for pregnancy within 30-60 days after breeding
+        // Look for pregnancy within 25-60 days after breeding
         bool foundPregnancy = false;
         String? responsibleBull = _getResponsibleBull(breeding);
         String breedingType = breeding['breeding_type']?.toString() ?? '';
@@ -228,7 +227,7 @@ class BreedingAnalysisService {
         print('DEBUG: Breeding type: $breedingType');
 
         // Check if breeding is too recent to determine success/failure
-        if (daysSinceBreeding < 30) {
+        if (daysSinceBreeding < 25) {
           print('DEBUG: ⏳ Breeding too recent (${daysSinceBreeding} days) - marking as pending');
           pendingBreedings.add({
             'event_date': breeding['event_date'],
@@ -248,7 +247,7 @@ class BreedingAnalysisService {
           print('DEBUG: Checking pregnancy on ${pregnancy['event_date']} (${daysDifference} days later)');
           print('DEBUG: Pregnancy bull: $pregnancyBull');
           
-          if (daysDifference >= 30 && daysDifference <= 60) {
+          if (daysDifference >= 25 && daysDifference <= 60) {
             // Check if the same bull is responsible
             if (_isSameBull(responsibleBull, pregnancyBull)) {
               foundPregnancy = true;

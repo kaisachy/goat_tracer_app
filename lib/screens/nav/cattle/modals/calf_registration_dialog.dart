@@ -118,9 +118,13 @@ class _CalfRegistrationDialogState extends State<CalfRegistrationDialog> {
   }
 
   String _generateNextCalfTag() {
-    // Find all existing calf tags that match the pattern CT-XXXX
+    // Use the new classification-based tag generation for calves
+    final classification = _getClassification(); // This returns 'Calf'
+    final prefix = 'CALF'; // Use CALF prefix for calves
+    
+    // Find all existing calf tags that match the pattern CALF-XXXX
     final calfTags = _existingTags
-        .where((tag) => tag.startsWith('CT-') && tag.length == 7)
+        .where((tag) => tag.toUpperCase().startsWith('$prefix-'))
         .toList();
 
     // Also include the current tag in the controller to avoid duplicates
@@ -131,16 +135,19 @@ class _CalfRegistrationDialogState extends State<CalfRegistrationDialog> {
 
     int maxNumber = 0;
     for (String tag in calfTags) {
-      final numberPart = tag.substring(3); // Remove "CT-" prefix
-      final number = int.tryParse(numberPart);
-      if (number != null && number > maxNumber) {
-        maxNumber = number;
+      final upperTag = tag.toUpperCase();
+      if (upperTag.startsWith('$prefix-')) {
+        final numberPart = upperTag.substring(prefix.length + 1); // Remove "CALF-" prefix
+        final number = int.tryParse(numberPart);
+        if (number != null && number > maxNumber) {
+          maxNumber = number;
+        }
       }
     }
 
     // Generate next number
     final nextNumber = maxNumber + 1;
-    return 'CT-${nextNumber.toString().padLeft(4, '0')}';
+    return '$prefix-${nextNumber.toString().padLeft(4, '0')}';
   }
 
   Future<void> _generateNewTag() async {
@@ -186,8 +193,19 @@ class _CalfRegistrationDialogState extends State<CalfRegistrationDialog> {
     }
 
     final trimmedValue = value.trim();
-    if (_existingTags.contains(trimmedValue)) {
+    
+    // Check if tag already exists (case-insensitive)
+    final exists = _existingTags.any((tag) => 
+        tag.toLowerCase() == trimmedValue.toLowerCase());
+    
+    if (exists) {
       return 'This tag number already exists';
+    }
+
+    // Validate tag format (should be CALF-XXXX)
+    final tagPattern = RegExp(r'^CALF-\d{4}$', caseSensitive: false);
+    if (!tagPattern.hasMatch(trimmedValue)) {
+      return 'Tag must be in format CALF-XXXX (e.g., CALF-0001)';
     }
 
     return null;
