@@ -51,47 +51,6 @@ class CattleManagementCard extends StatelessWidget {
               value: CattleDetailUtils.getGroupDisplay(cattle.groupName),
             ),
           ]),
-          const SizedBox(height: 16),
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: AppColors.lightGreen.withOpacity(0.05),
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(
-                color: AppColors.lightGreen.withOpacity(0.15),
-                width: 1,
-              ),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Icon(Icons.calendar_today, color: AppColors.lightGreen, size: 16),
-                    const SizedBox(width: 8),
-                    const Text(
-                      'Joined Date',
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: AppColors.textSecondary,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  CattleDetailUtils.formatDate(cattle.joinedDate),
-                  style: const TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.bold,
-                    color: AppColors.textPrimary,
-                  ),
-                ),
-              ],
-            ),
-          ),
         ],
       ),
     );

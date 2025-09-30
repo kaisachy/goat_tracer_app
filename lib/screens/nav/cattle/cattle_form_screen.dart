@@ -45,7 +45,6 @@ class _CattleFormScreenState extends State<CattleFormScreen> {
 
   // State variables for dates and dropdowns
   String? _dateOfBirth;
-  String? _joinedDate;
   String? _sex;
   String? _classification;
   String? _source;
@@ -658,7 +657,6 @@ class _CattleFormScreenState extends State<CattleFormScreen> {
       _originalFatherTag = c.fatherTag;
 
       _dateOfBirth = c.dateOfBirth;
-      _joinedDate = c.joinedDate;
 
       // Set dropdown values, ensuring they exist in the options list
       _sex = sexOptions.contains(c.sex) ? c.sex : null;
@@ -813,7 +811,7 @@ class _CattleFormScreenState extends State<CattleFormScreen> {
   }
 
   /// Shows a date picker dialog
-  Future<void> _selectDate(BuildContext context, bool isDob) async {
+  Future<void> _selectDate(BuildContext context) async {
     final picked = await showDatePicker(
       context: context,
       initialDate: DateTime.now().subtract(const Duration(days: 365)),
@@ -835,11 +833,7 @@ class _CattleFormScreenState extends State<CattleFormScreen> {
     if (picked != null) {
       final formatted = DateFormat('yyyy-MM-dd').format(picked);
       setState(() {
-        if (isDob) {
-          _dateOfBirth = formatted;
-        } else {
-          _joinedDate = formatted;
-        }
+        _dateOfBirth = formatted;
       });
     }
   }
@@ -921,7 +915,6 @@ class _CattleFormScreenState extends State<CattleFormScreen> {
       'classification': _classification,
       'breed': textOrNull(resolvedBreed),
       'group_name': textOrNull(_groupName),
-      'joined_date': _joinedDate,
       'source': _source,
       'source_details': _sourceDetails,
       'mother_tag': _motherTag != null ? _cleanTagText(_motherTag) : null,
@@ -1083,7 +1076,6 @@ class _CattleFormScreenState extends State<CattleFormScreen> {
       _motherTag = null;
       _fatherTag = null;
       _dateOfBirth = null;
-      _joinedDate = null;
       _source = null;
       _sourceDetails = null;
       
@@ -1317,11 +1309,10 @@ class _CattleFormScreenState extends State<CattleFormScreen> {
   Widget _buildDateField({
     required String label,
     required String? value,
-    required bool isDob,
     required IconData icon,
   }) {
     return InkWell(
-      onTap: () => _selectDate(context, isDob),
+      onTap: () => _selectDate(context),
       borderRadius: BorderRadius.circular(8),
       child: InputDecorator(
         decoration: InputDecoration(
@@ -1654,7 +1645,6 @@ class _CattleFormScreenState extends State<CattleFormScreen> {
                     _buildDateField(
                       label: 'Date of Birth',
                       value: _dateOfBirth,
-                      isDob: true,
                       icon: Icons.cake,
                     ),
                   ],
@@ -1694,13 +1684,6 @@ class _CattleFormScreenState extends State<CattleFormScreen> {
               _buildCard(
                 child: Column(
                   children: [
-                    _buildDateField(
-                      label: 'Joined Date',
-                      value: _joinedDate,
-                      isDob: false,
-                      icon: Icons.event,
-                    ),
-                    const SizedBox(height: 16),
                     // Custom source dropdown that can show combined information
                     DropdownButtonFormField<String>(
                       value: _source,

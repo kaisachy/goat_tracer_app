@@ -239,7 +239,6 @@ class _CalfRegistrationDialogState extends State<CalfRegistrationDialog> {
             : widget.existingCalfData!;
 
         baseData['date_of_birth'] = _safeParseString(existingData['date_of_birth']) ?? todayString;
-        baseData['joined_date'] = _safeParseString(existingData['joined_date']) ?? todayString;
 
         // Preserve other existing fields that shouldn't be overwritten
         if (existingData['weight'] != null) {
@@ -255,12 +254,10 @@ class _CalfRegistrationDialogState extends State<CalfRegistrationDialog> {
         print('Error preserving existing data: $e');
         // Use defaults if error occurs
         baseData['date_of_birth'] = todayString;
-        baseData['joined_date'] = todayString;
       }
     } else {
       // New calf - use today's date
       baseData['date_of_birth'] = todayString;
-      baseData['joined_date'] = todayString;
     }
 
     // Add other nullable fields with defaults

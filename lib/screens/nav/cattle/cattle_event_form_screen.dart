@@ -353,7 +353,6 @@ class _CattleEventFormScreenState extends State<CattleEventFormScreen>
                   'father_tag': calf.fatherTag,
                   'weight': calf.weight,
                   'group_name': calf.groupName,
-                  'joined_date': calf.joinedDate,
                   'notes': calf.notes,
                 },
               };
@@ -387,7 +386,6 @@ class _CattleEventFormScreenState extends State<CattleEventFormScreen>
                 'father_tag': calf.fatherTag,
                 'weight': calf.weight,
                 'group_name': calf.groupName,
-                'joined_date': calf.joinedDate,
                 'notes': calf.notes,
               },
             };
@@ -1001,7 +999,6 @@ class _CattleEventFormScreenState extends State<CattleEventFormScreen>
           fullData['father_tag'] = _safeParseString(originalFullData['father_tag']);
           fullData['weight'] = _safeParseDouble(originalFullData['weight']);
           fullData['group_name'] = _safeParseString(originalFullData['group_name']);
-          fullData['joined_date'] = _safeParseString(originalFullData['joined_date']);
           fullData['notes'] = _safeParseString(originalFullData['notes']);
 
           // Include ID if available

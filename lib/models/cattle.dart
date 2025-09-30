@@ -11,7 +11,6 @@ class Cattle {
   final String status;
   final String? breed;
   final String? groupName;
-  final String? joinedDate;
   final String source;
   final String? sourceDetails; // NEW: For storing additional source information
   final String? motherTag;
@@ -31,7 +30,6 @@ class Cattle {
     required this.status,
     this.breed,
     this.groupName,
-    this.joinedDate,
     required this.source,
     this.sourceDetails, // Added this line
     this.motherTag,
@@ -53,7 +51,6 @@ class Cattle {
       status: json['status'] ?? 'Healthy',
       breed: json['breed'],
       groupName: json['group_name'],
-      joinedDate: json['joined_date'],
       source: json['source'] ?? 'Born on farm',
       sourceDetails: json['source_details'], // Added this line
       motherTag: json['mother_tag'],
@@ -76,7 +73,6 @@ class Cattle {
       'status': status,
       'breed': breed,
       'group_name': groupName,
-      'joined_date': joinedDate,
       'source': source,
       'source_details': sourceDetails, // Added this line
       'mother_tag': motherTag,
@@ -146,7 +142,6 @@ class Cattle {
     String? status,
     String? breed,
     String? groupName,
-    String? joinedDate,
     String? source,
     String? sourceDetails, // Added this line
     String? motherTag,
@@ -166,7 +161,6 @@ class Cattle {
       status: status ?? this.status,
       breed: breed ?? this.breed,
       groupName: groupName ?? this.groupName,
-      joinedDate: joinedDate ?? this.joinedDate,
       source: source ?? this.source,
       sourceDetails: sourceDetails ?? this.sourceDetails, // Added this line
       motherTag: motherTag ?? this.motherTag,

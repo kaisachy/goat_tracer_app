@@ -141,7 +141,6 @@ class GivesBirthEventFieldsState extends BaseEventFieldsState<GivesBirthEventFie
                 'father_tag': calf.fatherTag,
                 'weight': calf.weight,
                 'group_name': calf.groupName,
-                'joined_date': calf.joinedDate,
                 'notes': calf.notes,
               },
             };
