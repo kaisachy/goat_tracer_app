@@ -664,7 +664,7 @@ class _FarmDetailsModalState extends State<FarmDetailsModal> {
         _isLoadingBarangays = false;
       });
       // Only trigger geocoding if a barangay is already selected (for edit mode)
-      if (_selectedBarangay != null && _selectedBarangay!['name'] != null) {
+      if (_selectedBarangay != null && _selectedBarangay!['name'] != null && _selectedBarangay!['name'].isNotEmpty) {
         print('Barangays loaded, existing barangay selected: ${_selectedBarangay!['name']}, triggering geocoding...');
         _debounceFarmGeocode();
       } else {
@@ -706,8 +706,8 @@ class _FarmDetailsModalState extends State<FarmDetailsModal> {
     final municipality = _selectedMunicipality?['name'];
     final barangay = _selectedBarangay?['name'];
 
-    // Clear coordinates if incomplete selection
-    if (municipality == null || barangay == null || barangay.isEmpty) {
+    // Only geocode when a barangay is selected to ensure barangay-level coordinates
+    if (province == null || municipality == null || barangay == null || barangay.isEmpty) {
       setState(() {
         _farmLatitude = null;
         _farmLongitude = null;
@@ -952,7 +952,7 @@ class _FarmDetailsModalState extends State<FarmDetailsModal> {
             if (selectedMunicipality.isNotEmpty) {
               print('🏙️ Municipality selected: ${selectedMunicipality['name']}, loading barangays...');
               _loadBarangays(selectedMunicipality['code']);
-              // Note: _debounceFarmGeocode() is called in _loadBarangays after barangays are loaded
+              // Note: Geocoding will only happen when barangay is selected
             }
           } else {
             setState(() {
@@ -1330,8 +1330,8 @@ class _FarmDetailsModalState extends State<FarmDetailsModal> {
         farmLocation = '${_selectedMunicipality!['name']}, ${_isabelaProvince['name']}';
       }
 
-      // Attempt a final single geocode before submission if coordinates are empty (JS parity)
-      if (_farmLatitude == null || _farmLongitude == null) {
+      // Attempt a final single geocode before submission if coordinates are empty and barangay is selected
+      if ((_farmLatitude == null || _farmLongitude == null) && _selectedBarangay != null && _selectedBarangay!['name'] != null && _selectedBarangay!['name'].isNotEmpty) {
         await _performSingleGeocode();
       }
 

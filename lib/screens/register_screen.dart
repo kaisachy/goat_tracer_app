@@ -96,7 +96,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
         _isLoadingBarangays = false;
       });
       // Only trigger geocoding if a barangay is already selected (for edit mode)
-      if (_selectedBarangay != null && _selectedBarangay!['name'] != null) {
+      if (_selectedBarangay != null && _selectedBarangay!['name'] != null && _selectedBarangay!['name'].isNotEmpty) {
         print('Barangays loaded, existing barangay selected: ${_selectedBarangay!['name']}, triggering geocoding...');
         _debounceGeocode();
       } else {
@@ -124,7 +124,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
     final municipality = _selectedMunicipality?['name'];
     final barangay = _selectedBarangay?['name'];
     
-    if (province == null || municipality == null) return;
+    // Only geocode when a barangay is selected to ensure barangay-level coordinates
+    if (province == null || municipality == null || barangay == null || barangay.isEmpty) return;
     
     setState(() => _isGeocodingInProgress = true);
     
@@ -200,8 +201,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
       setState(() => _isLoading = true);
 
-      // Attempt geocoding before submission if coordinates are empty
-      if (_latitude == null || _longitude == null) {
+      // Attempt geocoding before submission if coordinates are empty and barangay is selected
+      if ((_latitude == null || _longitude == null) && _selectedBarangay != null && _selectedBarangay!['name'] != null && _selectedBarangay!['name'].isNotEmpty) {
         print('Coordinates empty before submit, attempting geocoding...');
         await _performGeocode();
         // Wait a bit for geocoding to complete
@@ -495,7 +496,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
               if (selectedMunicipality.isNotEmpty) {
                 print('🏙️ Municipality selected: ${selectedMunicipality['name']}, loading barangays...');
                 _loadBarangays(selectedMunicipality['code']);
-                // Note: _debounceGeocode() is called in _loadBarangays only if barangay is already selected
+                // Note: Geocoding will only happen when barangay is selected
               }
             } else {
               setState(() {
