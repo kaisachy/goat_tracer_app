@@ -1151,9 +1151,8 @@ class _FarmDetailsModalState extends State<FarmDetailsModal> {
           _buildBarangayDropdown(),
           const SizedBox(height: 16),
 
-          // Farm coordinates status (for debugging - can be hidden in production)
-          if (_isGeocodingInProgress || _farmLatitude != null)
-            _buildFarmCoordinatesStatus(),
+          // Farm coordinates status hidden
+          const SizedBox.shrink(),
         ],
       ),
     );

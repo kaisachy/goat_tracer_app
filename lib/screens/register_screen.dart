@@ -405,7 +405,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
             decoration: _inputDecoration(
               'First Name',
               Icons.person_outline,
-              hint: 'e.g. Juan',
               requiredField: true,
             ),
             validator: (value) =>
@@ -421,7 +420,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
             decoration: _inputDecoration(
               'Last Name',
               Icons.person_outline,
-              hint: 'e.g. Dela Cruz',
               requiredField: true,
             ),
             validator: (value) =>
