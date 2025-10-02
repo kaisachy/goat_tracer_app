@@ -149,8 +149,8 @@ class EventCattleInfoEventCard extends StatelessWidget {
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      cattleDetails!.classification?.isNotEmpty == true
-                          ? cattleDetails!.classification!
+                      cattleDetails!.classification.isNotEmpty == true
+                          ? cattleDetails!.classification
                           : 'Classification',
                       style: const TextStyle(
                         fontSize: 14,

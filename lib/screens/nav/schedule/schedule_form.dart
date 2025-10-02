@@ -1,5 +1,3 @@
-import 'package:cattle_tracer_app/screens/nav/schedule/widgets/schedule_priority_dropdown_widget.dart';
-import 'package:cattle_tracer_app/screens/nav/schedule/widgets/veterinarian_selection_field_widget.dart';
 import 'package:flutter/material.dart';
 import '../../../constants/app_colors.dart';
 import '../../../services/schedule/schedule_service.dart';
@@ -15,12 +13,12 @@ import '../../../services/vaccination_service.dart';
 import 'widgets/cattle_tag_multi_select_field_widget.dart';
 
 
-class CattleScheduleForm extends StatefulWidget {
+class ScheduleForm extends StatefulWidget {
   final Function() onScheduleAdded;
   final Schedule? scheduleToEdit;
   final String? preSelectedVaccineType;
 
-  const CattleScheduleForm({
+  const ScheduleForm({
     super.key,
     required this.onScheduleAdded,
     this.scheduleToEdit,
@@ -28,31 +26,27 @@ class CattleScheduleForm extends StatefulWidget {
   });
 
   @override
-  State<CattleScheduleForm> createState() => _CattleScheduleFormState();
+  State<ScheduleForm> createState() => _ScheduleFormState();
 }
 
-class _CattleScheduleFormState extends State<CattleScheduleForm> {
+class _ScheduleFormState extends State<ScheduleForm> {
   final _formKey = GlobalKey<FormState>();
 
-  final _veterinarianController = TextEditingController();
-  final _notesController = TextEditingController();
-
+  final _durationController = TextEditingController();
+  final _reminderController = TextEditingController();
+  final _scheduledByController = TextEditingController();
+  final _detailsController = TextEditingController();
 
   String _selectedType = ScheduleType.vaccination;
-  String _selectedPriority = SchedulePriority.medium;
   DateTime _selectedDate = DateTime.now();
   TimeOfDay _selectedTime = TimeOfDay.now();
   List<String> _selectedCattleTags = [];
 
   List<Cattle> _cattleList = [];
-  List<User> _veterinarianList = [];
   bool _isLoadingCattle = false;
-  bool _isLoadingVeterinarians = false;
   bool _isLoading = false;
   bool get _isEditing => widget.scheduleToEdit != null;
 
-  String? _selectedVeterinarianId;
-  bool _useCustomVeterinarian = false;
 
   // Vaccination-specific
   String? _selectedVaccineName;
@@ -71,17 +65,16 @@ class _CattleScheduleFormState extends State<CattleScheduleForm> {
       _selectedVaccineName = widget.preSelectedVaccineType;
     }
     _loadCattleList();
-    _loadVeterinarians();
     _loadEvents();
     // Note: _populateFieldsForEditing() will be called after data is loaded
   }
 
   @override
   void dispose() {
-
-    _veterinarianController.dispose();
-    _notesController.dispose();
-
+    _durationController.dispose();
+    _reminderController.dispose();
+    _scheduledByController.dispose();
+    _detailsController.dispose();
     super.dispose();
   }
 
@@ -100,7 +93,7 @@ class _CattleScheduleFormState extends State<CattleScheduleForm> {
       }
       
       // Populate fields for editing after cattle list is loaded
-      if (_isEditing && _veterinarianList.isNotEmpty) {
+      if (_isEditing) {
         _populateFieldsForEditing();
       }
       
@@ -132,35 +125,6 @@ class _CattleScheduleFormState extends State<CattleScheduleForm> {
     }
   }
 
-  Future<void> _loadVeterinarians() async {
-    if (mounted) {
-      setState(() => _isLoadingVeterinarians = true);
-    }
-
-    try {
-      final veterinarians = await UserService().getUsersByRoles(roles: ['pvo', 'lgu']);
-      if (mounted) {
-        setState(() {
-          _veterinarianList = veterinarians;
-          _isLoadingVeterinarians = false;
-        });
-      }
-      // print('Loaded ${veterinarians.length} veterinarians');
-      
-      // Populate fields for editing after veterinarians are loaded
-      if (_isEditing && _cattleList.isNotEmpty) {
-        _populateFieldsForEditing();
-      }
-    } catch (e) {
-      // print('Error loading veterinarians: $e');
-      if (mounted) setState(() => _isLoadingVeterinarians = false);
-
-      if (mounted) {
-        _showError('Failed to load veterinarians: ${e.toString()}');
-      }
-    }
-  }
-
   void _populateFieldsForEditing() {
     final schedule = widget.scheduleToEdit!;
     // Set vaccine type from schedule
@@ -174,33 +138,11 @@ class _CattleScheduleFormState extends State<CattleScheduleForm> {
           .toList();
     }
 
-    if (schedule.veterinarian != null && schedule.veterinarian!.isNotEmpty) {
-      final matchingVet = _veterinarianList.firstWhere(
-            (vet) => '${vet.firstName} ${vet.lastName}' == schedule.veterinarian,
-        orElse: () => User(
-          id: 0,
-          firstName: '',
-          lastName: '',
-          email: '',
-          role: '',
-          emailVerified: false,
-          active: false,
-          createdAt: DateTime.now(),
-        ),
-      );
-
-      if (matchingVet.id != 0) {
-        _selectedVeterinarianId = matchingVet.id.toString();
-        _useCustomVeterinarian = false;
-      } else {
-        _veterinarianController.text = schedule.veterinarian!;
-        _useCustomVeterinarian = true;
-      }
-    }
-
-    _notesController.text = schedule.notes ?? '';
+    _durationController.text = schedule.duration ?? '';
+    _reminderController.text = schedule.reminder ?? '';
+    _scheduledByController.text = schedule.scheduledBy ?? '';
+    _detailsController.text = schedule.details ?? '';
     _selectedType = schedule.type;
-    _selectedPriority = schedule.priority;
     _selectedDate = DateTime(
       schedule.scheduleDateTime.year,
       schedule.scheduleDateTime.month,
@@ -238,48 +180,15 @@ class _CattleScheduleFormState extends State<CattleScheduleForm> {
                 scheduledTagsForVaccine: _scheduledTagsForSelectedVaccine,
               ),
               const SizedBox(height: 16),
-              SchedulePriorityDropdown(
-                selectedPriority: _selectedPriority,
-                onChanged: (value) {
-                  if (value != null) {
-                    if (mounted) {
-                      setState(() => _selectedPriority = value);
-                    }
-                  }
-                },
-              ),
+              _buildDurationField(),
+              const SizedBox(height: 16),
+              _buildReminderField(),
               const SizedBox(height: 16),
               _buildDateTimeSelectors(),
               const SizedBox(height: 16),
-              VeterinarianSelectionField(
-                selectedVeterinarianId: _selectedVeterinarianId,
-                useCustomVeterinarian: _useCustomVeterinarian,
-                veterinarianController: _veterinarianController,
-                veterinarianList: _veterinarianList,
-                isLoadingVeterinarians: _isLoadingVeterinarians,
-                onVeterinarianIdChanged: (id) {
-                  if (mounted) {
-                    setState(() {
-                      _selectedVeterinarianId = id;
-                    });
-                  }
-                },
-                onUseCustomChanged: (useCustom) {
-                  if (mounted) {
-                    setState(() {
-                      _useCustomVeterinarian = useCustom;
-                      if (!_useCustomVeterinarian) {
-                        _veterinarianController.clear();
-                      } else {
-                        _selectedVeterinarianId = null;
-                      }
-                    });
-                  }
-                },
-                onRefreshVeterinarians: _loadVeterinarians,
-              ),
+              _buildScheduledByField(),
               const SizedBox(height: 16),
-              _buildNotesField(),
+              _buildDetailsField(),
               const SizedBox(height: 32),
               _buildActionButtons(),
             ],
@@ -360,31 +269,6 @@ class _CattleScheduleFormState extends State<CattleScheduleForm> {
               ),
             ),
           ],
-        ),
-      ],
-    );
-  }
-
-  Widget _buildNotesField() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Text(
-          'Notes',
-          style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
-        ),
-        const SizedBox(height: 8),
-        TextFormField(
-          controller: _notesController,
-          maxLines: 3,
-          decoration: InputDecoration(
-            hintText: 'Enter additional notes (optional)',
-            border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
-            prefixIcon: const Padding(
-              padding: EdgeInsets.only(bottom: 40),
-              child: Icon(Icons.notes),
-            ),
-          ),
         ),
       ],
     );
@@ -531,31 +415,6 @@ class _CattleScheduleFormState extends State<CattleScheduleForm> {
         cattleTagsString = _selectedCattleTags.length == 1 ? _selectedCattleTags.first : null;
       }
 
-      String? veterinarianName;
-      if (_useCustomVeterinarian) {
-        if (_veterinarianController.text.trim().isNotEmpty) {
-          veterinarianName = _veterinarianController.text.trim();
-        }
-      } else {
-        if (_selectedVeterinarianId != null) {
-          final selectedVet = _veterinarianList.firstWhere(
-                (vet) => vet.id.toString() == _selectedVeterinarianId,
-            orElse: () => User(
-              id: 0,
-              firstName: '',
-              lastName: '',
-              email: '',
-              role: '',
-              emailVerified: false,
-              active: false,
-              createdAt: DateTime.now(),
-            ),
-          );
-          if (selectedVet.id != 0) {
-            veterinarianName = '${selectedVet.firstName} ${selectedVet.lastName}';
-          }
-        }
-      }
 
       if (_isEditing) {
         // Generate title from vaccine type for vaccination schedules
@@ -565,12 +424,19 @@ class _CattleScheduleFormState extends State<CattleScheduleForm> {
           title: computedTitleEdit,
           cattleTag: cattleTagsString,
           type: ScheduleType.vaccination,
-          priority: _selectedPriority,
           scheduleDateTime: scheduleDateTime,
-          veterinarian: veterinarianName,
-          notes: _notesController.text.trim().isEmpty
+          duration: _durationController.text.trim().isEmpty
               ? null
-              : _notesController.text.trim(),
+              : _durationController.text.trim(),
+          reminder: _reminderController.text.trim().isEmpty
+              ? null
+              : _reminderController.text.trim(),
+          scheduledBy: _scheduledByController.text.trim().isEmpty
+              ? null
+              : _scheduledByController.text.trim(),
+          details: _detailsController.text.trim().isEmpty
+              ? null
+              : _detailsController.text.trim(),
           vaccineType: _selectedType == ScheduleType.vaccination ? _selectedVaccineName : null,
         );
 
@@ -590,12 +456,19 @@ class _CattleScheduleFormState extends State<CattleScheduleForm> {
               title: computedTitleCreate,
               cattleTag: tag,
               type: ScheduleType.vaccination,
-              priority: _selectedPriority,
               scheduleDateTime: scheduleDateTime,
-              veterinarian: veterinarianName,
-              notes: _notesController.text.trim().isEmpty
+              duration: _durationController.text.trim().isEmpty
                   ? null
-                  : _notesController.text.trim(),
+                  : _durationController.text.trim(),
+              reminder: _reminderController.text.trim().isEmpty
+                  ? null
+                  : _reminderController.text.trim(),
+              scheduledBy: _scheduledByController.text.trim().isEmpty
+                  ? null
+                  : _scheduledByController.text.trim(),
+              details: _detailsController.text.trim().isEmpty
+                  ? null
+                  : _detailsController.text.trim(),
               vaccineType: _selectedVaccineName,
             );
             try {
@@ -614,12 +487,19 @@ class _CattleScheduleFormState extends State<CattleScheduleForm> {
             title: computedTitleCreate,
             cattleTag: cattleTagsString,
             type: ScheduleType.vaccination,
-            priority: _selectedPriority,
             scheduleDateTime: scheduleDateTime,
-            veterinarian: veterinarianName,
-            notes: _notesController.text.trim().isEmpty
+            duration: _durationController.text.trim().isEmpty
                 ? null
-                : _notesController.text.trim(),
+                : _durationController.text.trim(),
+            reminder: _reminderController.text.trim().isEmpty
+                ? null
+                : _reminderController.text.trim(),
+            scheduledBy: _scheduledByController.text.trim().isEmpty
+                ? null
+                : _scheduledByController.text.trim(),
+            details: _detailsController.text.trim().isEmpty
+                ? null
+                : _detailsController.text.trim(),
             vaccineType: _selectedVaccineName,
           );
 
@@ -693,7 +573,7 @@ class _CattleScheduleFormState extends State<CattleScheduleForm> {
   }
 }
 
-extension _VaccinationUI on _CattleScheduleFormState {
+extension _VaccinationUI on _ScheduleFormState {
 
   Widget _buildVaccineDropdown() {
     final vaccineTypes = VaccinationProtocol.vaccineTypes;
@@ -871,6 +751,133 @@ extension _VaccinationUI on _CattleScheduleFormState {
     } catch (e) {
       debugPrint('Error loading existing scheduled for vaccine: $e');
     }
+  }
+
+  Widget _buildDurationField() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Duration',
+          style: TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.w500,
+            color: Colors.grey[800],
+          ),
+        ),
+        const SizedBox(height: 8),
+        TextFormField(
+          controller: _durationController,
+          decoration: InputDecoration(
+            hintText: 'e.g., 30 minutes, 1 hour',
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(8),
+            ),
+            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          ),
+          validator: (value) {
+            if (value != null && value.length > 50) {
+              return 'Duration cannot exceed 50 characters';
+            }
+            return null;
+          },
+        ),
+      ],
+    );
+  }
+
+  Widget _buildReminderField() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Reminder',
+          style: TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.w500,
+            color: Colors.grey[800],
+          ),
+        ),
+        const SizedBox(height: 8),
+        TextFormField(
+          controller: _reminderController,
+          decoration: InputDecoration(
+            hintText: 'e.g., 1 day before, 2 hours before',
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(8),
+            ),
+            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          ),
+          validator: (value) {
+            if (value != null && value.length > 50) {
+              return 'Reminder cannot exceed 50 characters';
+            }
+            return null;
+          },
+        ),
+      ],
+    );
+  }
+
+  Widget _buildScheduledByField() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Scheduled By',
+          style: TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.w500,
+            color: Colors.grey[800],
+          ),
+        ),
+        const SizedBox(height: 8),
+        TextFormField(
+          controller: _scheduledByController,
+          decoration: InputDecoration(
+            hintText: 'Name of person who scheduled this',
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(8),
+            ),
+            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          ),
+          validator: (value) {
+            if (value != null && value.length > 100) {
+              return 'Scheduled by cannot exceed 100 characters';
+            }
+            return null;
+          },
+        ),
+      ],
+    );
+  }
+
+  Widget _buildDetailsField() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Details',
+          style: TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.w500,
+            color: Colors.grey[800],
+          ),
+        ),
+        const SizedBox(height: 8),
+        TextFormField(
+          controller: _detailsController,
+          maxLines: 3,
+          decoration: InputDecoration(
+            hintText: 'Additional details or notes about this schedule',
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(8),
+            ),
+            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          ),
+        ),
+      ],
+    );
   }
 
   

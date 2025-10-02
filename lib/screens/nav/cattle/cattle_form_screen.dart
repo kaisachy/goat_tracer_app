@@ -1338,41 +1338,6 @@ class _CattleFormScreenState extends State<CattleFormScreen> {
     );
   }
 
-  Widget _buildDropdown({
-    required String label,
-    required String? value,
-    required List<String> options,
-    required Function(String?) onChanged,
-    required IconData icon,
-    String? Function(String?)? validator,
-  }) {
-    return DropdownButtonFormField<String>(
-      value: value,
-      validator: validator,
-      isExpanded: true,
-      decoration: InputDecoration(
-        labelText: label,
-        prefixIcon: Icon(icon, color: AppColors.primary),
-        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: AppColors.primary, width: 2),
-        ),
-        fillColor: AppColors.cardBackground,
-        filled: true,
-      ),
-      hint: Text('Select $label'),
-      items: options.map((option) => DropdownMenuItem(
-        value: option,
-        child: Text(
-          option,
-          overflow: TextOverflow.ellipsis,
-        ),
-      )).toList(),
-      onChanged: onChanged,
-    );
-  }
-
   /// Build fixed Breed dropdown with Other text field
   Widget _buildBreedField() {
     final List<String> options = List<String>.from(_breedOptions);
@@ -1472,8 +1437,7 @@ class _CattleFormScreenState extends State<CattleFormScreen> {
   Widget _buildClassificationField() {
     final isPreSelected = widget.preSelectedClassification != null;
     final isEditing = widget.cattle != null;
-    final preSelectedClassification = widget.preSelectedClassification;
-    
+
     // Lock classification for pre-selected classifications (new cattle from FAB menu)
     // For editing existing cattle, allow classification changes
     final shouldLockClassification = isPreSelected && !isEditing;
@@ -1513,7 +1477,6 @@ class _CattleFormScreenState extends State<CattleFormScreen> {
 
   /// Build sex field with conditional logic
   Widget _buildSexField() {
-    final isPreSelected = widget.preSelectedClassification != null;
     final isEditing = widget.cattle != null;
     final preSelectedClassification = widget.preSelectedClassification;
     

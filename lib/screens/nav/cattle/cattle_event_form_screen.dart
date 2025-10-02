@@ -516,7 +516,7 @@ class _CattleEventFormScreenState extends State<CattleEventFormScreen>
                   try {
                     if ((e['event_type']?.toString().toLowerCase() ?? '') != 'breeding') return false;
                     final d = DateTime.parse(e['event_date']?.toString() ?? '');
-                    return d.year == targetDate!.year && d.month == targetDate!.month && d.day == targetDate!.day;
+                    return d.year == targetDate!.year && d.month == targetDate.month && d.day == targetDate.day;
                   } catch (_) { return false; }
                 },
                 orElse: () => {},

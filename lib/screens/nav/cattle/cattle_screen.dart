@@ -36,7 +36,6 @@ class _CattleScreenState extends State<CattleScreen>
   // FAB menu state
   bool _isFabMenuOpen = false;
   AnimationController? _fabAnimationController;
-  Animation<double>? _fabAnimation;
 
   @override
   void initState() {
@@ -53,7 +52,7 @@ class _CattleScreenState extends State<CattleScreen>
       duration: const Duration(milliseconds: 200),
       vsync: this,
     );
-    _fabAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+    _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
       CurvedAnimation(parent: _fabAnimationController!, curve: Curves.easeInOut),
     );
 

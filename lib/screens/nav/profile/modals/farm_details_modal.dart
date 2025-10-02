@@ -71,7 +71,6 @@ class _FarmDetailsModalState extends State<FarmDetailsModal> {
   // Farm latitude and longitude fields
   double? _farmLatitude;
   double? _farmLongitude;
-  bool _isGeocodingInProgress = false;
   Timer? _farmGeocodeTimer;
   int _geocodeRequestCounter = 0; // Guards against stale responses
   int _activeGeocodeRequestId = 0;
@@ -711,13 +710,11 @@ class _FarmDetailsModalState extends State<FarmDetailsModal> {
       setState(() {
         _farmLatitude = null;
         _farmLongitude = null;
-        _isGeocodingInProgress = false;
       });
       return;
     }
 
     setState(() {
-      _isGeocodingInProgress = true;
     });
 
     final currentRequestId = ++_geocodeRequestCounter;
@@ -755,7 +752,6 @@ class _FarmDetailsModalState extends State<FarmDetailsModal> {
             setState(() {
               _farmLatitude = lat;
               _farmLongitude = lng;
-              _isGeocodingInProgress = false;
             });
             return;
           }
@@ -766,14 +762,12 @@ class _FarmDetailsModalState extends State<FarmDetailsModal> {
       setState(() {
         _farmLatitude = null;
         _farmLongitude = null;
-        _isGeocodingInProgress = false;
       });
     } catch (e) {
       if (!mounted || currentRequestId != _activeGeocodeRequestId) return;
       setState(() {
         _farmLatitude = null;
         _farmLongitude = null;
-        _isGeocodingInProgress = false;
       });
     }
   }
@@ -1153,72 +1147,6 @@ class _FarmDetailsModalState extends State<FarmDetailsModal> {
 
           // Farm coordinates status hidden
           const SizedBox.shrink(),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildFarmCoordinatesStatus() {
-    return Container(
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: Colors.grey[100],
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: Colors.grey[300]!),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Icon(
-                Icons.location_on,
-                size: 16,
-                color: _farmLatitude != null && _farmLongitude != null 
-                    ? AppColors.vibrantGreen 
-                    : Colors.grey,
-              ),
-              const SizedBox(width: 8),
-              Text(
-                'Farm Coordinates',
-                style: TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w500,
-                  color: Colors.grey[700],
-                ),
-              ),
-              const Spacer(),
-          if (_isGeocodingInProgress)
-            const SizedBox(
-              width: 12,
-              height: 12,
-              child: CircularProgressIndicator(
-                strokeWidth: 2,
-              ),
-            ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          if (_farmLatitude != null && _farmLongitude != null)
-            Text(
-              'Lat: ${_farmLatitude!.toStringAsFixed(6)}, Lng: ${_farmLongitude!.toStringAsFixed(6)}',
-              style: TextStyle(
-                fontSize: 11,
-                color: Colors.grey[600],
-                fontFamily: 'monospace',
-              ),
-            )
-          else
-            Text(
-              (_selectedMunicipality != null && _selectedBarangay != null)
-                  ? 'Fetching coordinates...'
-                  : 'Farm coordinates will be fetched automatically',
-              style: TextStyle(
-                fontSize: 11,
-                color: Colors.grey[500],
-                fontStyle: FontStyle.italic,
-              ),
-            ),
         ],
       ),
     );

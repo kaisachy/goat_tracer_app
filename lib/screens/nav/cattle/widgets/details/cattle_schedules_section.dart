@@ -337,25 +337,6 @@ class _CattleSchedulesSectionState extends State<CattleSchedulesSection> {
                       overflow: TextOverflow.ellipsis,
                     ),
                   ),
-                  if (schedule.priority == 'High') ...[
-                    const Spacer(),
-                    Container(
-                      padding:
-                      const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
-                      decoration: BoxDecoration(
-                        color: Colors.red.withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(4),
-                      ),
-                      child: const Text(
-                        'HIGH',
-                        style: TextStyle(
-                          fontSize: 9,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.red,
-                        ),
-                      ),
-                    ),
-                  ],
                 ],
               ),
               const SizedBox(height: 4),

@@ -346,16 +346,16 @@ class _VaccinationDashboardWidgetState extends State<VaccinationDashboardWidget>
     final isOverdue = schedule.scheduleDateTime.isBefore(DateTime.now());
     final daysUntilDue = schedule.scheduleDateTime.difference(DateTime.now()).inDays;
 
-    void _openEventScheduleScreen() {
+    void _openScheduleScreen() {
       Navigator.of(context).push(
         MaterialPageRoute(
-          builder: (_) => const HomeScreen(initialSelectedIndex: 3, initialEventScheduleTabIndex: 1),
+          builder: (_) => const HomeScreen(initialSelectedIndex: 4),
         ),
       );
     }
 
     return InkWell(
-      onTap: _openEventScheduleScreen,
+      onTap: _openScheduleScreen,
       borderRadius: BorderRadius.circular(10),
       child: Container
       (

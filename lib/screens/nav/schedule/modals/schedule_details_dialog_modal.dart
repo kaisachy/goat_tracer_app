@@ -110,7 +110,7 @@ class ScheduleDetailsDialog extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Status and Priority Row
+            // Status and Duration Row
             Row(
               children: [
                 Expanded(
@@ -120,14 +120,16 @@ class ScheduleDetailsDialog extends StatelessWidget {
                     schedule.statusColor,
                   ),
                 ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: _buildDetailCard(
-                    'Priority',
-                    schedule.priority,
-                    _getPriorityColor(schedule.priority),
+                if (schedule.duration != null) ...[
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: _buildDetailCard(
+                      'Duration',
+                      schedule.duration!,
+                      Colors.blue[600]!,
+                    ),
                   ),
-                ),
+                ],
               ],
             ),
             const SizedBox(height: 20),
@@ -139,14 +141,18 @@ class ScheduleDetailsDialog extends StatelessWidget {
             if (cattleTags.isNotEmpty)
               _buildCattleTagsSection(cattleTags),
 
-            // Veterinarian
-            if (schedule.veterinarian != null)
-              _buildDetailSection('Veterinarian', 'Dr. ${schedule.veterinarian!}', Icons.person_outline),
+            // Reminder
+            if (schedule.reminder != null)
+              _buildDetailSection('Reminder', schedule.reminder!, Icons.notifications_outlined),
 
-            // Notes
-            if (schedule.notes != null) ...[
+            // Scheduled By
+            if (schedule.scheduledBy != null)
+              _buildDetailSection('Scheduled By', schedule.scheduledBy!, Icons.person_outline),
+
+            // Details
+            if (schedule.details != null) ...[
               const SizedBox(height: 20),
-              _buildNotesSection(schedule.notes!),
+              _buildDetailsSection(schedule.details!),
             ],
           ],
         ),
@@ -301,7 +307,7 @@ class ScheduleDetailsDialog extends StatelessWidget {
     );
   }
 
-  Widget _buildNotesSection(String notes) {
+  Widget _buildDetailsSection(String details) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -317,7 +323,7 @@ class ScheduleDetailsDialog extends StatelessWidget {
             ),
             const SizedBox(width: 12),
             const Text(
-              'Notes',
+              'Details',
               style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.w600,
@@ -335,7 +341,7 @@ class ScheduleDetailsDialog extends StatelessWidget {
             borderRadius: BorderRadius.circular(12),
           ),
           child: Text(
-            notes,
+            details,
             style: const TextStyle(
               fontSize: 14,
               color: AppColors.textSecondary,
@@ -347,16 +353,4 @@ class ScheduleDetailsDialog extends StatelessWidget {
     );
   }
 
-  Color _getPriorityColor(String priority) {
-    switch (priority.toLowerCase()) {
-      case 'high':
-        return Colors.red[600]!;
-      case 'medium':
-        return Colors.orange[600]!;
-      case 'low':
-        return Colors.green[600]!;
-      default:
-        return Colors.grey[600]!;
-    }
-  }
 }

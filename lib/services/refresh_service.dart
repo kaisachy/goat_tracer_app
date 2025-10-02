@@ -87,12 +87,29 @@ class RefreshService {
 
     try {
       switch (pageIndex) {
-        case 0: // Map
-          results['success'] = true;
-          results['message'] = 'Map data refreshed';
+        case 0: // Profile
+          try {
+            await PersonalInformationService.getPersonalInformation();
+            results['success'] = true;
+            results['message'] = 'Profile data refreshed';
+          } catch (e) {
+            results['errors'].add('Profile refresh failed: $e');
+          }
           break;
           
-        case 1: // Dashboard
+        case 1: // Production Record (Cattle)
+          try {
+            await CattleService.getCattleInformation();
+            final updatedCattle = await CattleStatusService.checkAndUpdateBreedingStatus();
+            results['success'] = true;
+            results['message'] = 'Cattle data refreshed';
+            results['data'] = updatedCattle;
+          } catch (e) {
+            results['errors'].add('Cattle refresh failed: $e');
+          }
+          break;
+          
+        case 2: // Dashboard
           // Refresh dashboard data (cattle, milk, schedule summaries)
           try {
             await CattleService.getCattleInformation();
@@ -105,19 +122,19 @@ class RefreshService {
           }
           break;
           
-        case 2: // Cattle
+        case 3: // Events
           try {
+            // Events don't have a specific service refresh, but we can refresh cattle data
+            // since events are related to cattle
             await CattleService.getCattleInformation();
-            final updatedCattle = await CattleStatusService.checkAndUpdateBreedingStatus();
             results['success'] = true;
-            results['message'] = 'Cattle data refreshed';
-            results['data'] = updatedCattle;
+            results['message'] = 'Events data refreshed';
           } catch (e) {
-            results['errors'].add('Cattle refresh failed: $e');
+            results['errors'].add('Events refresh failed: $e');
           }
           break;
           
-        case 3: // Events & Schedule
+        case 4: // Schedule
           try {
             await ScheduleService.getSchedules();
             results['success'] = true;
@@ -127,23 +144,13 @@ class RefreshService {
           }
           break;
           
-        case 4: // Milk Production
+        case 5: // Milk Production
           try {
             await MilkProductionService.getMilkProductions();
             results['success'] = true;
             results['message'] = 'Milk data refreshed';
           } catch (e) {
             results['errors'].add('Milk refresh failed: $e');
-          }
-          break;
-          
-        case 5: // Profile
-          try {
-            await PersonalInformationService.getPersonalInformation();
-            results['success'] = true;
-            results['message'] = 'Profile data refreshed';
-          } catch (e) {
-            results['errors'].add('Profile refresh failed: $e');
           }
           break;
           

@@ -695,19 +695,6 @@ class _EventScreenState extends State<EventScreen> {
                     onClearFilter: _onClearFilter,
                   ),
                 ),
-                const SizedBox(width: 8),
-                IconButton(
-                  onPressed: () async {
-                    print('DEBUG: Manual refresh triggered');
-                    await _refreshEvents();
-                  },
-                  icon: const Icon(Icons.refresh_rounded),
-                  tooltip: 'Refresh Events',
-                  style: IconButton.styleFrom(
-                    backgroundColor: AppColors.vibrantGreen,
-                    foregroundColor: Colors.white,
-                  ),
-                ),
               ],
             ),
             const SizedBox(height: 16),

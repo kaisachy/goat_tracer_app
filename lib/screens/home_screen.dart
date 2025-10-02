@@ -11,7 +11,8 @@ import 'nav/cattle/cattle_screen.dart';
 import 'nav/dashboard/dashboard_screen.dart';
 import 'nav/profile/profile_screen.dart';
 import 'nav/milk/milk_screen.dart';
-import 'nav/event_schedule/event_schedule_screen.dart';
+import 'nav/event/event_screen.dart';
+import 'nav/schedule/schedule_screen.dart';
 import 'nav/setting/setting_screen.dart';
 import 'package:cattle_tracer_app/services/cattle/cattle_status_service.dart';
 import 'package:cattle_tracer_app/services/refresh_service.dart';
@@ -19,9 +20,7 @@ import 'package:cattle_tracer_app/services/refresh_service.dart';
 class HomeScreen extends StatefulWidget {
   final String? userEmail;
   final int? initialSelectedIndex;
-  final int? initialEventScheduleTabIndex;
-
-  const HomeScreen({super.key, this.userEmail, this.initialSelectedIndex, this.initialEventScheduleTabIndex});
+  const HomeScreen({super.key, this.userEmail, this.initialSelectedIndex});
 
   @override
   State<HomeScreen> createState() => _HomeScreenState();
@@ -66,7 +65,8 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
       AuthGuard(child: ProfileScreen(userEmail: widget.userEmail ?? '')),
       const AuthGuard(child: CattleScreen()),
       AuthGuard(child: DashboardScreen()),
-      AuthGuard(child: EventScheduleScreen(initialTabIndex:  widget.initialEventScheduleTabIndex ?? 0)),
+      const AuthGuard(child: EventScreen()),
+      const AuthGuard(child: ScheduleScreen()),
       AuthGuard(child: MilkScreen()),
       AuthGuard(child: SettingScreen()),
     ];
@@ -534,10 +534,12 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
       case 2:
         return 'Dashboard';
       case 3:
-        return 'Events & Schedule';
+        return 'Cattle History';
       case 4:
-        return 'Milk Production';
+        return 'Schedule';
       case 5:
+        return 'Milk Production';
+      case 6:
         return 'Settings';
       default:
         return 'Cattalyze';
@@ -572,22 +574,28 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                   onTap: () => _onNavItemTapped(2),
                 ),
                 _buildDrawerItem(
-                  icon: Icons.event_note_rounded,
-                  text: 'Events & Schedule',
+                  icon: Icons.history_rounded,
+                  text: 'Cattle History',
                   index: 3,
                   onTap: () => _onNavItemTapped(3),
                 ),
                 _buildDrawerItem(
-                  icon: Icons.opacity_rounded,
-                  text: 'Milk Production',
+                  icon: Icons.event_available_rounded,
+                  text: 'Schedule',
                   index: 4,
                   onTap: () => _onNavItemTapped(4),
                 ),
                 _buildDrawerItem(
-                  icon: Icons.settings_rounded,
-                  text: 'Settings',
+                  icon: Icons.opacity_rounded,
+                  text: 'Milk Production',
                   index: 5,
                   onTap: () => _onNavItemTapped(5),
+                ),
+                _buildDrawerItem(
+                  icon: Icons.settings_rounded,
+                  text: 'Settings',
+                  index: 6,
+                  onTap: () => _onNavItemTapped(6),
                 ),
               ],
             ),

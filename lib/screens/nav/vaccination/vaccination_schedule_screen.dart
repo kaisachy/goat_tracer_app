@@ -5,7 +5,7 @@ import 'package:cattle_tracer_app/services/vaccination_service.dart';
 import 'package:cattle_tracer_app/services/cattle/cattle_service.dart';
 import 'package:cattle_tracer_app/services/cattle/cattle_event_service.dart';
 import 'package:cattle_tracer_app/constants/app_colors.dart';
-import 'package:cattle_tracer_app/screens/nav/schedule/cattle_schedule_form.dart';
+import 'package:cattle_tracer_app/screens/nav/schedule/schedule_form.dart';
 import 'package:cattle_tracer_app/models/schedule.dart';
 import 'package:cattle_tracer_app/services/schedule/schedule_service.dart';
 
@@ -51,7 +51,7 @@ class _VaccinationScheduleScreenState extends State<VaccinationScheduleScreen>
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => CattleScheduleForm(
+        builder: (context) => ScheduleForm(
           preSelectedVaccineType: vaccineType,
           onScheduleAdded: () {
             // Reload data when schedule is added

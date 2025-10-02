@@ -119,7 +119,6 @@ class _CalfRegistrationDialogState extends State<CalfRegistrationDialog> {
 
   String _generateNextCalfTag() {
     // Use the new classification-based tag generation for calves
-    final classification = _getClassification(); // This returns 'Calf'
     final prefix = 'CALF'; // Use CALF prefix for calves
     
     // Find all existing calf tags that match the pattern CALF-XXXX

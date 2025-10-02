@@ -5,10 +5,11 @@ class Schedule {
   final String? cattleTag;
   final String type;
   final DateTime scheduleDateTime;
-  final String priority;
+  final String? duration;
+  final String? reminder;
   final String status;
-  final String? veterinarian;
-  final String? notes;
+  final String? scheduledBy;
+  final String? details;
   final String? vaccineType;
   final DateTime? createdAt;
   final DateTime? updatedAt;
@@ -20,10 +21,11 @@ class Schedule {
     this.cattleTag,
     required this.type,
     required this.scheduleDateTime,
-    this.priority = 'Medium',
+    this.duration,
+    this.reminder,
     this.status = 'Scheduled',
-    this.veterinarian,
-    this.notes,
+    this.scheduledBy,
+    this.details,
     this.vaccineType,
     this.createdAt,
     this.updatedAt,
@@ -38,10 +40,11 @@ class Schedule {
         cattleTag: _normalizeCattleTag(json['cattle_tag']?.toString()),
         type: json['type']?.toString() ?? 'Other',
         scheduleDateTime: _parseDateTime(json['schedule_datetime']) ?? DateTime.now(),
-        priority: json['priority']?.toString() ?? 'Medium',
+        duration: json['duration']?.toString(),
+        reminder: json['reminder']?.toString(),
         status: json['status']?.toString() ?? 'Scheduled',
-        veterinarian: json['veterinarian']?.toString(),
-        notes: json['notes']?.toString(),
+        scheduledBy: json['scheduled_by']?.toString(),
+        details: json['details']?.toString(),
         vaccineType: json['vaccine_type']?.toString(),
         createdAt: _parseDateTime(json['created_at']),
         updatedAt: _parseDateTime(json['updated_at']),
@@ -114,10 +117,11 @@ class Schedule {
       'cattle_tag': cattleTag,
       'type': type,
       'schedule_datetime': scheduleDateTime.toIso8601String(),
-      'priority': priority,
+      'duration': duration,
+      'reminder': reminder,
       'status': status,
-      'veterinarian': veterinarian,
-      'notes': notes,
+      'scheduled_by': scheduledBy,
+      'details': details,
       if (vaccineType != null) 'vaccine_type': vaccineType,
       if (createdAt != null) 'created_at': createdAt!.toIso8601String(),
       if (updatedAt != null) 'updated_at': updatedAt!.toIso8601String(),
@@ -133,10 +137,11 @@ class Schedule {
       'cattle_tag': cattleTag,
       'type': type,
       'schedule_datetime': _formatDateTime(scheduleDateTime),
-      'priority': priority,
+      'duration': duration,
+      'reminder': reminder,
       'status': status,
-      'veterinarian': veterinarian,
-      'notes': notes,
+      'scheduled_by': scheduledBy,
+      'details': details,
       if (vaccineType != null) 'vaccine_type': vaccineType,
     };
   }
@@ -158,10 +163,11 @@ class Schedule {
     String? cattleTag,
     String? type,
     DateTime? scheduleDateTime,
-    String? priority,
+    String? duration,
+    String? reminder,
     String? status,
-    String? veterinarian,
-    String? notes,
+    String? scheduledBy,
+    String? details,
     String? vaccineType,
     DateTime? createdAt,
     DateTime? updatedAt,
@@ -173,10 +179,11 @@ class Schedule {
       cattleTag: cattleTag ?? this.cattleTag,
       type: type ?? this.type,
       scheduleDateTime: scheduleDateTime ?? this.scheduleDateTime,
-      priority: priority ?? this.priority,
+      duration: duration ?? this.duration,
+      reminder: reminder ?? this.reminder,
       status: status ?? this.status,
-      veterinarian: veterinarian ?? this.veterinarian,
-      notes: notes ?? this.notes,
+      scheduledBy: scheduledBy ?? this.scheduledBy,
+      details: details ?? this.details,
       vaccineType: vaccineType ?? this.vaccineType,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
@@ -188,10 +195,10 @@ class Schedule {
   bool get isCompleted => status.toLowerCase() == 'completed';
   bool get isCancelled => status.toLowerCase() == 'cancelled';
 
-  // Helper methods for priority checking
-  bool get isHighPriority => priority.toLowerCase() == 'high';
-  bool get isMediumPriority => priority.toLowerCase() == 'medium';
-  bool get isLowPriority => priority.toLowerCase() == 'low';
+  // Helper methods for field checking
+  bool get hasDuration => duration != null && duration!.isNotEmpty;
+  bool get hasReminder => reminder != null && reminder!.isNotEmpty;
+  bool get hasScheduledBy => scheduledBy != null && scheduledBy!.isNotEmpty;
 
   // Helper method to check if schedule is overdue
   bool get isOverdue => isScheduled && scheduleDateTime.isBefore(DateTime.now());
@@ -247,10 +254,11 @@ class Schedule {
               cattleTag == other.cattleTag &&
               type == other.type &&
               scheduleDateTime == other.scheduleDateTime &&
-              priority == other.priority &&
+              duration == other.duration &&
+              reminder == other.reminder &&
               status == other.status &&
-              veterinarian == other.veterinarian &&
-              notes == other.notes &&
+              scheduledBy == other.scheduledBy &&
+              details == other.details &&
               vaccineType == other.vaccineType;
 
   @override
@@ -261,10 +269,11 @@ class Schedule {
       cattleTag.hashCode ^
       type.hashCode ^
       scheduleDateTime.hashCode ^
-      priority.hashCode ^
+      duration.hashCode ^
+      reminder.hashCode ^
       status.hashCode ^
-      veterinarian.hashCode ^
-      notes.hashCode ^
+      scheduledBy.hashCode ^
+      details.hashCode ^
       vaccineType.hashCode;
 }
 
@@ -287,13 +296,6 @@ class ScheduleType {
   ];
 }
 
-class SchedulePriority {
-  static const String high = 'High';
-  static const String medium = 'Medium';
-  static const String low = 'Low';
-
-  static const List<String> values = [high, medium, low];
-}
 
 class ScheduleStatus {
   static const String scheduled = 'Scheduled';

@@ -51,7 +51,7 @@ class ScheduleCard extends StatelessWidget {
                 _buildCardHeader(context, cattleTags),
                 const SizedBox(height: 16),
                 _buildCardFooter(),
-                if (schedule.veterinarian != null || schedule.notes != null) ...[
+                if (schedule.scheduledBy != null || schedule.details != null || schedule.duration != null || schedule.reminder != null) ...[
                   const SizedBox(height: 12),
                   _buildCardInfo(),
                 ],
@@ -230,7 +230,8 @@ class ScheduleCard extends StatelessWidget {
           ),
         ),
         const Spacer(),
-        SchedulePriorityChip(priority: schedule.priority, isSmall: true),
+        if (schedule.duration != null)
+          _buildDurationChip(),
         const SizedBox(width: 8),
         ScheduleStatusChip(status: schedule.status, isSmall: true),
       ],
@@ -293,13 +294,47 @@ class ScheduleCard extends StatelessWidget {
   Widget _buildCardInfo() {
     return Column(
       children: [
-        if (schedule.veterinarian != null)
-          _buildInfoRow(Icons.person_outline, 'Dr. ${schedule.veterinarian!}'),
-        if (schedule.notes != null) ...[
-          if (schedule.veterinarian != null) const SizedBox(height: 8),
-          _buildInfoRow(Icons.notes_outlined, schedule.notes!, maxLines: 2),
+        if (schedule.scheduledBy != null)
+          _buildInfoRow(Icons.person_outline, 'Scheduled by: ${schedule.scheduledBy!}'),
+        if (schedule.reminder != null) ...[
+          if (schedule.scheduledBy != null) const SizedBox(height: 8),
+          _buildInfoRow(Icons.notifications_outlined, 'Reminder: ${schedule.reminder!}'),
+        ],
+        if (schedule.details != null) ...[
+          if (schedule.scheduledBy != null || schedule.reminder != null) const SizedBox(height: 8),
+          _buildInfoRow(Icons.notes_outlined, schedule.details!, maxLines: 2),
         ],
       ],
+    );
+  }
+
+  Widget _buildDurationChip() {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: Colors.blue.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.blue.withOpacity(0.3)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            Icons.schedule,
+            size: 12,
+            color: Colors.blue[700],
+          ),
+          const SizedBox(width: 4),
+          Text(
+            schedule.duration!,
+            style: TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.w500,
+              color: Colors.blue[700],
+            ),
+          ),
+        ],
+      ),
     );
   }
 

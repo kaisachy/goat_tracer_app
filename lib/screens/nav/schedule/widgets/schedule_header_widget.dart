@@ -131,7 +131,7 @@ class _ScheduleHeaderState extends State<ScheduleHeader> {
                       padding: EdgeInsets.all(isNarrow ? 6 : 8),
                     )
                         : null,
-                    hintText: isNarrow ? 'Search schedules...' : 'Search schedules, cattle, veterinarian...',
+                    hintText: isNarrow ? 'Search schedules...' : 'Search schedules, cattle, scheduled by...',
                     hintStyle: TextStyle(
                       color: Colors.grey.shade500,
                       fontSize: isNarrow ? 12 : 13,

@@ -35,7 +35,6 @@ class ScheduleService {
     String? cattleTag,
     int? upcomingDays,
     bool overdue = false,
-    String? priority,
     DateTime? startDate,
     DateTime? endDate,
     int? limit,
@@ -60,7 +59,6 @@ class ScheduleService {
       }
       if (upcomingDays != null) queryParams.add('upcoming=$upcomingDays');
       if (overdue) queryParams.add('overdue=1');
-      if (priority != null) queryParams.add('priority=${Uri.encodeComponent(priority)}');
       if (startDate != null) queryParams.add('start_date=${startDate.toIso8601String()}');
       if (endDate != null) queryParams.add('end_date=${endDate.toIso8601String()}');
       if (limit != null) queryParams.add('limit=$limit');
@@ -629,9 +627,9 @@ class ScheduleService {
         'cancelled': schedules.where((s) => s.isCancelled).length,
         'overdue': schedules.where((s) => s.isOverdue).length,
         'upcoming': schedules.where((s) => s.isUpcoming()).length,
-        'high_priority': schedules.where((s) => s.isHighPriority).length,
-        'medium_priority': schedules.where((s) => s.isMediumPriority).length,
-        'low_priority': schedules.where((s) => s.isLowPriority).length,
+        'with_duration': schedules.where((s) => s.hasDuration).length,
+        'with_reminder': schedules.where((s) => s.hasReminder).length,
+        'with_scheduled_by': schedules.where((s) => s.hasScheduledBy).length,
       };
     } catch (e) {
       log('Error getting schedule statistics: $e');
@@ -650,8 +648,8 @@ class ScheduleService {
         return schedule.title.toLowerCase().contains(searchQuery) ||
             schedule.type.toLowerCase().contains(searchQuery) ||
             (schedule.cattleTag?.toLowerCase().contains(searchQuery) ?? false) ||
-            (schedule.veterinarian?.toLowerCase().contains(searchQuery) ?? false) ||
-            (schedule.notes?.toLowerCase().contains(searchQuery) ?? false);
+            (schedule.scheduledBy?.toLowerCase().contains(searchQuery) ?? false) ||
+            (schedule.details?.toLowerCase().contains(searchQuery) ?? false);
       }).toList();
     } catch (e) {
       log('Error searching schedules: $e');

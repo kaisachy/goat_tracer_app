@@ -10,7 +10,7 @@ import '../../../models/schedule.dart';
 import '../../../services/schedule/schedule_service.dart';
 import '../../../utils/schedule_utils.dart';
 import '../../../services/cattle/cattle_event_service.dart';
-import 'cattle_schedule_form.dart';
+import 'schedule_form.dart';
 
 
 class ScheduleContentWidget extends StatefulWidget {
@@ -171,18 +171,6 @@ class _ScheduleContentWidgetState extends State<ScheduleContentWidget> with Tick
         filtered = _schedules.where((schedule) =>
             schedule.status.toLowerCase() == 'cancelled').toList();
         break;
-      case ScheduleFilter.highPriority:
-        filtered = _schedules.where((schedule) =>
-            schedule.priority.toLowerCase() == 'high').toList();
-        break;
-      case ScheduleFilter.mediumPriority:
-        filtered = _schedules.where((schedule) =>
-            schedule.priority.toLowerCase() == 'medium').toList();
-        break;
-      case ScheduleFilter.lowPriority:
-        filtered = _schedules.where((schedule) =>
-            schedule.priority.toLowerCase() == 'low').toList();
-        break;
     }
 
     // Apply search filter
@@ -190,7 +178,7 @@ class _ScheduleContentWidgetState extends State<ScheduleContentWidget> with Tick
       filtered = filtered.where((schedule) {
         final query = _searchQuery.toLowerCase();
         return schedule.title.toLowerCase().contains(query) ||
-            (schedule.notes?.toLowerCase().contains(query) ?? false) ||
+            (schedule.details?.toLowerCase().contains(query) ?? false) ||
             (schedule.cattleTag?.toLowerCase().contains(query) ?? false);
       }).toList();
     }
@@ -206,10 +194,6 @@ class _ScheduleContentWidgetState extends State<ScheduleContentWidget> with Tick
           return a.title.compareTo(b.title);
         case ScheduleSort.titleDesc:
           return b.title.compareTo(a.title);
-        case ScheduleSort.priorityAsc:
-          return a.priority.compareTo(b.priority);
-        case ScheduleSort.priorityDesc:
-          return b.priority.compareTo(a.priority);
         case ScheduleSort.statusAsc:
           return a.status.compareTo(b.status);
         case ScheduleSort.statusDesc:
@@ -383,7 +367,7 @@ class _ScheduleContentWidgetState extends State<ScheduleContentWidget> with Tick
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => CattleScheduleForm(
+        builder: (context) => ScheduleForm(
           onScheduleAdded: loadSchedules,
           scheduleToEdit: schedule,
         ),
@@ -435,15 +419,15 @@ class _ScheduleContentWidgetState extends State<ScheduleContentWidget> with Tick
         'cattle_tag': tag,
         'event_type': mappedEventType,
         'event_date': _formatDateForApi(schedule.scheduleDateTime),
-        'notes': schedule.notes,
+        'notes': schedule.details,
       };
       // For vaccination, carry over vaccine name and technician
       if (mappedEventType.toLowerCase() == 'vaccinated') {
         if ((schedule.vaccineType ?? '').isNotEmpty) {
           data['medicine_given'] = schedule.vaccineType;
         }
-        if ((schedule.veterinarian ?? '').isNotEmpty) {
-          data['technician'] = schedule.veterinarian;
+        if ((schedule.scheduledBy ?? '').isNotEmpty) {
+          data['technician'] = schedule.scheduledBy;
         }
       }
       try {
@@ -522,9 +506,8 @@ class _ScheduleContentWidgetState extends State<ScheduleContentWidget> with Tick
           children: [
             Text('Cattle: ${schedule.cattleTag ?? 'No cattle assigned'}'),
             Text('Type: ${schedule.type}'),
-            Text('Priority: ${schedule.priority}'),
             Text('Status: ${schedule.status}'),
-            if (schedule.notes != null) Text('Notes: ${schedule.notes}'),
+            if (schedule.details != null) Text('Details: ${schedule.details}'),
           ],
         ),
         actions: [
