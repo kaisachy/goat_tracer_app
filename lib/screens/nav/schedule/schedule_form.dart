@@ -4,10 +4,9 @@ import '../../../services/schedule/schedule_service.dart';
 import '../../../services/cattle/cattle_service.dart';
 import '../../../services/cattle/cattle_event_service.dart';
 import '../../../services/auth_service.dart';
-import '../../../services/user_service.dart';
+import '../../../services/sync_service.dart';
 import '../../../models/schedule.dart';
 import '../../../models/cattle.dart';
-import '../../../models/user.dart';
 import '../../../models/vaccination_schedule.dart';
 import '../../../services/vaccination_service.dart';
 import 'widgets/cattle_tag_multi_select_field_widget.dart';
@@ -506,6 +505,14 @@ class _ScheduleFormState extends State<ScheduleForm> {
           await ScheduleService.createSchedule(newSchedule);
           _showSuccess('Schedule created successfully');
         }
+      }
+
+      // Trigger sync after successful schedule creation/update
+      try {
+        final syncService = SyncService.instance;
+        syncService.triggerSync();
+      } catch (e) {
+        print('Failed to trigger sync after schedule operation: $e');
       }
 
       widget.onScheduleAdded();

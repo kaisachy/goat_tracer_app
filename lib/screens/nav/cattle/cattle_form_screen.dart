@@ -8,6 +8,7 @@ import '../../../constants/app_colors.dart';
 import '../../../models/cattle.dart';
 import '../../../services/cattle/cattle_service.dart';
 import '../../../services/auth_service.dart';
+import '../../../services/sync_service.dart';
 
 class CattleFormScreen extends StatefulWidget {
   final Cattle? cattle;
@@ -974,6 +975,14 @@ class _CattleFormScreenState extends State<CattleFormScreen> {
       Navigator.pop(context); // Close loading dialog
 
       if (success) {
+        // Trigger sync after successful cattle creation/update
+        try {
+          final syncService = SyncService.instance;
+          syncService.triggerSync();
+        } catch (e) {
+          print('Failed to trigger sync after cattle operation: $e');
+        }
+
         if (widget.cattle == null) {
           // Show "Add Another" dialog for new cattle
           _showAddAnotherDialog();
@@ -1614,8 +1623,7 @@ class _CattleFormScreenState extends State<CattleFormScreen> {
                 ),
               ),
 
-              // Physical Characteristics Section
-              _buildSectionTitle('Physical Characteristics', Icons.monitor_weight),
+              // Additional Details Section
               _buildCard(
                 child: Column(
                   children: [
@@ -1638,15 +1646,7 @@ class _CattleFormScreenState extends State<CattleFormScreen> {
                       onEdit: _editGroupName,
                       onDelete: _deleteGroupName,
                     ),
-                  ],
-                ),
-              ),
-
-              // Farm Information Section
-              _buildSectionTitle('Farm Information', Icons.agriculture),
-              _buildCard(
-                child: Column(
-                  children: [
+                    const SizedBox(height: 16),
                     // Custom source dropdown that can show combined information
                     DropdownButtonFormField<String>(
                       value: _source,
@@ -1743,13 +1743,13 @@ class _CattleFormScreenState extends State<CattleFormScreen> {
                 ),
               ),
 
-              // Lineage Information Section
-              _buildSectionTitle('Lineage Information', Icons.family_restroom),
+              // Genealogy Section
+              _buildSectionTitle('Genealogy', FontAwesomeIcons.sitemap),
               _buildCard(
                 child: Column(
                   children: [
                     _buildSearchableDropdown(
-                      label: 'Mother Tag',
+                      label: 'Dam',
                       value: _motherTag,
                       options: _femaleCattle,
                       onChanged: (value) => setState(() => _motherTag = value),
@@ -1757,7 +1757,7 @@ class _CattleFormScreenState extends State<CattleFormScreen> {
                     ),
                     const SizedBox(height: 16),
                     _buildSearchableDropdown(
-                      label: 'Father Tag',
+                      label: 'Sire',
                       value: _fatherTag,
                       options: _maleCattle,
                       onChanged: (value) => setState(() => _fatherTag = value),

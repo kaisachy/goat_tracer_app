@@ -1,6 +1,8 @@
 // main.dart
 import 'package:flutter/material.dart';
 import 'auth_guard.dart';
+import 'db/app_database.dart' as db;
+import 'services/sync_service.dart';
 import 'screens/login_screen.dart';
 import 'services/secure_storage_service.dart';
 import 'screens/home_screen.dart';
@@ -9,7 +11,13 @@ import 'services/cattle/cattle_service.dart';
 import 'models/cattle.dart';
 import 'services/auth_service.dart';
 
-void main() {
+db.AppDatabase? _db;
+
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  _db = db.AppDatabase();
+  // Initialize sync service properly
+  await SyncService.initialize(_db!);
   runApp(const MyApp());
 }
 

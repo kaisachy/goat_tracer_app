@@ -5,10 +5,14 @@ import 'package:http/http.dart' as http;
 import '../../config.dart';
 import '../../models/schedule.dart';
 import '../auth_service.dart';
+import '../../db/app_database.dart';
+import 'schedule_local_service.dart';
 
 class ScheduleService {
   static final String _baseUrl = AppConfig.baseUrl;
   static const int _timeoutDuration = 30; // seconds
+  static final AppDatabase _db = AppDatabase();
+  static final ScheduleLocalService _local = ScheduleLocalService(_db);
 
   // Enhanced error handling wrapper
   static Future<T> _handleRequest<T>(
@@ -40,10 +44,14 @@ class ScheduleService {
     int? limit,
     int? offset,
   }) async {
-    return _handleRequest(() async {
+    // Local-first
+    final local = await _local.getAll();
+    // Background refresh
+    // ignore: unawaited_futures
+    _handleRequest<List<Schedule>>(() async {
       final token = await AuthService.getToken();
       if (token == null) {
-        throw Exception('Authentication required');
+        return local;
       }
 
       String endpoint = '$_baseUrl/cattles/schedule';
@@ -102,9 +110,13 @@ class ScheduleService {
             throw Exception('Invalid response format: ${data.runtimeType}');
           }
 
-          return schedulesData
+          final fetched = schedulesData
               .map((json) => Schedule.fromJson(Map<String, dynamic>.from(json)))
               .toList();
+          for (final s in fetched) {
+            await _local.upsert(s);
+          }
+          return fetched;
         } catch (e) {
           log('Error parsing response: $e');
           throw Exception('Failed to parse schedule data: $e');
@@ -116,10 +128,11 @@ class ScheduleService {
       } else if (response.statusCode >= 500) {
         throw Exception('Server error occurred');
       } else {
-        final errorBody = response.body.isNotEmpty ? response.body : 'No error details';
-        throw Exception('Failed to load schedules: ${response.statusCode} - $errorBody');
+        // fallback to local on failure
+        return local;
       }
     }, 'getSchedules');
+    return local;
   }
 
   // Get schedules for specific cattle - IMPROVED VERSION
@@ -182,16 +195,11 @@ class ScheduleService {
           log('Successfully parsed ${schedules.length} schedules');
 
           // Additional client-side filtering to ensure accuracy
-          final filteredSchedules = schedules.where((schedule) {
-            return scheduleContainsCattleTag(schedule, normalizedTag);
+          final filteredSchedules = schedules.where((s) {
+            return scheduleContainsCattleTag(s, normalizedTag);
           }).toList();
 
           log('After client-side filtering: ${filteredSchedules.length} schedules');
-
-          // Additional logging for debugging
-          for (var schedule in filteredSchedules) {
-            log('Found schedule: ${schedule.title}, CattleTags: "${schedule.cattleTag}", ID: ${schedule.id}');
-          }
 
           return filteredSchedules;
         } catch (e) {
@@ -407,83 +415,13 @@ class ScheduleService {
 
   // Update schedule with validation - IMPROVED
   static Future<Schedule> updateSchedule(Schedule schedule) async {
-    return _handleRequest(() async {
-      final token = await AuthService.getToken();
-      if (token == null) {
-        throw Exception('Authentication required');
-      }
-
-      if (schedule.id == null) {
-        throw Exception('Schedule ID is required for update');
-      }
-
-      // Validate schedule data
-      if (schedule.title.trim().isEmpty) {
-        throw Exception('Title is required');
-      }
-
-      // Normalize cattle tag before sending
-      Schedule normalizedSchedule = schedule;
-      if (schedule.cattleTag != null && schedule.cattleTag!.isNotEmpty) {
-        final tags = schedule.cattleTag!
-            .split(',')
-            .map((tag) => tag.trim().toUpperCase())
-            .where((tag) => tag.isNotEmpty)
-            .toList();
-        normalizedSchedule = schedule.copyWith(cattleTag: tags.join(','));
-      }
-
-      final uri = Uri.parse('$_baseUrl/cattles/schedule/${schedule.id}');
-      final requestBody = normalizedSchedule.toApiJson();
-
-      log('Updating schedule with URL: $uri');
-      log('Request body: ${jsonEncode(requestBody)}');
-
-      final response = await http.put(
-        uri,
-        headers: {
-          'Content-Type': 'application/json; charset=UTF-8',
-          'Authorization': 'Bearer $token',
-          'Accept': 'application/json',
-        },
-        body: jsonEncode(requestBody),
-      );
-
-      log('Update response status: ${response.statusCode}');
-      log('Update response body: ${response.body}');
-
-      if (response.statusCode == 200) {
-        try {
-          final data = jsonDecode(response.body);
-          // Handle different response formats
-          if (data is Map && data.containsKey('data')) {
-            return Schedule.fromJson(Map<String, dynamic>.from(data['data']));
-          } else if (data is Map && data.containsKey('schedule')) {
-            return Schedule.fromJson(Map<String, dynamic>.from(data['schedule']));
-          } else {
-            // Return the updated schedule with current timestamp
-            return normalizedSchedule.copyWith(updatedAt: DateTime.now());
-          }
-        } catch (e) {
-          log('Error parsing update response: $e');
-          return normalizedSchedule.copyWith(updatedAt: DateTime.now());
-        }
-      } else if (response.statusCode == 400) {
-        try {
-          final error = jsonDecode(response.body);
-          throw Exception(error['message'] ?? error['error'] ?? 'Invalid schedule data');
-        } catch (e) {
-          throw Exception('Invalid schedule data: ${response.body}');
-        }
-      } else if (response.statusCode == 401) {
-        throw Exception('Authentication failed');
-      } else if (response.statusCode == 404) {
-        throw Exception('Schedule not found');
-      } else {
-        final errorBody = response.body.isNotEmpty ? response.body : 'No error details';
-        throw Exception('Failed to update schedule: ${response.statusCode} - $errorBody');
-      }
-    }, 'updateSchedule');
+    // Optimistic local + enqueue
+    if (schedule.id == null) {
+      throw Exception('Schedule ID is required for update');
+    }
+    await _local.upsert(schedule);
+    await _local.enqueueUpdate(schedule.toApiJson());
+    return schedule;
   }
 
   // Convenience methods...
@@ -573,35 +511,9 @@ class ScheduleService {
   }
 
   static Future<bool> deleteSchedule(int id) async {
-    return _handleRequest(() async {
-      final token = await AuthService.getToken();
-      if (token == null) {
-        throw Exception('Authentication required');
-      }
-
-      final uri = Uri.parse('$_baseUrl/cattles/schedule/$id');
-      log('Deleting schedule: id=$id');
-
-      final response = await http.delete(
-        uri,
-        headers: {
-          'Content-Type': 'application/json; charset=UTF-8',
-          'Authorization': 'Bearer $token',
-          'Accept': 'application/json',
-        },
-      );
-
-      if (response.statusCode == 200 || response.statusCode == 204) {
-        return true;
-      } else if (response.statusCode == 401) {
-        throw Exception('Authentication failed');
-      } else if (response.statusCode == 404) {
-        throw Exception('Schedule not found');
-      } else {
-        final errorBody = response.body.isNotEmpty ? response.body : 'No error details';
-        throw Exception('Failed to delete schedule: ${response.statusCode} - $errorBody');
-      }
-    }, 'deleteSchedule');
+    await _local.softDelete(id);
+    await _local.enqueueDelete(id);
+    return true;
   }
 
   static Future<bool> markScheduleAsCompleted(int id) async {

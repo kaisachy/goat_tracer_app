@@ -52,9 +52,8 @@ class _CattleScreenState extends State<CattleScreen>
       duration: const Duration(milliseconds: 200),
       vsync: this,
     );
-    _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
-      CurvedAnimation(parent: _fabAnimationController!, curve: Curves.easeInOut),
-    );
+    // Keep _fadeAnimation bound to _animationController (for list item fade-ins).
+    // Do not reassign it to _fabAnimationController, which controls only the FAB menu.
 
 
     // ✨ ADDED: Register the observer
@@ -682,22 +681,6 @@ class _CattleScreenState extends State<CattleScreen>
             ),
             textAlign: TextAlign.center,
           ),
-          if (!hasActiveFilters) ...[
-            const SizedBox(height: 24),
-            ElevatedButton.icon(
-              onPressed: () => _navigateToForm(),
-              icon: const Icon(Icons.add),
-              label: const Text('Add First Cattle'),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.primary,
-                foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-              ),
-            ),
-          ],
         ],
       ),
     );

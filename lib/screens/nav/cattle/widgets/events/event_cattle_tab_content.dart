@@ -66,6 +66,20 @@ class _EventCattleTabContentState extends State<EventCattleTabContent> {
   void initState() {
     super.initState();
     _loadCattleEvents();
+    
+    // Listen for app lifecycle changes to refresh when returning to foreground
+    WidgetsBinding.instance.addObserver(_AppLifecycleObserver(this));
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(_AppLifecycleObserver(this));
+    super.dispose();
+  }
+
+  // Method to refresh events from parent
+  void refreshEvents() {
+    _loadCattleEvents();
   }
 
   Future<void> _loadCattleEvents() async {
@@ -1215,5 +1229,19 @@ class _EventCattleTabContentState extends State<EventCattleTabContent> {
         ),
       ),
     );
+  }
+}
+
+class _AppLifecycleObserver extends WidgetsBindingObserver {
+  final _EventCattleTabContentState _state;
+
+  _AppLifecycleObserver(this._state);
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      // Refresh events when app comes back to foreground
+      _state._loadCattleEvents();
+    }
   }
 }

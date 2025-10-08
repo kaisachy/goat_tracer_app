@@ -16,6 +16,7 @@ import 'nav/schedule/schedule_screen.dart';
 import 'nav/setting/setting_screen.dart';
 import 'package:cattle_tracer_app/services/cattle/cattle_status_service.dart';
 import 'package:cattle_tracer_app/services/refresh_service.dart';
+import 'package:cattle_tracer_app/services/sync_service.dart';
 
 class HomeScreen extends StatefulWidget {
   final String? userEmail;
@@ -195,6 +196,14 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
           duration: const Duration(seconds: 3),
         ),
       );
+
+      // Trigger sync first
+      try {
+        final syncService = SyncService.instance;
+        await syncService.triggerSync();
+      } catch (e) {
+        print('Sync failed during refresh: $e');
+      }
 
       // Perform comprehensive refresh for all data
       final refreshResults = await RefreshService.refreshAllData();

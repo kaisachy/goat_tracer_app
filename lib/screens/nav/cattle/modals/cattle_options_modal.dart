@@ -10,6 +10,7 @@ import 'package:cattle_tracer_app/screens/nav/cattle/modals/options/weight_repor
 import 'package:cattle_tracer_app/screens/nav/cattle/modals/options/export_pdf_option.dart';
 import 'package:cattle_tracer_app/screens/nav/cattle/modals/options/archive_option.dart';
 import 'package:cattle_tracer_app/screens/nav/cattle/modals/options/delete_option.dart';
+import 'package:cattle_tracer_app/screens/nav/cattle/family_tree_screen.dart';
 
 class CattleOptionsModal {
   static void show({
@@ -67,6 +68,13 @@ class CattleOptionsModal {
           title: 'Add Event',
           subtitle: 'Record new activity',
           color: AppColors.darkGreen,
+        ),
+        _buildDropdownItem(
+          value: 'family_tree',
+          icon: Icons.account_tree_outlined,
+          title: 'Family Tree',
+          subtitle: 'View family lineage',
+          color: AppColors.lightGreen,
         ),
         _buildDivider(),
         _buildDropdownItem(
@@ -226,6 +234,14 @@ class CattleOptionsModal {
         break;
       case 'add_event':
         onAddEvent();
+        break;
+      case 'family_tree':
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => FamilyTreeScreen(cattle: cattle),
+          ),
+        );
         break;
       case 'change_stage':
         ChangeStageOption.show(context, cattle, onCattleUpdated);
