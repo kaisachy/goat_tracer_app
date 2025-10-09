@@ -104,9 +104,6 @@ class GivesBirthEventFieldsState extends BaseEventFieldsState<GivesBirthEventFie
       setState(() {
         _calves.clear();
         _calves.add(widget.temporaryCalfData!);
-        _updateCalfTagController();
-        // Since we have exactly one calf, maintain the callback
-        widget.onCalfDataChanged(widget.temporaryCalfData);
       });
     }
   }
@@ -159,13 +156,6 @@ class GivesBirthEventFieldsState extends BaseEventFieldsState<GivesBirthEventFie
         setState(() {
           _calves.clear();
           _calves.addAll(loadedCalves);
-          _updateCalfTagController();
-          // For multiple calves, clear the single calf callback
-          if (loadedCalves.length == 1) {
-            widget.onCalfDataChanged(loadedCalves.first);
-          } else {
-            widget.onCalfDataChanged(null);
-          }
         });
         print('Loaded ${loadedCalves.length} existing calves');
       }
@@ -197,18 +187,9 @@ class GivesBirthEventFieldsState extends BaseEventFieldsState<GivesBirthEventFie
         } else {
           _calves.add(normalized);
         }
-        // Update calf_tag controller with all calf tags (comma-separated)
-        _updateCalfTagController();
+        widget.controllers['calf_tag']?.text = normalized['tag_no'] ?? '';
       });
-      
-      // Only call the callback if we have a single calf (for backward compatibility)
-      // For multiple calves, the getCalves() method will be used instead
-      if (_calves.length == 1) {
-        widget.onCalfDataChanged(normalized);
-      } else {
-        // For multiple calves, clear the single calf data to prevent conflicts
-        widget.onCalfDataChanged(null);
-      }
+      widget.onCalfDataChanged(normalized);
     }
   }
 
@@ -237,18 +218,9 @@ class GivesBirthEventFieldsState extends BaseEventFieldsState<GivesBirthEventFie
       final normalized = _normalizeCalfResult(result, isEdit: true);
       setState(() {
         _calves[index] = normalized;
-        // Update calf_tag controller with all calf tags (comma-separated)
-        _updateCalfTagController();
+        widget.controllers['calf_tag']?.text = normalized['tag_no'] ?? '';
       });
-      
-      // Only call the callback if we have a single calf (for backward compatibility)
-      // For multiple calves, the getCalves() method will be used instead
-      if (_calves.length == 1) {
-        widget.onCalfDataChanged(normalized);
-      } else {
-        // For multiple calves, clear the single calf data to prevent conflicts
-        widget.onCalfDataChanged(null);
-      }
+      widget.onCalfDataChanged(normalized);
     }
   }
 
@@ -362,15 +334,6 @@ class GivesBirthEventFieldsState extends BaseEventFieldsState<GivesBirthEventFie
           if (_calves.isEmpty) {
             _newCalfData = null;
             widget.controllers['calf_tag']?.text = '';
-            widget.onCalfDataChanged(null);
-          } else {
-            _updateCalfTagController();
-            // Update callback based on remaining calves
-            if (_calves.length == 1) {
-              widget.onCalfDataChanged(_calves.first);
-            } else {
-              widget.onCalfDataChanged(null);
-            }
           }
         });
       }
@@ -422,15 +385,6 @@ class GivesBirthEventFieldsState extends BaseEventFieldsState<GivesBirthEventFie
                 if (_calves.isEmpty) {
                   _newCalfData = null;
                   widget.controllers['calf_tag']?.text = '';
-                  widget.onCalfDataChanged(null);
-                } else {
-                  _updateCalfTagController();
-                  // Update callback based on remaining calves
-                  if (_calves.length == 1) {
-                    widget.onCalfDataChanged(_calves.first);
-                  } else {
-                    widget.onCalfDataChanged(null);
-                  }
                 }
               });
               
@@ -480,15 +434,6 @@ class GivesBirthEventFieldsState extends BaseEventFieldsState<GivesBirthEventFie
           if (_calves.isEmpty) {
             _newCalfData = null;
             widget.controllers['calf_tag']?.text = '';
-            widget.onCalfDataChanged(null);
-          } else {
-            _updateCalfTagController();
-            // Update callback based on remaining calves
-            if (_calves.length == 1) {
-              widget.onCalfDataChanged(_calves.first);
-            } else {
-              widget.onCalfDataChanged(null);
-            }
           }
         });
       }
@@ -496,15 +441,6 @@ class GivesBirthEventFieldsState extends BaseEventFieldsState<GivesBirthEventFie
   }
 
   List<Map<String, dynamic>> getCalves() => List<Map<String, dynamic>>.from(_calves);
-
-  // Update the calf_tag controller with all calf tags (comma-separated)
-  void _updateCalfTagController() {
-    final calfTags = _calves
-        .map((calf) => calf['tag_no']?.toString() ?? '')
-        .where((tag) => tag.isNotEmpty)
-        .toList();
-    widget.controllers['calf_tag']?.text = calfTags.join(', ');
-  }
 
   Widget _buildCalfRegistrationField() {
     return Container(

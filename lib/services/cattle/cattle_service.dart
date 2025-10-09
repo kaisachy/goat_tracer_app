@@ -4,50 +4,55 @@ import 'package:http/http.dart' as http;
 import '../../config.dart';
 import '../../models/cattle.dart';
 import '../auth_service.dart';
-import 'package:drift/drift.dart';
-import '../../db/app_database.dart';
-import 'cattle_local_service.dart';
 
 class CattleService {
   static final String _baseUrl = AppConfig.baseUrl;
-  static final AppDatabase _db = AppDatabase();
-  static final CattleLocalService _local = CattleLocalService(_db);
 
   /// Get all cattle information
   static Future<List<Cattle>> getAllCattle() async {
-    // Always serve from local DB for offline-first UX
-    final localData = await _local.getAll();
-
-    // Try to refresh from server in background; ignore failures
     final token = await AuthService.getToken();
-    if (token != null) {
-      () async {
-        try {
-          final response = await http.get(
-            Uri.parse('$_baseUrl/cattles'),
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': 'Bearer $token',
-            },
-          );
-          if (response.statusCode == 200) {
-            final data = jsonDecode(response.body);
-            final cattleList = List<Map<String, dynamic>>.from(data['data']);
-            for (final item in cattleList) {
-              await _local.upsert(Cattle.fromJson(item));
-            }
-          }
-        } catch (_) {
-          // ignore network errors for offline mode
-        }
-      }();
+
+    if (token == null) {
+      log('getAllCattle failed: No token found.');
+      return [];
     }
 
-    return localData;
+    try {
+      final response = await http.get(
+        Uri.parse('$_baseUrl/cattles'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+      );
+
+      log('getAllCattle response status: ${response.statusCode}');
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        final cattleList = List<Map<String, dynamic>>.from(data['data']);
+
+        return cattleList.map((cattleData) => Cattle.fromJson(cattleData)).toList();
+      } else {
+        log('Failed to load cattle. Status code: ${response.statusCode}');
+        log('Response body: ${response.body}');
+      }
+    } catch (e, stackTrace) {
+      log('Error in getAllCattle: $e', stackTrace: stackTrace);
+    }
+
+    return [];
   }
 
   /// Get cattle by tag number - Fixed implementation
   static Future<Cattle?> getCattleByTag(String tag) async {
+    final token = await AuthService.getToken();
+
+    if (token == null) {
+      log('getCattleByTag failed: No token found.');
+      return null;
+    }
+
     try {
       log('Attempting to get cattle by tag: $tag');
 
@@ -88,12 +93,13 @@ class CattleService {
 
   /// Get cattle information as raw data (for backward compatibility)
   static Future<List<Map<String, dynamic>>> getCattleInformation() async {
+    final token = await AuthService.getToken();
+
+    if (token == null) {
+      return [];
+    }
+
     try {
-      final token = await AuthService.getToken();
-      if (token == null) {
-        final local = await getAllCattle();
-        return local.map((c) => c.toJson()).toList();
-      }
       final response = await http.get(
         Uri.parse('$_baseUrl/cattles'),
         headers: {
@@ -107,64 +113,114 @@ class CattleService {
         return List<Map<String, dynamic>>.from(data['data']);
       } else {
         log('Failed to load cattle. Status code: ${response.statusCode}');
-        // fallback to local
-        final local = await getAllCattle();
-        return local.map((c) => c.toJson()).toList();
       }
     } catch (e, stackTrace) {
       log('Error in getCattleInformation: $e', stackTrace: stackTrace);
-      // fallback to local
-      final local = await getAllCattle();
-      return local.map((c) => c.toJson()).toList();
     }
+
+    return [];
   }
 
   /// Store/Create new cattle information with image support
   static Future<bool> storeCattleInformation(Map<String, dynamic> data) async {
-    // Optimistic local write + enqueue outbox; network is optional
-    final sanitizedData = Map<String, dynamic>.from(data);
-    if (!sanitizedData.containsKey('id') || sanitizedData['id'] == null) {
-      // Assign a temporary negative id for local persistence; server id will reconcile on pull
-      sanitizedData['id'] = -DateTime.now().millisecondsSinceEpoch;
+    final token = await AuthService.getToken();
+    if (token == null) {
+      log('Store failed: No token found.');
+      return false;
     }
-    final localModel = Cattle.fromJson(sanitizedData);
-    await _local.upsert(localModel);
-    await _local.enqueueCreate(localModel);
-    return true;
+
+    final uri = Uri.parse('$_baseUrl/cattles');
+    log('Attempting to POST to $uri');
+
+    // Sanitize data before sending
+    final sanitizedData = Map<String, dynamic>.from(data);
+
+    // Handle image data
+    if (sanitizedData.containsKey('cattle_picture') &&
+        sanitizedData['cattle_picture'] != null &&
+        sanitizedData['cattle_picture'].toString().isNotEmpty) {
+      log('Including cattle picture in request');
+    }
+
+    log('Data to store: ${jsonEncode(sanitizedData).length} characters');
+
+    try {
+      final response = await http.post(
+        uri,
+        headers: {
+          'Content-Type': 'application/json; charset=UTF-8',
+          'Authorization': 'Bearer $token',
+        },
+        body: jsonEncode(sanitizedData),
+      );
+
+      log('Store cattle response status: ${response.statusCode}');
+      log('Store cattle response body: ${response.body}');
+
+      if (response.statusCode == 201) {
+        log('Cattle created successfully.');
+        return true;
+      } else {
+        log('Failed to create cattle. Status: ${response.statusCode}, Body: ${response.body}');
+        return false;
+      }
+    } catch (e, stackTrace) {
+      log('Error in storeCattleInformation: $e', stackTrace: stackTrace);
+      return false;
+    }
   }
 
   /// Update existing cattle information with image support
   // This method is already designed to handle the new logic because it accepts a generic map.
   // The UI will be responsible for populating this map with the necessary original and new parent tags.
   static Future<bool> updateCattleInformation(Map<String, dynamic> data) async {
+    final token = await AuthService.getToken();
+    if (token == null) {
+      log('Update failed: No token found.');
+      return false;
+    }
+
+    final uri = Uri.parse('$_baseUrl/cattles');
+    log('Attempting to PUT to $uri');
+
+    // Sanitize data before sending
     final sanitizedData = Map<String, dynamic>.from(data);
-    // Apply locally
-    try {
-      final existing = await getCattleById(sanitizedData['id']);
-      if (existing != null) {
-        final updated = existing.copyWith(
-          tagNo: sanitizedData['tag_no'],
-          dateOfBirth: sanitizedData['date_of_birth'],
-          sex: sanitizedData['sex'],
-          weight: sanitizedData['weight'] == null ? null : double.tryParse(sanitizedData['weight'].toString()),
-          classification: sanitizedData['classification'],
-          status: sanitizedData['status'],
-          breed: sanitizedData['breed'],
-          groupName: sanitizedData['group_name'],
-          source: sanitizedData['source'],
-          sourceDetails: sanitizedData['source_details'],
-          motherTag: sanitizedData['mother_tag'],
-          fatherTag: sanitizedData['father_tag'],
-          offspring: sanitizedData['offspring'],
-          notes: sanitizedData['notes'],
-          cattlePicture: sanitizedData['cattle_picture'],
-        );
-        await _local.upsert(updated);
+
+    // Handle image data
+    if (sanitizedData.containsKey('cattle_picture')) {
+      if (sanitizedData['cattle_picture'] == null) {
+        log('Removing cattle picture from cattle ID: ${sanitizedData['id']}');
+      } else if (sanitizedData['cattle_picture'].toString().isNotEmpty) {
+        log('Updating cattle picture for cattle ID: ${sanitizedData['id']}');
       }
-    } catch (_) {}
-    // Enqueue change
-    await _local.enqueueUpdate(sanitizedData);
-    return true;
+    }
+
+    log('Data to update: ${jsonEncode(sanitizedData).length} characters');
+
+    try {
+      final response = await http.put(
+        uri,
+        headers: {
+          'Content-Type': 'application/json; charset=UTF-8',
+          'Authorization': 'Bearer $token',
+        },
+        body: jsonEncode(sanitizedData),
+      );
+
+      log('Update cattle response status: ${response.statusCode}');
+      log('Update cattle response body: ${response.body}');
+
+      if (response.statusCode == 200) {
+        log('Cattle updated successfully.');
+        return true;
+      } else {
+        log('Failed to update cattle. Status: ${response.statusCode}, Body: ${response.body}');
+        return false;
+      }
+    } catch (e, stackTrace) {
+      log('Error in updateCattleInformation: $e', stackTrace: stackTrace);
+      return false;
+    }
   }
 
   /// Update only the cattle picture
@@ -190,27 +246,50 @@ class CattleService {
 
   /// Delete cattle information
   static Future<bool> deleteCattleInformation(int id) async {
-    // Soft-delete locally and enqueue delete
+    final token = await AuthService.getToken();
+    if (token == null) {
+      log('Delete failed: No token found.');
+      return false;
+    }
+
+    final uri = Uri.parse('$_baseUrl/cattles');
+    log('Attempting to DELETE from $uri with id=$id');
+
     try {
-      await (_db.update(_db.cattlesTable)..where((t) => t.id.equals(id))).write(
-        CattlesTableCompanion(
-          deletedAt: Value(DateTime.now()),
-          updatedAt: Value(DateTime.now()),
-        ),
+      final response = await http.delete(
+        uri,
+        headers: {
+          'Content-Type': 'application/json; charset=UTF-8',
+          'Authorization': 'Bearer $token',
+        },
+        body: jsonEncode({'id': id}),
       );
-    } catch (_) {}
-    await _db.enqueueChange(
-      id: 'delete-$id-${DateTime.now().millisecondsSinceEpoch}',
-      entity: 'cattles',
-      entityId: id.toString(),
-      operation: 'delete',
-      payload: {'id': id},
-    );
-    return true;
+
+      log('Delete cattle response status: ${response.statusCode}');
+      log('Delete cattle response body: ${response.body}');
+
+      if (response.statusCode == 200) {
+        log('Cattle deleted successfully.');
+        return true;
+      } else {
+        log('Failed to delete cattle. Status: ${response.statusCode}, Body: ${response.body}');
+        return false;
+      }
+    } catch (e, stackTrace) {
+      log('Error in deleteCattleInformation: $e', stackTrace: stackTrace);
+      return false;
+    }
   }
 
   /// Alternative method to get cattle by ID (if needed)
   static Future<Cattle?> getCattleById(int id) async {
+    final token = await AuthService.getToken();
+
+    if (token == null) {
+      log('getCattleById failed: No token found.');
+      return null;
+    }
+
     try {
       // Get all cattle and find by ID
       log('Getting all cattle to find ID: $id');
@@ -366,39 +445,5 @@ class CattleService {
     }
 
     return [];
-  }
-
-  /// Get family tree data for a specific cattle
-  static Future<Map<String, dynamic>?> getFamilyTree(int cattleId) async {
-    final token = await AuthService.getToken();
-
-    if (token == null) {
-      log('getFamilyTree failed: No token found.');
-      return null;
-    }
-
-    try {
-      final response = await http.get(
-        Uri.parse('$_baseUrl/cattles/family-tree/$cattleId'),
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer $token',
-        },
-      );
-
-      log('getFamilyTree response status: ${response.statusCode}');
-
-      if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
-        return Map<String, dynamic>.from(data['data']);
-      } else {
-        log('Failed to load family tree. Status code: ${response.statusCode}');
-        log('Response body: ${response.body}');
-      }
-    } catch (e, stackTrace) {
-      log('Error in getFamilyTree: $e', stackTrace: stackTrace);
-    }
-
-    return null;
   }
 }

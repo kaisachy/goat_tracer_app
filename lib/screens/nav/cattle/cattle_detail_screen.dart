@@ -25,7 +25,6 @@ class _CattleDetailScreenState extends State<CattleDetailScreen>
   bool _isUpdatingImage = false;
   final bool _isLoading = false;
   bool _isRefreshing = false;
-  
 
   // Animation controllers
   late AnimationController _fadeController;
@@ -173,8 +172,6 @@ class _CattleDetailScreenState extends State<CattleDetailScreen>
           // Trigger a subtle animation to indicate refresh
           _animateRefresh();
         }
-        
-        // Event tab content will automatically refresh when cattle data changes
       } else {
         debugPrint('❌ Failed to get updated cattle data');
         if (mounted) {

@@ -7,7 +7,6 @@ import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import '../../../models/cattle.dart';
 import '../../../services/cattle/cattle_event_service.dart';
 import '../../../services/cattle/cattle_service.dart';
-import '../../../services/sync_service.dart';
 import '../../../constants/app_colors.dart';
 import '../../../utils/event_type_utils.dart';
 import 'modals/calf_registration_dialog.dart';
@@ -772,19 +771,9 @@ class _CattleEventFormScreenState extends State<CattleEventFormScreen>
       return true; // No operations needed
     }
 
-    return await _executeIndividualCalfOperations(_temporaryCalfData!);
-  }
-
-  // Execute individual calf operations for multiple calves
-  Future<bool> _executeIndividualCalfOperations(Map<String, dynamic> calfOperationData) async {
-    if (calfOperationData['fullCalfData'] == null) {
-      print('No calf data to execute');
-      return true; // No operations needed
-    }
-
     try {
-      final pendingOperation = calfOperationData['pendingOperation'];
-      final calfData = calfOperationData['fullCalfData'] as Map<String, dynamic>;
+      final pendingOperation = _temporaryCalfData!['pendingOperation'];
+      final calfData = _temporaryCalfData!['fullCalfData'] as Map<String, dynamic>;
       final calfTag = _safeParseString(calfData['tag_no']) ?? '';
 
       print('Executing calf $pendingOperation for: $calfTag');
@@ -792,7 +781,7 @@ class _CattleEventFormScreenState extends State<CattleEventFormScreen>
       bool success;
       if (pendingOperation == 'update') {
         // Ensure we have the ID for update
-        int? calfId = _safeParseInt(calfData['id']) ?? _safeParseInt(calfOperationData['calfId']);
+        int? calfId = _safeParseInt(calfData['id']) ?? _safeParseInt(_temporaryCalfData!['calfId']);
 
         if (calfId == null) {
           print('No calf ID found for update, trying to find by tag');
@@ -817,20 +806,15 @@ class _CattleEventFormScreenState extends State<CattleEventFormScreen>
       }
 
       if (success) {
-        // Update operation data to reflect successful operation
-        calfOperationData['registered'] = true;
-        
-        // If this was the single calf operation, update _temporaryCalfData too
-        if (_temporaryCalfData != null && _temporaryCalfData!['tag_no'] == calfTag) {
-          setState(() {
-            _temporaryCalfData!['registered'] = true;
-          });
-        }
+        // Update temporary data to reflect successful operation
+        setState(() {
+          _temporaryCalfData!['registered'] = true;
+        });
       }
 
       return success;
     } catch (e) {
-      print('Error executing calf operations for ${calfOperationData['tag_no']}: $e');
+      print('Error executing calf operations: $e');
       return false;
     }
   }
@@ -854,7 +838,6 @@ class _CattleEventFormScreenState extends State<CattleEventFormScreen>
       bool calfHandled = false;
       bool motherStatusUpdated = false;
       String calfStatus = '';
-      List<String> processedCalves = [];
 
       // Execute calf operations
       // Prefer multi-calf from EventSpecificFields if available
@@ -883,37 +866,24 @@ class _CattleEventFormScreenState extends State<CattleEventFormScreen>
             'calfId': full['id'],
             'isEditMode': pending == 'update',
           };
-          
-          // Process each calf independently without overwriting _temporaryCalfData
-          final ok = await _executeIndividualCalfOperations(op);
+          _temporaryCalfData = op;
+          final ok = await _executeCalfOperations();
           allOk = allOk && ok;
-          
-          if (ok) {
-            processedCalves.add(full['tag_no']?.toString() ?? 'unknown');
-          }
         }
         calfHandled = allOk;
-        
-        // Update calfStatus for multiple calves
-        if (processedCalves.isNotEmpty) {
-          calfStatus = 'Calves processed: ${processedCalves.join(', ')}';
-        }
       } else {
         calfHandled = await _executeCalfOperations();
       }
 
-      // Handle status message for single calf or fallback
-      if (calfStatus.isEmpty) {
-        if (_temporaryCalfData != null) {
-          final calfTag = _temporaryCalfData!['tag_no'] ?? 'unknown';
-          final isEditMode = _temporaryCalfData!['isEditMode'] == true;
-          calfStatus = calfHandled
-              ? (isEditMode ? 'Calf $calfTag updated successfully' : 'Calf $calfTag registered successfully')
-              : (isEditMode ? 'Failed to update calf $calfTag' : 'Failed to register calf $calfTag');
-        } else {
-          calfStatus = 'No calf data to process';
-          calfHandled = true; // No calf to handle
-        }
+      if (_temporaryCalfData != null) {
+        final calfTag = _temporaryCalfData!['tag_no'] ?? 'unknown';
+        final isEditMode = _temporaryCalfData!['isEditMode'] == true;
+        calfStatus = calfHandled
+            ? (isEditMode ? 'Calf $calfTag updated successfully' : 'Calf $calfTag registered successfully')
+            : (isEditMode ? 'Failed to update calf $calfTag' : 'Failed to register calf $calfTag');
+      } else {
+        calfStatus = 'No calf data to process';
+        calfHandled = true; // No calf to handle
       }
 
       // Update mother status
@@ -1489,14 +1459,6 @@ class _CattleEventFormScreenState extends State<CattleEventFormScreen>
         }
 
         if (context.mounted) {
-          // Trigger sync after successful event creation
-          try {
-            final syncService = SyncService.instance;
-            syncService.triggerSync();
-          } catch (e) {
-            print('Failed to trigger sync after event creation: $e');
-          }
-
           SuccessDialog.show(
             context: context,
             isEditing: isEditing,
