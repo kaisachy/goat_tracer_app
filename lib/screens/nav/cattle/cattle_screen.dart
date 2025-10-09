@@ -52,9 +52,6 @@ class _CattleScreenState extends State<CattleScreen>
       duration: const Duration(milliseconds: 200),
       vsync: this,
     );
-    _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
-      CurvedAnimation(parent: _fabAnimationController!, curve: Curves.easeInOut),
-    );
 
 
     // ✨ ADDED: Register the observer
@@ -85,10 +82,9 @@ class _CattleScreenState extends State<CattleScreen>
   }
 
   Future<void> _fetchCattle() async {
-    // Prevent multiple fetches if already loading
-    if (!_isLoading) {
-      setState(() => _isLoading = true);
-    }
+    // Always set loading state to true when starting to fetch
+    setState(() => _isLoading = true);
+    
     try {
       final data = await CattleService.getCattleInformation();
       if (mounted) {
