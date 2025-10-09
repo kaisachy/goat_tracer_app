@@ -1,18 +1,25 @@
 import 'package:cattle_tracer_app/screens/nav/cattle/widgets/details/detail_cattle_hero_section.dart';
 import 'package:cattle_tracer_app/screens/nav/cattle/widgets/details/detail_cattle_tab_content.dart';
 import 'package:cattle_tracer_app/screens/nav/cattle/widgets/details/tab.dart';
-import 'package:cattle_tracer_app/screens/nav/cattle/widgets/events/event_cattle_tab_content.dart';
+import 'package:cattle_tracer_app/screens/nav/cattle/widgets/history/history_cattle_tab_content.dart';
 import 'package:flutter/material.dart';
 import 'package:cattle_tracer_app/models/cattle.dart';
 import 'package:cattle_tracer_app/constants/app_colors.dart';
-import 'package:cattle_tracer_app/screens/nav/cattle/cattle_event_form_screen.dart';
+import 'package:cattle_tracer_app/screens/nav/cattle/cattle_history_form_screen.dart';
 import 'package:cattle_tracer_app/screens/nav/cattle/cattle_form_screen.dart';
 import 'package:cattle_tracer_app/services/cattle/cattle_service.dart';
 
 class CattleDetailScreen extends StatefulWidget {
-  final Cattle cattle;
+  final Cattle? cattle;
+  final int? cattleId;
+  final bool isArchived;
 
-  const CattleDetailScreen({super.key, required this.cattle});
+  const CattleDetailScreen({
+    super.key, 
+    this.cattle,
+    this.cattleId,
+    this.isArchived = false,
+  }) : assert(cattle != null || cattleId != null, 'Either cattle or cattleId must be provided');
 
   @override
   State<CattleDetailScreen> createState() => _CattleDetailScreenState();
@@ -21,9 +28,9 @@ class CattleDetailScreen extends StatefulWidget {
 class _CattleDetailScreenState extends State<CattleDetailScreen>
     with TickerProviderStateMixin {
   late TabController _tabController;
-  late Cattle _currentCattle;
+  Cattle? _currentCattle;
   bool _isUpdatingImage = false;
-  final bool _isLoading = false;
+  bool _isLoading = false;
   bool _isRefreshing = false;
 
   // Animation controllers
@@ -41,8 +48,20 @@ class _CattleDetailScreenState extends State<CattleDetailScreen>
   @override
   void initState() {
     super.initState();
-    _currentCattle = widget.cattle;
     _tabController = TabController(length: 2, vsync: this);
+    
+    // Add listener to update FAB visibility when tab changes
+    _tabController.addListener(() {
+      setState(() {});
+    });
+    
+    // Load cattle data if cattleId is provided
+    if (widget.cattleId != null) {
+      _isLoading = true;
+      _loadCattleData();
+    } else {
+      _currentCattle = widget.cattle!;
+    }
 
     // Initialize animations
     _initializeAnimations();
@@ -94,29 +113,33 @@ class _CattleDetailScreenState extends State<CattleDetailScreen>
   }
 
   void _navigateToAddEventForm() async {
+    if (_currentCattle == null) return;
+    
     final result = await Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (_) => CattleEventFormScreen(
-          cattleTag: _currentCattle.tagNo,
+        builder: (_) => CattleHistoryFormScreen(
+          cattleTag: _currentCattle!.tagNo,
         ),
       ),
     );
 
     if (result == true && mounted) {
       _showEnhancedSnackBar(
-        'Event added successfully',
+         'History record added successfully',
         Icons.event_available,
         AppColors.vibrantGreen,
         isSuccess: true,
       );
-      _tabController.animateTo(1); // Switch to Events tab
-      // Refresh data to show new event
+      _tabController.animateTo(1); // Switch to History tab
+      // Refresh data to show new history record
       await _refreshCattleData();
     }
   }
 
   void _navigateToEditCattle(Cattle cattle) async {
+    if (_currentCattle == null) return;
+    
     final result = await Navigator.push(
       context,
       MaterialPageRoute(
@@ -140,19 +163,19 @@ class _CattleDetailScreenState extends State<CattleDetailScreen>
 
   /// Enhanced refresh method with better error handling and user feedback
   Future<void> _refreshCattleData() async {
-    if (_isLoading || _isRefreshing) return;
+    if (_isLoading || _isRefreshing || _currentCattle == null) return;
 
     setState(() {
       _isRefreshing = true;
     });
 
     try {
-      debugPrint('🔄 Refreshing cattle data for ID: ${_currentCattle.id}');
+      debugPrint('🔄 Refreshing cattle data for ID: ${_currentCattle!.id}');
 
       // Add a small delay to show loading state
       await Future.delayed(const Duration(milliseconds: 300));
 
-      final updatedCattle = await CattleService.getCattleById(_currentCattle.id);
+      final updatedCattle = await CattleService.getCattleById(_currentCattle!.id);
 
       if (updatedCattle != null && mounted) {
         debugPrint('✅ Updated cattle received successfully');
@@ -161,7 +184,7 @@ class _CattleDetailScreenState extends State<CattleDetailScreen>
         debugPrint('   - Image: ${updatedCattle.cattlePicture != null ? "Present" : "None"}');
 
         // Check if there are actual changes to avoid unnecessary rebuilds
-        final hasChanges = _hasDataChanged(_currentCattle, updatedCattle);
+        final hasChanges = _hasDataChanged(_currentCattle!, updatedCattle);
 
         setState(() {
           _currentCattle = updatedCattle;
@@ -200,6 +223,44 @@ class _CattleDetailScreenState extends State<CattleDetailScreen>
     }
   }
 
+  /// Load cattle data when cattleId is provided
+  Future<void> _loadCattleData() async {
+    try {
+      final cattle = await CattleService.getCattleById(widget.cattleId!);
+      if (cattle != null && mounted) {
+        setState(() {
+          _currentCattle = cattle;
+          _isLoading = false;
+        });
+      } else {
+        if (mounted) {
+          setState(() {
+            _isLoading = false;
+          });
+          _showEnhancedSnackBar(
+            'Cattle not found',
+            Icons.error_outline,
+            Colors.red,
+          );
+          Navigator.pop(context);
+        }
+      }
+    } catch (e) {
+      debugPrint('❌ Error loading cattle data: $e');
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+        _showEnhancedSnackBar(
+          'Error loading cattle data',
+          Icons.error_outline,
+          Colors.red,
+        );
+        Navigator.pop(context);
+      }
+    }
+  }
+
   /// Check if there are meaningful changes between old and new cattle data
   bool _hasDataChanged(Cattle oldCattle, Cattle newCattle) {
     return oldCattle.classification != newCattle.classification ||
@@ -218,6 +279,8 @@ class _CattleDetailScreenState extends State<CattleDetailScreen>
 
   /// Handle cattle updates from the options modal
   void _onCattleUpdated() async {
+    if (_currentCattle == null) return;
+    
     debugPrint('🔄 Cattle update triggered from options modal');
     await _refreshCattleData();
 
@@ -232,13 +295,15 @@ class _CattleDetailScreenState extends State<CattleDetailScreen>
 
   /// Pull-to-refresh handler
   Future<void> _onPullToRefresh() async {
+    if (_currentCattle == null) return;
+    
     debugPrint('📱 Pull-to-refresh triggered');
     await _refreshCattleData();
   }
 
   Future<void> _updateCattleImage(String? base64Image) async {
-    if (_isUpdatingImage) {
-      debugPrint('Image update already in progress');
+    if (_isUpdatingImage || _currentCattle == null) {
+      debugPrint('Image update already in progress or cattle not loaded');
       return;
     }
 
@@ -261,7 +326,7 @@ class _CattleDetailScreenState extends State<CattleDetailScreen>
 
       debugPrint('Updating cattle picture in database...');
       final success = await CattleService.updateCattlePicture(
-        _currentCattle.id,
+        _currentCattle!.id,
         base64Image,
       );
 
@@ -270,7 +335,7 @@ class _CattleDetailScreenState extends State<CattleDetailScreen>
 
         // Update the local cattle object immediately
         setState(() {
-          _currentCattle = _currentCattle.copyWith(cattlePicture: base64Image);
+          _currentCattle = _currentCattle!.copyWith(cattlePicture: base64Image);
         });
 
         // Refresh cattle data to ensure sync with database
@@ -388,7 +453,33 @@ class _CattleDetailScreenState extends State<CattleDetailScreen>
 
   @override
   Widget build(BuildContext context) {
+    // Show loading indicator while cattle data is being loaded
+    if (_isLoading || _currentCattle == null) {
+      return Scaffold(
+        appBar: AppBar(
+          title: const Text('Cattle Details'),
+          backgroundColor: AppColors.darkGreen,
+          foregroundColor: Colors.white,
+        ),
+        body: const Center(
+          child: CircularProgressIndicator(
+            valueColor: AlwaysStoppedAnimation<Color>(AppColors.vibrantGreen),
+          ),
+        ),
+      );
+    }
+
     return Scaffold(
+      floatingActionButton: !widget.isArchived && _tabController.index == 1
+          ? FloatingActionButton.extended(
+              onPressed: _navigateToAddEventForm,
+              backgroundColor: AppColors.vibrantGreen,
+              foregroundColor: Colors.white,
+              icon: const Icon(Icons.add_rounded),
+              label: const Text('Add History Record'),
+              elevation: 4,
+            )
+          : null,
       body: RefreshIndicator(
         key: _refreshIndicatorKey,
         onRefresh: _onPullToRefresh,
@@ -414,12 +505,13 @@ class _CattleDetailScreenState extends State<CattleDetailScreen>
               // Hero Section as a Sliver
               SliverToBoxAdapter(
                 child: CattleHeroSection(
-                  cattle: _currentCattle,
+                  cattle: _currentCattle!,
                   onImageUpdate: _updateCattleImage,
                   onEditCattle: _navigateToEditCattle,
                   onAddEvent: _navigateToAddEventForm,
                   onCattleUpdated: _onCattleUpdated,
                   isUpdatingImage: _isUpdatingImage,
+                  isArchived: widget.isArchived,
                 ),
               ),
 
@@ -477,17 +569,17 @@ class _CattleDetailScreenState extends State<CattleDetailScreen>
                     ScaleTransition(
                       scale: _scaleAnimation,
                       child: CattleDetailsTabContent(
-                        cattle: _currentCattle,
+                        cattle: _currentCattle!,
                         fadeAnimation: _fadeAnimation,
                         slideAnimation: _slideAnimation,
                       ),
                     ),
 
-                    // Events Tab content
+                    // History Tab content
                     ScaleTransition(
                       scale: _scaleAnimation,
-                      child: EventCattleTabContent(
-                        cattle: _currentCattle,
+                      child: HistoryCattleTabContent(
+                        cattle: _currentCattle!,
                         onAddEvent: _navigateToAddEventForm,
                       ),
                     ),

@@ -2,12 +2,10 @@ import 'package:flutter/material.dart';
 import '../../../constants/app_colors.dart';
 import '../../../services/schedule/schedule_service.dart';
 import '../../../services/cattle/cattle_service.dart';
-import '../../../services/cattle/cattle_event_service.dart';
+import '../../../services/cattle/cattle_history_service.dart';
 import '../../../services/auth_service.dart';
-import '../../../services/user_service.dart';
 import '../../../models/schedule.dart';
 import '../../../models/cattle.dart';
-import '../../../models/user.dart';
 import '../../../models/vaccination_schedule.dart';
 import '../../../services/vaccination_service.dart';
 import 'widgets/cattle_tag_multi_select_field_widget.dart';
@@ -113,7 +111,7 @@ class _ScheduleFormState extends State<ScheduleForm> {
 
   Future<void> _loadEvents() async {
     try {
-      final events = await CattleEventService.getCattleEvent();
+      final events = await CattleHistoryService.getCattleHistory();
       if (mounted) {
         setState(() {
           _allEvents = events;
@@ -121,7 +119,7 @@ class _ScheduleFormState extends State<ScheduleForm> {
       }
     } catch (e) {
       // Non-fatal
-      debugPrint('Error loading events: $e');
+      debugPrint('Error loading history: $e');
     }
   }
 

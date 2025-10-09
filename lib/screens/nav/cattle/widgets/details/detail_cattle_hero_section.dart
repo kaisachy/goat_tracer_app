@@ -18,6 +18,7 @@ class CattleHeroSection extends StatefulWidget {
   final VoidCallback onAddEvent;
   final VoidCallback? onCattleUpdated;
   final bool isUpdatingImage;
+  final bool isArchived;
 
   const CattleHeroSection({
     super.key,
@@ -27,6 +28,7 @@ class CattleHeroSection extends StatefulWidget {
     required this.onAddEvent,
     this.onCattleUpdated,
     this.isUpdatingImage = false,
+    this.isArchived = false,
   });
 
   @override
@@ -420,6 +422,7 @@ class _CattleHeroSectionState extends State<CattleHeroSection> {
       onAddEvent: widget.onAddEvent,
       onEditCattle: widget.onEditCattle,
       onCattleUpdated: widget.onCattleUpdated,
+      isArchived: widget.isArchived,
     );
   }
 

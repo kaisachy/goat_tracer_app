@@ -3,7 +3,7 @@ import 'package:cattle_tracer_app/models/cattle.dart';
 import 'package:cattle_tracer_app/models/vaccination_schedule.dart';
 import 'package:cattle_tracer_app/services/vaccination_service.dart';
 import 'package:cattle_tracer_app/services/cattle/cattle_service.dart';
-import 'package:cattle_tracer_app/services/cattle/cattle_event_service.dart';
+import 'package:cattle_tracer_app/services/cattle/cattle_history_service.dart';
 import 'package:cattle_tracer_app/constants/app_colors.dart';
 import 'package:cattle_tracer_app/screens/nav/schedule/schedule_form.dart';
 import 'package:cattle_tracer_app/models/schedule.dart';
@@ -69,7 +69,7 @@ class _VaccinationScheduleScreenState extends State<VaccinationScheduleScreen>
       setState(() => isLoading = true);
 
       final cattleData = await CattleService.getAllCattle();
-      final eventsData = await CattleEventService.getCattleEvent();
+      final eventsData = await CattleHistoryService.getCattleHistory();
       // Load existing scheduled vaccination schedules from backend
       final existingVaccinationSchedules = await ScheduleService.getSchedules(
         type: ScheduleType.vaccination,

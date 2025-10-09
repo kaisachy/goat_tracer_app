@@ -18,6 +18,7 @@ class CattleOptionsModal {
     required VoidCallback onAddEvent,
     required Function(Cattle) onEditCattle,
     VoidCallback? onCattleUpdated,
+    bool isArchived = false,
   }) {
     final RenderBox button = context.findRenderObject() as RenderBox;
     final RenderBox overlay =
@@ -53,7 +54,25 @@ class CattleOptionsModal {
         minWidth: 250,
         maxWidth: 300,
       ),
-      items: [
+      items: isArchived ? [
+        // Only show Export PDF and Delete Cattle for archived cattle
+        _buildDropdownItem(
+          value: 'export_pdf',
+          icon: FontAwesomeIcons.filePdf,
+          title: 'Export PDF',
+          subtitle: 'Generate report',
+          color: Colors.red[600]!,
+        ),
+        _buildDropdownItem(
+          value: 'delete',
+          icon: Icons.delete_forever_outlined,
+          title: 'Delete Cattle',
+          subtitle: 'Permanently remove',
+          color: Colors.red[600]!,
+          isDestructive: true,
+        ),
+      ] : [
+        // Full menu for active cattle
         _buildDropdownItem(
           value: 'edit',
           icon: Icons.edit_outlined,
@@ -64,8 +83,8 @@ class CattleOptionsModal {
         _buildDropdownItem(
           value: 'add_event',
           icon: Icons.event_note_outlined,
-          title: 'Add Event',
-          subtitle: 'Record new activity',
+          title: 'Add History Record',
+          subtitle: 'Record new history',
           color: AppColors.darkGreen,
         ),
         _buildDivider(),
@@ -118,7 +137,7 @@ class CattleOptionsModal {
     ).then((String? selectedValue) {
       if (selectedValue != null) {
         _handleMenuSelection(context, selectedValue, cattle, onAddEvent,
-            onEditCattle, onCattleUpdated);
+            onEditCattle, onCattleUpdated, isArchived);
       }
     });
   }
@@ -219,6 +238,7 @@ class CattleOptionsModal {
       VoidCallback onAddEvent,
       Function(Cattle) onEditCattle,
       VoidCallback? onCattleUpdated,
+      bool isArchived,
       ) {
     switch (value) {
       case 'edit':

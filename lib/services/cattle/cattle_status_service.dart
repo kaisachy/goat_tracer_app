@@ -1,10 +1,10 @@
 import 'dart:developer';
 import '../auth_service.dart';
 import 'cattle_service.dart';
-import 'cattle_event_service.dart';
+import 'cattle_history_service.dart';
 
 class CattleStatusService {
-  /// Check and update cattle status based on breeding events and return to heat dates
+  /// Check and update cattle status based on breeding history and return to heat dates
   static Future<List<String>> checkAndUpdateBreedingStatus() async {
     final token = await AuthService.getToken();
     if (token == null) {
@@ -22,10 +22,10 @@ class CattleStatusService {
         return [];
       }
 
-      // Get all cattle events
-      final eventsData = await CattleEventService.getCattleEvent();
+      // Get all cattle history
+      final eventsData = await CattleHistoryService.getCattleHistory();
       if (eventsData.isEmpty) {
-        log('CattleStatusService: No events data found');
+        log('CattleStatusService: No history data found');
         return [];
       }
 
@@ -93,7 +93,7 @@ class CattleStatusService {
     }
   }
 
-  /// Check for cattle that need status updates based on breeding events
+  /// Check for cattle that need status updates based on breeding history
   static Future<List<Map<String, dynamic>>> getCattleNeedingStatusUpdate() async {
     final token = await AuthService.getToken();
     if (token == null) {
@@ -108,8 +108,8 @@ class CattleStatusService {
         return [];
       }
 
-      // Get all cattle events
-      final eventsData = await CattleEventService.getCattleEvent();
+      // Get all cattle history
+      final eventsData = await CattleHistoryService.getCattleHistory();
       if (eventsData.isEmpty) {
         return [];
       }

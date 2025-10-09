@@ -1,4 +1,4 @@
-import 'package:cattle_tracer_app/services/cattle/cattle_event_service.dart';
+import 'package:cattle_tracer_app/services/cattle/cattle_history_service.dart';
 import 'package:cattle_tracer_app/services/cattle/cattle_service.dart';
 import 'package:flutter/src/material/date.dart';
 
@@ -21,7 +21,7 @@ class BreedingAnalysisService {
         };
       }
       // Get all breeding events
-      final allEvents = await CattleEventService.getCattleEvent();
+      final allEvents = await CattleHistoryService.getCattleHistory();
       final breedingEvents = allEvents.where((event) {
         if (event['event_type']?.toString().toLowerCase() != 'breeding') return false;
         final tag = event['cattle_tag']?.toString() ?? '';
@@ -449,7 +449,7 @@ class BreedingAnalysisService {
   // Get available bulls for filtering
   static Future<List<String>> getAvailableBulls() async {
     try {
-      final allEvents = await CattleEventService.getCattleEvent();
+      final allEvents = await CattleHistoryService.getCattleHistory();
       final breedingEvents = allEvents.where((event) =>
           event['event_type']?.toString().toLowerCase() == 'breeding').toList();
       
@@ -470,7 +470,7 @@ class BreedingAnalysisService {
   // Get available breeding types for filtering
   static Future<List<Map<String, String>>> getAvailableBreedingTypes() async {
     try {
-      final allEvents = await CattleEventService.getCattleEvent();
+      final allEvents = await CattleHistoryService.getCattleHistory();
       final breedingEvents = allEvents.where((event) =>
           event['event_type']?.toString().toLowerCase() == 'breeding').toList();
       

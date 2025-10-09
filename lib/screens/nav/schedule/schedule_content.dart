@@ -9,7 +9,7 @@ import '../../../constants/app_colors.dart';
 import '../../../models/schedule.dart';
 import '../../../services/schedule/schedule_service.dart';
 import '../../../utils/schedule_utils.dart';
-import '../../../services/cattle/cattle_event_service.dart';
+import '../../../services/cattle/cattle_history_service.dart';
 import 'schedule_form.dart';
 
 
@@ -385,7 +385,7 @@ class _ScheduleContentWidgetState extends State<ScheduleContentWidget> with Tick
       if (status == ScheduleStatus.completed) {
         await _createEventsForSchedule(schedule);
       } else if (status == ScheduleStatus.scheduled) {
-        // If rescheduled, remove previously auto-created events for this schedule
+        // If rescheduled, remove previously auto-created history for this schedule
         await _removeEventsForSchedule(schedule);
       }
       await loadSchedules();
@@ -431,7 +431,7 @@ class _ScheduleContentWidgetState extends State<ScheduleContentWidget> with Tick
         }
       }
       try {
-        final ok = await CattleEventService.storeCattleEvent(data);
+        final ok = await CattleHistoryService.storeCattleHistory(data);
         if (ok) successCount++;
       } catch (_) {}
     }
@@ -445,11 +445,11 @@ class _ScheduleContentWidgetState extends State<ScheduleContentWidget> with Tick
     if (mappedEventType == null) return;
 
     final tags = _extractCattleTags(schedule.cattleTag);
-    final allEvents = await CattleEventService.getCattleEvent();
+    final allEvents = await CattleHistoryService.getCattleHistory();
     final scheduleDate = _formatDateForApi(schedule.scheduleDateTime);
 
     for (final tag in tags) {
-      // Find matching events by cattle_tag, event_type, and event_date
+      // Find matching history by cattle_tag, event_type, and event_date
       final matches = allEvents.where((e) =>
         (e['cattle_tag']?.toString() ?? '').trim().toUpperCase() == tag.trim().toUpperCase() &&
         (e['event_type']?.toString().toLowerCase() ?? '') == mappedEventType.toLowerCase() &&
@@ -458,7 +458,7 @@ class _ScheduleContentWidgetState extends State<ScheduleContentWidget> with Tick
       for (final evt in matches) {
         final id = int.tryParse('${evt['id']}');
         if (id != null) {
-          await CattleEventService.deleteCattleEvent(id);
+          await CattleHistoryService.deleteCattleHistory(id);
         }
       }
     }

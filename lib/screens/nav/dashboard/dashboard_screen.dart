@@ -3,7 +3,7 @@ import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:cattle_tracer_app/models/cattle.dart';
 import 'package:cattle_tracer_app/constants/app_colors.dart';
 import 'package:cattle_tracer_app/services/cattle/cattle_service.dart';
-import 'package:cattle_tracer_app/services/cattle/cattle_event_service.dart';
+import 'package:cattle_tracer_app/services/cattle/cattle_history_service.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'widgets/vaccination_dashboard_widget.dart';
 import 'widgets/breeding_analytics_widget.dart';
@@ -69,7 +69,7 @@ class _DashboardScreenState extends State<DashboardScreen>
       setState(() => isLoading = true);
 
       final cattleData = await CattleService.getAllCattle();
-      final eventsData = await CattleEventService.getCattleEvent();
+      final eventsData = await CattleHistoryService.getCattleHistory();
 
       if (mounted) {
         setState(() {
@@ -298,7 +298,7 @@ class _DashboardScreenState extends State<DashboardScreen>
   }
 
   Widget _buildWeightAnalysis() {
-    // Available tags from all cattle (not only those with weighed events)
+    // Available tags from all cattle (not only those with weighed history)
     final allTags = allCattle
         .map((c) => c.tagNo)
         .where((t) => t.isNotEmpty)
@@ -319,7 +319,7 @@ class _DashboardScreenState extends State<DashboardScreen>
     // Ensure a selection exists if possible
     // (Do not call setState here; use selectedTag locally and update on user change)
 
-    // Filter weighed events by selected cattle tag
+    // Filter weighed history by selected cattle tag
     final weighedEvents = allEvents.where((e) =>
       (e['event_type']?.toString().toLowerCase() ?? '') == 'weighed' &&
       (e['weighed_result'] != null && e['weighed_result'].toString().isNotEmpty) &&
@@ -383,8 +383,8 @@ class _DashboardScreenState extends State<DashboardScreen>
                     const SizedBox(height: 8),
                     Text(
                       availableTags.isEmpty
-                          ? 'No weighed events recorded'
-                          : 'No weighed events for #${selectedTag}',
+                          ? 'No weighed history recorded'
+                          : 'No weighed history for #${selectedTag}',
                       style: TextStyle(color: Colors.grey.shade600),
                     ),
                   ],
@@ -726,7 +726,7 @@ class _DashboardScreenState extends State<DashboardScreen>
       final y = (w ?? 0).toDouble();
       final x = (idx).toDouble();
       String label = ds != null ? _formatEventDateLabel(ds) : '';
-      // Avoid duplicate labels for multiple events on the same day
+      // Avoid duplicate labels for multiple history on the same day
       if (lastDateLabel != null && label == lastDateLabel) {
         label = '';
       } else {
@@ -745,7 +745,7 @@ class _DashboardScreenState extends State<DashboardScreen>
   }
 
   Widget _buildExpectedDeliveries() {
-    // Extract pregnant events with expected delivery date
+    // Extract pregnant history with expected delivery date
     final List<Map<String, dynamic>> deliveries = allEvents
         .where((e) =>
             (e['event_type']?.toString().toLowerCase() ?? '') == 'pregnant' &&

@@ -178,14 +178,14 @@ class Cattle {
   }
 }
 
-class CattleEvent {
+class CattleHistoryRecord {
   final int id;
   final int userId;
   final String cattleTag;
   final String? bullTag;
   final String? calfTag;
-  final String eventType;
-  final String eventDate;
+  final String historyType;
+  final String historyDate;
   final String? sicknessSymptoms;
   final String? diagnosis;
   final String? technician;
@@ -197,16 +197,18 @@ class CattleEvent {
   final String? expectedDeliveryDate;
   final String? notes;
   final String? lastKnownLocation;
+  final double? soldAmount;
+  final String? buyer;
   final String? createdAt;
 
-  CattleEvent({
+  CattleHistoryRecord({
     required this.id,
     required this.userId,
     required this.cattleTag,
     this.bullTag,
     this.calfTag,
-    required this.eventType,
-    required this.eventDate,
+    required this.historyType,
+    required this.historyDate,
     this.sicknessSymptoms,
     this.diagnosis,
     this.technician,
@@ -218,18 +220,20 @@ class CattleEvent {
     this.expectedDeliveryDate,
     this.notes,
     this.lastKnownLocation,
+    this.soldAmount,
+    this.buyer,
     this.createdAt,
   });
 
-  factory CattleEvent.fromJson(Map<String, dynamic> json) {
-    return CattleEvent(
+  factory CattleHistoryRecord.fromJson(Map<String, dynamic> json) {
+    return CattleHistoryRecord(
       id: json['id'],
       userId: json['user_id'],
       cattleTag: json['cattle_tag'],
       bullTag: json['bull_tag'],
       calfTag: json['calf_tag'],
-      eventType: json['event_type'],
-      eventDate: json['event_date'],
+      historyType: json['event_type'],
+      historyDate: json['event_date'],
       sicknessSymptoms: json['sickness_symptoms'],
       diagnosis: json['diagnosis'],
       technician: json['technician'],
@@ -243,6 +247,10 @@ class CattleEvent {
       expectedDeliveryDate: json['expected_delivery_date'],
       notes: json['notes'],
       lastKnownLocation: json['last_known_location'],
+      soldAmount: json['sold_amount'] != null
+          ? double.tryParse(json['sold_amount'].toString())
+          : null,
+      buyer: json['buyer'],
       createdAt: json['created_at'],
     );
   }
@@ -254,8 +262,8 @@ class CattleEvent {
       'cattle_tag': cattleTag,
       'bull_tag': bullTag,
       'calf_tag': calfTag,
-      'event_type': eventType,
-      'event_date': eventDate,
+      'event_type': historyType,
+      'event_date': historyDate,
       'sickness_symptoms': sicknessSymptoms,
       'diagnosis': diagnosis,
       'technician': technician,
@@ -267,6 +275,8 @@ class CattleEvent {
       'expected_delivery_date': expectedDeliveryDate,
       'notes': notes,
       'last_known_location': lastKnownLocation,
+      'sold_amount': soldAmount,
+      'buyer': buyer,
       'created_at': createdAt,
     };
   }

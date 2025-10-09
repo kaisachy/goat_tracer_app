@@ -11,7 +11,7 @@ import 'nav/cattle/cattle_screen.dart';
 import 'nav/dashboard/dashboard_screen.dart';
 import 'nav/profile/profile_screen.dart';
 import 'nav/milk/milk_screen.dart';
-import 'nav/event/event_screen.dart';
+import 'nav/history/history_screen.dart';
 import 'nav/schedule/schedule_screen.dart';
 import 'nav/setting/setting_screen.dart';
 import 'package:cattle_tracer_app/services/cattle/cattle_status_service.dart';
@@ -65,7 +65,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
       AuthGuard(child: ProfileScreen(userEmail: widget.userEmail ?? '')),
       const AuthGuard(child: CattleScreen()),
       AuthGuard(child: DashboardScreen()),
-      const AuthGuard(child: EventScreen()),
+      const AuthGuard(child: HistoryScreen()),
       const AuthGuard(child: ScheduleScreen()),
       AuthGuard(child: MilkScreen()),
       AuthGuard(child: SettingScreen()),

@@ -61,7 +61,7 @@ class CattleDetailTabs extends StatelessWidget {
                   children: [
                     Icon(Icons.event_note, size: 20),
                     SizedBox(width: 8),
-                    Text('Events'),
+                    Text('History'),
                   ],
                 ),
               ),

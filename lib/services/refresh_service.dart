@@ -125,7 +125,7 @@ class RefreshService {
         case 3: // Events
           try {
             // Events don't have a specific service refresh, but we can refresh cattle data
-            // since events are related to cattle
+            // since history are related to cattle
             await CattleService.getCattleInformation();
             results['success'] = true;
             results['message'] = 'Events data refreshed';

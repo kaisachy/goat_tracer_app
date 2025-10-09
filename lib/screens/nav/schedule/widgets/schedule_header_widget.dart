@@ -3,7 +3,7 @@ import '../../../../../constants/app_colors.dart';
 import '../../vaccination/vaccination_schedule_screen.dart';
 import '../../../../../services/vaccination_service.dart';
 import '../../../../../services/cattle/cattle_service.dart';
-import '../../../../../services/cattle/cattle_event_service.dart';
+import '../../../../../services/cattle/cattle_history_service.dart';
 
 class ScheduleHeader extends StatefulWidget {
   final TextEditingController searchController;
@@ -38,7 +38,7 @@ class _ScheduleHeaderState extends State<ScheduleHeader> {
   Future<void> _checkVaccinationStatus() async {
     try {
       final cattleData = await CattleService.getAllCattle();
-      final eventsData = await CattleEventService.getCattleEvent();
+      final eventsData = await CattleHistoryService.getCattleHistory();
       
       final vaccinationService = VaccinationService();
       final schedules = await vaccinationService.generateVaccinationSchedules(

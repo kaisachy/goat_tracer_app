@@ -295,13 +295,29 @@ class CattleService {
       log('Getting all cattle to find ID: $id');
       final allCattle = await getAllCattle();
 
-      final foundCattle = allCattle.firstWhere(
-            (cattle) => cattle.id == id,
-        orElse: () => throw Exception('Cattle not found'),
-      );
+      // Try to find in active cattle first
+      try {
+        final foundCattle = allCattle.firstWhere(
+              (cattle) => cattle.id == id,
+          orElse: () => throw Exception('Cattle not found in active cattle'),
+        );
 
-      log('Found cattle by ID: ${foundCattle.tagNo}');
-      return foundCattle;
+        log('Found cattle by ID in active cattle: ${foundCattle.tagNo}');
+        return foundCattle;
+      } catch (e) {
+        log('Cattle not found in active cattle, searching in archived cattle...');
+        
+        // If not found in active cattle, search in archived cattle
+        final archivedCattle = await getArchivedCattle();
+        
+        final foundCattle = archivedCattle.firstWhere(
+              (cattle) => cattle.id == id,
+          orElse: () => throw Exception('Cattle not found in archived cattle either'),
+        );
+
+        log('Found cattle by ID in archived cattle: ${foundCattle.tagNo}');
+        return foundCattle;
+      }
     } catch (e) {
       log('Error in getCattleById: $e');
       return null;
