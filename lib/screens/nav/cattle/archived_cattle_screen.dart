@@ -48,15 +48,15 @@ class _ArchivedCattleScreenState extends State<ArchivedCattleScreen> {
           
           // Find the most recent archive-related event
           final archiveEvent = cattleEvents.where((event) {
-            final eventType = (event['event_type']?.toString().toLowerCase() ?? '');
+            final eventType = (event['history_type']?.toString().toLowerCase() ?? '');
             return eventType == 'sold' || eventType == 'deceased' || eventType == 'lost';
           }).toList();
           
           if (archiveEvent.isNotEmpty) {
             // Sort by date and get the most recent
             archiveEvent.sort((a, b) {
-              final dateA = DateTime.tryParse(a['event_date'] ?? '1900-01-01') ?? DateTime(1900);
-              final dateB = DateTime.tryParse(b['event_date'] ?? '1900-01-01') ?? DateTime(1900);
+              final dateA = DateTime.tryParse(a['history_date'] ?? '1900-01-01') ?? DateTime(1900);
+              final dateB = DateTime.tryParse(b['history_date'] ?? '1900-01-01') ?? DateTime(1900);
               return dateB.compareTo(dateA);
             });
             
@@ -666,8 +666,8 @@ class _ArchivedCattleScreenState extends State<ArchivedCattleScreen> {
       return 'This cattle has been archived. Event details not available.';
     }
     
-    final eventType = (eventData['event_type']?.toString().toLowerCase() ?? '');
-    final eventDate = _formatDate(eventData['event_date']);
+    final eventType = (eventData['history_type']?.toString().toLowerCase() ?? '');
+    final eventDate = _formatDate(eventData['history_date']);
     final notes = eventData['notes']?.toString() ?? '';
     
     switch (eventType) {

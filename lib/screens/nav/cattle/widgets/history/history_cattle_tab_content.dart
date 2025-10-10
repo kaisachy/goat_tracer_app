@@ -82,8 +82,8 @@ class _HistoryCattleTabContentState extends State<HistoryCattleTabContent> {
 
       // Sort event by date to find the latest one
       uniqueEvents.sort((a, b) {
-        final dateA = DateTime.tryParse(a['event_date'] ?? '1900-01-01') ?? DateTime(1900);
-        final dateB = DateTime.tryParse(b['event_date'] ?? '1900-01-01') ?? DateTime(1900);
+        final dateA = DateTime.tryParse(a['history_date'] ?? '1900-01-01') ?? DateTime(1900);
+        final dateB = DateTime.tryParse(b['history_date'] ?? '1900-01-01') ?? DateTime(1900);
         return dateB.compareTo(dateA); // Descending order (latest first)
       });
 
@@ -125,8 +125,8 @@ class _HistoryCattleTabContentState extends State<HistoryCattleTabContent> {
       } else {
         // Duplicate found - decide which one to keep and which to delete
         final existingEvent = uniqueEvents[existingEventIndex];
-        final currentEventDate = DateTime.tryParse(event['event_date'] ?? '1900-01-01') ?? DateTime(1900);
-        final existingEventDate = DateTime.tryParse(existingEvent['event_date'] ?? '1900-01-01') ?? DateTime(1900);
+        final currentEventDate = DateTime.tryParse(event['history_date'] ?? '1900-01-01') ?? DateTime(1900);
+        final existingEventDate = DateTime.tryParse(existingEvent['history_date'] ?? '1900-01-01') ?? DateTime(1900);
 
         // Keep the more recent event, or the one with higher ID if dates are same
         if (currentEventDate.isAfter(existingEventDate) ||
@@ -189,14 +189,14 @@ class _HistoryCattleTabContentState extends State<HistoryCattleTabContent> {
 // Helper method to check if two event are identical
   bool _areEventsIdentical(Map<String, dynamic> event1, Map<String, dynamic> event2) {
     // Get the event type to determine which fields to compare
-    final eventType1 = (event1['event_type'] ?? '').toString().toLowerCase();
-    final eventType2 = (event2['event_type'] ?? '').toString().toLowerCase();
+    final eventType1 = (event1['history_type'] ?? '').toString().toLowerCase();
+    final eventType2 = (event2['history_type'] ?? '').toString().toLowerCase();
 
     // If event types are different, they're not identical
     if (eventType1 != eventType2) return false;
 
     // Compare basic fields that are always relevant
-    if (!_compareFieldValues(event1['event_date'], event2['event_date'])) return false;
+    if (!_compareFieldValues(event1['history_date'], event2['history_date'])) return false;
     if (!_compareFieldValues(event1['cattle_tag'], event2['cattle_tag'])) return false;
     if (!_compareFieldValues(event1['notes'], event2['notes'])) return false;
 
@@ -297,7 +297,7 @@ class _HistoryCattleTabContentState extends State<HistoryCattleTabContent> {
 
   List<Map<String, dynamic>> get _filteredEvents {
     return events.where((event) {
-      final type = (event['event_type'] ?? '').toString().toLowerCase();
+      final type = (event['history_type'] ?? '').toString().toLowerCase();
       final notes = (event['notes'] ?? '').toString().toLowerCase();
       final diagnosis = (event['diagnosis'] ?? '').toString().toLowerCase();
       final query = searchQuery.toLowerCase();
@@ -351,7 +351,7 @@ class _HistoryCattleTabContentState extends State<HistoryCattleTabContent> {
       Offset.zero & overlay.size,
     );
 
-    final eventType = event['event_type']?.toString() ?? '';
+    final eventType = event['history_type']?.toString() ?? '';
     final eventTypeLower = eventType.toLowerCase();
     final canDuplicate = eventTypeLower != 'vaccinated' && _canDuplicateEvent(eventType);
 
@@ -447,8 +447,8 @@ class _HistoryCattleTabContentState extends State<HistoryCattleTabContent> {
         cattleTag: event['cattle_tag']?.toString() ?? '',
         bullTag: event['bull_tag']?.toString(),
         calfTag: event['calf_tag']?.toString(),
-        historyType: event['event_type']?.toString() ?? '',
-        historyDate: event['event_date']?.toString() ?? '',
+        historyType: event['history_type']?.toString() ?? '',
+        historyDate: event['history_date']?.toString() ?? '',
         sicknessSymptoms: event['sickness_symptoms']?.toString(),
         diagnosis: event['diagnosis']?.toString(),
         technician: event['technician']?.toString(),
@@ -532,11 +532,11 @@ class _HistoryCattleTabContentState extends State<HistoryCattleTabContent> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      '${event['event_type']}',
+                      '${event['history_type']}',
                       style: const TextStyle(fontWeight: FontWeight.bold),
                     ),
                     Text(
-                      'Date: ${_formatDate(event['event_date'])}',
+                      'Date: ${_formatDate(event['history_date'])}',
                       style: TextStyle(color: Colors.grey.shade600, fontSize: 12),
                     ),
                   ],
@@ -615,7 +615,7 @@ class _HistoryCattleTabContentState extends State<HistoryCattleTabContent> {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('History record "${event['event_type']}" deleted successfully'),
+              content: Text('History record "${event['history_type']}" deleted successfully'),
               backgroundColor: Colors.green,
               behavior: SnackBarBehavior.floating,
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -626,7 +626,7 @@ class _HistoryCattleTabContentState extends State<HistoryCattleTabContent> {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('Failed to delete history record "${event['event_type']}"'),
+              content: Text('Failed to delete history record "${event['history_type']}"'),
               backgroundColor: Colors.red,
               behavior: SnackBarBehavior.floating,
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -694,8 +694,8 @@ class _HistoryCattleTabContentState extends State<HistoryCattleTabContent> {
 
 
   Widget _buildEventAccordion(Map<String, dynamic> event, int index) {
-    final eventType = event['event_type'] ?? 'Unknown';
-    final eventDate = event['event_date'];
+    final eventType = event['history_type'] ?? 'Unknown';
+    final eventDate = event['history_date'];
     final eventColor = HistoryTypeUtils.getHistoryColor(eventType);
     final details = _getEventDetails(event);
     final isExpanded = expandedCards.contains(index);
@@ -889,7 +889,7 @@ class _HistoryCattleTabContentState extends State<HistoryCattleTabContent> {
   }
 
   List<MapEntry<String, String>> _getEventDetails(Map<String, dynamic> event) {
-    final eventType = (event['event_type'] ?? '').toString().toLowerCase();
+    final eventType = (event['history_type'] ?? '').toString().toLowerCase();
     final Map<String, String?> relevantDetails = {};
 
     // Always show notes if available

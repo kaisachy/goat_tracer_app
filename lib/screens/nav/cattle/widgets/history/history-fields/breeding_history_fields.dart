@@ -63,9 +63,9 @@ class BreedingEventFieldsState extends BaseEventFieldsState<BreedingEventFields>
   @override
   void setupEventDateListeners() {
     // Add listener for event date changes in 'breeding' event type
-    if (widget.controllers['event_date'] != null) {
-      widget.controllers['event_date']!.removeListener(onEventDateChanged);
-      widget.controllers['event_date']!.addListener(onEventDateChanged);
+    if (widget.controllers['history_date'] != null) {
+      widget.controllers['history_date']!.removeListener(onEventDateChanged);
+      widget.controllers['history_date']!.addListener(onEventDateChanged);
     }
 
     // Add listener for semen selection changes to update bull_tag
@@ -77,8 +77,8 @@ class BreedingEventFieldsState extends BaseEventFieldsState<BreedingEventFields>
 
   @override
   void removeEventDateListeners() {
-    if (widget.controllers['event_date'] != null) {
-      widget.controllers['event_date']!.removeListener(onEventDateChanged);
+    if (widget.controllers['history_date'] != null) {
+      widget.controllers['history_date']!.removeListener(onEventDateChanged);
     }
     if (widget.controllers['semen_used'] != null) {
       widget.controllers['semen_used']!.removeListener(onSemenChanged);
@@ -89,7 +89,7 @@ class BreedingEventFieldsState extends BaseEventFieldsState<BreedingEventFields>
   }
 
   void onEventDateChanged() {
-    final eventDateText = widget.controllers['event_date']?.text ?? '';
+    final eventDateText = widget.controllers['history_date']?.text ?? '';
 
     if (eventDateText.isNotEmpty) {
       try {

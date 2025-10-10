@@ -23,7 +23,7 @@ class BreedingAnalysisService {
       // Get all breeding events
       final allEvents = await CattleHistoryService.getCattleHistory();
       final breedingEvents = allEvents.where((event) {
-        if (event['event_type']?.toString().toLowerCase() != 'breeding') return false;
+        if (event['history_type']?.toString().toLowerCase() != 'breeding') return false;
         final tag = event['cattle_tag']?.toString() ?? '';
         final prof = tagToProfile[tag];
         if (prof == null) return false;
@@ -34,7 +34,7 @@ class BreedingAnalysisService {
 
       // Get pregnancy events (female cow/heifer only, align with web)
       final pregnancyEvents = allEvents.where((event) {
-        if (event['event_type']?.toString().toLowerCase() != 'pregnant') return false;
+        if (event['history_type']?.toString().toLowerCase() != 'pregnant') return false;
         final tag = event['cattle_tag']?.toString() ?? '';
         final prof = tagToProfile[tag];
         if (prof == null) return false;
@@ -45,7 +45,7 @@ class BreedingAnalysisService {
 
       // Get birth events (female cow/heifer only, align with web)
       final birthEvents = allEvents.where((event) {
-        if (event['event_type']?.toString().toLowerCase() != 'gives birth') return false;
+        if (event['history_type']?.toString().toLowerCase() != 'gives birth') return false;
         final tag = event['cattle_tag']?.toString() ?? '';
         final prof = tagToProfile[tag];
         if (prof == null) return false;
@@ -61,7 +61,7 @@ class BreedingAnalysisService {
         final start = dateRange.start;
         final end = dateRange.end;
         filteredBreedingEvents = filteredBreedingEvents.where((event) {
-          final dateStr = event['event_date']?.toString();
+          final dateStr = event['history_date']?.toString();
           if (dateStr == null || dateStr.isEmpty) return false;
           try {
             final date = DateTime.parse(dateStr);
@@ -183,8 +183,8 @@ class BreedingAnalysisService {
       final cowPregnancies = cowPregnancyHistory[cowTag] ?? [];
 
       // Sort events by date
-      cowBreedings.sort((a, b) => DateTime.parse(a['event_date'] ?? '1900-01-01')
-          .compareTo(DateTime.parse(b['event_date'] ?? '1900-01-01')));
+      cowBreedings.sort((a, b) => DateTime.parse(a['history_date'] ?? '1900-01-01')
+          .compareTo(DateTime.parse(b['history_date'] ?? '1900-01-01')));
 
       final List<Map<String, dynamic>> successfulBreedings = [];
       final List<Map<String, dynamic>> failedBreedings = [];
@@ -192,7 +192,7 @@ class BreedingAnalysisService {
 
       for (int i = 0; i < cowBreedings.length; i++) {
         final breeding = cowBreedings[i];
-        final breedingDate = DateTime.parse(breeding['event_date'] ?? '1900-01-01');
+        final breedingDate = DateTime.parse(breeding['history_date'] ?? '1900-01-01');
         final today = DateTime.now();
         final daysSinceBreeding = today.difference(breedingDate).inDays;
         
@@ -222,7 +222,7 @@ class BreedingAnalysisService {
           }
         }
 
-        print('DEBUG: Analyzing breeding for cow $cowTag on ${breeding['event_date']} (${daysSinceBreeding} days ago)');
+        print('DEBUG: Analyzing breeding for cow $cowTag on ${breeding['history_date']} (${daysSinceBreeding} days ago)');
         print('DEBUG: Responsible bull: $responsibleBull');
         print('DEBUG: Breeding type: $breedingType');
 
@@ -230,7 +230,7 @@ class BreedingAnalysisService {
         if (daysSinceBreeding < 25) {
           print('DEBUG: ⏳ Breeding too recent (${daysSinceBreeding} days) - marking as pending');
           pendingBreedings.add({
-            'event_date': breeding['event_date'],
+            'history_date': breeding['history_date'],
             'breeding_type': breedingType,
             'days_since_breeding': daysSinceBreeding,
             'status': 'pending',
@@ -240,11 +240,11 @@ class BreedingAnalysisService {
 
         // Check pregnancy events
         for (final pregnancy in cowPregnancies) {
-          final pregnancyDate = DateTime.parse(pregnancy['event_date'] ?? '1900-01-01');
+          final pregnancyDate = DateTime.parse(pregnancy['history_date'] ?? '1900-01-01');
           final daysDifference = pregnancyDate.difference(breedingDate).inDays;
           final pregnancyBull = _getResponsibleBull(pregnancy);
           
-          print('DEBUG: Checking pregnancy on ${pregnancy['event_date']} (${daysDifference} days later)');
+          print('DEBUG: Checking pregnancy on ${pregnancy['history_date']} (${daysDifference} days later)');
           print('DEBUG: Pregnancy bull: $pregnancyBull');
           
           if (daysDifference >= 25 && daysDifference <= 60) {
@@ -253,9 +253,9 @@ class BreedingAnalysisService {
               foundPregnancy = true;
               print('DEBUG: ✅ Pregnancy match found!');
               successfulBreedings.add({
-                'event_date': breeding['event_date'],
+                'history_date': breeding['history_date'],
                 'breeding_type': breeding['breeding_type'],
-                'pregnancy_date': pregnancy['event_date'],
+                'pregnancy_date': pregnancy['history_date'],
                 'days_to_pregnancy': daysDifference,
               });
               break;
@@ -270,7 +270,7 @@ class BreedingAnalysisService {
           if (daysSinceBreeding > 60) {
             print('DEBUG: ❌ No pregnancy/birth match found after ${daysSinceBreeding} days - marking as failed');
             failedBreedings.add({
-              'event_date': breeding['event_date'],
+              'history_date': breeding['history_date'],
               'breeding_type': breedingType,
               'days_since_breeding': daysSinceBreeding,
               'status': 'failed',
@@ -278,7 +278,7 @@ class BreedingAnalysisService {
           } else {
             print('DEBUG: ⏳ No pregnancy/birth match found but only ${daysSinceBreeding} days passed - marking as pending');
             pendingBreedings.add({
-              'event_date': breeding['event_date'],
+              'history_date': breeding['history_date'],
               'breeding_type': breedingType,
               'days_since_breeding': daysSinceBreeding,
               'status': 'pending',
@@ -341,7 +341,7 @@ class BreedingAnalysisService {
         'successful_breedings_details': successfulBreedings,
         'failed_breedings_details': failedBreedings,
         'pending_breedings_details': pendingBreedings,
-        'last_breeding_date': cowBreedings.isNotEmpty ? cowBreedings.last['event_date'] : null,
+        'last_breeding_date': cowBreedings.isNotEmpty ? cowBreedings.last['history_date'] : null,
       });
     }
 
@@ -451,7 +451,7 @@ class BreedingAnalysisService {
     try {
       final allEvents = await CattleHistoryService.getCattleHistory();
       final breedingEvents = allEvents.where((event) =>
-          event['event_type']?.toString().toLowerCase() == 'breeding').toList();
+          event['history_type']?.toString().toLowerCase() == 'breeding').toList();
       
       final Set<String> bullTags = {};
       for (final event in breedingEvents) {
@@ -472,7 +472,7 @@ class BreedingAnalysisService {
     try {
       final allEvents = await CattleHistoryService.getCattleHistory();
       final breedingEvents = allEvents.where((event) =>
-          event['event_type']?.toString().toLowerCase() == 'breeding').toList();
+          event['history_type']?.toString().toLowerCase() == 'breeding').toList();
       
       final Set<String> breedingTypes = {};
       for (final event in breedingEvents) {

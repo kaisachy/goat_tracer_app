@@ -17,7 +17,7 @@ class CattleHistoryService {
 
     try {
       final response = await http.get(
-        Uri.parse('$_baseUrl/cattles/event'),
+        Uri.parse('$_baseUrl/cattles/history'),
         headers: {
           'Content-Type': 'application/json',
           'Authorization': 'Bearer $token',
@@ -47,7 +47,7 @@ class CattleHistoryService {
       return false;
     }
 
-    final uri = Uri.parse('$_baseUrl/cattles/event');
+    final uri = Uri.parse('$_baseUrl/cattles/history');
     final requestBody = jsonEncode(data);
 
     log('=== STORE CATTLE HISTORY DEBUG ===');
@@ -164,7 +164,7 @@ class CattleHistoryService {
       return false;
     }
 
-    final uri = Uri.parse('$_baseUrl/cattles/event');
+    final uri = Uri.parse('$_baseUrl/cattles/history');
     final requestBody = jsonEncode({'id': id});
 
     log('=== DELETE CATTLE HISTORY DEBUG ===');
@@ -210,7 +210,7 @@ class CattleHistoryService {
 
     try {
       final response = await http.get(
-        Uri.parse('$_baseUrl/cattles/event?cattle_tag=$cattleTag'),
+        Uri.parse('$_baseUrl/cattles/history?cattle_tag=$cattleTag'),
         headers: {
           'Content-Type': 'application/json',
           'Authorization': 'Bearer $token',

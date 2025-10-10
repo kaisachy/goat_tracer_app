@@ -119,7 +119,7 @@ class _CattleHistoryFormScreenState extends State<CattleHistoryFormScreen>
 
   void _initializeControllers() {
     final fields = [
-      'bull_tag', 'calf_tag', 'event_date',
+      'bull_tag', 'calf_tag', 'history_date',
       'diagnosis', 'technician', 'medicine_given', 'semen_used',
       'estimated_return_date', 'weighed_result', 'breeding_date',
       'expected_delivery_date', 'cause_of_death', 'notes',
@@ -146,14 +146,14 @@ class _CattleHistoryFormScreenState extends State<CattleHistoryFormScreen>
       final filtered = all
           .where((e) =>
               e['cattle_tag'] == cattleTag &&
-              (e['event_type']?.toString().toLowerCase() ?? '') ==
+              (e['history_type']?.toString().toLowerCase() ?? '') ==
                   historyType.toLowerCase())
           .toList();
       if (filtered.isEmpty) return null;
       filtered.sort((a, b) {
         try {
-          final da = DateTime.parse(a['event_date']);
-          final db = DateTime.parse(b['event_date']);
+          final da = DateTime.parse(a['history_date']);
+          final db = DateTime.parse(b['history_date']);
           return db.compareTo(da);
         } catch (_) {
           return 0;
@@ -192,7 +192,7 @@ class _CattleHistoryFormScreenState extends State<CattleHistoryFormScreen>
         return;
       }
 
-      final breedingDateStr = latestBreeding['event_date']?.toString();
+      final breedingDateStr = latestBreeding['history_date']?.toString();
       if (breedingDateStr != null && breedingDateStr.isNotEmpty) {
         _controllers['breeding_date']?.text = breedingDateStr;
         try {
@@ -500,7 +500,7 @@ class _CattleHistoryFormScreenState extends State<CattleHistoryFormScreen>
         final isBreeding = (widget.historyRecord!.historyType.toLowerCase() == 'breeding');
       final String _ = (_controllers['breeding_type']?.text ?? '').trim();
       // Values read below directly from controllers when needed; avoid unused locals
-        final eventDate = (eventJson['event_date']?.toString() ?? '').trim();
+        final eventDate = (eventJson['history_date']?.toString() ?? '').trim();
         if (isMaleSubject && isBreeding && eventDate.isNotEmpty) {
           final notes = (eventJson['notes']?.toString() ?? '');
           // Expect notes like: "Breeding with <TAG>"
@@ -523,8 +523,8 @@ class _CattleHistoryFormScreenState extends State<CattleHistoryFormScreen>
               final sameDay = partnerEvents.firstWhere(
                 (e) {
                   try {
-                    if ((e['event_type']?.toString().toLowerCase() ?? '') != 'breeding') return false;
-                    final d = DateTime.parse(e['event_date']?.toString() ?? '');
+                    if ((e['history_type']?.toString().toLowerCase() ?? '') != 'breeding') return false;
+                    final d = DateTime.parse(e['history_date']?.toString() ?? '');
                     return d.year == targetDate!.year && d.month == targetDate.month && d.day == targetDate.day;
                   } catch (_) { return false; }
                 },
@@ -533,17 +533,17 @@ class _CattleHistoryFormScreenState extends State<CattleHistoryFormScreen>
               partner = sameDay;
               // Fallback: nearest breeding event on/before date
               if (partner.isEmpty) {
-                final breedingEvents = partnerEvents.where((e) => (e['event_type']?.toString().toLowerCase() ?? '') == 'breeding').toList();
+                final breedingEvents = partnerEvents.where((e) => (e['history_type']?.toString().toLowerCase() ?? '') == 'breeding').toList();
                 breedingEvents.sort((a, b) {
                   DateTime? ad, bd;
-                  try { ad = DateTime.parse(a['event_date']?.toString() ?? ''); } catch (_) {}
-                  try { bd = DateTime.parse(b['event_date']?.toString() ?? ''); } catch (_) {}
+                  try { ad = DateTime.parse(a['history_date']?.toString() ?? ''); } catch (_) {}
+                  try { bd = DateTime.parse(b['history_date']?.toString() ?? ''); } catch (_) {}
                   if (ad == null || bd == null) return 0;
                   return bd.compareTo(ad);
                 });
                 for (final e in breedingEvents) {
                   try {
-                    final d = DateTime.parse(e['event_date']?.toString() ?? '');
+                    final d = DateTime.parse(e['history_date']?.toString() ?? '');
                     if (!d.isAfter(targetDate)) { partner = e; break; }
                   } catch (_) {}
                 }
@@ -1100,8 +1100,8 @@ class _CattleHistoryFormScreenState extends State<CattleHistoryFormScreen>
       // Prepare data with better validation
       final data = <String, dynamic>{
         'cattle_tag': cattleTag?.trim(),
-        'event_type': selectedHistoryType,
-        'event_date': _controllers['event_date']!.text.trim(),
+        'history_type': selectedHistoryType,
+        'history_date': _controllers['history_date']!.text.trim(),
         'notes': _controllers['notes']!.text.trim(),
       };
 
@@ -1194,7 +1194,7 @@ class _CattleHistoryFormScreenState extends State<CattleHistoryFormScreen>
         throw Exception('Cattle tag is required');
       }
 
-      if (data['event_date'].toString().isEmpty) {
+      if (data['history_date'].toString().isEmpty) {
         throw Exception('Event date is required');
       }
 
@@ -1242,7 +1242,7 @@ class _CattleHistoryFormScreenState extends State<CattleHistoryFormScreen>
         try {
           final tag = (data['cattle_tag'] ?? '').toString();
           final eventsForTag = await CattleHistoryService.getCattleHistoryByTag(tag);
-          final hasSick = eventsForTag.any((e) => (e['event_type']?.toString().toLowerCase() ?? '') == 'sick');
+          final hasSick = eventsForTag.any((e) => (e['history_type']?.toString().toLowerCase() ?? '') == 'sick');
           if (!hasSick) {
             _showErrorMessage('Cannot create Treated event: no prior Sick event found for #$tag.');
             setState(() => _isLoading = false);
@@ -1391,12 +1391,12 @@ class _CattleHistoryFormScreenState extends State<CattleHistoryFormScreen>
               final partnerEvents = allPartnerEvents.where((e) => (e['cattle_tag']?.toString() ?? '') == partnerBullTag).toList();
               Map<String, dynamic> partner = {};
               try {
-                final targetDate = DateTime.parse(data['event_date']);
+                final targetDate = DateTime.parse(data['history_date']);
                 partner = partnerEvents.firstWhere(
                   (e) {
                     try {
-                      if ((e['event_type']?.toString().toLowerCase() ?? '') != 'breeding') return false;
-                      final d = DateTime.parse(e['event_date']?.toString() ?? '');
+                      if ((e['history_type']?.toString().toLowerCase() ?? '') != 'breeding') return false;
+                      final d = DateTime.parse(e['history_date']?.toString() ?? '');
                       return d.year == targetDate.year && d.month == targetDate.month && d.day == targetDate.day;
                     } catch (_) { return false; }
                   },
@@ -1409,8 +1409,8 @@ class _CattleHistoryFormScreenState extends State<CattleHistoryFormScreen>
                 final bullData = <String, dynamic>{
                   'id': partner['id'],
                   'cattle_tag': partnerBullTag,
-                  'event_type': 'Breeding',
-                  'event_date': data['event_date'],
+                  'history_type': 'Breeding',
+                  'history_date': data['history_date'],
                   'breeding_type': 'Natural Breeding',
                   // Do not overwrite partner bull notes
                 };
@@ -1741,7 +1741,7 @@ class _CattleHistoryFormScreenState extends State<CattleHistoryFormScreen>
       print('  - breeding_type: ${_controllers['breeding_type']?.text}');
       print('  - semen_used: ${_controllers['semen_used']?.text}');
       print('  - bull_tag: ${_controllers['bull_tag']?.text}');
-      print('  - event_date: ${_controllers['event_date']?.text}');
+      print('  - history_date: ${_controllers['history_date']?.text}');
       
       // Determine the partner cattle based on breeding type
       if (breedingType == 'artificial_insemination') {
@@ -1810,7 +1810,7 @@ class _CattleHistoryFormScreenState extends State<CattleHistoryFormScreen>
       }
       
       // Check if a breeding event already exists for this partner on the same date
-      final eventDate = _controllers['event_date']?.text ?? '';
+      final eventDate = _controllers['history_date']?.text ?? '';
       if (eventDate.isNotEmpty) {
         final existingEvents = await CattleHistoryService.getCattleHistoryByTag(partnerCattleTag);
         print('DEBUG: Checking for existing history for partner: $partnerCattleTag');
@@ -1824,8 +1824,8 @@ class _CattleHistoryFormScreenState extends State<CattleHistoryFormScreen>
         print('DEBUG: Filtered to ${partnerEvents.length} history for partner cattle');
         
         final hasExistingBreedingEvent = partnerEvents.any((event) => 
-          event['event_type']?.toString().toLowerCase() == 'breeding' && 
-          event['event_date']?.toString() == eventDate
+          event['history_type']?.toString().toLowerCase() == 'breeding' && 
+          event['history_date']?.toString() == eventDate
         );
         
         if (hasExistingBreedingEvent) {
@@ -1840,8 +1840,8 @@ class _CattleHistoryFormScreenState extends State<CattleHistoryFormScreen>
       final reciprocalEventData = {
         'cattle_tag': partnerCattleTag,
         // Use proper case to match backend ENUM
-        'event_type': 'Breeding',
-        'event_date': _controllers['event_date']?.text ?? '',
+        'history_type': 'Breeding',
+        'history_date': _controllers['history_date']?.text ?? '',
         // Map to human-readable for backend storage
         'breeding_type': (breedingType == 'artificial_insemination')
             ? 'Artificial Insemination'

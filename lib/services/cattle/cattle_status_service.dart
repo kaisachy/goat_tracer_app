@@ -48,14 +48,14 @@ class CattleStatusService {
         final breedingEvents = eventsData.where((event) {
           final eventMap = event;
           return eventMap['cattle_id'] == cattleId && 
-                 eventMap['event_type'] == 'Breeding';
+                 eventMap['history_type'] == 'Breeding';
         }).toList();
 
         if (breedingEvents.isNotEmpty) {
           // Sort by date to get the most recent
           breedingEvents.sort((a, b) {
-            final aDate = DateTime.tryParse(a['event_date'] ?? '');
-            final bDate = DateTime.tryParse(b['event_date'] ?? '');
+            final aDate = DateTime.tryParse(a['history_date'] ?? '');
+            final bDate = DateTime.tryParse(b['history_date'] ?? '');
             if (aDate == null || bDate == null) return 0;
             return bDate.compareTo(aDate); // Most recent first
           });
@@ -133,14 +133,14 @@ class CattleStatusService {
         final breedingEvents = eventsData.where((event) {
           final eventMap = event;
           return eventMap['cattle_id'] == cattleId && 
-                 eventMap['event_type'] == 'Breeding';
+                 eventMap['history_type'] == 'Breeding';
         }).toList();
 
         if (breedingEvents.isNotEmpty) {
           // Sort by date to get the most recent
           breedingEvents.sort((a, b) {
-            final aDate = DateTime.tryParse(a['event_date'] ?? '');
-            final bDate = DateTime.tryParse(b['event_date'] ?? '');
+            final aDate = DateTime.tryParse(a['history_date'] ?? '');
+            final bDate = DateTime.tryParse(b['history_date'] ?? '');
             if (aDate == null || bDate == null) return 0;
             return bDate.compareTo(aDate); // Most recent first
           });

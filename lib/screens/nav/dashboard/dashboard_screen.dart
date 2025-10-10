@@ -80,7 +80,7 @@ class _DashboardScreenState extends State<DashboardScreen>
           // Initialize default selected cattle for weight analysis if not set
           if (_selectedWeightCattleTag == null) {
             final tagsWithWeighed = allEvents
-                .where((e) => (e['event_type']?.toString().toLowerCase() ?? '') == 'weighed')
+                .where((e) => (e['history_type']?.toString().toLowerCase() ?? '') == 'weighed')
                 .map((e) => e['cattle_tag']?.toString() ?? '')
                 .where((t) => t.isNotEmpty)
                 .toSet()
@@ -321,14 +321,14 @@ class _DashboardScreenState extends State<DashboardScreen>
 
     // Filter weighed history by selected cattle tag
     final weighedEvents = allEvents.where((e) =>
-      (e['event_type']?.toString().toLowerCase() ?? '') == 'weighed' &&
+      (e['history_type']?.toString().toLowerCase() ?? '') == 'weighed' &&
       (e['weighed_result'] != null && e['weighed_result'].toString().isNotEmpty) &&
-      (e['event_date'] != null && e['event_date'].toString().isNotEmpty) &&
+      (e['history_date'] != null && e['history_date'].toString().isNotEmpty) &&
       (selectedTag != null && e['cattle_tag']?.toString() == selectedTag)
     ).toList()
       ..sort((a, b) {
-        final ad = DateTime.tryParse(a['event_date']?.toString() ?? '') ?? DateTime(1900);
-        final bd = DateTime.tryParse(b['event_date']?.toString() ?? '') ?? DateTime(1900);
+        final ad = DateTime.tryParse(a['history_date']?.toString() ?? '') ?? DateTime(1900);
+        final bd = DateTime.tryParse(b['history_date']?.toString() ?? '') ?? DateTime(1900);
         return ad.compareTo(bd);
       });
 
@@ -721,7 +721,7 @@ class _DashboardScreenState extends State<DashboardScreen>
     int idx = 0;
     String? lastDateLabel;
     return weighedEvents.map((e) {
-      final ds = DateTime.tryParse(e['event_date']?.toString() ?? '');
+      final ds = DateTime.tryParse(e['history_date']?.toString() ?? '');
       final w = double.tryParse(e['weighed_result']?.toString() ?? '');
       final y = (w ?? 0).toDouble();
       final x = (idx).toDouble();
@@ -748,7 +748,7 @@ class _DashboardScreenState extends State<DashboardScreen>
     // Extract pregnant history with expected delivery date
     final List<Map<String, dynamic>> deliveries = allEvents
         .where((e) =>
-            (e['event_type']?.toString().toLowerCase() ?? '') == 'pregnant' &&
+            (e['history_type']?.toString().toLowerCase() ?? '') == 'pregnant' &&
             (e['expected_delivery_date'] != null &&
                 e['expected_delivery_date'].toString().isNotEmpty))
         .map((e) => {
@@ -1145,7 +1145,7 @@ class _DashboardScreenState extends State<DashboardScreen>
   Widget _buildRecentEvents() {
     final recentEvents = allEvents.where((event) {
       try {
-        final eventDate = DateTime.parse(event['event_date']);
+        final eventDate = DateTime.parse(event['history_date']);
         return eventDate.isAfter(DateTime.now().subtract(const Duration(days: 7)));
       } catch (e) {
         return false;
@@ -1216,9 +1216,9 @@ class _DashboardScreenState extends State<DashboardScreen>
   }
 
   Widget _buildEventTile(Map<String, dynamic> event) {
-    final eventType = event['event_type'] ?? 'Unknown';
+    final eventType = event['history_type'] ?? 'Unknown';
     final cattleTag = event['cattle_tag'] ?? 'N/A';
-    final eventDate = event['event_date'];
+    final eventDate = event['history_date'];
     // Restore per-event color usage but remove main card background color
     final color = _getEventTypeColor(eventType);
 

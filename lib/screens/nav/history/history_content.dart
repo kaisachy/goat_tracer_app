@@ -63,8 +63,8 @@ class _HistoryContentState extends State<HistoryContent> {
 
       // Sort history by date to show latest first
       uniqueEvents.sort((a, b) {
-        final dateA = DateTime.tryParse(a['event_date'] ?? '1900-01-01') ?? DateTime(1900);
-        final dateB = DateTime.tryParse(b['event_date'] ?? '1900-01-01') ?? DateTime(1900);
+        final dateA = DateTime.tryParse(a['history_date'] ?? '1900-01-01') ?? DateTime(1900);
+        final dateB = DateTime.tryParse(b['history_date'] ?? '1900-01-01') ?? DateTime(1900);
         return dateB.compareTo(dateA); // Descending order (latest first)
       });
 
@@ -126,8 +126,8 @@ class _HistoryContentState extends State<HistoryContent> {
 
   bool _areEventsIdentical(Map<String, dynamic> event1, Map<String, dynamic> event2) {
     return event1['cattle_tag'] == event2['cattle_tag'] &&
-        event1['event_type'] == event2['event_type'] &&
-        event1['event_date'] == event2['event_date'] &&
+        event1['history_type'] == event2['history_type'] &&
+        event1['history_date'] == event2['history_date'] &&
         event1['notes'] == event2['notes'];
   }
 
@@ -138,7 +138,7 @@ class _HistoryContentState extends State<HistoryContent> {
           event['notes']?.toString().toLowerCase().contains(searchQuery.toLowerCase()) == true;
 
       final matchesFilter = selectedEventType == 'All' ||
-          event['event_type']?.toString().toLowerCase() == selectedEventType.toLowerCase();
+          event['history_type']?.toString().toLowerCase() == selectedEventType.toLowerCase();
 
       return matchesSearch && matchesFilter;
     }).toList();
@@ -233,8 +233,8 @@ class _HistoryContentState extends State<HistoryContent> {
     final filteredCount = _filteredEvents.length;
     final recentEvent = allEvents.isNotEmpty
         ? allEvents.reduce((a, b) =>
-    DateTime.parse(a['event_date'] ?? '1900-01-01')
-        .isAfter(DateTime.parse(b['event_date'] ?? '1900-01-01')) ? a : b)
+    DateTime.parse(a['history_date'] ?? '1900-01-01')
+        .isAfter(DateTime.parse(b['history_date'] ?? '1900-01-01')) ? a : b)
         : null;
 
     // Get unique cattle count
@@ -279,7 +279,7 @@ class _HistoryContentState extends State<HistoryContent> {
               child: _buildSummaryItem(
                 icon: Icons.calendar_today_rounded,
                 label: 'Latest History Record',
-                value: _formatDate(recentEvent['event_date']),
+                value: _formatDate(recentEvent['history_date']),
                 color: AppColors.gold,
               ),
             ),
@@ -415,8 +415,8 @@ class _HistoryContentState extends State<HistoryContent> {
   }
 
   Widget _buildEventAccordion(Map<String, dynamic> event, int index) {
-    final eventType = event['event_type'] ?? 'Unknown';
-    final eventDate = event['event_date'];
+    final eventType = event['history_type'] ?? 'Unknown';
+    final eventDate = event['history_date'];
     final cattleTag = event['cattle_tag']?.toString() ?? 'Unknown';
     final eventColor = HistoryTypeUtils.getHistoryColor(eventType);
     final details = _getEventDetails(event);
@@ -660,7 +660,7 @@ class _HistoryContentState extends State<HistoryContent> {
       builder: (context) => AlertDialog(
         title: const Text('Delete History Record'),
         content: Text(
-          'Are you sure you want to delete this ${event['event_type']} history record for cattle ${event['cattle_tag']}?',
+          'Are you sure you want to delete this ${event['history_type']} history record for cattle ${event['cattle_tag']}?',
         ),
         actions: [
           TextButton(
@@ -699,7 +699,7 @@ class _HistoryContentState extends State<HistoryContent> {
 
   // Get event details based on event type
   List<Map<String, String?>> _getEventDetails(Map<String, dynamic> event) {
-    final eventType = (event['event_type'] ?? '').toString().toLowerCase();
+    final eventType = (event['history_type'] ?? '').toString().toLowerCase();
     final details = <Map<String, String?>>[];
 
     switch (eventType) {
@@ -777,7 +777,7 @@ class _HistoryContentState extends State<HistoryContent> {
   }
 
   void _showEventMenu(BuildContext context, Map<String, dynamic> event, int index) {
-    final eventTypeLower = (event['event_type'] ?? '').toString().toLowerCase();
+    final eventTypeLower = (event['history_type'] ?? '').toString().toLowerCase();
     final RenderBox button = context.findRenderObject() as RenderBox;
     final RenderBox overlay = Overlay.of(context).context.findRenderObject() as RenderBox;
     final RelativeRect position = RelativeRect.fromRect(

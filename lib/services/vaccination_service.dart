@@ -166,7 +166,7 @@ class VaccinationService {
   bool _hasWeanedEvent(String cattleTag, List<Map<String, dynamic>> allEvents) {
     return allEvents.any((event) =>
         event['cattle_tag'] == cattleTag &&
-        (event['event_type']?.toString().toLowerCase() ?? '') == 'weaned');
+        (event['history_type']?.toString().toLowerCase() ?? '') == 'weaned');
   }
 
   /// Generate vaccination schedules for a specific cattle
@@ -244,7 +244,7 @@ class VaccinationService {
       // Check if booster is needed
       if (vaccine.requiresBooster && vaccine.boosterIntervalWeeks != null) {
         final nextDate = VaccinationProtocol.getNextVaccinationDate(
-          lastVaccinationDate: DateTime.parse(lastVaccination['event_date']),
+          lastVaccinationDate: DateTime.parse(lastVaccination['history_date']),
           vaccine: vaccine,
           ageInMonths: ageInMonths,
         );
@@ -268,7 +268,7 @@ class VaccinationService {
       // For non-booster vaccines, check if annual vaccination is needed
       if (vaccine.name.toLowerCase().contains('annual')) {
         final nextDate = VaccinationProtocol.getNextVaccinationDate(
-          lastVaccinationDate: DateTime.parse(lastVaccination['event_date']),
+          lastVaccinationDate: DateTime.parse(lastVaccination['history_date']),
           vaccine: vaccine,
           ageInMonths: ageInMonths,
         );
@@ -366,7 +366,7 @@ class VaccinationService {
     return allEvents
         .where((event) =>
             event['cattle_tag'] == cattleTag &&
-            event['event_type']?.toString().toLowerCase() == 'vaccinated')
+            event['history_type']?.toString().toLowerCase() == 'vaccinated')
         .toList();
   }
 
@@ -387,8 +387,8 @@ class VaccinationService {
     // Sort by date and return the most recent
     relevantVaccinations.sort((a, b) {
       try {
-        final dateA = DateTime.parse(a['event_date']);
-        final dateB = DateTime.parse(b['event_date']);
+        final dateA = DateTime.parse(a['history_date']);
+        final dateB = DateTime.parse(b['history_date']);
         return dateB.compareTo(dateA);
       } catch (e) {
         return 0;
@@ -562,7 +562,7 @@ class VaccinationService {
     final pregnantEvents = allEvents
         .where((event) =>
             event['cattle_tag'] == cattleTag &&
-            event['event_type']?.toString().toLowerCase() == 'pregnant' &&
+            event['history_type']?.toString().toLowerCase() == 'pregnant' &&
             event['expected_delivery_date'] != null &&
             event['expected_delivery_date'].toString().isNotEmpty)
         .toList();
@@ -574,8 +574,8 @@ class VaccinationService {
     // Sort by event date and get the most recent
     pregnantEvents.sort((a, b) {
       try {
-        final dateA = DateTime.parse(a['event_date']);
-        final dateB = DateTime.parse(b['event_date']);
+        final dateA = DateTime.parse(a['history_date']);
+        final dateB = DateTime.parse(b['history_date']);
         return dateB.compareTo(dateA);
       } catch (_) {
         return 0;
@@ -688,7 +688,7 @@ class VaccinationService {
             event['medicine_given']?.toString().toLowerCase() == vaccineName.toLowerCase())
         .where((event) {
           try {
-            final vaccinationDate = DateTime.parse(event['event_date']);
+            final vaccinationDate = DateTime.parse(event['history_date']);
             return vaccinationDate.isAfter(breedingDate);
           } catch (_) {
             return false;

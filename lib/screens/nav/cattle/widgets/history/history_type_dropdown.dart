@@ -320,7 +320,7 @@ class HistoryTypeDropdownState extends State<HistoryTypeDropdown> {
           // Date with Calendar Picker
           _buildHistoryDateField(
             label: 'Date',
-            controller: widget.controllers['event_date']!,
+            controller: widget.controllers['history_date']!,
             hint: 'Select date',
             icon: FontAwesomeIcons.calendarDays,
           ),

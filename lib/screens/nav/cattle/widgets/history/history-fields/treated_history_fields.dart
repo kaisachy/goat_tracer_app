@@ -35,12 +35,12 @@ class TreatedEventFieldsState extends BaseEventFieldsState<TreatedEventFields> {
     try {
       final events = await CattleHistoryService.getCattleHistoryByTag(tag);
       events.sort((a, b) {
-        final ad = DateTime.tryParse(a['event_date']?.toString() ?? '') ?? DateTime(1900);
-        final bd = DateTime.tryParse(b['event_date']?.toString() ?? '') ?? DateTime(1900);
+        final ad = DateTime.tryParse(a['history_date']?.toString() ?? '') ?? DateTime(1900);
+        final bd = DateTime.tryParse(b['history_date']?.toString() ?? '') ?? DateTime(1900);
         return bd.compareTo(ad);
       });
       final latestSick = events.firstWhere(
-        (e) => (e['event_type']?.toString().toLowerCase() ?? '') == 'sick',
+        (e) => (e['history_type']?.toString().toLowerCase() ?? '') == 'sick',
         orElse: () => {},
       );
       if (latestSick.isNotEmpty) {

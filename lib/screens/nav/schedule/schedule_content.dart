@@ -417,8 +417,8 @@ class _ScheduleContentWidgetState extends State<ScheduleContentWidget> with Tick
     for (final tag in tags) {
       final data = <String, dynamic>{
         'cattle_tag': tag,
-        'event_type': mappedEventType,
-        'event_date': _formatDateForApi(schedule.scheduleDateTime),
+        'history_type': mappedEventType,
+        'history_date': _formatDateForApi(schedule.scheduleDateTime),
         'notes': schedule.details,
       };
       // For vaccination, carry over vaccine name and technician
@@ -449,11 +449,11 @@ class _ScheduleContentWidgetState extends State<ScheduleContentWidget> with Tick
     final scheduleDate = _formatDateForApi(schedule.scheduleDateTime);
 
     for (final tag in tags) {
-      // Find matching history by cattle_tag, event_type, and event_date
+      // Find matching history by cattle_tag, history_type, and history_date
       final matches = allEvents.where((e) =>
         (e['cattle_tag']?.toString() ?? '').trim().toUpperCase() == tag.trim().toUpperCase() &&
-        (e['event_type']?.toString().toLowerCase() ?? '') == mappedEventType.toLowerCase() &&
-        (e['event_date']?.toString() ?? '') == scheduleDate
+        (e['history_type']?.toString().toLowerCase() ?? '') == mappedEventType.toLowerCase() &&
+        (e['history_date']?.toString() ?? '') == scheduleDate
       );
       for (final evt in matches) {
         final id = int.tryParse('${evt['id']}');

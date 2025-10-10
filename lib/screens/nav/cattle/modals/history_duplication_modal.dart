@@ -57,7 +57,7 @@ class _HistoryDuplicationModalState extends State<HistoryDuplicationModal> {
       setState(() => _isLoading = true);
 
       final allCattle = await CattleService.getAllCattle();
-      final originalEventType = widget.originalEvent['event_type']?.toString().toLowerCase() ?? '';
+      final originalEventType = widget.originalEvent['history_type']?.toString().toLowerCase() ?? '';
       final originalCattleTag = widget.originalEvent['cattle_tag']?.toString() ?? '';
 
       print('Debug: Loading cattle for event type: $originalEventType');
@@ -294,8 +294,8 @@ class _HistoryDuplicationModalState extends State<HistoryDuplicationModal> {
             'cattle_tag': cattleTag,
             'bull_tag': widget.originalEvent['bull_tag'],
             'calf_tag': widget.originalEvent['calf_tag'],
-            'event_type': widget.originalEvent['event_type'],
-            'event_date': _eventDateController.text,
+            'history_type': widget.originalEvent['history_type'],
+            'history_date': _eventDateController.text,
               'disease_type': widget.originalEvent['disease_type'],
             'diagnosis': widget.originalEvent['diagnosis'],
             'technician': widget.originalEvent['technician'],
@@ -381,7 +381,7 @@ class _HistoryDuplicationModalState extends State<HistoryDuplicationModal> {
 
   @override
   Widget build(BuildContext context) {
-    final eventType = widget.originalEvent['event_type']?.toString() ?? '';
+    final eventType = widget.originalEvent['history_type']?.toString() ?? '';
 
     return Dialog(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),

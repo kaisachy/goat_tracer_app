@@ -64,8 +64,8 @@ class _HistoryScreenState extends State<HistoryScreen> {
 
       // Sort history records by date to show latest first
       uniqueHistoryRecords.sort((a, b) {
-        final dateA = DateTime.tryParse(a['event_date'] ?? '1900-01-01') ?? DateTime(1900);
-        final dateB = DateTime.tryParse(b['event_date'] ?? '1900-01-01') ?? DateTime(1900);
+        final dateA = DateTime.tryParse(a['history_date'] ?? '1900-01-01') ?? DateTime(1900);
+        final dateB = DateTime.tryParse(b['history_date'] ?? '1900-01-01') ?? DateTime(1900);
         return dateB.compareTo(dateA); // Descending order (latest first)
       });
 
@@ -116,8 +116,8 @@ class _HistoryScreenState extends State<HistoryScreen> {
       } else {
         // Duplicate found - decide which one to keep and which to delete
         final existingHistoryRecord = uniqueHistoryRecords[existingHistoryRecordIndex];
-        final currentHistoryRecordDate = DateTime.tryParse(historyRecord['event_date'] ?? '1900-01-01') ?? DateTime(1900);
-        final existingHistoryRecordDate = DateTime.tryParse(existingHistoryRecord['event_date'] ?? '1900-01-01') ?? DateTime(1900);
+        final currentHistoryRecordDate = DateTime.tryParse(historyRecord['history_date'] ?? '1900-01-01') ?? DateTime(1900);
+        final existingHistoryRecordDate = DateTime.tryParse(existingHistoryRecord['history_date'] ?? '1900-01-01') ?? DateTime(1900);
 
         // Keep the more recent history record, or the one with higher ID if dates are same
         if (currentHistoryRecordDate.isAfter(existingHistoryRecordDate) ||
@@ -180,14 +180,14 @@ class _HistoryScreenState extends State<HistoryScreen> {
   // Helper method to check if two history records are identical
   bool _areHistoryRecordsIdentical(Map<String, dynamic> historyRecord1, Map<String, dynamic> historyRecord2) {
     // Get the history type to determine which fields to compare
-    final historyType1 = (historyRecord1['event_type'] ?? '').toString().toLowerCase();
-    final historyType2 = (historyRecord2['event_type'] ?? '').toString().toLowerCase();
+    final historyType1 = (historyRecord1['history_type'] ?? '').toString().toLowerCase();
+    final historyType2 = (historyRecord2['history_type'] ?? '').toString().toLowerCase();
 
     // If history types are different, they're not identical
     if (historyType1 != historyType2) return false;
 
     // Compare basic fields that are always relevant
-    if (!_compareFieldValues(historyRecord1['event_date'], historyRecord2['event_date'])) return false;
+    if (!_compareFieldValues(historyRecord1['history_date'], historyRecord2['history_date'])) return false;
     if (!_compareFieldValues(historyRecord1['cattle_tag'], historyRecord2['cattle_tag'])) return false;
     if (!_compareFieldValues(historyRecord1['notes'], historyRecord2['notes'])) return false;
 
@@ -272,7 +272,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
 
   List<Map<String, dynamic>> get _filteredHistoryRecords {
     return allHistoryRecords.where((historyRecord) {
-      final type = (historyRecord['event_type'] ?? '').toString().toLowerCase();
+      final type = (historyRecord['history_type'] ?? '').toString().toLowerCase();
       final notes = (historyRecord['notes'] ?? '').toString().toLowerCase();
       final diagnosis = (historyRecord['diagnosis'] ?? '').toString().toLowerCase();
       final cattleTag = (historyRecord['cattle_tag'] ?? '').toString().toLowerCase();
@@ -318,7 +318,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
       Offset.zero & overlay.size,
     );
 
-    final historyType = historyRecord['event_type']?.toString() ?? '';
+    final historyType = historyRecord['history_type']?.toString() ?? '';
     final canDuplicate = _canDuplicateHistory(historyType);
 
     showMenu(
@@ -411,8 +411,8 @@ class _HistoryScreenState extends State<HistoryScreen> {
         cattleTag: historyRecord['cattle_tag']?.toString() ?? '',
         bullTag: historyRecord['bull_tag']?.toString(),
         calfTag: historyRecord['calf_tag']?.toString(),
-        historyType: historyRecord['event_type']?.toString() ?? '',
-        historyDate: historyRecord['event_date']?.toString() ?? '',
+        historyType: historyRecord['history_type']?.toString() ?? '',
+        historyDate: historyRecord['history_date']?.toString() ?? '',
         sicknessSymptoms: historyRecord['sickness_symptoms']?.toString(),
         diagnosis: historyRecord['diagnosis']?.toString(),
         technician: historyRecord['technician']?.toString(),
@@ -494,11 +494,11 @@ class _HistoryScreenState extends State<HistoryScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      '${historyRecord['event_type']} - ${historyRecord['cattle_tag']}',
+                      '${historyRecord['history_type']} - ${historyRecord['cattle_tag']}',
                       style: const TextStyle(fontWeight: FontWeight.bold),
                     ),
                     Text(
-                      'Date: ${_formatDate(historyRecord['event_date'])}',
+                      'Date: ${_formatDate(historyRecord['history_date'])}',
                       style: TextStyle(color: Colors.grey.shade600, fontSize: 12),
                     ),
                   ],
@@ -572,7 +572,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('History record "${historyRecord['event_type']}" deleted successfully'),
+              content: Text('History record "${historyRecord['history_type']}" deleted successfully'),
               backgroundColor: Colors.green,
               behavior: SnackBarBehavior.floating,
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -583,7 +583,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('Failed to delete history record "${historyRecord['event_type']}"'),
+              content: Text('Failed to delete history record "${historyRecord['history_type']}"'),
               backgroundColor: Colors.red,
               behavior: SnackBarBehavior.floating,
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -748,8 +748,8 @@ class _HistoryScreenState extends State<HistoryScreen> {
     final filteredCount = _filteredHistoryRecords.length;
     final recentHistoryRecord = allHistoryRecords.isNotEmpty
         ? allHistoryRecords.reduce((a, b) =>
-    DateTime.parse(a['event_date'] ?? '1900-01-01')
-        .isAfter(DateTime.parse(b['event_date'] ?? '1900-01-01')) ? a : b)
+    DateTime.parse(a['history_date'] ?? '1900-01-01')
+        .isAfter(DateTime.parse(b['history_date'] ?? '1900-01-01')) ? a : b)
         : null;
 
     // Get unique cattle count
@@ -796,7 +796,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
               child: _buildSummaryItem(
                 icon: Icons.schedule_rounded,
                 label: 'Latest',
-                value: _formatDate(recentHistoryRecord['event_date']),
+                value: _formatDate(recentHistoryRecord['history_date']),
                 color: Colors.blue.shade400,
               ),
             ),
@@ -837,8 +837,8 @@ class _HistoryScreenState extends State<HistoryScreen> {
   }
 
   Widget _buildHistoryAccordion(Map<String, dynamic> historyRecord, int index) {
-    final historyType = historyRecord['event_type'] ?? 'Unknown';
-    final historyDate = historyRecord['event_date'];
+    final historyType = historyRecord['history_type'] ?? 'Unknown';
+    final historyDate = historyRecord['history_date'];
     final cattleTag = historyRecord['cattle_tag']?.toString() ?? 'Unknown';
     final historyColor = HistoryTypeUtils.getHistoryColor(historyType);
     final details = _getHistoryDetails(historyRecord);
@@ -1050,8 +1050,8 @@ class _HistoryScreenState extends State<HistoryScreen> {
   }
 
   List<MapEntry<String, String>> _getHistoryDetails(Map<String, dynamic> historyRecord) {
-    final historyType = (historyRecord['event_type'] ?? '').toString().toLowerCase();
-    final originalHistoryType = historyRecord['event_type']?.toString();
+    final historyType = (historyRecord['history_type'] ?? '').toString().toLowerCase();
+    final originalHistoryType = historyRecord['history_type']?.toString();
     final Map<String, String?> relevantDetails = {};
 
     // Always show notes if available
