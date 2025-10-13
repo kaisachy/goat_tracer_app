@@ -654,23 +654,6 @@ class WebSchedulerWidget extends StatelessWidget {
     return '${displayHour.toString().padLeft(2, '0')}:${minute.toString().padLeft(2, '0')} $period';
   }
 
-  String _formatCompactTimeRange(DateTime startTime, DateTime endTime) {
-    // Full format with line breaks: "7:00AM-9:00AM"
-    final startHour = startTime.hour;
-    final startMinute = startTime.minute;
-    final startPeriod = startHour >= 12 ? 'PM' : 'AM';
-    final startDisplayHour = startHour > 12 ? startHour - 12 : (startHour == 0 ? 12 : startHour);
-    final startTimeString = '${startDisplayHour.toString().padLeft(2, '0')}:${startMinute.toString().padLeft(2, '0')}$startPeriod';
-    
-    final endHour = endTime.hour;
-    final endMinute = endTime.minute;
-    final endPeriod = endHour >= 12 ? 'PM' : 'AM';
-    final endDisplayHour = endHour > 12 ? endHour - 12 : (endHour == 0 ? 12 : endHour);
-    final endTimeString = '${endDisplayHour.toString().padLeft(2, '0')}:${endMinute.toString().padLeft(2, '0')}$endPeriod';
-    
-    return '$startTimeString-$endTimeString';
-  }
-
   String _getDayName(int weekday) {
     const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
     return days[weekday - 1];

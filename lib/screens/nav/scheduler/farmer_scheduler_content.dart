@@ -466,25 +466,6 @@ class _FarmerSchedulerContentWidgetState extends State<FarmerSchedulerContentWid
     return 1.0; // Default to 1 hour
   }
 
-  String _formatDateTime(DateTime dateTime) {
-    const months = [
-      'January', 'February', 'March', 'April', 'May', 'June',
-      'July', 'August', 'September', 'October', 'November', 'December'
-    ];
-    
-    final month = months[dateTime.month - 1];
-    final day = dateTime.day;
-    final year = dateTime.year;
-    
-    final hour = dateTime.hour;
-    final minute = dateTime.minute;
-    final period = hour >= 12 ? 'PM' : 'AM';
-    final displayHour = hour > 12 ? hour - 12 : (hour == 0 ? 12 : hour);
-    final timeString = '${displayHour.toString().padLeft(2, '0')}:${minute.toString().padLeft(2, '0')} $period';
-    
-    return '$month $day, $year at $timeString';
-  }
-
   @override
   Widget build(BuildContext context) {
     return Container(
