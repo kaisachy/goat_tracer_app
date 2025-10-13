@@ -16,8 +16,6 @@ class SchedulerService {
         throw Exception('Authentication required');
       }
 
-      print('Fetching schedules from: $_baseUrl/cattles/schedule');
-      
       final response = await http.get(
         Uri.parse('$_baseUrl/cattles/schedule'),
         headers: {
@@ -26,41 +24,28 @@ class SchedulerService {
         },
       ).timeout(const Duration(seconds: _timeoutDuration));
 
-      print('Response status: ${response.statusCode}');
-      print('Response body: ${response.body}');
-
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
+        
         if (data['data'] != null) {
           final List<dynamic> schedulesJson = data['data'];
-          print('Found ${schedulesJson.length} schedules');
           
           // Handle empty array case (valid response)
           if (schedulesJson.isEmpty) {
-            print('No schedules found - returning empty list');
             return [];
           }
           
           final schedules = schedulesJson.map((json) => Schedule.fromJson(json)).toList();
-          
-          // Debug: Print each schedule
-          for (var schedule in schedules) {
-            print('Schedule: ${schedule.title} on ${schedule.scheduleDateTime} (${schedule.status})');
-          }
-          
           return schedules;
         } else {
-          print('No data field in response: ${data}');
           throw Exception(data['message'] ?? 'Failed to fetch schedules');
         }
       } else if (response.statusCode == 401) {
         throw Exception('Authentication failed. Please login again.');
       } else {
-        print('HTTP Error: ${response.statusCode} - ${response.body}');
         throw Exception('Failed to fetch schedules: ${response.statusCode}');
       }
     } catch (e) {
-      print('Exception in getAllSchedules: $e');
       // Return empty list instead of throwing exception to allow calendar to show
       // This matches the web version behavior where calendar is always visible
       return [];

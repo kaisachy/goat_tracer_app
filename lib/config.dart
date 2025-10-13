@@ -4,6 +4,6 @@
 
 
 class AppConfig {
-  static const String baseUrl = 'http://192.168.254.131/cattle-tracer/public';
+  static const String baseUrl = 'http://192.168.254.117/cattle-tracer/public';
 }
 

@@ -11,6 +11,7 @@ class Schedule {
   final String? scheduledBy;
   final String? details;
   final String? vaccineType;
+  final String? location;
   final String? creatorName;
   final DateTime? createdAt;
   final DateTime? updatedAt;
@@ -28,6 +29,7 @@ class Schedule {
     this.scheduledBy,
     this.details,
     this.vaccineType,
+    this.location,
     this.creatorName,
     this.createdAt,
     this.updatedAt,
@@ -48,6 +50,7 @@ class Schedule {
         scheduledBy: json['scheduled_by']?.toString(),
         details: json['details']?.toString(),
         vaccineType: json['vaccine_type']?.toString(),
+        location: json['location']?.toString(),
         creatorName: _getCreatorName(json),
         createdAt: _parseDateTime(json['created_at']),
         updatedAt: _parseDateTime(json['updated_at']),
@@ -142,6 +145,7 @@ class Schedule {
       'scheduled_by': scheduledBy,
       'details': details,
       if (vaccineType != null) 'vaccine_type': vaccineType,
+      if (location != null) 'location': location,
       if (createdAt != null) 'created_at': createdAt!.toIso8601String(),
       if (updatedAt != null) 'updated_at': updatedAt!.toIso8601String(),
     };
@@ -162,6 +166,7 @@ class Schedule {
       'scheduled_by': scheduledBy,
       'details': details,
       if (vaccineType != null) 'vaccine_type': vaccineType,
+      if (location != null) 'location': location,
     };
   }
 
@@ -188,6 +193,7 @@ class Schedule {
     String? scheduledBy,
     String? details,
     String? vaccineType,
+    String? location,
     String? creatorName,
     DateTime? createdAt,
     DateTime? updatedAt,
@@ -205,6 +211,7 @@ class Schedule {
       scheduledBy: scheduledBy ?? this.scheduledBy,
       details: details ?? this.details,
       vaccineType: vaccineType ?? this.vaccineType,
+      location: location ?? this.location,
       creatorName: creatorName ?? this.creatorName,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
@@ -281,6 +288,7 @@ class Schedule {
               scheduledBy == other.scheduledBy &&
               details == other.details &&
               vaccineType == other.vaccineType &&
+              location == other.location &&
               creatorName == other.creatorName;
 
   @override
@@ -297,6 +305,7 @@ class Schedule {
       scheduledBy.hashCode ^
       details.hashCode ^
       vaccineType.hashCode ^
+      location.hashCode ^
       creatorName.hashCode;
 }
 

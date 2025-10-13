@@ -72,6 +72,10 @@ class _FarmerSchedulerContentWidgetState extends State<FarmerSchedulerContentWid
   void _onDateSelected(DateTime date) {
     setState(() {
       _selectedDate = date;
+      // Automatically switch to Day view when a date is clicked from Month view
+      if (_currentView == 'month') {
+        _currentView = 'day';
+      }
     });
   }
 
@@ -95,85 +99,255 @@ class _FarmerSchedulerContentWidgetState extends State<FarmerSchedulerContentWid
   }
 
   Widget _buildEventDetailsPopup(Schedule schedule) {
+    final startTime = schedule.scheduleDateTime;
+    final duration = _getDurationAsDouble(schedule.duration);
+    final endTime = startTime.add(Duration(minutes: (duration * 60).round()));
+    
     return Dialog(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+      elevation: 20,
       child: Container(
         constraints: const BoxConstraints(maxWidth: 500, maxHeight: 600),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(20),
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              Colors.white,
+              Colors.grey[50]!,
+            ],
+          ),
+        ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            // Header
+            // Enhanced Header with vibrant green
             Container(
-              padding: const EdgeInsets.all(20),
+              padding: const EdgeInsets.all(24),
               decoration: BoxDecoration(
-                color: AppColors.primary,
-                borderRadius: const BorderRadius.only(
-                  topLeft: Radius.circular(12),
-                  topRight: Radius.circular(12),
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [
+                    AppColors.vibrantGreen,
+                    AppColors.vibrantGreen.withOpacity(0.8),
+                  ],
                 ),
+                borderRadius: const BorderRadius.only(
+                  topLeft: Radius.circular(20),
+                  topRight: Radius.circular(20),
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: AppColors.vibrantGreen.withOpacity(0.3),
+                    blurRadius: 10,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
               ),
               child: Row(
                 children: [
-                  Expanded(
-                    child: Text(
-                      schedule.title,
-                      style: const TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white,
-                      ),
+                  // Status indicator
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.2),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Icon(
+                      _getStatusIcon(schedule),
+                      color: Colors.white,
+                      size: 24,
                     ),
                   ),
+                  const SizedBox(width: 16),
+                  // Title and status
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          schedule.title,
+                          style: const TextStyle(
+                            fontSize: 22,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                            letterSpacing: 0.5,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withOpacity(0.2),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Text(
+                            schedule.status.toUpperCase(),
+                            style: const TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
+                              color: Colors.white,
+                              letterSpacing: 1,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  // Close button
                   IconButton(
                     onPressed: () => Navigator.of(context).pop(),
-                    icon: const Icon(Icons.close, color: Colors.white),
+                    icon: const Icon(Icons.close, color: Colors.white, size: 20),
+                    padding: const EdgeInsets.all(8),
                   ),
                 ],
               ),
             ),
-            // Content
+            // Enhanced Content
             Flexible(
               child: SingleChildScrollView(
-                padding: const EdgeInsets.all(20),
+                padding: const EdgeInsets.all(24),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // Description
+                    // Time and Duration Card
                     Container(
                       width: double.infinity,
-                      padding: const EdgeInsets.all(12),
+                      padding: const EdgeInsets.all(20),
                       decoration: BoxDecoration(
-                        color: Colors.grey[50],
-                        borderRadius: BorderRadius.circular(8),
-                        border: Border.all(color: Colors.grey[200]!),
-                      ),
-                      child: Text(
-                        schedule.details ?? 'No description provided',
-                        style: TextStyle(
-                          fontSize: 14,
-                          color: AppColors.textSecondary,
+                        gradient: LinearGradient(
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                          colors: [
+                            AppColors.vibrantGreen.withOpacity(0.1),
+                            AppColors.vibrantGreen.withOpacity(0.05),
+                          ],
                         ),
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(
+                          color: AppColors.vibrantGreen.withOpacity(0.2),
+                          width: 1,
+                        ),
+                      ),
+                      child: Column(
+                        children: [
+                          Row(
+                            children: [
+                              Icon(
+                                Icons.access_time,
+                                color: AppColors.vibrantGreen,
+                                size: 20,
+                              ),
+                              const SizedBox(width: 8),
+                              Text(
+                                'Schedule Time',
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w600,
+                                  color: AppColors.vibrantGreen,
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 12),
+                          Text(
+                            _formatTimeRange(startTime, endTime),
+                            style: const TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.black87,
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                     const SizedBox(height: 20),
-                    // Metadata
-                    _buildMetadataItem(Icons.calendar_today, 'Date and time', _formatDateTime(schedule.scheduleDateTime)),
-                    const SizedBox(height: 12),
-                    _buildMetadataItem(Icons.timer, 'Duration', '${schedule.duration ?? '1'}h'),
-                    const SizedBox(height: 12),
-                    _buildMetadataItem(Icons.notifications, 'Reminder', schedule.reminder ?? 'No Reminder'),
-                    const SizedBox(height: 12),
-                    _buildMetadataItem(Icons.person, 'Created by', schedule.creatorName ?? 'Unknown User'),
-                    const SizedBox(height: 20),
-                    // Action buttons (view-only for farmers)
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.end,
-                      children: [
-                        TextButton(
-                          onPressed: () => Navigator.of(context).pop(),
-                          child: const Text('Close'),
+                    // Description Card
+                    if (schedule.details != null && schedule.details!.isNotEmpty) ...[
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.all(20),
+                        decoration: BoxDecoration(
+                          color: Colors.grey[50],
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(color: Colors.grey[200]!),
                         ),
-                      ],
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                Icon(
+                                  Icons.description,
+                                  color: AppColors.primary,
+                                  size: 20,
+                                ),
+                                const SizedBox(width: 8),
+                                Text(
+                                  'Description',
+                                  style: TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w600,
+                                    color: AppColors.primary,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 12),
+                            Text(
+                              schedule.details!,
+                              style: TextStyle(
+                                fontSize: 14,
+                                color: Colors.grey[700],
+                                height: 1.5,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 20),
+                    ],
+                    // Enhanced Metadata Grid
+                    Container(
+                      padding: const EdgeInsets.all(20),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(color: Colors.grey[200]!),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.grey.withOpacity(0.1),
+                            blurRadius: 10,
+                            offset: const Offset(0, 2),
+                          ),
+                        ],
+                      ),
+                      child: Column(
+                        children: [
+                          _buildEnhancedMetadataItem(
+                            Icons.person_outline,
+                            'Created by',
+                            schedule.creatorName ?? 'Unknown User',
+                            Colors.blue,
+                          ),
+                          const SizedBox(height: 16),
+                          _buildEnhancedMetadataItem(
+                            Icons.location_on_outlined,
+                            'Location',
+                            schedule.location ?? 'No location specified',
+                            Colors.green,
+                          ),
+                          const SizedBox(height: 16),
+                          _buildEnhancedMetadataItem(
+                            Icons.notifications_outlined,
+                            'Reminder',
+                            schedule.reminder ?? 'No Reminder',
+                            Colors.orange,
+                          ),
+                        ],
+                      ),
                     ),
                   ],
                 ),
@@ -185,17 +359,111 @@ class _FarmerSchedulerContentWidgetState extends State<FarmerSchedulerContentWid
     );
   }
 
-  Widget _buildMetadataItem(IconData icon, String label, String value) {
+  Widget _buildEnhancedMetadataItem(IconData icon, String label, String value, Color iconColor) {
     return Row(
       children: [
-        Icon(icon, size: 16, color: AppColors.primary),
-        const SizedBox(width: 8),
-        Text(
-          '$label: $value',
-          style: const TextStyle(fontSize: 14),
+        Container(
+          padding: const EdgeInsets.all(8),
+          decoration: BoxDecoration(
+            color: iconColor.withOpacity(0.1),
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Icon(icon, size: 18, color: iconColor),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                label,
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w500,
+                  color: Colors.grey[600],
+                  letterSpacing: 0.5,
+                ),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                value,
+                style: const TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.black87,
+                ),
+              ),
+            ],
+          ),
         ),
       ],
     );
+  }
+
+  IconData _getStatusIcon(Schedule schedule) {
+    if (schedule.status.toLowerCase() == 'cancelled') {
+      return Icons.cancel_outlined;
+    } else if (schedule.status.toLowerCase() == 'completed') {
+      return Icons.check_circle_outline;
+    } else if (schedule.isOverdue) {
+      return Icons.warning_amber_outlined;
+    } else {
+      return Icons.event_outlined;
+    }
+  }
+
+  String _formatTimeRange(DateTime startTime, DateTime endTime) {
+    const months = [
+      'January', 'February', 'March', 'April', 'May', 'June',
+      'July', 'August', 'September', 'October', 'November', 'December'
+    ];
+    
+    final month = months[startTime.month - 1];
+    final day = startTime.day;
+    final year = startTime.year;
+    
+    // Format start time
+    final startHour = startTime.hour;
+    final startMinute = startTime.minute;
+    final startPeriod = startHour >= 12 ? 'PM' : 'AM';
+    final startDisplayHour = startHour > 12 ? startHour - 12 : (startHour == 0 ? 12 : startHour);
+    final startTimeString = '${startDisplayHour.toString().padLeft(2, '0')}:${startMinute.toString().padLeft(2, '0')} $startPeriod';
+    
+    // Format end time
+    final endHour = endTime.hour;
+    final endMinute = endTime.minute;
+    final endPeriod = endHour >= 12 ? 'PM' : 'AM';
+    final endDisplayHour = endHour > 12 ? endHour - 12 : (endHour == 0 ? 12 : endHour);
+    final endTimeString = '${endDisplayHour.toString().padLeft(2, '0')}:${endMinute.toString().padLeft(2, '0')} $endPeriod';
+    
+    return '$month $day, $year at $startTimeString - $endTimeString';
+  }
+
+  double _getDurationAsDouble(dynamic duration) {
+    if (duration == null) return 1.0;
+    
+    if (duration is String) {
+      final durationStr = duration.toLowerCase().trim();
+      
+      // Handle formats like "2h", "1.5h", "30m", "90m"
+      if (durationStr.endsWith('h')) {
+        final hoursStr = durationStr.substring(0, durationStr.length - 1);
+        return double.tryParse(hoursStr) ?? 1.0;
+      } else if (durationStr.endsWith('m')) {
+        final minutesStr = durationStr.substring(0, durationStr.length - 1);
+        final minutes = double.tryParse(minutesStr) ?? 60.0;
+        return minutes / 60.0; // Convert minutes to hours
+      } else {
+        // Try to parse as a number
+        return double.tryParse(durationStr) ?? 1.0;
+      }
+    } else if (duration is int) {
+      return duration.toDouble();
+    } else if (duration is double) {
+      return duration;
+    }
+    
+    return 1.0; // Default to 1 hour
   }
 
   String _formatDateTime(DateTime dateTime) {
