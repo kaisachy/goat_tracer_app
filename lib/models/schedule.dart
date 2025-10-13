@@ -11,6 +11,7 @@ class Schedule {
   final String? scheduledBy;
   final String? details;
   final String? vaccineType;
+  final String? creatorName;
   final DateTime? createdAt;
   final DateTime? updatedAt;
 
@@ -27,6 +28,7 @@ class Schedule {
     this.scheduledBy,
     this.details,
     this.vaccineType,
+    this.creatorName,
     this.createdAt,
     this.updatedAt,
   });
@@ -46,6 +48,7 @@ class Schedule {
         scheduledBy: json['scheduled_by']?.toString(),
         details: json['details']?.toString(),
         vaccineType: json['vaccine_type']?.toString(),
+        creatorName: _getCreatorName(json),
         createdAt: _parseDateTime(json['created_at']),
         updatedAt: _parseDateTime(json['updated_at']),
       );
@@ -109,6 +112,22 @@ class Schedule {
     return tags.isEmpty ? null : tags.join(',');
   }
 
+  // Get creator name from JSON data
+  static String? _getCreatorName(Map<String, dynamic> json) {
+    final firstName = json['first_name']?.toString();
+    final lastName = json['last_name']?.toString();
+    
+    if (firstName != null && lastName != null) {
+      return '$firstName $lastName';
+    } else if (firstName != null) {
+      return firstName;
+    } else if (lastName != null) {
+      return lastName;
+    }
+    
+    return null;
+  }
+
   Map<String, dynamic> toJson() {
     return {
       if (id != null) 'id': id,
@@ -169,6 +188,7 @@ class Schedule {
     String? scheduledBy,
     String? details,
     String? vaccineType,
+    String? creatorName,
     DateTime? createdAt,
     DateTime? updatedAt,
   }) {
@@ -185,6 +205,7 @@ class Schedule {
       scheduledBy: scheduledBy ?? this.scheduledBy,
       details: details ?? this.details,
       vaccineType: vaccineType ?? this.vaccineType,
+      creatorName: creatorName ?? this.creatorName,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
     );
@@ -259,7 +280,8 @@ class Schedule {
               status == other.status &&
               scheduledBy == other.scheduledBy &&
               details == other.details &&
-              vaccineType == other.vaccineType;
+              vaccineType == other.vaccineType &&
+              creatorName == other.creatorName;
 
   @override
   int get hashCode =>
@@ -274,7 +296,8 @@ class Schedule {
       status.hashCode ^
       scheduledBy.hashCode ^
       details.hashCode ^
-      vaccineType.hashCode;
+      vaccineType.hashCode ^
+      creatorName.hashCode;
 }
 
 // Constants for enum values

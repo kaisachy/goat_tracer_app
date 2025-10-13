@@ -12,7 +12,7 @@ import 'nav/dashboard/dashboard_screen.dart';
 import 'nav/profile/profile_screen.dart';
 import 'nav/milk/milk_screen.dart';
 import 'nav/history/history_screen.dart';
-import 'nav/schedule/schedule_screen.dart';
+import 'nav/scheduler/farmer_scheduler_screen.dart';
 import 'nav/setting/setting_screen.dart';
 import 'package:cattle_tracer_app/services/cattle/cattle_status_service.dart';
 import 'package:cattle_tracer_app/services/refresh_service.dart';
@@ -66,7 +66,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
       const AuthGuard(child: CattleScreen()),
       AuthGuard(child: DashboardScreen()),
       const AuthGuard(child: HistoryScreen()),
-      const AuthGuard(child: ScheduleScreen()),
+      const AuthGuard(child: FarmerSchedulerScreen()),
       AuthGuard(child: MilkScreen()),
       AuthGuard(child: SettingScreen()),
     ];
@@ -536,7 +536,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
       case 3:
         return 'Cattle History';
       case 4:
-        return 'Schedule';
+        return 'Scheduler';
       case 5:
         return 'Milk Production';
       case 6:
@@ -581,7 +581,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                 ),
                 _buildDrawerItem(
                   icon: Icons.event_available_rounded,
-                  text: 'Schedule',
+                  text: 'Scheduler',
                   index: 4,
                   onTap: () => _onNavItemTapped(4),
                 ),
