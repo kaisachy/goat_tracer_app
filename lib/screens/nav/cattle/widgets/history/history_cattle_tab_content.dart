@@ -36,13 +36,13 @@ class _HistoryCattleTabContentState extends State<HistoryCattleTabContent> {
     final femaleEventTypes = [
       'All', 'Dry off', 'Sick', 'Treated', 'Breeding', 'Weighed', 'Gives Birth',
       'Vaccinated', 'Pregnant', 'Aborted Pregnancy', 'Deworming',
-      'Hoof Trimming', 'Weaned', 'Deceased', 'Lost', 'Other',
+      'Hoof Trimming', 'Weaned', 'Deceased', 'Lost', 'Sold', 'Other',
     ];
 
     // Comprehensive event types for male cattle - includes all available event types
     final maleEventTypes = [
       'All', 'Sick', 'Treated', 'Breeding', 'Weighed', 'Vaccinated', 'Deworming',
-      'Hoof Trimming', 'Castrated', 'Weaned', 'Deceased', 'Lost', 'Other',
+      'Hoof Trimming', 'Castrated', 'Weaned', 'Deceased', 'Lost', 'Sold', 'Other',
     ];
 
     // Check cattle sex and return appropriate event types
@@ -60,6 +60,7 @@ class _HistoryCattleTabContentState extends State<HistoryCattleTabContent> {
     'hoof trimming',
     'deceased',
     'lost',
+    'sold',
   ];
 
   @override
@@ -206,6 +207,9 @@ class _HistoryCattleTabContentState extends State<HistoryCattleTabContent> {
       // Only basic fields matter for dry off
         return true;
 
+      case 'sick':
+        return _compareFieldValues(event1['disease_type'], event2['disease_type']);
+
       case 'treated':
         return _compareFieldValues(event1['disease_type'], event2['disease_type']) &&
             _compareFieldValues(event1['diagnosis'], event2['diagnosis']) &&
@@ -254,6 +258,13 @@ class _HistoryCattleTabContentState extends State<HistoryCattleTabContent> {
       case 'deceased':
         return _compareFieldValues(event1['cause_of_death'], event2['cause_of_death']);
 
+      case 'sold':
+        return _compareFieldValues(event1['sold_amount'], event2['sold_amount']) &&
+            _compareFieldValues(event1['buyer'], event2['buyer']);
+
+      case 'lost':
+        return _compareFieldValues(event1['last_known_location'], event2['last_known_location']);
+
       case 'other':
       default:
       // For 'other' event, compare all potentially relevant fields
@@ -267,7 +278,10 @@ class _HistoryCattleTabContentState extends State<HistoryCattleTabContent> {
             _compareFieldValues(event1['estimated_return_date'], event2['estimated_return_date']) &&
             _compareFieldValues(event1['weighed_result'], event2['weighed_result']) &&
             _compareFieldValues(event1['breeding_date'], event2['breeding_date']) &&
-            _compareFieldValues(event1['expected_delivery_date'], event2['expected_delivery_date']);
+            _compareFieldValues(event1['expected_delivery_date'], event2['expected_delivery_date']) &&
+            _compareFieldValues(event1['sold_amount'], event2['sold_amount']) &&
+            _compareFieldValues(event1['buyer'], event2['buyer']) &&
+            _compareFieldValues(event1['last_known_location'], event2['last_known_location']);
     }
   }
 
@@ -313,9 +327,9 @@ class _HistoryCattleTabContentState extends State<HistoryCattleTabContent> {
       final sex = widget.cattle.sex.toLowerCase();
       final validEventTypes = sex == 'female'
           ? ['dry off', 'sick', 'treated', 'breeding', 'weighed', 'gives birth', 'vaccinated',
-        'pregnant', 'aborted pregnancy', 'deworming', 'hoof trimming', 'deceased', 'lost', 'other']
+        'pregnant', 'aborted pregnancy', 'deworming', 'hoof trimming', 'deceased', 'lost', 'sold', 'other']
           : ['sick', 'treated', 'breeding', 'weighed', 'vaccinated', 'deworming', 'hoof trimming',
-        'castrated', 'weaned', 'deceased', 'lost', 'other'];
+        'castrated', 'weaned', 'deceased', 'lost', 'sold', 'other'];
 
       final matchesSex = validEventTypes.contains(type);
 
@@ -462,6 +476,10 @@ class _HistoryCattleTabContentState extends State<HistoryCattleTabContent> {
         expectedDeliveryDate: event['expected_delivery_date']?.toString(),
         notes: event['notes']?.toString(),
         lastKnownLocation: event['last_known_location']?.toString(),
+        soldAmount: event['sold_amount'] != null
+            ? double.tryParse(event['sold_amount'].toString())
+            : null,
+        buyer: event['buyer']?.toString(),
       );
 
       // Navigate to edit screen
@@ -909,8 +927,8 @@ class _HistoryCattleTabContentState extends State<HistoryCattleTabContent> {
         break;
 
       case 'treated':
-        if (event['sickness_symptoms'] != null && event['sickness_symptoms'].toString().isNotEmpty && event['sickness_symptoms'] != 'N/A') {
-          relevantDetails['Symptoms'] = event['sickness_symptoms'].toString();
+        if (event['disease_type'] != null && event['disease_type'].toString().isNotEmpty && event['disease_type'] != 'N/A') {
+          relevantDetails['Type of Disease'] = event['disease_type'].toString();
         }
         if (event['diagnosis'] != null && event['diagnosis'].toString().isNotEmpty && event['diagnosis'] != 'N/A') {
           relevantDetails['Diagnosis'] = event['diagnosis'].toString();
@@ -1053,6 +1071,15 @@ class _HistoryCattleTabContentState extends State<HistoryCattleTabContent> {
       case 'lost':
         if (event['last_known_location'] != null && event['last_known_location'].toString().isNotEmpty && event['last_known_location'] != 'N/A') {
           relevantDetails['Last Known Location'] = event['last_known_location'].toString();
+        }
+        break;
+
+      case 'sold':
+        if (event['sold_amount'] != null && event['sold_amount'].toString().isNotEmpty && event['sold_amount'] != 'N/A') {
+          relevantDetails['Sold Amount'] = '₱${event['sold_amount'].toString()}';
+        }
+        if (event['buyer'] != null && event['buyer'].toString().isNotEmpty && event['buyer'] != 'N/A') {
+          relevantDetails['Buyer'] = event['buyer'].toString();
         }
         break;
 

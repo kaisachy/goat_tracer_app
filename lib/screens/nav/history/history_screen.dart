@@ -30,7 +30,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
     return [
       'All', 'Dry off', 'Treated', 'Breeding', 'Weighed', 'Gives Birth',
       'Vaccinated', 'Pregnant', 'Aborted Pregnancy', 'Deworming',
-      'Hoof Trimming', 'Castrated', 'Weaned', 'Deceased', 'Lost', 'Other',
+      'Hoof Trimming', 'Castrated', 'Weaned', 'Deceased', 'Lost', 'Sold', 'Other',
     ];
   }
 
@@ -44,6 +44,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
     'hoof trimming',
     'deceased',
     'lost',
+    'sold',
   ];
 
   @override
@@ -200,7 +201,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
         return true;
 
       case 'treated':
-        return _compareFieldValues(historyRecord1['sickness_symptoms'], historyRecord2['sickness_symptoms']) &&
+        return _compareFieldValues(historyRecord1['disease_type'], historyRecord2['disease_type']) &&
             _compareFieldValues(historyRecord1['diagnosis'], historyRecord2['diagnosis']) &&
             _compareFieldValues(historyRecord1['technician'], historyRecord2['technician']) &&
             _compareFieldValues(historyRecord1['medicine_given'], historyRecord2['medicine_given']);
@@ -235,6 +236,16 @@ class _HistoryScreenState extends State<HistoryScreen> {
       case 'deceased':
         return _compareFieldValues(historyRecord1['cause_of_death'], historyRecord2['cause_of_death']);
 
+      case 'sold':
+        return _compareFieldValues(historyRecord1['sold_amount'], historyRecord2['sold_amount']) &&
+            _compareFieldValues(historyRecord1['buyer'], historyRecord2['buyer']);
+
+      case 'sick':
+        return _compareFieldValues(historyRecord1['disease_type'], historyRecord2['disease_type']);
+
+      case 'lost':
+        return _compareFieldValues(historyRecord1['last_known_location'], historyRecord2['last_known_location']);
+
       case 'other':
       default:
       // For 'other' history records, compare all potentially relevant fields
@@ -248,7 +259,10 @@ class _HistoryScreenState extends State<HistoryScreen> {
             _compareFieldValues(historyRecord1['estimated_return_date'], historyRecord2['estimated_return_date']) &&
             _compareFieldValues(historyRecord1['weighed_result'], historyRecord2['weighed_result']) &&
             _compareFieldValues(historyRecord1['breeding_date'], historyRecord2['breeding_date']) &&
-            _compareFieldValues(historyRecord1['expected_delivery_date'], historyRecord2['expected_delivery_date']);
+            _compareFieldValues(historyRecord1['expected_delivery_date'], historyRecord2['expected_delivery_date']) &&
+            _compareFieldValues(historyRecord1['sold_amount'], historyRecord2['sold_amount']) &&
+            _compareFieldValues(historyRecord1['buyer'], historyRecord2['buyer']) &&
+            _compareFieldValues(historyRecord1['last_known_location'], historyRecord2['last_known_location']);
     }
   }
 
@@ -425,6 +439,11 @@ class _HistoryScreenState extends State<HistoryScreen> {
         breedingDate: historyRecord['breeding_date']?.toString(),
         expectedDeliveryDate: historyRecord['expected_delivery_date']?.toString(),
         notes: historyRecord['notes']?.toString(),
+        lastKnownLocation: historyRecord['last_known_location']?.toString(),
+        soldAmount: historyRecord['sold_amount'] != null
+            ? double.tryParse(historyRecord['sold_amount'].toString())
+            : null,
+        buyer: historyRecord['buyer']?.toString(),
       );
 
       // Navigate to edit screen
@@ -1094,8 +1113,8 @@ class _HistoryScreenState extends State<HistoryScreen> {
         break;
 
       case 'treated':
-        if (historyRecord['sickness_symptoms'] != null && historyRecord['sickness_symptoms'].toString().isNotEmpty && historyRecord['sickness_symptoms'] != 'N/A') {
-          relevantDetails['Symptoms'] = historyRecord['sickness_symptoms'].toString();
+        if (historyRecord['disease_type'] != null && historyRecord['disease_type'].toString().isNotEmpty && historyRecord['disease_type'] != 'N/A') {
+          relevantDetails['Type of Disease'] = historyRecord['disease_type'].toString();
         }
         if (historyRecord['diagnosis'] != null && historyRecord['diagnosis'].toString().isNotEmpty && historyRecord['diagnosis'] != 'N/A') {
           relevantDetails['Diagnosis'] = historyRecord['diagnosis'].toString();
@@ -1166,6 +1185,21 @@ class _HistoryScreenState extends State<HistoryScreen> {
       case 'deceased':
         if (historyRecord['cause_of_death'] != null && historyRecord['cause_of_death'].toString().isNotEmpty && historyRecord['cause_of_death'].toString() != 'N/A') {
           relevantDetails['Cause of Death'] = historyRecord['cause_of_death'].toString();
+        }
+        break;
+
+      case 'sold':
+        if (historyRecord['sold_amount'] != null && historyRecord['sold_amount'].toString().isNotEmpty && historyRecord['sold_amount'] != 'N/A') {
+          relevantDetails['Sold Amount'] = '₱${historyRecord['sold_amount'].toString()}';
+        }
+        if (historyRecord['buyer'] != null && historyRecord['buyer'].toString().isNotEmpty && historyRecord['buyer'] != 'N/A') {
+          relevantDetails['Buyer'] = historyRecord['buyer'].toString();
+        }
+        break;
+
+      case 'sick':
+        if (historyRecord['disease_type'] != null && historyRecord['disease_type'].toString().isNotEmpty && historyRecord['disease_type'] != 'N/A') {
+          relevantDetails['Type of Disease'] = historyRecord['disease_type'].toString();
         }
         break;
 
