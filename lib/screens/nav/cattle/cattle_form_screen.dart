@@ -33,15 +33,6 @@ class _CattleFormScreenState extends State<CattleFormScreen> {
 
   bool get _isEditing => widget.cattle != null;
 
-  // Helper: sanitize tag text to remove prefixes like 'Cattle' and '#'
-  String _cleanTagText(String? raw) {
-    if (raw == null) return '';
-    String t = raw;
-    t = t.replaceAll(RegExp(r'\bcattle\b', caseSensitive: false), '');
-    t = t.replaceAll('#', '');
-    t = t.replaceAll(RegExp(r'\s+'), ' ').trim();
-    return t;
-  }
 
   // State variables for dates and dropdowns
   String? _dateOfBirth;
@@ -133,7 +124,8 @@ class _CattleFormScreenState extends State<CattleFormScreen> {
     try {
       final allCattle = await CattleService.getAllCattle();
       setState(() {
-        _existingTags = allCattle.map((cattle) => _cleanTagText(cattle.tagNo).toLowerCase()).toList();
+        // For web admin compatibility, store tags as-is (6-digit numbers)
+        _existingTags = allCattle.map((cattle) => cattle.tagNo.toLowerCase()).toList();
       });
     } catch (e) {
       print('Error loading existing tags: $e');
@@ -171,72 +163,55 @@ class _CattleFormScreenState extends State<CattleFormScreen> {
 
   /// Generate different tag number options (fallback when no classification is selected)
   String _generateRandomTag() {
-    // Use a generic prefix for fallback tags
-    const String fallbackPrefix = 'CT';
+    // Use web admin logic: generate random 6-digit numbers (100000 to 999999)
+    const int maxAttempts = 1000;
+    int attempts = 0;
     
-    // Find the highest existing CT- tag number
-    int highestNumber = 0;
-
-    for (String existingTag in _existingTags) {
-      final upperTag = existingTag.toUpperCase();
-      if (upperTag.startsWith('$fallbackPrefix-')) {
-        final numberPart = upperTag.substring(fallbackPrefix.length + 1); // Remove 'CT-' prefix
-        final number = int.tryParse(numberPart);
-        if (number != null && number > highestNumber) {
-          highestNumber = number;
-        }
+    while (attempts < maxAttempts) {
+      // Generate a random 6-digit number (100000 to 999999)
+      final random = Random();
+      final randomNumber = random.nextInt(900000) + 100000; // 100000 to 999999
+      
+      // Format as 6-digit string with leading zeros
+      final tagNumber = randomNumber.toString().padLeft(6, '0');
+      
+      // Check if this random number is unique
+      if (_isTagNumberUnique(tagNumber)) {
+        // Add to recently generated tags
+        _recentlyGeneratedTags.add(tagNumber.toLowerCase());
+        return tagNumber;
+      }
+      
+      attempts++;
+    }
+    
+    // If we can't find a random unique number after many attempts,
+    // fall back to sequential approach starting from a random point
+    final random = Random();
+    final randomStart = random.nextInt(999999) + 1;
+    int nextNumber = randomStart;
+    
+    for (int i = 0; i < 999999; i++) {
+      final tagNumber = nextNumber.toString().padLeft(6, '0');
+      
+      if (_isTagNumberUnique(tagNumber)) {
+        // Add to recently generated tags
+        _recentlyGeneratedTags.add(tagNumber.toLowerCase());
+        return tagNumber;
+      }
+      
+      nextNumber++;
+      if (nextNumber > 999999) {
+        nextNumber = 1;
       }
     }
-
-    // Generate different options each time refresh is clicked
-    final random = Random();
-    final currentTag = _tagNoController.text.toUpperCase();
-
-    List<String> possibleTags = [];
-
-    // Option 1: Next sequential number
-    final nextSequential = highestNumber + 1;
-    possibleTags.add('$fallbackPrefix-${nextSequential.toString().padLeft(4, '0')}');
-
-    // Option 2: Skip a few numbers ahead (random jump)
-    final jumpAhead = highestNumber + random.nextInt(10) + 2; // Jump 2-11 numbers ahead
-    possibleTags.add('$fallbackPrefix-${jumpAhead.toString().padLeft(4, '0')}');
-
-    // Option 3: Random number in a higher range
-    final randomHigh = highestNumber + random.nextInt(50) + 20; // 20-70 numbers ahead
-    possibleTags.add('$fallbackPrefix-${randomHigh.toString().padLeft(4, '0')}');
-
-    // Option 4: Round number (next hundred, fifty, etc.)
-    int roundNumber;
-    if (highestNumber < 50) {
-      roundNumber = 50;
-    } else if (highestNumber < 100) {
-      roundNumber = 100;
-    } else {
-      roundNumber = ((highestNumber / 100).ceil() + 1) * 100;
-    }
-    possibleTags.add('$fallbackPrefix-${roundNumber.toString().padLeft(4, '0')}');
-
-    // Remove any that might already exist
-    possibleTags.removeWhere((tag) => _existingTags.contains(tag.toLowerCase()));
-
-    // Remove the current tag if it's in the list
-    possibleTags.removeWhere((tag) => tag == currentTag);
-
-    // If we have options, pick one randomly
-    if (possibleTags.isNotEmpty) {
-      return possibleTags[random.nextInt(possibleTags.length)];
-    }
-
-    // Fallback: just increment from current or highest
-    String fallbackTag;
-    if (currentTag.startsWith('$fallbackPrefix-')) {
-      final currentNumber = int.tryParse(currentTag.substring(fallbackPrefix.length + 1)) ?? 0;
-      fallbackTag = '$fallbackPrefix-${(currentNumber + 1).toString().padLeft(4, '0')}';
-    } else {
-      fallbackTag = '$fallbackPrefix-${(highestNumber + 1).toString().padLeft(4, '0')}';
-    }
-
+    
+    // Final fallback - use timestamp-based number
+    final timestamp = DateTime.now().millisecondsSinceEpoch;
+    final fallbackTag = (timestamp % 900000 + 100000).toString().padLeft(6, '0');
+    
+    // Add to recently generated tags
+    _recentlyGeneratedTags.add(fallbackTag.toLowerCase());
     return fallbackTag;
   }
 
@@ -635,7 +610,7 @@ class _CattleFormScreenState extends State<CattleFormScreen> {
   void _populateFormFields() {
     final c = widget.cattle;
     if (c != null) {
-      _tagNoController.text = _cleanTagText(c.tagNo);
+      _tagNoController.text = c.tagNo; // Use tag as-is for web admin compatibility
       _weightController.text = c.weight?.toString() ?? '';
       _notesController.text = c.notes ?? '';
 
@@ -726,62 +701,65 @@ class _CattleFormScreenState extends State<CattleFormScreen> {
     }
   }
 
-  /// Generate tag number based on classification type
+  /// Generate tag number using web admin logic (random 6-digit numbers)
   String _generateTagForClassificationType(String classification) {
-    // Map classifications to their tag prefixes
-    String prefix;
-    switch (classification.toUpperCase()) {
-      case 'COW':
-        prefix = 'COW';
-        break;
-      case 'BULL':
-        prefix = 'BULL';
-        break;
-      case 'HEIFER':
-        prefix = 'HFR';
-        break;
-      case 'STEER':
-        prefix = 'STR';
-        break;
-      case 'GROWERS':
-        prefix = 'GRWR';
-        break;
-      case 'CALF':
-        prefix = 'CALF';
-        break;
-      default:
-        prefix = classification.toUpperCase();
+    // Use web admin logic: generate random 6-digit numbers (100000 to 999999)
+    const int maxAttempts = 1000;
+    int attempts = 0;
+    
+    while (attempts < maxAttempts) {
+      // Generate a random 6-digit number (100000 to 999999)
+      final random = Random();
+      final randomNumber = random.nextInt(900000) + 100000; // 100000 to 999999
+      
+      // Format as 6-digit string with leading zeros
+      final tagNumber = randomNumber.toString().padLeft(6, '0');
+      
+      // Check if this random number is unique
+      if (_isTagNumberUnique(tagNumber)) {
+        // Add to recently generated tags
+        _recentlyGeneratedTags.add(tagNumber.toLowerCase());
+        return tagNumber;
+      }
+      
+      attempts++;
     }
     
-    int highestNumber = 0;
-
-    // Find the highest existing number for this classification
-    for (String existingTag in _existingTags) {
-      final upperTag = existingTag.toUpperCase();
-      if (upperTag.startsWith('$prefix-')) {
-        final numberPart = upperTag.substring(prefix.length + 1); // Remove prefix
-        final number = int.tryParse(numberPart);
-        if (number != null && number > highestNumber) {
-          highestNumber = number;
-        }
+    // If we can't find a random unique number after many attempts,
+    // fall back to sequential approach starting from a random point
+    final random = Random();
+    final randomStart = random.nextInt(999999) + 1;
+    int nextNumber = randomStart;
+    
+    for (int i = 0; i < 999999; i++) {
+      final tagNumber = nextNumber.toString().padLeft(6, '0');
+      
+      if (_isTagNumberUnique(tagNumber)) {
+        // Add to recently generated tags
+        _recentlyGeneratedTags.add(tagNumber.toLowerCase());
+        return tagNumber;
+      }
+      
+      nextNumber++;
+      if (nextNumber > 999999) {
+        nextNumber = 1;
       }
     }
-
-    // Generate next sequential number and ensure it's unique
-    int nextNumber = highestNumber + 1;
-    String newTag = '$prefix-${nextNumber.toString().padLeft(4, '0')}';
     
-    // Keep generating until we find a unique tag (check both existing and recently generated)
-    while (_existingTags.contains(newTag.toLowerCase()) || 
-           _recentlyGeneratedTags.contains(newTag.toLowerCase())) {
-      nextNumber++;
-      newTag = '$prefix-${nextNumber.toString().padLeft(4, '0')}';
-    }
+    // Final fallback - use timestamp-based number
+    final timestamp = DateTime.now().millisecondsSinceEpoch;
+    final fallbackTag = (timestamp % 900000 + 100000).toString().padLeft(6, '0');
     
     // Add to recently generated tags
-    _recentlyGeneratedTags.add(newTag.toLowerCase());
-    
-    return newTag;
+    _recentlyGeneratedTags.add(fallbackTag.toLowerCase());
+    return fallbackTag;
+  }
+  
+  /// Check if tag number is unique (not in existing tags or recently generated)
+  bool _isTagNumberUnique(String tagNumber) {
+    final lowerTag = tagNumber.toLowerCase();
+    return !_existingTags.contains(lowerTag) && 
+           !_recentlyGeneratedTags.contains(lowerTag);
   }
 
   /// Fetches all cattle from the service and filters them by gender for parent selection
@@ -798,10 +776,10 @@ class _CattleFormScreenState extends State<CattleFormScreen> {
         _maleCattle = potentialParents.where((c) => c.sex == 'Male').toList();
 
         // Validate parent tags - if they don't exist in the current cattle list, set them to null
-        if (_motherTag != null && !_femaleCattle.any((c) => _cleanTagText(c.tagNo) == _cleanTagText(_motherTag))) {
+        if (_motherTag != null && !_femaleCattle.any((c) => c.tagNo == _motherTag)) {
           _motherTag = null;
         }
-        if (_fatherTag != null && !_maleCattle.any((c) => _cleanTagText(c.tagNo) == _cleanTagText(_fatherTag))) {
+        if (_fatherTag != null && !_maleCattle.any((c) => c.tagNo == _fatherTag)) {
           _fatherTag = null;
         }
 
@@ -842,7 +820,7 @@ class _CattleFormScreenState extends State<CattleFormScreen> {
   Future<void> _submitForm() async {
     if (!_formKey.currentState!.validate()) return;
 
-    final tagToCheck = _cleanTagText(_tagNoController.text.trim());
+    final tagToCheck = _tagNoController.text.trim();
     print('Checking tag: $tagToCheck');
 
     // Check if tag already exists (only for new cattle or when tag is changed)
@@ -863,7 +841,7 @@ class _CattleFormScreenState extends State<CattleFormScreen> {
       try {
         final allCattle = await CattleService.getAllCattle();
         final duplicateExists = allCattle.any((cattle) =>
-        _cleanTagText(cattle.tagNo).toLowerCase() == tagToCheck.toLowerCase() &&
+        cattle.tagNo.toLowerCase() == tagToCheck.toLowerCase() &&
             (!_isEditing || cattle.id != widget.cattle!.id));
 
         if (mounted) Navigator.pop(context);
@@ -917,8 +895,8 @@ class _CattleFormScreenState extends State<CattleFormScreen> {
       'group_name': textOrNull(_groupName),
       'source': _source,
       'source_details': _sourceDetails,
-      'mother_tag': _motherTag != null ? _cleanTagText(_motherTag) : null,
-      'father_tag': _fatherTag != null ? _cleanTagText(_fatherTag) : null,
+      'mother_tag': _motherTag,
+      'father_tag': _fatherTag,
       'notes': textOrNull(_notesController.text),
       'status': widget.cattle?.status ?? 'Healthy',
     };
@@ -935,7 +913,7 @@ class _CattleFormScreenState extends State<CattleFormScreen> {
         data['original_father_tag'] = _originalFatherTag;
 
         // IMPORTANT: Also add the original tag number for backend reference updates
-        data['original_tag_no'] = _cleanTagText(widget.cattle!.tagNo);
+        data['original_tag_no'] = widget.cattle!.tagNo;
 
         success = await CattleService.updateCattleInformation(data);
       } else {
@@ -1101,7 +1079,7 @@ class _CattleFormScreenState extends State<CattleFormScreen> {
     required IconData icon,
   }) {
     // Check if the current value exists in the options
-    bool valueExists = value == null || options.any((cattle) => _cleanTagText(cattle.tagNo) == _cleanTagText(value));
+    bool valueExists = value == null || options.any((cattle) => cattle.tagNo == value);
     String? safeValue = valueExists ? value : null;
 
     return DropdownButtonFormField<String>(
@@ -1144,7 +1122,7 @@ class _CattleFormScreenState extends State<CattleFormScreen> {
                 Expanded(
                   flex: 2,
                   child: Text(
-                    _cleanTagText(cattle.tagNo),
+                    cattle.tagNo,
                     style: const TextStyle(fontWeight: FontWeight.w500),
                     overflow: TextOverflow.ellipsis,
                   ),
@@ -1155,7 +1133,7 @@ class _CattleFormScreenState extends State<CattleFormScreen> {
         }),
       ],
       onChanged: _isLoadingParents ? null : (newValue) {
-        onChanged(_cleanTagText(newValue));
+        onChanged(newValue);
       },
       menuMaxHeight: MediaQuery.of(context).size.height * 0.4,
       selectedItemBuilder: (context) {
@@ -1163,7 +1141,7 @@ class _CattleFormScreenState extends State<CattleFormScreen> {
           const Text('None'),
           ...options.toSet().map((cattle) {
             return Text(
-              _cleanTagText(cattle.tagNo),
+              cattle.tagNo,
               overflow: TextOverflow.ellipsis,
             );
           }),

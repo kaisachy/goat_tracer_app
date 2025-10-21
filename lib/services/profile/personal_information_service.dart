@@ -10,12 +10,19 @@ class PersonalInformationService {
 
   static Future<Map<String, dynamic>?> getPersonalInformation() async {
     final token = await AuthService.getToken();
+    
+    log('🔍 PersonalInformationService DEBUG: Token exists: ${token != null}');
+    if (token != null) {
+      log('🔍 PersonalInformationService DEBUG: Token length: ${token.length}');
+    }
 
     if (token == null) {
+      log('🔍 PersonalInformationService DEBUG: No token found, returning null');
       return null;
     }
 
     try {
+      log('🔍 PersonalInformationService DEBUG: Making API call to $_baseUrl/farmer/profile');
       final response = await http.get(
         Uri.parse('$_baseUrl/farmer/profile'),
         headers: {
@@ -24,11 +31,16 @@ class PersonalInformationService {
         },
       );
 
+      log('🔍 PersonalInformationService DEBUG: Response status: ${response.statusCode}');
+      log('🔍 PersonalInformationService DEBUG: Response body: ${response.body}');
+
       if (response.statusCode == 200) {
-        return jsonDecode(response.body);
+        final data = jsonDecode(response.body);
+        log('Personal Information API Response: $data');
+        return data;
       } else {
         log('Failed to load farmer farmer-profile. Status code: ${response
-            .statusCode}');
+            .statusCode}, Body: ${response.body}');
       }
     } catch (e, stackTrace) {
       log('Error in getPersonalInformation: $e', stackTrace: stackTrace);

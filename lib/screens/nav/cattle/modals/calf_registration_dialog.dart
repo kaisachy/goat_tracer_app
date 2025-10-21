@@ -2,6 +2,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import 'dart:math';
 import '../../../../constants/app_colors.dart';
 import '../../../../services/cattle/cattle_service.dart';
 
@@ -118,35 +119,56 @@ class _CalfRegistrationDialogState extends State<CalfRegistrationDialog> {
   }
 
   String _generateNextCalfTag() {
-    // Use the new classification-based tag generation for calves
-    final prefix = 'CALF'; // Use CALF prefix for calves
+    // Use web admin logic: generate random 6-digit numbers (100000 to 999999)
+    const int maxAttempts = 1000;
+    int attempts = 0;
     
-    // Find all existing calf tags that match the pattern CALF-XXXX
-    final calfTags = _existingTags
-        .where((tag) => tag.toUpperCase().startsWith('$prefix-'))
-        .toList();
-
-    // Also include the current tag in the controller to avoid duplicates
-    final currentTag = _tagController.text.trim();
-    if (currentTag.isNotEmpty && !calfTags.contains(currentTag)) {
-      calfTags.add(currentTag);
+    while (attempts < maxAttempts) {
+      // Generate a random 6-digit number (100000 to 999999)
+      final random = Random();
+      final randomNumber = random.nextInt(900000) + 100000; // 100000 to 999999
+      
+      // Format as 6-digit string with leading zeros
+      final tagNumber = randomNumber.toString().padLeft(6, '0');
+      
+      // Check if this random number is unique
+      if (_isTagNumberUnique(tagNumber)) {
+        return tagNumber;
+      }
+      
+      attempts++;
     }
-
-    int maxNumber = 0;
-    for (String tag in calfTags) {
-      final upperTag = tag.toUpperCase();
-      if (upperTag.startsWith('$prefix-')) {
-        final numberPart = upperTag.substring(prefix.length + 1); // Remove "CALF-" prefix
-        final number = int.tryParse(numberPart);
-        if (number != null && number > maxNumber) {
-          maxNumber = number;
-        }
+    
+    // If we can't find a random unique number after many attempts,
+    // fall back to sequential approach starting from a random point
+    final random = Random();
+    final randomStart = random.nextInt(999999) + 1;
+    int nextNumber = randomStart;
+    
+    for (int i = 0; i < 999999; i++) {
+      final tagNumber = nextNumber.toString().padLeft(6, '0');
+      
+      if (_isTagNumberUnique(tagNumber)) {
+        return tagNumber;
+      }
+      
+      nextNumber++;
+      if (nextNumber > 999999) {
+        nextNumber = 1;
       }
     }
-
-    // Generate next number
-    final nextNumber = maxNumber + 1;
-    return '$prefix-${nextNumber.toString().padLeft(4, '0')}';
+    
+    // Final fallback - use timestamp-based number
+    final timestamp = DateTime.now().millisecondsSinceEpoch;
+    final fallbackTag = (timestamp % 900000 + 100000).toString().padLeft(6, '0');
+    
+    return fallbackTag;
+  }
+  
+  /// Check if tag number is unique (not in existing tags)
+  bool _isTagNumberUnique(String tagNumber) {
+    final lowerTag = tagNumber.toLowerCase();
+    return !_existingTags.contains(lowerTag);
   }
 
   Future<void> _generateNewTag() async {
@@ -201,10 +223,10 @@ class _CalfRegistrationDialogState extends State<CalfRegistrationDialog> {
       return 'This tag number already exists';
     }
 
-    // Validate tag format (should be CALF-XXXX)
-    final tagPattern = RegExp(r'^CALF-\d{4}$', caseSensitive: false);
+    // Validate tag format (should be 6-digit number)
+    final tagPattern = RegExp(r'^\d{6}$');
     if (!tagPattern.hasMatch(trimmedValue)) {
-      return 'Tag must be in format CALF-XXXX (e.g., CALF-0001)';
+      return 'Tag must be a 6-digit number (e.g., 123456)';
     }
 
     return null;
@@ -524,7 +546,7 @@ class _CalfRegistrationDialogState extends State<CalfRegistrationDialog> {
                           ),
                           filled: true,
                           fillColor: widget.isEditMode ? AppColors.cardBackground : Colors.grey.shade50,
-                          helperText: widget.isEditMode ? null : 'Auto-generated tag number',
+                          helperText: widget.isEditMode ? null : 'Auto-generated 6-digit tag number',
                           helperStyle: TextStyle(
                             color: Colors.grey.shade600,
                             fontSize: 12,

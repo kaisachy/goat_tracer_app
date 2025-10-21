@@ -13,6 +13,7 @@ import 'package:cattle_tracer_app/screens/nav/profile/widgets/personal_informati
 import 'package:cattle_tracer_app/screens/nav/profile/widgets/farm_details_widget.dart';
 import 'package:cattle_tracer_app/screens/nav/profile/widgets/educational_background_widget.dart';
 import 'package:cattle_tracer_app/screens/nav/profile/widgets/trainings_seminars_widget.dart';
+import 'package:cattle_tracer_app/services/auth_service.dart';
 
 class ProfileScreen extends StatefulWidget {
   final String userEmail;
@@ -24,8 +25,8 @@ class ProfileScreen extends StatefulWidget {
 }
 
 class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateMixin {
-  late Future<Map<String, dynamic>?> farmerProfileFuture;
-  late Future<Map<String, dynamic>?> farmDetailsFuture;
+  Future<Map<String, dynamic>?> farmerProfileFuture = Future.value(null);
+  Future<Map<String, dynamic>?> farmDetailsFuture = Future.value(null);
   bool isEditingMode = false;
   XFile? _imageFile;
   late AnimationController _editModeController;
@@ -35,6 +36,8 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
   late Animation<double> _cardAnimation;
   final ScrollController _scrollController = ScrollController();
   bool _isHeaderCollapsed = false;
+  String? _storedFirstName;
+  String? _storedLastName;
 
   @override
   void initState() {
@@ -98,7 +101,17 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
     super.dispose();
   }
 
-  void _loadData() {
+  void _loadData() async {
+    // Load stored user data as fallback
+    _storedFirstName = await AuthService.getUserFirstName();
+    _storedLastName = await AuthService.getUserLastName();
+    
+    log('🔍 ProfileScreen DEBUG: Loaded stored names - First: $_storedFirstName, Last: $_storedLastName');
+    
+    // Check if user is authenticated
+    final isAuthenticated = await AuthService.isAuthenticated();
+    log('🔍 ProfileScreen DEBUG: User authenticated: $isAuthenticated');
+    
     setState(() {
       farmerProfileFuture = PersonalInformationService.getPersonalInformation();
       farmDetailsFuture = FarmDetailsService.getFarmDetails();
@@ -107,6 +120,11 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
 
   Future<void> _handleRefresh() async {
     HapticFeedback.lightImpact();
+    
+    // Reload stored user data as fallback
+    _storedFirstName = await AuthService.getUserFirstName();
+    _storedLastName = await AuthService.getUserLastName();
+    
     final newFarmerFuture = PersonalInformationService.getPersonalInformation();
     final newFarmFuture = FarmDetailsService.getFarmDetails();
     if (mounted) {
@@ -566,7 +584,7 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
   }
 
   Widget _buildModernProfileHeader(
-      Map<String, dynamic>? profile, Map<String, dynamic>? farmDetails) {
+      Map<String, dynamic>? profile, Map<String, dynamic>? farmDetails, {String? firstName, String? lastName}) {
     final hasProfilePicture =
         profile?['profile_picture'] != null && profile!['profile_picture'].isNotEmpty;
 
@@ -670,7 +688,7 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
               children: [
                 // Name
                 Text(
-                  '${profile?['first_name'] ?? 'Unknown'} ${profile?['last_name'] ?? 'User'}',
+                  '${firstName ?? profile?['first_name'] ?? _storedFirstName ?? 'Unknown'} ${lastName ?? profile?['last_name'] ?? _storedLastName ?? 'User'}',
                   style: TextStyle(
                     color: Colors.grey.shade800,
                     fontSize: 22,
@@ -950,12 +968,23 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
 
                 final profile = profileSnapshot.data;
                 final farmDetails = farmSnapshot.data;
+                
+                // Debug logging
+                log('Profile data: $profile');
+                log('Farm details data: $farmDetails');
+                log('Stored first name: $_storedFirstName');
+                log('Stored last name: $_storedLastName');
+                
+                // Check if we have any name data
+                final firstName = profile?['first_name'] ?? _storedFirstName ?? 'Unknown';
+                final lastName = profile?['last_name'] ?? _storedLastName ?? 'User';
+                log('Final name display: $firstName $lastName');
 
                 return CustomScrollView(
                   controller: _scrollController,
                   slivers: [
                     SliverToBoxAdapter(
-                      child: _buildModernProfileHeader(profile, farmDetails),
+                      child: _buildModernProfileHeader(profile, farmDetails, firstName: firstName, lastName: lastName),
                     ),
                     SliverList(
                       delegate: SliverChildListDelegate([

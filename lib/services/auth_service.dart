@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:developer';
 import 'package:http/http.dart' as http;
 import '../config.dart';
 import 'secure_storage_service.dart';
@@ -112,15 +113,22 @@ class AuthService {
               value: data['user']['email_verified'].toString()
           );
 
+          final firstName = data['user']['first_name'] ?? '';
+          final lastName = data['user']['last_name'] ?? '';
+          
+          log('🔍 AuthService DEBUG: Saving user names - First: $firstName, Last: $lastName');
+          
           await _storage.write(
               key: 'user_first_name',
-              value: data['user']['first_name'] ?? ''
+              value: firstName
           );
 
           await _storage.write(
               key: 'user_last_name',
-              value: data['user']['last_name'] ?? ''
+              value: lastName
           );
+          
+          log('🔍 AuthService DEBUG: User names saved successfully');
         }
       }
 
@@ -243,11 +251,57 @@ class AuthService {
   }
 
   static Future<String?> getUserFirstName() async {
-    return await _storage.read(key: 'user_first_name');
+    // First try to get from stored data
+    String? firstName = await _storage.read(key: 'user_first_name');
+    log('🔍 AuthService DEBUG: getUserFirstName() - Retrieved from storage: $firstName');
+    
+    // If not found in storage, try to get from JWT token
+    if (firstName == null || firstName.isEmpty) {
+      try {
+        final token = await getToken();
+        if (token != null) {
+          final parts = token.split('.');
+          if (parts.length == 3) {
+            final payload = json.decode(
+                utf8.decode(base64Url.decode(base64Url.normalize(parts[1])))
+            );
+            firstName = payload['first_name']?.toString();
+            log('🔍 AuthService DEBUG: getUserFirstName() - Retrieved from token: $firstName');
+          }
+        }
+      } catch (e) {
+        log('🔍 AuthService DEBUG: Error getting first name from token: $e');
+      }
+    }
+    
+    return firstName;
   }
 
   static Future<String?> getUserLastName() async {
-    return await _storage.read(key: 'user_last_name');
+    // First try to get from stored data
+    String? lastName = await _storage.read(key: 'user_last_name');
+    log('🔍 AuthService DEBUG: getUserLastName() - Retrieved from storage: $lastName');
+    
+    // If not found in storage, try to get from JWT token
+    if (lastName == null || lastName.isEmpty) {
+      try {
+        final token = await getToken();
+        if (token != null) {
+          final parts = token.split('.');
+          if (parts.length == 3) {
+            final payload = json.decode(
+                utf8.decode(base64Url.decode(base64Url.normalize(parts[1])))
+            );
+            lastName = payload['last_name']?.toString();
+            log('🔍 AuthService DEBUG: getUserLastName() - Retrieved from token: $lastName');
+          }
+        }
+      } catch (e) {
+        log('🔍 AuthService DEBUG: Error getting last name from token: $e');
+      }
+    }
+    
+    return lastName;
   }
 
   /// Check if user is authenticated and has valid token
