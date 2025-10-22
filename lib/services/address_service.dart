@@ -1,90 +1,49 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import '../config.dart';
 
 class AddressService {
-  // Call the Philippine address API directly instead of through your backend
-  static const String _externalApiBase = 'https://psgc.gitlab.io/api';
+  static final String _baseUrl = AppConfig.baseUrl;
 
-  // Get Isabela municipalities directly from external API
+  // Get Isabela municipalities from backend API
   static Future<List<dynamic>> getIsabelaMunicipalities() async {
     try {
-      print('Getting Isabela municipalities directly from external API...');
-
-      // Step 1: Get Region 2 (Cagayan Valley) provinces
-      final provincesUrl = '$_externalApiBase/regions/020000000/provinces/';
-      print('Getting provinces from: $provincesUrl');
-
-      final provincesResponse = await http.get(
-        Uri.parse(provincesUrl),
+      print('Getting Isabela municipalities from backend API...');
+      
+      final response = await http.get(
+        Uri.parse('$_baseUrl/api/address/isabela-municipalities'),
         headers: {'Content-Type': 'application/json'},
       );
 
-      print('Provinces response status: ${provincesResponse.statusCode}');
+      print('Municipalities response status: ${response.statusCode}');
+      print('Municipalities response body: ${response.body}');
 
-      if (provincesResponse.statusCode == 200) {
-        final provinces = jsonDecode(provincesResponse.body) as List<dynamic>;
-        print('Found ${provinces.length} provinces in Region 2');
-
-        // Step 2: Find Isabela province
-        Map<String, dynamic>? isabelaProvince;
-        for (var province in provinces) {
-          print('Province: ${province['name']} (${province['code']})');
-          if (province['name'].toString().toLowerCase().contains('isabela')) {
-            isabelaProvince = province;
-            print('Found Isabela: ${province}');
-            break;
-          }
-        }
-
-        if (isabelaProvince != null) {
-          print('Found Isabela province with code: ${isabelaProvince['code']}');
-
-          // Step 3: Get municipalities for Isabela
-          final municipalitiesUrl = '$_externalApiBase/provinces/${isabelaProvince['code']}/cities-municipalities/';
-          print('Getting municipalities from: $municipalitiesUrl');
-
-          final municipalitiesResponse = await http.get(
-            Uri.parse(municipalitiesUrl),
-            headers: {'Content-Type': 'application/json'},
-          );
-
-          print('Municipalities response status: ${municipalitiesResponse.statusCode}');
-
-          if (municipalitiesResponse.statusCode == 200) {
-            final municipalities = jsonDecode(municipalitiesResponse.body) as List<dynamic>;
-            print('Success! Found ${municipalities.length} municipalities in Isabela');
-            return municipalities;
-          } else {
-            print('Failed to get municipalities: ${municipalitiesResponse.body}');
-            throw Exception('Failed to fetch municipalities from external API');
-          }
-        } else {
-          print('Could not find Isabela province in the list');
-          throw Exception('Isabela province not found');
-        }
+      if (response.statusCode == 200) {
+        final municipalities = jsonDecode(response.body) as List<dynamic>;
+        print('Success! Found ${municipalities.length} municipalities in Isabela');
+        return municipalities;
       } else {
-        print('Failed to get provinces: ${provincesResponse.body}');
-        throw Exception('Failed to fetch provinces from external API');
+        print('Failed to get municipalities: ${response.body}');
+        throw Exception('Failed to fetch municipalities from backend API');
       }
     } catch (e) {
-      print('Direct API approach failed: $e');
+      print('Backend API approach failed: $e');
       throw Exception('Failed to load Isabela municipalities: $e');
     }
   }
 
-  // Get barangays directly from external API
+  // Get barangays from backend API
   static Future<List<dynamic>> getBarangays(String municipalityCode) async {
     try {
       print('Getting barangays for municipality: $municipalityCode');
-      final url = '$_externalApiBase/cities-municipalities/$municipalityCode/barangays/';
-      print('Barangay URL: $url');
-
+      
       final response = await http.get(
-        Uri.parse(url),
+        Uri.parse('$_baseUrl/api/address/barangays?municipalityCode=$municipalityCode'),
         headers: {'Content-Type': 'application/json'},
       );
 
       print('Barangay response status: ${response.statusCode}');
+      print('Barangay response body: ${response.body}');
 
       if (response.statusCode == 200) {
         final barangays = jsonDecode(response.body) as List<dynamic>;
@@ -100,13 +59,11 @@ class AddressService {
     }
   }
 
-  // For backward compatibility, keep methods that use your backend
-  // (these will only work if your backend routing is fixed)
+  // Get regions from backend API
   static Future<List<dynamic>> getRegions() async {
-    // This one works, so keep using your backend
     try {
       final response = await http.get(
-        Uri.parse('http://192.168.254.113/cattle-tracer/public/api/address/regions'),
+        Uri.parse('$_baseUrl/api/address/regions'),
         headers: {'Content-Type': 'application/json'},
       );
 
@@ -120,11 +77,11 @@ class AddressService {
     }
   }
 
+  // Get provinces from backend API
   static Future<List<dynamic>> getProvinces(String regionCode) async {
-    // Use external API since your backend routing is broken
     try {
       final response = await http.get(
-        Uri.parse('$_externalApiBase/regions/$regionCode/provinces/'),
+        Uri.parse('$_baseUrl/api/address/provinces?regionCode=$regionCode'),
         headers: {'Content-Type': 'application/json'},
       );
 
@@ -138,11 +95,11 @@ class AddressService {
     }
   }
 
+  // Get municipalities from backend API
   static Future<List<dynamic>> getMunicipalities(String provinceCode) async {
-    // Use external API since your backend routing is broken
     try {
       final response = await http.get(
-        Uri.parse('$_externalApiBase/provinces/$provinceCode/cities-municipalities/'),
+        Uri.parse('$_baseUrl/api/address/municipalities?provinceCode=$provinceCode'),
         headers: {'Content-Type': 'application/json'},
       );
 

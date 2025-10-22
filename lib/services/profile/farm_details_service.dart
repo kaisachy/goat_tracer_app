@@ -30,14 +30,22 @@ class FarmDetailsService {
       if (response.statusCode == 200) {
         final Map<String, dynamic> decodedData = jsonDecode(response.body);
 
-        // FIX: Check if the 'data' key exists and is a Map
-        if (decodedData.containsKey('data') && decodedData['data'] is Map) {
-          final farmData = decodedData['data'] as Map<String, dynamic>;
-          log('getFarmDetails: Successfully extracted farm data: $farmData');
-          return farmData;
+        // Check if the 'data' key exists and handle both Map and null cases
+        if (decodedData.containsKey('data')) {
+          if (decodedData['data'] == null) {
+            log('getFarmDetails: No farm details found (data is null)');
+            return null;
+          } else if (decodedData['data'] is Map) {
+            final farmData = decodedData['data'] as Map<String, dynamic>;
+            log('getFarmDetails: Successfully extracted farm data: $farmData');
+            return farmData;
+          } else {
+            log('getFarmDetails: Response data is not a Map: ${decodedData['data']}');
+            return null;
+          }
         } else {
-          log('getFarmDetails: Response body does not contain a valid "data" key.');
-          return null; // Return null if the data key is missing or not a map
+          log('getFarmDetails: Response body does not contain a "data" key.');
+          return null;
         }
       } else {
         log('getFarmDetails: Failed to load farm details. Status code: ${response.statusCode}');

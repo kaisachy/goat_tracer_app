@@ -32,7 +32,7 @@ class _FarmDetailsModalState extends State<FarmDetailsModal> {
   late TextEditingController farmClassificationController;
   late TextEditingController farmAreaController;
   late TextEditingController coopController;
-  late TextEditingController farmLocationController;
+  // farmLocationController removed - using structured address fields instead
   bool _isLoading = false;
   final List<String> _farmTypeOptions = const ['Beef Cattle', 'Dairy Cattle'];
   String? _selectedFarmType;
@@ -84,10 +84,16 @@ class _FarmDetailsModalState extends State<FarmDetailsModal> {
     farmClassificationController = TextEditingController(text: farm?['farm_classification'] ?? '');
     farmAreaController = TextEditingController(text: farm?['farm_land_area']?.toString() ?? '');
     coopController = TextEditingController(text: farm?['cooperative_affiliation'] ?? '');
-    farmLocationController = TextEditingController(text: farm?['farm_location'] ?? '');
+    // farmLocationController removed - using structured address fields instead
     _selectedFarmType = (farm?['farm_type'] is String && farm!['farm_type'].toString().isNotEmpty)
         ? farm['farm_type']
         : null;
+    
+    // Initialize farm coordinates from the new structured fields (null-safe)
+    final String? latStr = farm?['farm_latitude']?.toString();
+    final String? lngStr = farm?['farm_longitude']?.toString();
+    _farmLatitude = (latStr != null && latStr.isNotEmpty) ? double.tryParse(latStr) : null;
+    _farmLongitude = (lngStr != null && lngStr.isNotEmpty) ? double.tryParse(lngStr) : null;
     
     // Initialize farm land area dropdown
     final farmLandArea = farm?['farm_land_area'];
@@ -148,16 +154,8 @@ class _FarmDetailsModalState extends State<FarmDetailsModal> {
       _selectedFarmClassification = null;
     }
     
-    // Load municipalities on initialization
-    _loadMunicipalities();
-    
-    // Initialize address fields if farm location exists
-    final farmLocation = farm?['farm_location']?.toString();
-    if (farmLocation != null && farmLocation.isNotEmpty) {
-      // Try to parse existing address data
-      // This is a simple approach - you might want to enhance this based on your data format
-      _initializeAddressFromLocation(farmLocation);
-    }
+    // Load municipalities and initialize address fields from structured data
+    _initializeAddressFromStructuredData(farm);
   }
 
   @override
@@ -167,7 +165,7 @@ class _FarmDetailsModalState extends State<FarmDetailsModal> {
     farmClassificationController.dispose();
     farmAreaController.dispose();
     coopController.dispose();
-    farmLocationController.dispose();
+    // farmLocationController removed - using structured address fields instead
     _farmGeocodeTimer?.cancel();
     super.dispose();
   }
@@ -774,35 +772,41 @@ class _FarmDetailsModalState extends State<FarmDetailsModal> {
 
   // Manual retry no longer needed (JS parity: single-shot on change)
 
-  Future<void> _initializeAddressFromLocation(String location) async {
-    // This is a simple implementation - you might want to enhance this
-    // based on how your existing address data is formatted
+  Future<void> _initializeAddressFromStructuredData(Map<String, dynamic>? farm) async {
+    if (farm == null) return;
+    
     try {
       // Wait for municipalities to load first
       if (_municipalities.isEmpty) {
         await _loadMunicipalities();
       }
       
-      // Try to find municipality and barangay from the location string
-      // This is a basic implementation - you might need to adjust based on your data format
-      for (var municipality in _municipalities) {
-        if (location.toLowerCase().contains(municipality['name'].toString().toLowerCase())) {
-          _selectedMunicipality = municipality;
-          await _loadBarangays(municipality['code']);
-          
-          // Try to find barangay
-          for (var barangay in _barangays) {
-            if (location.toLowerCase().contains(barangay['name'].toString().toLowerCase())) {
-              _selectedBarangay = barangay;
-              break;
+      // Initialize from structured fields
+      final farmMunicipality = farm['farm_municipality']?.toString();
+      final farmBarangay = farm['farm_barangay']?.toString();
+      
+      if (farmMunicipality != null && farmMunicipality.isNotEmpty) {
+        // Find and select the municipality
+        for (var municipality in _municipalities) {
+          if (municipality['name'].toString().toLowerCase() == farmMunicipality.toLowerCase()) {
+            _selectedMunicipality = municipality;
+            await _loadBarangays(municipality['code']);
+            
+            // Find and select the barangay
+            if (farmBarangay != null && farmBarangay.isNotEmpty) {
+              for (var barangay in _barangays) {
+                if (barangay['name'].toString().toLowerCase() == farmBarangay.toLowerCase()) {
+                  _selectedBarangay = barangay;
+                  break;
+                }
+              }
             }
+            break;
           }
-          break;
         }
       }
     } catch (e) {
-      // If parsing fails, just leave fields empty
-      print('Failed to parse address from location: $e');
+      print('Failed to initialize address from structured data: $e');
     }
   }
 
@@ -1183,7 +1187,16 @@ class _FarmDetailsModalState extends State<FarmDetailsModal> {
     } else if (_selectedMunicipality != null) {
       return '${_selectedMunicipality!['name']}, ${_isabelaProvince['name']}';
     } else {
-      return widget.farmDetails?['farm_location'] ?? 'None';
+      // Fallback to structured fields from widget data
+      final farm = widget.farmDetails;
+      if (farm != null) {
+        final parts = <String>[];
+        if (farm['farm_barangay']?.toString().isNotEmpty == true) parts.add(farm['farm_barangay']);
+        if (farm['farm_municipality']?.toString().isNotEmpty == true) parts.add(farm['farm_municipality']);
+        if (farm['farm_province']?.toString().isNotEmpty == true) parts.add(farm['farm_province']);
+        if (parts.isNotEmpty) return parts.join(', ');
+      }
+      return 'None';
     }
   }
 
@@ -1250,14 +1263,6 @@ class _FarmDetailsModalState extends State<FarmDetailsModal> {
     if (formKey.currentState!.validate()) {
       setState(() => _isLoading = true);
 
-      // Build address string from selected values
-      String farmLocation = '';
-      if (_selectedMunicipality != null && _selectedBarangay != null) {
-        farmLocation = '${_selectedBarangay!['name']}, ${_selectedMunicipality!['name']}, ${_isabelaProvince['name']}';
-      } else if (_selectedMunicipality != null) {
-        farmLocation = '${_selectedMunicipality!['name']}, ${_isabelaProvince['name']}';
-      }
-
       // Attempt a final single geocode before submission if coordinates are empty and barangay is selected
       if ((_farmLatitude == null || _farmLongitude == null) && _selectedBarangay != null && _selectedBarangay!['name'] != null && _selectedBarangay!['name'].isNotEmpty) {
         await _performSingleGeocode();
@@ -1269,7 +1274,9 @@ class _FarmDetailsModalState extends State<FarmDetailsModal> {
         'farm_classification': _selectedFarmClassification ?? '',
         'farm_land_area': _selectedFarmLandArea ?? '',
         'cooperative_affiliation': coopController.text,
-        'farm_location': farmLocation,
+        'farm_province': _isabelaProvince['name'],
+        'farm_municipality': _selectedMunicipality?['name'] ?? '',
+        'farm_barangay': _selectedBarangay?['name'] ?? '',
       };
       
       // Add farm coordinates if available

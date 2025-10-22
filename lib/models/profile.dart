@@ -38,7 +38,11 @@ class FarmDetail {
   final String farmClassification;
   final String farmLandArea;
   final String cooperativeAffiliation;
-  final String farmLocation;
+  final String farmProvince;
+  final String farmMunicipality;
+  final String farmBarangay;
+  final double? farmLatitude;
+  final double? farmLongitude;
 
   FarmDetail({
     required this.id,
@@ -48,7 +52,11 @@ class FarmDetail {
     required this.farmClassification,
     required this.farmLandArea,
     required this.cooperativeAffiliation,
-    required this.farmLocation,
+    required this.farmProvince,
+    required this.farmMunicipality,
+    required this.farmBarangay,
+    this.farmLatitude,
+    this.farmLongitude,
   });
 
   factory FarmDetail.fromJson(Map<String, dynamic> json) {
@@ -60,8 +68,21 @@ class FarmDetail {
       farmClassification: json['farm_classification'],
       farmLandArea: json['farm_land_area']?.toString() ?? '',
       cooperativeAffiliation: json['cooperative_affiliation'],
-      farmLocation: json['farm_location'],
+      farmProvince: json['farm_province'] ?? 'Isabela',
+      farmMunicipality: json['farm_municipality'] ?? '',
+      farmBarangay: json['farm_barangay'] ?? '',
+      farmLatitude: json['farm_latitude'] != null ? double.tryParse(json['farm_latitude'].toString()) : null,
+      farmLongitude: json['farm_longitude'] != null ? double.tryParse(json['farm_longitude'].toString()) : null,
     );
+  }
+
+  // Helper method to get formatted address
+  String get formattedAddress {
+    final parts = <String>[];
+    if (farmBarangay.isNotEmpty) parts.add(farmBarangay);
+    if (farmMunicipality.isNotEmpty) parts.add(farmMunicipality);
+    if (farmProvince.isNotEmpty) parts.add(farmProvince);
+    return parts.join(', ');
   }
 }
 
