@@ -44,6 +44,10 @@ class _CattleDetailScreenState extends State<CattleDetailScreen>
   // Refresh indicator key for programmatic control
   final GlobalKey<RefreshIndicatorState> _refreshIndicatorKey =
   GlobalKey<RefreshIndicatorState>();
+  
+  // GlobalKey for history tab content to trigger refresh
+  final GlobalKey<State<HistoryCattleTabContent>> _historyTabKey =
+      GlobalKey<State<HistoryCattleTabContent>>();
 
   @override
   void initState() {
@@ -132,7 +136,11 @@ class _CattleDetailScreenState extends State<CattleDetailScreen>
         isSuccess: true,
       );
       _tabController.animateTo(1); // Switch to History tab
-      // Refresh data to show new history record
+      
+      // Refresh history tab data to show new history record
+      if (_historyTabKey.currentState != null) {
+        (_historyTabKey.currentState as dynamic).refresh();
+      }
       await _refreshCattleData();
     }
   }
@@ -579,6 +587,7 @@ class _CattleDetailScreenState extends State<CattleDetailScreen>
                     ScaleTransition(
                       scale: _scaleAnimation,
                       child: HistoryCattleTabContent(
+                        key: _historyTabKey,
                         cattle: _currentCattle!,
                         onAddEvent: _navigateToAddEventForm,
                       ),

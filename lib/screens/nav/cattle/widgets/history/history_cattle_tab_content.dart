@@ -36,13 +36,13 @@ class _HistoryCattleTabContentState extends State<HistoryCattleTabContent> {
     final femaleEventTypes = [
       'All', 'Dry off', 'Sick', 'Treated', 'Breeding', 'Weighed', 'Gives Birth',
       'Vaccinated', 'Pregnant', 'Aborted Pregnancy', 'Deworming',
-      'Hoof Trimming', 'Weaned', 'Deceased', 'Lost', 'Sold', 'Other',
+      'Hoof Trimming', 'Weaned', 'Mortality', 'Lost', 'Sold', 'Other',
     ];
 
     // Comprehensive event types for male cattle - includes all available event types
     final maleEventTypes = [
       'All', 'Sick', 'Treated', 'Breeding', 'Weighed', 'Vaccinated', 'Deworming',
-      'Hoof Trimming', 'Castrated', 'Weaned', 'Deceased', 'Lost', 'Sold', 'Other',
+      'Hoof Trimming', 'Castrated', 'Weaned', 'Mortality', 'Lost', 'Sold', 'Other',
     ];
 
     // Check cattle sex and return appropriate event types
@@ -58,7 +58,7 @@ class _HistoryCattleTabContentState extends State<HistoryCattleTabContent> {
     'vaccinated',
     'deworming',
     'hoof trimming',
-    'deceased',
+    'mortality',
     'lost',
     'sold',
   ];
@@ -72,16 +72,14 @@ class _HistoryCattleTabContentState extends State<HistoryCattleTabContent> {
   Future<void> _loadCattleEvents() async {
     try {
       setState(() => isLoading = true);
-      final allEvents = await CattleHistoryService.getCattleHistory();
-      final cattleEvents = allEvents.where((event) =>
-      (event['cattle_tag']?.toString().trim().toLowerCase() ?? '') ==
-          widget.cattle.tagNo.trim().toLowerCase()
-      ).toList();
+      
+      // Use the proper method to get history by cattle tag
+      final cattleEvents = await CattleHistoryService.getCattleHistoryByTag(widget.cattle.tagNo);
 
       // Remove duplicates and delete them from database
       final uniqueEvents = await _removeDuplicateEventsFromDB(cattleEvents);
 
-      // Sort event by date to find the latest one
+      // Sort history by date to find the latest one
       uniqueEvents.sort((a, b) {
         final dateA = DateTime.tryParse(a['history_date'] ?? '1900-01-01') ?? DateTime(1900);
         final dateB = DateTime.tryParse(b['history_date'] ?? '1900-01-01') ?? DateTime(1900);
@@ -94,7 +92,7 @@ class _HistoryCattleTabContentState extends State<HistoryCattleTabContent> {
           isLoading = false;
           error = null;
 
-          // Auto-expand the latest event (index 0 after sorting)
+          // Auto-expand the latest history record (index 0 after sorting)
           if (events.isNotEmpty) {
             expandedCards.add(0);
           }
@@ -103,14 +101,14 @@ class _HistoryCattleTabContentState extends State<HistoryCattleTabContent> {
     } catch (e) {
       if (mounted) {
         setState(() {
-          error = 'Failed to load event: $e';
+          error = 'Failed to load history: $e';
           isLoading = false;
         });
       }
     }
   }
 
-// Helper method to remove duplicate event and delete them from database
+// Helper method to remove duplicate history records and delete them from database
   Future<List<Map<String, dynamic>>> _removeDuplicateEventsFromDB(List<Map<String, dynamic>> events) async {
     final List<Map<String, dynamic>> uniqueEvents = [];
     final List<Map<String, dynamic>> duplicatesToDelete = [];
@@ -187,22 +185,22 @@ class _HistoryCattleTabContentState extends State<HistoryCattleTabContent> {
     return uniqueEvents;
   }
 
-// Helper method to check if two event are identical
+// Helper method to check if two history records are identical
   bool _areEventsIdentical(Map<String, dynamic> event1, Map<String, dynamic> event2) {
-    // Get the event type to determine which fields to compare
-    final eventType1 = (event1['history_type'] ?? '').toString().toLowerCase();
-    final eventType2 = (event2['history_type'] ?? '').toString().toLowerCase();
+    // Get the history type to determine which fields to compare
+    final historyType1 = (event1['history_type'] ?? '').toString().toLowerCase();
+    final historyType2 = (event2['history_type'] ?? '').toString().toLowerCase();
 
-    // If event types are different, they're not identical
-    if (eventType1 != eventType2) return false;
+    // If history types are different, they're not identical
+    if (historyType1 != historyType2) return false;
 
     // Compare basic fields that are always relevant
     if (!_compareFieldValues(event1['history_date'], event2['history_date'])) return false;
     if (!_compareFieldValues(event1['cattle_tag'], event2['cattle_tag'])) return false;
     if (!_compareFieldValues(event1['notes'], event2['notes'])) return false;
 
-    // Compare event-specific fields based on event type
-    switch (eventType1) {
+    // Compare history-specific fields based on history type
+    switch (historyType1) {
       case 'dry off':
       // Only basic fields matter for dry off
         return true;
@@ -255,7 +253,7 @@ class _HistoryCattleTabContentState extends State<HistoryCattleTabContent> {
       // Only basic fields matter for weaned
         return true;
 
-      case 'deceased':
+      case 'mortality':
         return _compareFieldValues(event1['cause_of_death'], event2['cause_of_death']);
 
       case 'sold':
@@ -267,7 +265,7 @@ class _HistoryCattleTabContentState extends State<HistoryCattleTabContent> {
 
       case 'other':
       default:
-      // For 'other' event, compare all potentially relevant fields
+      // For 'other' history records, compare all potentially relevant fields
         return _compareFieldValues(event1['bull_tag'], event2['bull_tag']) &&
             _compareFieldValues(event1['calf_tag'], event2['calf_tag']) &&
             _compareFieldValues(event1['technician'], event2['technician']) &&
@@ -308,6 +306,9 @@ class _HistoryCattleTabContentState extends State<HistoryCattleTabContent> {
   }
 
   Future<void> _refreshEvents() async => await _loadCattleEvents();
+  
+  // Public method to refresh events (called from parent widget)
+  Future<void> refresh() => _refreshEvents();
 
   List<Map<String, dynamic>> get _filteredEvents {
     return events.where((event) {
@@ -327,9 +328,9 @@ class _HistoryCattleTabContentState extends State<HistoryCattleTabContent> {
       final sex = widget.cattle.sex.toLowerCase();
       final validEventTypes = sex == 'female'
           ? ['dry off', 'sick', 'treated', 'breeding', 'weighed', 'gives birth', 'vaccinated',
-        'pregnant', 'aborted pregnancy', 'deworming', 'hoof trimming', 'deceased', 'lost', 'sold', 'other']
+        'pregnant', 'aborted pregnancy', 'deworming', 'hoof trimming', 'mortality', 'lost', 'sold', 'other']
           : ['sick', 'treated', 'breeding', 'weighed', 'vaccinated', 'deworming', 'hoof trimming',
-        'castrated', 'weaned', 'deceased', 'lost', 'sold', 'other'];
+        'castrated', 'weaned', 'mortality', 'lost', 'sold', 'other'];
 
       final matchesSex = validEventTypes.contains(type);
 
@@ -1062,7 +1063,7 @@ class _HistoryCattleTabContentState extends State<HistoryCattleTabContent> {
       // No additional fields for weaned
         break;
 
-      case 'deceased':
+      case 'mortality':
         if (event['cause_of_death'] != null && event['cause_of_death'].toString().isNotEmpty && event['cause_of_death'] != 'N/A') {
           relevantDetails['Cause of Death'] = event['cause_of_death'].toString();
         }
@@ -1084,10 +1085,10 @@ class _HistoryCattleTabContentState extends State<HistoryCattleTabContent> {
         break;
 
       case 'other':
-        // For 'other' history, only show notes (no additional details)
+      // For 'other' history records, only show notes (no additional details)
         break;
       default:
-        // For any other event types, show basic information
+        // For any other history types, show basic information
         break;
     }
 
@@ -1140,7 +1141,7 @@ class _HistoryCattleTabContentState extends State<HistoryCattleTabContent> {
               ),
               const SizedBox(height: 24),
               Text(
-                isFiltering ? 'No Results Found' : 'No Events Recorded',
+                isFiltering ? 'No Results Found' : 'No History Records',
                 style: TextStyle(
                   fontSize: 24,
                   fontWeight: FontWeight.bold,
@@ -1151,7 +1152,7 @@ class _HistoryCattleTabContentState extends State<HistoryCattleTabContent> {
               Text(
                 isFiltering
                     ? 'Try adjusting your search or filter\nto find what you\'re looking for.'
-                    : 'History records for this cattle will appear here.\nUse the "Add History Record" button to get started.',
+                    : 'No history records have been recorded for this cattle yet.\nTap "Add History Record" to get started.',
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   fontSize: 16,
@@ -1186,7 +1187,7 @@ class _HistoryCattleTabContentState extends State<HistoryCattleTabContent> {
               ),
               const SizedBox(height: 24),
               Text(
-                'Error Loading Events',
+                'Error Loading History',
                 style: TextStyle(
                   fontSize: 24,
                   fontWeight: FontWeight.bold,

@@ -8,6 +8,7 @@ import '../../../constants/app_colors.dart';
 import '../../../models/cattle.dart';
 import '../../../services/cattle/cattle_service.dart';
 import '../../../services/auth_service.dart';
+import '../../../utils/cattle_age_classification.dart';
 
 class CattleFormScreen extends StatefulWidget {
   final Cattle? cattle;
@@ -44,6 +45,7 @@ class _CattleFormScreenState extends State<CattleFormScreen> {
   String? _fatherTag;
   String? _breed;
   String? _groupName;
+  String? _ageClassificationWarning;
 
   // Breed specific controls
   final List<String> defaultBreedOptions = [
@@ -677,6 +679,7 @@ class _CattleFormScreenState extends State<CattleFormScreen> {
         _generateTagForClassification(classification);
       }
     });
+    _validateAgeClassificationMatch();
   }
 
   /// Generate tag number based on classification
@@ -813,6 +816,7 @@ class _CattleFormScreenState extends State<CattleFormScreen> {
       setState(() {
         _dateOfBirth = formatted;
       });
+      _validateAgeClassificationMatch();
     }
   }
 
@@ -1316,6 +1320,72 @@ class _CattleFormScreenState extends State<CattleFormScreen> {
     );
   }
 
+  // Builds a small warning below fields when age and classification mismatch
+  Widget _buildAgeWarning() {
+    if (_ageClassificationWarning == null) return const SizedBox.shrink();
+    return Padding(
+      padding: const EdgeInsets.only(top: 8),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(Icons.warning_amber_rounded, color: AppColors.gold, size: 18),
+          const SizedBox(width: 6),
+          Expanded(
+            child: Text(
+              _ageClassificationWarning!,
+              style: TextStyle(color: AppColors.gold, fontSize: 12.5),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // Validate selected classification vs age inferred from DOB
+  void _validateAgeClassificationMatch() {
+    if (_dateOfBirth == null || _classification == null || _sex == null) {
+      setState(() => _ageClassificationWarning = null);
+      return;
+    }
+
+    try {
+      final dob = DateTime.parse(_dateOfBirth!);
+      final now = DateTime.now();
+      int months = (now.year - dob.year) * 12 + (now.month - dob.month);
+      if (now.day < dob.day) {
+        months = months - 1;
+      }
+      if (months < 0) months = 0;
+
+      final expected = CattleAgeClassification.getExpectedClassification(months, _sex!);
+      if (expected != _classification) {
+        final diffDays = now.difference(dob).inDays;
+        String ageDisplay;
+        if (diffDays < 30) {
+          ageDisplay = diffDays == 1 ? '1 day' : '$diffDays days';
+        } else if (months < 12) {
+          ageDisplay = months == 1 ? '1 month' : '$months months';
+        } else {
+          final years = months ~/ 12;
+          final remMonths = months % 12;
+          ageDisplay = remMonths == 0
+              ? (years == 1 ? '1 year' : '$years years')
+              : (years == 1
+                  ? '1 year, $remMonths ${remMonths == 1 ? 'month' : 'months'}'
+                  : '$years years, $remMonths ${remMonths == 1 ? 'month' : 'months'}');
+        }
+
+        setState(() {
+          _ageClassificationWarning = 'Age of $ageDisplay suggests "$expected"';
+        });
+      } else {
+        setState(() => _ageClassificationWarning = null);
+      }
+    } catch (_) {
+      setState(() => _ageClassificationWarning = null);
+    }
+  }
+
   /// Build fixed Breed dropdown with Other text field
   Widget _buildBreedField() {
     final List<String> options = List<String>.from(_breedOptions);
@@ -1498,6 +1568,7 @@ class _CattleFormScreenState extends State<CattleFormScreen> {
             _classification = null;
           }
         });
+        _validateAgeClassificationMatch();
       } : null,
     );
   }
@@ -1578,6 +1649,7 @@ class _CattleFormScreenState extends State<CattleFormScreen> {
                     const SizedBox(height: 16),
                     // Classification field (read-only if pre-selected)
                     _buildClassificationField(),
+                    _buildAgeWarning(),
                     const SizedBox(height: 16),
                     // Tag number field
                     _buildAutoTagField(),
@@ -1588,6 +1660,7 @@ class _CattleFormScreenState extends State<CattleFormScreen> {
                       value: _dateOfBirth,
                       icon: Icons.cake,
                     ),
+                    _buildAgeWarning(),
                   ],
                 ),
               ),
@@ -1721,13 +1794,13 @@ class _CattleFormScreenState extends State<CattleFormScreen> {
                 ),
               ),
 
-              // Lineage Information Section
-              _buildSectionTitle('Lineage Information', Icons.family_restroom),
+              // Genealogy Section
+              _buildSectionTitle('Genealogy', Icons.family_restroom),
               _buildCard(
                 child: Column(
                   children: [
                     _buildSearchableDropdown(
-                      label: 'Mother Tag',
+                      label: 'Dam Tag (Mother)',
                       value: _motherTag,
                       options: _femaleCattle,
                       onChanged: (value) => setState(() => _motherTag = value),
@@ -1735,7 +1808,7 @@ class _CattleFormScreenState extends State<CattleFormScreen> {
                     ),
                     const SizedBox(height: 16),
                     _buildSearchableDropdown(
-                      label: 'Father Tag',
+                      label: 'Sire Tag (Father)',
                       value: _fatherTag,
                       options: _maleCattle,
                       onChanged: (value) => setState(() => _fatherTag = value),

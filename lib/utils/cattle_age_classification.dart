@@ -35,27 +35,6 @@ class CattleAgeClassification {
     return 'Unknown';
   }
 
-  /// Check if the current classification matches the expected classification based on age
-  static bool isClassificationAccurate(Cattle cattle) {
-    final displayAge = cattle.displayAge;
-    if (displayAge == null || displayAge.isEmpty) {
-      return true; // Can't validate without age
-    }
-
-    try {
-      final ageInMonths = _parseAgeToMonths(displayAge);
-      if (ageInMonths == null) {
-        return true; // Can't parse age, assume accurate
-      }
-      
-      final expectedClassification = getExpectedClassification(ageInMonths, cattle.sex);
-      return cattle.classification == expectedClassification;
-    } catch (e) {
-      // If age parsing fails, assume it's accurate
-      return true;
-    }
-  }
-
   /// Parse various age formats to months
   static int? _parseAgeToMonths(String ageString) {
     if (ageString.isEmpty) return null;
@@ -108,30 +87,50 @@ class CattleAgeClassification {
     }
   }
 
-  /// Get the validation message for inaccurate classification
-  static String getValidationMessage(Cattle cattle) {
+  /// Auto-update cattle classification if it doesn't match the age
+  /// Returns the cattle with updated classification, or null if no update needed
+  static Cattle? autoUpdateClassificationIfNeeded(Cattle cattle) {
     final displayAge = cattle.displayAge;
     if (displayAge == null || displayAge.isEmpty) {
-      return 'Age information not available for validation';
+      return null; // Can't auto-update without age information
     }
 
     try {
       final ageInMonths = _parseAgeToMonths(displayAge);
       if (ageInMonths == null) {
-        return 'Unable to parse age format: $displayAge';
+        return null; // Can't parse age
       }
-      
+
       final expectedClassification = getExpectedClassification(ageInMonths, cattle.sex);
-      
+
+      // Check if current classification is accurate
       if (cattle.classification == expectedClassification) {
-        return 'Classification is accurate for age';
-      } else {
-        return 'Age: ${ageInMonths} months suggests classification should be "$expectedClassification" instead of "${cattle.classification}"';
+        return null; // No update needed
       }
+
+      // Classification needs to be updated
+      print('🔄 Auto-updating cattle ${cattle.tagNo} classification: "${cattle.classification}" -> "$expectedClassification" (Age: ${ageInMonths} months)');
+      
+      return cattle.copyWith(classification: expectedClassification);
     } catch (e) {
-      return 'Unable to validate age classification';
+      print('Error in autoUpdateClassificationIfNeeded: $e');
+      return null;
     }
   }
 
+  /// Get all cattle with auto-updated classifications
+  /// Returns a map of cattle that need updates: {cattleId: updatedCattle}
+  static Map<int, Cattle> autoUpdateClassificationsForList(List<Cattle> cattleList) {
+    final Map<int, Cattle> updatedCattle = {};
+    
+    for (var cattle in cattleList) {
+      final updated = autoUpdateClassificationIfNeeded(cattle);
+      if (updated != null) {
+        updatedCattle[cattle.id] = updated;
+      }
+    }
+    
+    return updatedCattle;
+  }
 
 }

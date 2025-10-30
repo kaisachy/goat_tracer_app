@@ -49,7 +49,7 @@ class _ArchivedCattleScreenState extends State<ArchivedCattleScreen> {
           // Find the most recent archive-related event
           final archiveEvent = cattleEvents.where((event) {
             final eventType = (event['history_type']?.toString().toLowerCase() ?? '');
-            return eventType == 'sold' || eventType == 'deceased' || eventType == 'lost';
+            return eventType == 'sold' || eventType == 'mortality' || eventType == 'lost';
           }).toList();
           
           if (archiveEvent.isNotEmpty) {
@@ -340,7 +340,7 @@ class _ArchivedCattleScreenState extends State<ArchivedCattleScreen> {
             children: [
               _buildStatusOption('All'),
               _buildStatusOption('Sold'),
-              _buildStatusOption('Deceased'),
+              _buildStatusOption('Mortality'),
               _buildStatusOption('Lost'),
             ],
           ),
@@ -637,7 +637,7 @@ class _ArchivedCattleScreenState extends State<ArchivedCattleScreen> {
     switch (status.toLowerCase()) {
       case 'sold':
         return AppColors.gold;
-      case 'deceased':
+      case 'mortality':
         return Colors.red;
       case 'lost':
         return Colors.orange;
@@ -650,7 +650,7 @@ class _ArchivedCattleScreenState extends State<ArchivedCattleScreen> {
     switch (status.toLowerCase()) {
       case 'sold':
         return FontAwesomeIcons.dollarSign;
-      case 'deceased':
+      case 'mortality':
         return FontAwesomeIcons.skull;
       case 'lost':
         return FontAwesomeIcons.locationDot;
@@ -687,9 +687,9 @@ class _ArchivedCattleScreenState extends State<ArchivedCattleScreen> {
         }
         return details;
         
-      case 'deceased':
+      case 'mortality':
         final causeOfDeath = eventData['cause_of_death']?.toString();
-        String details = 'Deceased on $eventDate';
+        String details = 'Mortality on $eventDate';
         if (causeOfDeath != null && causeOfDeath.isNotEmpty) {
           details += '\nCause: $causeOfDeath';
         }

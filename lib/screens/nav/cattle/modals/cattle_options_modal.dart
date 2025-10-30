@@ -55,14 +55,14 @@ class CattleOptionsModal {
         maxWidth: 300,
       ),
       items: isArchived ? [
-        // Only show Export PDF and Delete Cattle for archived cattle
-        _buildDropdownItem(
-          value: 'export_pdf',
-          icon: FontAwesomeIcons.filePdf,
-          title: 'Export PDF',
-          subtitle: 'Generate report',
-          color: Colors.red[600]!,
-        ),
+        // Only show Delete Cattle for archived cattle
+        // _buildDropdownItem(
+        //   value: 'export_pdf',
+        //   icon: FontAwesomeIcons.filePdf,
+        //   title: 'Export PDF',
+        //   subtitle: 'Generate report',
+        //   color: Colors.red[600]!,
+        // ),
         _buildDropdownItem(
           value: 'delete',
           icon: Icons.delete_forever_outlined,
@@ -103,20 +103,20 @@ class CattleOptionsModal {
           color: AppColors.vibrantGreen,
         ),
         _buildDivider(),
-        _buildDropdownItem(
-          value: 'weight_report',
-          icon: FontAwesomeIcons.chartLine,
-          title: 'Weight Report',
-          subtitle: 'View weight history',
-          color: AppColors.gold,
-        ),
-        _buildDropdownItem(
-          value: 'export_pdf',
-          icon: FontAwesomeIcons.filePdf,
-          title: 'Export PDF',
-          subtitle: 'Generate report',
-          color: Colors.red[600]!,
-        ),
+        // _buildDropdownItem(
+        //   value: 'weight_report',
+        //   icon: FontAwesomeIcons.chartLine,
+        //   title: 'Weight Report',
+        //   subtitle: 'View weight history',
+        //   color: AppColors.gold,
+        // ),
+        // _buildDropdownItem(
+        //   value: 'export_pdf',
+        //   icon: FontAwesomeIcons.filePdf,
+        //   title: 'Export PDF',
+        //   subtitle: 'Generate report',
+        //   color: Colors.red[600]!,
+        // ),
         _buildDivider(),
         _buildDropdownItem(
           value: 'archive',

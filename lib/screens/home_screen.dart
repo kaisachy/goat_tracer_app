@@ -15,6 +15,7 @@ import 'nav/history/history_screen.dart';
 import 'nav/scheduler/farmer_scheduler_screen.dart';
 import 'nav/setting/setting_screen.dart';
 import 'package:cattle_tracer_app/services/cattle/cattle_status_service.dart';
+import 'package:cattle_tracer_app/services/cattle/cattle_service.dart';
 import 'package:cattle_tracer_app/services/refresh_service.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -40,7 +41,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
-    _selectedIndex = widget.initialSelectedIndex ?? 0;
+    _selectedIndex = widget.initialSelectedIndex ?? 2; // Default to Dashboard
     _initializePages();
     _loadProfileData();
   }
@@ -104,6 +105,22 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
           SnackBar(
             content: Text('${updatedCattle.length} cow(s) status automatically updated to Healthy'),
             backgroundColor: Colors.green[600],
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+            duration: const Duration(seconds: 3),
+          ),
+        );
+      }
+
+      // Auto-update cattle classifications based on age
+      final classificationUpdateCount = await CattleService.autoUpdateCattleClassifications();
+      
+      if (classificationUpdateCount > 0 && mounted) {
+        // Show a notification to the user about the classification updates
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('$classificationUpdateCount cattle classification(s) automatically updated based on age'),
+            backgroundColor: Colors.blue[600],
             behavior: SnackBarBehavior.floating,
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
             duration: const Duration(seconds: 3),
@@ -199,6 +216,9 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
       // Perform comprehensive refresh for all data
       final refreshResults = await RefreshService.refreshAllData();
       
+      // Also auto-update cattle classifications
+      final classificationUpdateCount = await CattleService.autoUpdateCattleClassifications();
+      
       // Dismiss loading indicator
       ScaffoldMessenger.of(context).hideCurrentSnackBar();
       
@@ -207,11 +227,19 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
       final hasErrors = refreshResults['errors'].isNotEmpty;
       final hasCattleUpdates = refreshResults['cattleStatusUpdates'].isNotEmpty;
       
+      // Add classification update info to the message if any
+      String finalMessage = message;
+      if (classificationUpdateCount > 0) {
+        finalMessage = message.isEmpty 
+            ? '$classificationUpdateCount cattle classification(s) updated'
+            : '$message\n$classificationUpdateCount classification(s) updated';
+      }
+      
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(message),
+          content: Text(finalMessage),
           backgroundColor: hasErrors ? Colors.orange[600] : 
-                          hasCattleUpdates ? Colors.green[600] : AppColors.lightGreen,
+                          hasCattleUpdates || classificationUpdateCount > 0 ? Colors.green[600] : AppColors.lightGreen,
           behavior: SnackBarBehavior.floating,
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
           duration: const Duration(seconds: 4),
@@ -536,7 +564,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
       case 3:
         return 'Cattle History';
       case 4:
-        return 'Scheduler';
+        return 'Scheduled Activities';
       case 5:
         return 'Milk Production';
       case 6:
@@ -556,6 +584,12 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
               padding: EdgeInsets.zero,
               children: [
                 _buildDrawerItem(
+                  icon: Icons.dashboard_rounded,
+                  text: 'Dashboard',
+                  index: 2,
+                  onTap: () => _onNavItemTapped(2),
+                ),
+                _buildDrawerItem(
                   icon: Icons.person_rounded,
                   text: 'Profile',
                   index: 0,
@@ -568,12 +602,6 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                   onTap: () => _onNavItemTapped(1),
                 ),
                 _buildDrawerItem(
-                  icon: Icons.dashboard_rounded,
-                  text: 'Dashboard',
-                  index: 2,
-                  onTap: () => _onNavItemTapped(2),
-                ),
-                _buildDrawerItem(
                   icon: Icons.history_rounded,
                   text: 'Cattle History',
                   index: 3,
@@ -581,15 +609,9 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                 ),
                 _buildDrawerItem(
                   icon: Icons.event_available_rounded,
-                  text: 'Scheduler',
+                  text: 'Scheduled Activities',
                   index: 4,
                   onTap: () => _onNavItemTapped(4),
-                ),
-                _buildDrawerItem(
-                  icon: Icons.opacity_rounded,
-                  text: 'Milk Production',
-                  index: 5,
-                  onTap: () => _onNavItemTapped(5),
                 ),
                 _buildDrawerItem(
                   icon: Icons.settings_rounded,

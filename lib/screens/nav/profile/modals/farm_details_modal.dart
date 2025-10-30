@@ -303,7 +303,7 @@ class _FarmDetailsModalState extends State<FarmDetailsModal> {
       children: [
         _buildStyledTextField(
           controller: farmNameController,
-          label: 'Farm Name',
+          label: 'Farm Classification',
           icon: FontAwesomeIcons.leaf,
         ),
         const SizedBox(height: 20),

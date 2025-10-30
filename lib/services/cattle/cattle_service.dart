@@ -3,6 +3,7 @@ import 'dart:developer';
 import 'package:http/http.dart' as http;
 import '../../config.dart';
 import '../../models/cattle.dart';
+import '../../utils/cattle_age_classification.dart';
 import '../auth_service.dart';
 
 class CattleService {
@@ -461,5 +462,90 @@ class CattleService {
     }
 
     return [];
+  }
+
+  /// Auto-update classifications for all cattle based on age
+  /// This method checks all cattle and updates their classifications if they've aged into a new category
+  static Future<int> autoUpdateCattleClassifications() async {
+    final token = await AuthService.getToken();
+
+    if (token == null) {
+      log('autoUpdateCattleClassifications failed: No token found.');
+      return 0;
+    }
+
+    try {
+      // Get all active cattle
+      final cattleList = await getAllCattle();
+      
+      if (cattleList.isEmpty) {
+        return 0;
+      }
+
+      // Check which cattle need classification updates
+      final updatedCattle = CattleAgeClassification.autoUpdateClassificationsForList(cattleList);
+      
+      if (updatedCattle.isEmpty) {
+        log('No cattle need classification updates');
+        return 0;
+      }
+
+      log('Found ${updatedCattle.length} cattle that need classification updates');
+
+      // Update each cattle that needs classification update
+      int successCount = 0;
+      for (var entry in updatedCattle.entries) {
+        final cattle = entry.value;
+        
+        final updateData = {
+          'id': cattle.id,
+          'classification': cattle.classification,
+        };
+
+        final success = await updateCattleInformation(updateData);
+        if (success) {
+          successCount++;
+          log('✅ Auto-updated cattle ${cattle.tagNo} classification to ${cattle.classification}');
+        } else {
+          log('❌ Failed to auto-update cattle ${cattle.tagNo}');
+        }
+      }
+
+      log('Auto-update completed: $successCount/${updatedCattle.length} cattle updated');
+      return successCount;
+    } catch (e, stackTrace) {
+      log('Error in autoUpdateCattleClassifications: $e', stackTrace: stackTrace);
+      return 0;
+    }
+  }
+
+  /// Get cattle with automatic classification updates
+  /// Returns list of cattle with classifications auto-updated based on age
+  static Future<List<Cattle>> getCattleWithAutoUpdatedClassifications() async {
+    try {
+      // Get all cattle
+      final cattleList = await getAllCattle();
+      
+      if (cattleList.isEmpty) {
+        return cattleList;
+      }
+
+      // Check and auto-update classifications
+      final updatedCattle = CattleAgeClassification.autoUpdateClassificationsForList(cattleList);
+      
+      if (updatedCattle.isEmpty) {
+        return cattleList;
+      }
+
+      // Apply the updated classifications to the list
+      final resultList = cattleList.map((cattle) {
+        return updatedCattle[cattle.id] ?? cattle;
+      }).toList();
+
+      return resultList;
+    } catch (e) {
+      log('Error in getCattleWithAutoUpdatedClassifications: $e');
+      return await getAllCattle();
+    }
   }
 }

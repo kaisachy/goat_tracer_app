@@ -35,7 +35,7 @@
           return Colors.grey[600]!;
         case 'sold':
           return AppColors.gold;
-        case 'deceased':
+        case 'mortality':
           return Colors.red[600]!;
         default:
           return AppColors.lightGreen;

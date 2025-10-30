@@ -86,6 +86,13 @@ class _CattleScreenState extends State<CattleScreen>
     setState(() => _isLoading = true);
     
     try {
+      // First, check and auto-update cattle classifications if needed
+      final updatedCount = await CattleService.autoUpdateCattleClassifications();
+      
+      if (updatedCount > 0 && mounted) {
+        debugPrint('✅ Auto-updated $updatedCount cattle classification(s)');
+      }
+
       final data = await CattleService.getCattleInformation();
       if (mounted) {
         setState(() {

@@ -1198,10 +1198,10 @@ class _CattleHistoryFormScreenState extends State<CattleHistoryFormScreen>
         throw Exception('Event date is required');
       }
 
-      // Validate cause of death for deceased history
-      if (selectedHistoryType.toLowerCase() == 'deceased' &&
+      // Validate cause of death for mortality history
+      if (selectedHistoryType.toLowerCase() == 'mortality' &&
           _controllers['cause_of_death']!.text.trim().isEmpty) {
-        _showErrorMessage('Cause of death is required for deceased history.');
+        _showErrorMessage('Cause of death is required for mortality history.');
         setState(() => _isLoading = false);
         return;
       }
@@ -1464,9 +1464,9 @@ class _CattleHistoryFormScreenState extends State<CattleHistoryFormScreen>
           } else if (selectedHistoryType.toLowerCase() == 'castrated') {
             print('🎯 Handling Castrated event');
             await _handleCastratedEvent();
-          } else if (selectedHistoryType.toLowerCase() == 'deceased') {
-            print('🎯 Handling Deceased event');
-            await _handleDeceasedEvent();
+          } else if (selectedHistoryType.toLowerCase() == 'mortality') {
+            print('🎯 Handling Mortality event');
+            await _handleMortalityEvent();
           } else if (selectedHistoryType.toLowerCase() == 'lost') {
             print('🎯 Handling Lost event');
             await _handleLostEvent();
@@ -1942,20 +1942,20 @@ class _CattleHistoryFormScreenState extends State<CattleHistoryFormScreen>
     }
   }
 
-  Future<void> _handleDeceasedEvent() async {
+  Future<void> _handleMortalityEvent() async {
     try {
       bool cattleStatusUpdated = false;
       bool cattleArchived = false;
       String cattleStatus = '';
 
-      // Update cattle status to Deceased
+      // Update cattle status to Mortality
       if (_cattleDetails != null) {
         final cattleUpdateData = Map<String, dynamic>.from(_cattleDetails!.toJson());
-        cattleUpdateData['status'] = 'Deceased';
+        cattleUpdateData['status'] = 'Mortality';
         cattleStatusUpdated = await CattleService.updateCattleInformation(cattleUpdateData);
         cattleStatus = cattleStatusUpdated
-            ? 'Cattle ${_cattleDetails!.tagNo} status updated to Deceased'
-            : 'Failed to update cattle ${_cattleDetails!.tagNo} status to Deceased';
+            ? 'Cattle ${_cattleDetails!.tagNo} status updated to Mortality'
+            : 'Failed to update cattle ${_cattleDetails!.tagNo} status to Mortality';
 
         // Auto-archive the cattle after updating status
         if (cattleStatusUpdated) {
@@ -1967,22 +1967,22 @@ class _CattleHistoryFormScreenState extends State<CattleHistoryFormScreen>
           
           cattleArchived = await CattleService.archiveCattle(
             _cattleDetails!.id, 
-            'Deceased',
+            'Mortality',
             notes: archiveNotes.isNotEmpty ? archiveNotes : null,
           );
           
-          print('Auto-archive result for deceased cattle: $cattleArchived');
+          print('Auto-archive result for mortality cattle: $cattleArchived');
         }
       }
 
       // Log the result for debugging
-      print('Deceased event result: $cattleStatus');
+      print('Mortality event result: $cattleStatus');
 
       // Show success feedback to user
       if (mounted && cattleStatusUpdated) {
         final message = cattleArchived 
-            ? 'Cattle status updated to Deceased and moved to archive'
-            : 'Cattle status updated to Deceased';
+            ? 'Cattle status updated to Mortality and moved to archive'
+            : 'Cattle status updated to Mortality';
         
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -1997,13 +1997,13 @@ class _CattleHistoryFormScreenState extends State<CattleHistoryFormScreen>
 
     } catch (e) {
       // Log any errors that occur during the process
-      print('Error in _handleDeceasedEvent: $e');
+      print('Error in _handleMortalityEvent: $e');
 
       // Optional: Show error message to user
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Warning: Failed to update cattle status to Deceased'),
+            content: Text('Warning: Failed to update cattle status to Mortality'),
             backgroundColor: Colors.orange[600],
             behavior: SnackBarBehavior.floating,
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),

@@ -1,21 +1,21 @@
-// lib/screens/nav/cattle/widgets/event_fields/deceased_event_fields.dart
+// lib/screens/nav/cattle/widgets/event_fields/mortality_event_fields.dart
 
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'base_history_fields.dart';
 import '../history_styled_text_field.dart';
 
-class DeceasedEventFields extends BaseEventFields {
-  const DeceasedEventFields({
+class MortalityEventFields extends BaseEventFields {
+  const MortalityEventFields({
     super.key,
     required super.controllers,
   });
 
   @override
-  DeceasedEventFieldsState createState() => DeceasedEventFieldsState();
+  MortalityEventFieldsState createState() => MortalityEventFieldsState();
 }
 
-class DeceasedEventFieldsState extends BaseEventFieldsState<DeceasedEventFields> {
+class MortalityEventFieldsState extends BaseEventFieldsState<MortalityEventFields> {
   @override
   Widget build(BuildContext context) {
     return Column(
@@ -38,3 +38,5 @@ class DeceasedEventFieldsState extends BaseEventFieldsState<DeceasedEventFields>
     );
   }
 }
+
+

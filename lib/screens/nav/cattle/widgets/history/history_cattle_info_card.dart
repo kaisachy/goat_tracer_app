@@ -27,7 +27,7 @@ class HistoryCattleInfoCard extends StatelessWidget {
         return const Color(0xFFEC4899); // Pink (combination status)
       case 'sold':
         return const Color(0xFF7F7F7F); //Gray
-      case 'deceased':
+      case 'mortality':
         return const Color(0xFFEF4444); // Modern red
       default:
         return const Color(0xFF10B981); // Emerald green (fallback)

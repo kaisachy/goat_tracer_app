@@ -30,7 +30,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
     return [
       'All', 'Dry off', 'Treated', 'Breeding', 'Weighed', 'Gives Birth',
       'Vaccinated', 'Pregnant', 'Aborted Pregnancy', 'Deworming',
-      'Hoof Trimming', 'Castrated', 'Weaned', 'Deceased', 'Lost', 'Sold', 'Other',
+      'Hoof Trimming', 'Castrated', 'Weaned', 'Mortality', 'Lost', 'Sold', 'Other',
     ];
   }
 
@@ -42,7 +42,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
     'vaccinated',
     'deworming',
     'hoof trimming',
-    'deceased',
+    'mortality',
     'lost',
     'sold',
   ];
@@ -233,7 +233,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
       case 'castrated':
         return _compareFieldValues(historyRecord1['technician'], historyRecord2['technician']);
 
-      case 'deceased':
+      case 'mortality':
         return _compareFieldValues(historyRecord1['cause_of_death'], historyRecord2['cause_of_death']);
 
       case 'sold':
@@ -1182,7 +1182,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
         }
         break;
 
-      case 'deceased':
+      case 'mortality':
         if (historyRecord['cause_of_death'] != null && historyRecord['cause_of_death'].toString().isNotEmpty && historyRecord['cause_of_death'].toString() != 'N/A') {
           relevantDetails['Cause of Death'] = historyRecord['cause_of_death'].toString();
         }

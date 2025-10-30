@@ -17,7 +17,7 @@ class ChangeStatusOption {
     'Pregnant',
     'Lactating & Pregnant',
     'Sold',
-    'Deceased',
+    'Mortality',
     'Lost',
   ];
 
@@ -26,7 +26,7 @@ class ChangeStatusOption {
     'Sick',
     'Breeding',
     'Sold',
-    'Deceased',
+    'Mortality',
     'Lost',
   ];
 
@@ -343,7 +343,7 @@ class ChangeStatusOption {
         iconData = FontAwesomeIcons.moneyBill;
         iconColor = AppColors.gold;
         break;
-      case 'deceased':
+      case 'mortality':
         iconData = FontAwesomeIcons.bookDead;
         iconColor = Colors.black;
         break;

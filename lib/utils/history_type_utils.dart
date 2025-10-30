@@ -24,42 +24,42 @@ class HistoryTypeUtils {
     switch (classificationLower) {
       case 'calf':
       case 'calves':
-        historyTypes = ['Sick', 'Treated', 'Weighed', 'Deworming', 'Hoof Trimming', 'Castrated', 'Weaned', 'Lost', 'Deceased', 'Other'];
+        historyTypes = ['Sick', 'Treated', 'Weighed', 'Deworming', 'Hoof Trimming', 'Castrated', 'Weaned', 'Lost', 'Mortality', 'Other'];
         print('DEBUG: Using Calf history types');
         break;
         
       case 'heifer':
       case 'heifers':
-        historyTypes = ['Sick', 'Treated', 'Weighed', 'Breeding', 'Pregnant', 'Gives Birth', 'Aborted Pregnancy', 'Deworming', 'Hoof Trimming', 'Sold', 'Lost', 'Deceased', 'Other'];
+        historyTypes = ['Sick', 'Treated', 'Weighed', 'Breeding', 'Pregnant', 'Gives Birth', 'Aborted Pregnancy', 'Deworming', 'Hoof Trimming', 'Sold', 'Lost', 'Mortality', 'Other'];
         print('DEBUG: Using Heifer history types');
         break;
         
       case 'cow':
       case 'cows':
-        historyTypes = ['Dry off', 'Sick', 'Treated', 'Breeding', 'Weighed', 'Gives Birth', 'Pregnant', 'Aborted Pregnancy', 'Deworming', 'Hoof Trimming', 'Sold', 'Lost', 'Deceased', 'Other'];
+        historyTypes = ['Dry off', 'Sick', 'Treated', 'Breeding', 'Weighed', 'Gives Birth', 'Pregnant', 'Aborted Pregnancy', 'Deworming', 'Hoof Trimming', 'Sold', 'Lost', 'Mortality', 'Other'];
         print('DEBUG: Using Cow history types');
         break;
         
       case 'bull':
       case 'bulls':
-        historyTypes = ['Sick', 'Treated', 'Weighed', 'Breeding', 'Deworming', 'Hoof Trimming', 'Sold', 'Lost', 'Deceased', 'Other'];
+        historyTypes = ['Sick', 'Treated', 'Weighed', 'Breeding', 'Deworming', 'Hoof Trimming', 'Sold', 'Lost', 'Mortality', 'Other'];
         print('DEBUG: Using Bull history types');
         break;
         
       case 'steer':
       case 'steers':
-        historyTypes = ['Sick', 'Treated', 'Weighed', 'Deworming', 'Hoof Trimming', 'Sold', 'Lost', 'Deceased', 'Other'];
+        historyTypes = ['Sick', 'Treated', 'Weighed', 'Deworming', 'Hoof Trimming', 'Sold', 'Lost', 'Mortality', 'Other'];
         print('DEBUG: Using Steer history types');
         break;
         
       case 'growers':
       case 'grower':
-        historyTypes = ['Sick', 'Treated', 'Weighed', 'Deworming', 'Hoof Trimming', 'Sold', 'Lost', 'Deceased', 'Other'];
+        historyTypes = ['Sick', 'Treated', 'Weighed', 'Deworming', 'Hoof Trimming', 'Sold', 'Lost', 'Mortality', 'Other'];
         print('DEBUG: Using Growers history types');
         break;
         
       default:
-        historyTypes = ['Treated', 'Weighed', 'Deworming', 'Hoof Trimming', 'Lost', 'Deceased', 'Other'];
+        historyTypes = ['Treated', 'Weighed', 'Deworming', 'Hoof Trimming', 'Lost', 'Mortality', 'Other'];
         print('DEBUG: Using default history types for classification: $classificationLower');
         break;
     }
@@ -96,7 +96,7 @@ class HistoryTypeUtils {
         return FontAwesomeIcons.mars;
       case 'weaned':
         return FontAwesomeIcons.bottleWater;
-      case 'deceased':
+      case 'mortality':
         return FontAwesomeIcons.skull;
       case 'lost':
         return FontAwesomeIcons.magnifyingGlass;
@@ -124,7 +124,7 @@ class HistoryTypeUtils {
       case 'castrated': return Colors.indigo.shade400;
       case 'weaned': return Colors.teal.shade400;
       case 'aborted pregnancy': return Colors.red.shade600;
-      case 'deceased': return Colors.grey.shade700;
+      case 'mortality': return Colors.grey.shade700;
       case 'lost': return Colors.amber.shade600;
       case 'other': return Colors.blueGrey.shade400;
       case 'loading cattle information...': return Colors.grey.shade400;

@@ -174,7 +174,7 @@ class _HistoryDuplicationModalState extends State<HistoryDuplicationModal> {
       case 'vaccinated':
       case 'deworming':
       case 'hoof trimming':
-      case 'deceased':
+      case 'mortality':
       case 'lost':
       case 'other':
       default:

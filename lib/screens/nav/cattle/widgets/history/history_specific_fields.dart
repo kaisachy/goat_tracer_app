@@ -15,7 +15,7 @@ import 'history-fields/vaccinated_history_fields.dart';
 import 'history-fields/pregnant_history_fields.dart';
 import 'history-fields/deworming_history_fields.dart';
 import 'history-fields/castrated_history_fields.dart';
-import 'history-fields/deceased_history_fields.dart';
+import 'history-fields/mortality_history_fields.dart';
 import 'history-fields/lost_history_fields.dart';
 import 'history-fields/sold_history_fields.dart';
 import 'history-fields/other_history_fields.dart';
@@ -138,8 +138,8 @@ class HistorySpecificFieldsState extends State<HistorySpecificFields> {
           controllers: widget.controllers,
         );
 
-      case 'deceased':
-        return DeceasedEventFields(
+      case 'mortality':
+        return MortalityEventFields(
           controllers: widget.controllers,
         );
 

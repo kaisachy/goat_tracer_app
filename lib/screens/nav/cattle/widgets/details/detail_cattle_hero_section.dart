@@ -5,7 +5,6 @@ import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:cattle_tracer_app/models/cattle.dart';
 import 'package:cattle_tracer_app/constants/app_colors.dart';
 import 'package:cattle_tracer_app/utils/cattle_detail_utils.dart';
-import 'package:cattle_tracer_app/utils/cattle_age_classification.dart';
 import 'package:cattle_tracer_app/screens/nav/cattle/modals/photo_options_modal.dart';
 import 'package:cattle_tracer_app/screens/nav/cattle/modals/cattle_options_modal.dart';
 import 'package:cattle_tracer_app/screens/nav/cattle/widgets/details/cattle_schedules_section.dart';
@@ -126,7 +125,7 @@ class _CattleHeroSectionState extends State<CattleHeroSection> {
                                 const SizedBox(width: 6),
                                 Flexible(
                                   child: Text(
-                                    '#${widget.cattle.tagNo}',
+                                    '${widget.cattle.tagNo}',
                                     style: const TextStyle(
                                       fontSize: 16,
                                       color: AppColors.textSecondary,
@@ -156,7 +155,6 @@ class _CattleHeroSectionState extends State<CattleHeroSection> {
                     ],
                   ),
                 ),
-                _buildScheduleCountButton(context),
               ],
             ),
           ),
@@ -382,40 +380,6 @@ class _CattleHeroSectionState extends State<CattleHeroSection> {
   }
 
   void _showCattleOptionsModal(BuildContext context) {
-    // Show alert if there's a classification issue
-    if (!CattleAgeClassification.isClassificationAccurate(widget.cattle)) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Row(
-            children: [
-              Icon(
-                Icons.warning_amber,
-                color: Colors.white,
-                size: 20,
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Text(
-                  'Age Classification Alert: ${CattleAgeClassification.getValidationMessage(widget.cattle)}',
-                  style: const TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-              ),
-            ],
-          ),
-          backgroundColor: Colors.yellow[700],
-          duration: const Duration(seconds: 4),
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
-          margin: const EdgeInsets.all(16),
-        ),
-      );
-    }
-    
     CattleOptionsModal.show(
       context: context,
       cattle: widget.cattle,
@@ -671,28 +635,11 @@ class _CattleHeroSectionState extends State<CattleHeroSection> {
   }
 
   Widget _buildMoreOptionsButton() {
-    final bool hasClassificationIssue = !CattleAgeClassification.isClassificationAccurate(widget.cattle);
-    
-    return Tooltip(
-      message: hasClassificationIssue 
-          ? CattleAgeClassification.getValidationMessage(widget.cattle)
-          : 'More options',
-      child: Stack(
-        children: [
-          _buildFloatingButton(
-            icon: Icons.more_vert,
-            onTap: () {
-              _showCattleOptionsModal(context);
-            },
-          ),
-          if (hasClassificationIssue)
-            Positioned(
-              right: 0,
-              top: 0,
-              child: const _PulsingAlertDot(),
-            ),
-        ],
-      ),
+    return _buildFloatingButton(
+      icon: Icons.more_vert,
+      onTap: () {
+        _showCattleOptionsModal(context);
+      },
     );
   }
 
@@ -777,108 +724,4 @@ class _CattleHeroSectionState extends State<CattleHeroSection> {
     );
   }
 
-}
-
-class _PulsingAlertDot extends StatefulWidget {
-  const _PulsingAlertDot();
-
-  @override
-  State<_PulsingAlertDot> createState() => _PulsingAlertDotState();
-}
-
-class _PulsingAlertDotState extends State<_PulsingAlertDot> with TickerProviderStateMixin {
-  late AnimationController _pulseController;
-  late AnimationController _glowController;
-  late Animation<double> _pulseAnimation;
-  late Animation<double> _glowAnimation;
-
-  @override
-  void initState() {
-    super.initState();
-    _pulseController = AnimationController(
-      duration: const Duration(milliseconds: 1200),
-      vsync: this,
-    );
-    _pulseAnimation = Tween<double>(begin: 0.8, end: 1.2).animate(
-      CurvedAnimation(parent: _pulseController, curve: Curves.easeInOut),
-    );
-
-    _glowController = AnimationController(
-      duration: const Duration(milliseconds: 1500),
-      vsync: this,
-    );
-    _glowAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
-      CurvedAnimation(parent: _glowController, curve: Curves.easeInOut),
-    );
-
-    _pulseController.repeat(reverse: true);
-    _glowController.repeat(reverse: true);
-  }
-
-  @override
-  void dispose() {
-    _pulseController.dispose();
-    _glowController.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return SizedBox(
-      width: 20,
-      height: 20,
-      child: AnimatedBuilder(
-        animation: Listenable.merge([_pulseAnimation, _glowAnimation]),
-        builder: (context, child) {
-          return Stack(
-            alignment: Alignment.center,
-            children: [
-              Container(
-                width: 20 * _glowAnimation.value,
-                height: 20 * _glowAnimation.value,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: Colors.amber.withOpacity(0.25 * (1 - _glowAnimation.value)),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.amber.withOpacity(0.35 * _glowAnimation.value),
-                      blurRadius: 8 * _glowAnimation.value,
-                      spreadRadius: 2 * _glowAnimation.value,
-                    ),
-                  ],
-                ),
-              ),
-              Container(
-                width: 12 * _pulseAnimation.value,
-                height: 12 * _pulseAnimation.value,
-                decoration: BoxDecoration(
-                  color: Colors.amber[700],
-                  shape: BoxShape.circle,
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.amber.withOpacity(0.6),
-                      blurRadius: 6,
-                      offset: const Offset(0, 2),
-                    ),
-                    BoxShadow(
-                      color: Colors.amber.withOpacity(0.3),
-                      blurRadius: 12,
-                      spreadRadius: 1,
-                    ),
-                  ],
-                ),
-                child: const Center(
-                  child: Icon(
-                    Icons.warning_amber,
-                    color: Colors.white,
-                    size: 8,
-                  ),
-                ),
-              ),
-            ],
-          );
-        },
-      ),
-    );
-  }
 }

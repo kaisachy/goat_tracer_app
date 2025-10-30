@@ -4,10 +4,9 @@ import 'package:flutter/material.dart';
 import 'package:cattle_tracer_app/models/cattle.dart';
 import 'package:cattle_tracer_app/constants/app_colors.dart';
 import 'package:cattle_tracer_app/screens/nav/cattle/modals/cattle_options_modal.dart';
-import 'package:cattle_tracer_app/utils/cattle_age_classification.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 
-class DetailCattleAppBar extends StatefulWidget {
+class DetailCattleAppBar extends StatelessWidget {
   final Cattle cattle;
   final VoidCallback onAddEvent;
   final Function(Cattle) onEditCattle;
@@ -20,36 +19,6 @@ class DetailCattleAppBar extends StatefulWidget {
     required this.onEditCattle,
     this.onCattleUpdated,
   });
-
-  @override
-  State<DetailCattleAppBar> createState() => _DetailCattleAppBarState();
-}
-
-class _DetailCattleAppBarState extends State<DetailCattleAppBar> with SingleTickerProviderStateMixin {
-  late final AnimationController _pulseController;
-  late final Animation<double> _scaleAnimation;
-  late final Animation<double> _opacityAnimation;
-
-  @override
-  void initState() {
-    super.initState();
-    _pulseController = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 1400),
-    )..repeat();
-    _scaleAnimation = Tween<double>(begin: 1.0, end: 1.8).animate(
-      CurvedAnimation(parent: _pulseController, curve: Curves.easeOut),
-    );
-    _opacityAnimation = Tween<double>(begin: 0.6, end: 0.0).animate(
-      CurvedAnimation(parent: _pulseController, curve: Curves.easeOut),
-    );
-  }
-
-  @override
-  void dispose() {
-    _pulseController.dispose();
-    super.dispose();
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -103,7 +72,7 @@ class _DetailCattleAppBarState extends State<DetailCattleAppBar> with SingleTick
                         const SizedBox(width: 6),
                         Expanded(
                           child: Text(
-                            widget.cattle.tagNo.isNotEmpty ? '#${widget.cattle.tagNo}' : 'No Tag',
+                            cattle.tagNo.isNotEmpty ? '#${cattle.tagNo}' : 'No Tag',
                             style: const TextStyle(
                               color: Colors.white,
                               fontSize: 18,
@@ -128,8 +97,8 @@ class _DetailCattleAppBarState extends State<DetailCattleAppBar> with SingleTick
                             borderRadius: BorderRadius.circular(8),
                           ),
                           child: Text(
-                            widget.cattle.classification.isNotEmpty
-                                ? widget.cattle.classification
+                            cattle.classification.isNotEmpty
+                                ? cattle.classification
                                 : 'No Stage',
                             style: const TextStyle(
                               color: Colors.white,
@@ -149,8 +118,8 @@ class _DetailCattleAppBarState extends State<DetailCattleAppBar> with SingleTick
                             borderRadius: BorderRadius.circular(8),
                           ),
                           child: Text(
-                            widget.cattle.status.isNotEmpty
-                                ? widget.cattle.status
+                            cattle.status.isNotEmpty
+                                ? cattle.status
                                 : 'No Status',
                             style: const TextStyle(
                               color: Colors.white,
@@ -173,73 +142,22 @@ class _DetailCattleAppBarState extends State<DetailCattleAppBar> with SingleTick
                   color: Colors.white.withOpacity(0.2),
                   borderRadius: BorderRadius.circular(12),
                 ),
-                child: Stack(
-                  children: [
-                    IconButton(
-                      icon: const Icon(
-                        Icons.more_vert,
-                        color: Colors.white,
-                        size: 20,
-                      ),
-                      onPressed: () {
-                        CattleOptionsModal.show(
-                          context: context,
-                          cattle: widget.cattle,
-                          onAddEvent: widget.onAddEvent,
-                          onEditCattle: widget.onEditCattle,
-                          onCattleUpdated: widget.onCattleUpdated, // Pass the callback
-                        );
-                      },
-                      tooltip: 'More Options',
-                    ),
-                    if (!CattleAgeClassification.isClassificationAccurate(widget.cattle))
-                      Positioned(
-                        right: 4,
-                        top: 4,
-                        child: SizedBox(
-                          width: 20,
-                          height: 20,
-                          child: Stack(
-                            alignment: Alignment.center,
-                            children: [
-                              FadeTransition(
-                                opacity: _opacityAnimation,
-                                child: ScaleTransition(
-                                  scale: _scaleAnimation,
-                                  child: Container(
-                                    width: 16,
-                                    height: 16,
-                                    decoration: BoxDecoration(
-                                      color: Colors.yellow[700]?.withOpacity(0.4),
-                                      shape: BoxShape.circle,
-                                    ),
-                                  ),
-                                ),
-                              ),
-                              Container(
-                                padding: const EdgeInsets.all(4),
-                                decoration: BoxDecoration(
-                                  color: Colors.yellow[700],
-                                  shape: BoxShape.circle,
-                                  border: Border.all(color: Colors.white, width: 1.5),
-                                ),
-                                constraints: const BoxConstraints(
-                                  minWidth: 16,
-                                  minHeight: 16,
-                                ),
-                                child: const Center(
-                                  child: Icon(
-                                    Icons.warning_amber,
-                                    color: Colors.white,
-                                    size: 8,
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                  ],
+                child: IconButton(
+                  icon: const Icon(
+                    Icons.more_vert,
+                    color: Colors.white,
+                    size: 20,
+                  ),
+                  onPressed: () {
+                    CattleOptionsModal.show(
+                      context: context,
+                      cattle: cattle,
+                      onAddEvent: onAddEvent,
+                      onEditCattle: onEditCattle,
+                      onCattleUpdated: onCattleUpdated, // Pass the callback
+                    );
+                  },
+                  tooltip: 'More Options',
                 ),
               ),
             ],

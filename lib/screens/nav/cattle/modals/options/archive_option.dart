@@ -69,12 +69,12 @@ class ArchiveOption {
             _buildArchiveOption(
               context,
               icon: Icons.dangerous_outlined,
-              title: 'Deceased',
+              title: 'Mortality',
               subtitle: 'Cattle has passed away',
               color: Colors.red[600]!,
               onTap: () {
                 Navigator.pop(context);
-                _archiveAsDeceased(context, cattle: cattle, onCattleUpdated: onCattleUpdated);
+                _archiveAsMortality(context, cattle: cattle, onCattleUpdated: onCattleUpdated);
               },
             ),
             _buildArchiveOption(
@@ -215,14 +215,14 @@ class ArchiveOption {
     }
   }
 
-  static void _archiveAsDeceased(BuildContext context, {required Cattle cattle, VoidCallback? onCattleUpdated}) async {
-    // Navigate to event form with "Deceased" pre-selected
+  static void _archiveAsMortality(BuildContext context, {required Cattle cattle, VoidCallback? onCattleUpdated}) async {
+    // Navigate to event form with "Mortality" pre-selected
     final result = await Navigator.push(
       context,
       MaterialPageRoute(
         builder: (context) => CattleHistoryFormScreen(
           cattleTag: cattle.tagNo,
-          initialHistoryType: 'Deceased',
+          initialHistoryType: 'Mortality',
         ),
       ),
     );
@@ -230,13 +230,13 @@ class ArchiveOption {
     // If event was successfully created, archive the cattle
     if (result == true) {
       try {
-        final success = await CattleService.archiveCattle(cattle.id, 'Deceased');
+        final success = await CattleService.archiveCattle(cattle.id, 'Mortality');
         
         if (success) {
           UIHelpers.showEnhancedSnackbar(
             context,
             Icons.dangerous,
-            'Deceased event created and cattle archived',
+            'Mortality event created and cattle archived',
             Colors.red[600]!,
             isSuccess: true,
           );

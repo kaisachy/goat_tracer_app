@@ -31,7 +31,7 @@ class _HistoryContentState extends State<HistoryContent> {
     return [
       'All', 'Dry off', 'Sick', 'Treated', 'Breeding', 'Weighed', 'Gives Birth',
       'Vaccinated', 'Pregnant', 'Aborted Pregnancy', 'Deworming',
-      'Hoof Trimming', 'Castrated', 'Weaned', 'Deceased', 'Lost', 'Other',
+      'Hoof Trimming', 'Castrated', 'Weaned', 'Mortality', 'Lost', 'Other',
     ];
   }
 
@@ -43,7 +43,7 @@ class _HistoryContentState extends State<HistoryContent> {
     'vaccinated',
     'deworming',
     'hoof trimming',
-    'deceased',
+    'mortality',
     'lost',
   ];
 
@@ -758,7 +758,7 @@ class _HistoryContentState extends State<HistoryContent> {
       case 'castrated':
         if (event['technician'] != null) details.add({'label': 'Technician', 'value': event['technician']});
         break;
-      case 'deceased':
+      case 'mortality':
         if (event['cause_of_death'] != null) details.add({'label': 'Cause of Death', 'value': event['cause_of_death']});
         break;
       case 'lost':

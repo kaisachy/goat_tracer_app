@@ -66,7 +66,7 @@ class _CattleSearchFilterWidgetState extends State<CattleSearchFilterWidget> {
     'Pregnant',
     'Lactating & Pregnant',
     'Sold',
-    'Deceased',
+    'Mortality',
     'Lost'
   ];
 
@@ -104,7 +104,7 @@ class _CattleSearchFilterWidgetState extends State<CattleSearchFilterWidget> {
     switch (_selectedSex) {
       case 'Male':
       // Removes female-specific statuses
-        return ['All', 'Healthy', 'Sick', 'Sold', 'Deceased', 'Lost'];
+        return ['All', 'Healthy', 'Sick', 'Sold', 'Mortality', 'Lost'];
       default: // 'Female', 'All', 'Other'
         return _allStatusOptions;
     }

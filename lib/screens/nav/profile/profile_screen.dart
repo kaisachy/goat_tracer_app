@@ -683,25 +683,27 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
 
           // Profile Info Section
           Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Name
-                Text(
-                  '${firstName ?? profile?['first_name'] ?? _storedFirstName ?? 'Unknown'} ${lastName ?? profile?['last_name'] ?? _storedLastName ?? 'User'}',
-                  style: TextStyle(
-                    color: Colors.grey.shade800,
-                    fontSize: 22,
-                    fontWeight: FontWeight.bold,
-                    height: 1.2,
+            child: Padding(
+              padding: const EdgeInsets.only(right: 50), // Add padding to prevent overlap with edit button
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Name
+                  Text(
+                    '${firstName ?? profile?['first_name'] ?? _storedFirstName ?? 'Unknown'} ${lastName ?? profile?['last_name'] ?? _storedLastName ?? 'User'}',
+                    style: TextStyle(
+                      color: Colors.grey.shade800,
+                      fontSize: 22,
+                      fontWeight: FontWeight.bold,
+                      height: 1.2,
+                    ),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
                   ),
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                ),
                 const SizedBox(height: 8),
 
-                // Farm Name Badge (hidden if null/empty)
-                ((farmDetails?['farm_name']?.toString().isNotEmpty ?? false)
+                // Farm Classification Badge (hidden if null/empty)
+                ((farmDetails?['farm_classification']?.toString().isNotEmpty ?? false)
                     ? Container(
                         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                         decoration: BoxDecoration(
@@ -723,7 +725,7 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
                             const SizedBox(width: 6),
                             Flexible(
                               child: Text(
-                                farmDetails!['farm_name'].toString(),
+                                farmDetails!['farm_classification'].toString(),
                                 style: TextStyle(
                                   color: AppColors.primary,
                                   fontSize: 13,
@@ -737,7 +739,8 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
                         ),
                       )
                     : const SizedBox.shrink()),
-              ],
+                ],
+              ),
             ),
           ),
         ],
@@ -865,11 +868,26 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
   }
 
   String _formatFarmLocation(Map<String, dynamic>? farmDetails) {
-    final farmLocation = farmDetails?['farm_location'];
-    if (farmLocation == null || farmLocation.toString().isEmpty) {
+    if (farmDetails == null) {
       return 'Location not specified';
     }
-    return farmLocation.toString();
+    // Support both new structured fields and legacy key just in case
+    final barangay = farmDetails['farm_barangay']?.toString() ?? '';
+    // Handle possible typo key 'farm_municipalit' as well as correct 'farm_municipality'
+    final municipality = (farmDetails['farm_municipality'] ?? farmDetails['farm_municipalit'])?.toString() ?? '';
+    final province = farmDetails['farm_province']?.toString() ?? '';
+
+    final parts = <String>[];
+    if (barangay.isNotEmpty) parts.add(barangay);
+    if (municipality.isNotEmpty) parts.add(municipality);
+    if (province.isNotEmpty) parts.add(province);
+
+    if (parts.isEmpty) {
+      // Fallback to legacy single field if still present
+      final legacy = farmDetails['farm_location']?.toString();
+      return (legacy == null || legacy.isEmpty) ? 'Location not specified' : legacy;
+    }
+    return parts.join(', ');
   }
 
   String _formatFarmSize(Map<String, dynamic>? farmDetails) {

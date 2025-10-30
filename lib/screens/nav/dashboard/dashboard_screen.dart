@@ -928,7 +928,7 @@ class _DashboardScreenState extends State<DashboardScreen>
   Widget _buildOverviewCards() {
     final totalCattle = allCattle.length;
     final activeCattle = allCattle.where((c) => 
-      c.status.toLowerCase() != 'sold' && c.status.toLowerCase() != 'deceased').length;
+      c.status.toLowerCase() != 'sold' && c.status.toLowerCase() != 'mortality').length;
 
     return _buildAnimatedCard(
       delay: 0,
@@ -1023,7 +1023,7 @@ class _DashboardScreenState extends State<DashboardScreen>
 
   Widget _buildStatusBreakdown() {
     // Define all 8 status types
-    final allStatuses = ['Healthy', 'Sick', 'Breeding', 'Pregnant', 'Lactating', 'Lactating & Pregnant', 'Sold', 'Deceased', 'Lost'];
+    final allStatuses = ['Healthy', 'Sick', 'Breeding', 'Pregnant', 'Lactating', 'Lactating & Pregnant', 'Sold', 'Mortality', 'Lost'];
     
     final statusCount = <String, int>{};
     
@@ -1593,7 +1593,7 @@ class _DashboardScreenState extends State<DashboardScreen>
         return Colors.indigo.shade500;
       case 'sold':
         return Colors.orange.shade500;
-      case 'deceased':
+      case 'mortality':
         return Colors.grey.shade600;
       default:
         return AppColors.lightGreen;
