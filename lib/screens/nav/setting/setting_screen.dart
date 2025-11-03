@@ -36,13 +36,17 @@ class _SettingScreenState extends State<SettingScreen> with TickerProviderStateM
   bool _obscureConfirmPassword = true;
 
   // Address-related variables
+  List<dynamic> _provinces = [];
   List<dynamic> _municipalities = [];
   List<dynamic> _barangays = [];
+  String? _selectedProvince;
   String? _selectedMunicipality;
   String? _selectedBarangay;
+  bool _isLoadingProvinces = false;
   bool _isLoadingMunicipalities = false;
   bool _isLoadingBarangays = false;
   bool _isDataReady = false; // New flag to track when data is ready for dropdowns
+  bool _isInitializing = false; // Flag to prevent infinite loops during initialization
 
   late AnimationController _animationController;
   late Animation<double> _fadeAnimation;
@@ -80,37 +84,104 @@ class _SettingScreenState extends State<SettingScreen> with TickerProviderStateM
   }
 
   Future<void> _initializeData() async {
+    if (_isInitializing) {
+      debugPrint('Already initializing, skipping...');
+      return;
+    }
+    
     try {
-      // Load municipalities first
-      await _loadMunicipalities();
+      _isInitializing = true;
       
-      // Then load user data (which will load barangays if municipality is set)
+      // Load provinces first
+      await _loadRegion2Provinces();
+      
+      // Then load user data (which will load municipalities and barangays based on province)
       await _loadUserData();
     } catch (e) {
       debugPrint('Error initializing data: $e');
+    } finally {
+      _isInitializing = false;
     }
   }
 
-  Future<void> _loadMunicipalities() async {
+  Future<void> _loadRegion2Provinces() async {
+    try {
+      setState(() => _isLoadingProvinces = true);
+      final regions = await AddressService.getRegions();
+      final region2 = regions.firstWhere(
+        (r) => r['name'] == 'REGION II (CAGAYAN VALLEY)' || r['code'] == '020000000',
+        orElse: () => null,
+      );
+      
+      if (region2 == null) {
+        throw Exception('Region 2 not found');
+      }
+      
+      final provinces = await AddressService.getProvinces(region2['code']);
+      
+      setState(() {
+        _provinces = provinces;
+        _isLoadingProvinces = false;
+      });
+    } catch (e) {
+      setState(() => _isLoadingProvinces = false);
+      debugPrint('Error loading provinces: $e');
+    }
+  }
+
+  Future<void> _loadMunicipalities(String provinceCode) async {
     try {
       setState(() => _isLoadingMunicipalities = true);
-      final municipalities = await AddressService.getIsabelaMunicipalities();
+      final municipalities = await AddressService.getMunicipalities(provinceCode);
       setState(() {
         _municipalities = municipalities;
+        _barangays = [];
+        _selectedBarangay = null;
+        _selectedMunicipality = null;
         _isLoadingMunicipalities = false;
       });
       
-      // If user data is already loaded but municipalities were empty, reload user data
-      if (_currentUser != null && _selectedMunicipality == null) {
-        await _loadUserData();
-      } else if (_currentUser == null) {
-        // If user data is not loaded yet, mark data as ready for initial load
+      // If user data is already loaded, set municipality and barangay if available
+      // Don't call _loadUserData() again as it causes infinite loops
+      if (_currentUser != null && !_isInitializing) {
+        // Set municipality and barangay from user data if available
+        final userMunicipality = _currentUser!.municipality;
+        final userBarangay = _currentUser!.barangay;
+        
+        if (userMunicipality != null && userMunicipality.isNotEmpty) {
+          final municipalityExists = municipalities.any((m) => m['name'] == userMunicipality);
+          if (municipalityExists) {
+            setState(() {
+              _selectedMunicipality = userMunicipality;
+            });
+            
+            // Load barangays for the selected municipality
+            try {
+              final municipality = municipalities.firstWhere(
+                (m) => m['name'] == userMunicipality,
+              );
+              await _loadBarangays(municipality['code']);
+              
+              // Set barangay if available
+              if (userBarangay != null && userBarangay.isNotEmpty) {
+                setState(() {
+                  _selectedBarangay = userBarangay;
+                });
+              }
+            } catch (e) {
+              debugPrint('Municipality not found: $userMunicipality');
+            }
+          }
+        }
+      } else if (_currentUser == null && !_isInitializing) {
+        // If user data is not loaded yet and not initializing, mark data as ready
         setState(() {
           _isDataReady = true;
         });
       }
     } catch (e) {
       setState(() => _isLoadingMunicipalities = false);
+      debugPrint('Error loading municipalities: $e');
     }
   }
 
@@ -156,37 +227,65 @@ class _SettingScreenState extends State<SettingScreen> with TickerProviderStateM
         _isLoading = false;
       });
 
-      // Wait for municipalities to be loaded before setting municipality selection
-      if (_municipalities.isEmpty) {
-        return; // Exit early, will be called again after municipalities load
+      // Wait for provinces to be loaded before setting address selection
+      if (_provinces.isEmpty) {
+        setState(() => _isLoading = false);
+        debugPrint('Provinces not loaded yet, skipping address initialization');
+        return; // Exit early - provinces should already be loaded by _initializeData()
       }
 
-      // Now set municipality and validate it
-      setState(() {
-        _selectedMunicipality = user.municipality;
-        _selectedBarangay = user.barangay;
-      });
-
-      // Validate municipality exists in our list
-      if (_selectedMunicipality != null) {
-        final municipalityExists = _municipalities.any((m) => m['name'] == _selectedMunicipality);
-        if (!municipalityExists) {
-          setState(() {
-            _selectedMunicipality = null;
-            _selectedBarangay = null;
-          });
-        }
-      }
-
-                   // Load barangays if municipality is already set
-      if (_selectedMunicipality != null && _municipalities.isNotEmpty) {
+      // Set province and load address data in sequence
+      if (user.province != null && user.province!.isNotEmpty) {
+        setState(() {
+          _selectedProvince = user.province;
+        });
+        
+        // Load municipalities for the selected province
         try {
-          final municipality = _municipalities.firstWhere(
-            (m) => m['name'] == _selectedMunicipality,
+          final province = _provinces.firstWhere(
+            (p) => p['name'] == _selectedProvince,
+            orElse: () => <String, dynamic>{},
           );
-          await _loadBarangays(municipality['code']);
+          if (province.isNotEmpty && province['code'] != null) {
+            await _loadMunicipalities(province['code']);
+            
+            // Wait a bit for municipalities to load
+            await Future.delayed(const Duration(milliseconds: 200));
+            
+            // Now set municipality and barangay if available
+            if (user.municipality != null && user.municipality!.isNotEmpty && _municipalities.isNotEmpty) {
+              final municipalityExists = _municipalities.any((m) => m['name'] == user.municipality);
+              if (municipalityExists) {
+                setState(() {
+                  _selectedMunicipality = user.municipality;
+                });
+                
+                // Load barangays for the selected municipality
+                try {
+                  final municipality = _municipalities.firstWhere(
+                    (m) => m['name'] == user.municipality,
+                  );
+                  if (municipality['code'] != null) {
+                    await _loadBarangays(municipality['code']);
+                    
+                    // Wait a bit for barangays to load
+                    await Future.delayed(const Duration(milliseconds: 200));
+                    
+                    // Set barangay if available
+                    if (user.barangay != null && user.barangay!.isNotEmpty) {
+                      setState(() {
+                        _selectedBarangay = user.barangay;
+                      });
+                    }
+                  }
+                } catch (e) {
+                  debugPrint('Municipality not found in list: ${user.municipality}, error: $e');
+                }
+              }
+            }
+          }
         } catch (e) {
-          // Municipality not found in list
+          debugPrint('Province not found: ${user.province}, error: $e');
         }
       }
 
@@ -239,6 +338,16 @@ class _SettingScreenState extends State<SettingScreen> with TickerProviderStateM
       return;
     }
 
+    // Additional validation for required address fields
+    if (_selectedProvince == null) {
+      _showErrorSnackBar('Please select a province');
+      return;
+    }
+    if (_selectedMunicipality == null) {
+      _showErrorSnackBar('Please select a municipality');
+      return;
+    }
+
     try {
       _showLoadingDialog('Updating profile...');
 
@@ -247,7 +356,7 @@ class _SettingScreenState extends State<SettingScreen> with TickerProviderStateM
         _firstNameController.text.trim(),
         _lastNameController.text.trim(),
         _currentUser!.email, // Keep existing email
-        province: 'Isabela', // Set to Isabela
+        province: _selectedProvince,
         municipality: _selectedMunicipality,
         barangay: _selectedBarangay,
       );
@@ -440,8 +549,19 @@ class _SettingScreenState extends State<SettingScreen> with TickerProviderStateM
                          // Cancel editing - restore original values
                          _firstNameController.text = _currentUser?.firstName ?? '';
                          _lastNameController.text = _currentUser?.lastName ?? '';
+                         _selectedProvince = _currentUser?.province;
                          _selectedMunicipality = _currentUser?.municipality;
                          _selectedBarangay = _currentUser?.barangay;
+                         // Reload municipalities for the restored province
+                         if (_selectedProvince != null) {
+                           final province = _provinces.firstWhere(
+                             (p) => p['name'] == _selectedProvince,
+                             orElse: () => null,
+                           );
+                           if (province != null) {
+                             _loadMunicipalities(province['code']);
+                           }
+                         }
                        }
                        _isEditingProfile = !_isEditingProfile;
                      });
@@ -512,22 +632,71 @@ class _SettingScreenState extends State<SettingScreen> with TickerProviderStateM
                     },
                   ),
                   const SizedBox(height: 16),
-                                                        // Province field (read-only, set to Isabela)
-                    TextFormField(
-                      readOnly: true,
-                      initialValue: 'Isabela',
-                      decoration: InputDecoration(
-                        labelText: 'Province',
-                        labelStyle: TextStyle(color: AppColors.darkGreen),
-                        prefixIcon: Icon(Icons.location_on, color: AppColors.darkGreen),
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        filled: true,
-                        fillColor: Colors.grey[50],
-                        contentPadding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
+                  // Province dropdown
+                  _isDataReady ? DropdownButtonFormField<String>(
+                    decoration: InputDecoration(
+                      labelText: 'Province',
+                      labelStyle: TextStyle(color: AppColors.darkGreen),
+                      prefixIcon: Icon(Icons.location_on, color: AppColors.darkGreen),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
                       ),
+                      filled: !_isEditingProfile,
+                      fillColor: !_isEditingProfile ? Colors.grey[50] : null,
+                      contentPadding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
                     ),
+                    items: _provinces.map<DropdownMenuItem<String>>((province) {
+                      return DropdownMenuItem<String>(
+                        value: province['name'],
+                        child: Text(province['name']),
+                      );
+                    }).toList(),
+                    value: (_selectedProvince != null && 
+                           _provinces.any((p) => p['name'] == _selectedProvince))
+                      ? _selectedProvince
+                      : null,
+                    onChanged: _isEditingProfile ? (String? newValue) async {
+                      setState(() {
+                        _selectedProvince = newValue;
+                        _selectedMunicipality = null; // Reset municipality when province changes
+                        _selectedBarangay = null; // Reset barangay when province changes
+                      });
+                      
+                      if (newValue != null) {
+                        try {
+                          final province = _provinces.firstWhere(
+                            (p) => p['name'] == newValue,
+                          );
+                          await _loadMunicipalities(province['code']);
+                        } catch (e) {
+                          debugPrint('Province not found: $newValue');
+                        }
+                      }
+                    } : null,
+                    validator: (value) {
+                      if (value == null || value.isEmpty) {
+                        return 'Please select a province';
+                      }
+                      return null;
+                    },
+                  ) : Container(
+                    padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
+                    decoration: BoxDecoration(
+                      border: Border.all(color: Colors.grey[300]!),
+                      borderRadius: BorderRadius.circular(12),
+                      color: Colors.grey[50],
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(Icons.location_on, color: AppColors.darkGreen),
+                        const SizedBox(width: 12),
+                        Text(
+                          _isLoadingProvinces ? 'Loading provinces...' : 'Province',
+                          style: TextStyle(color: AppColors.darkGreen),
+                        ),
+                      ],
+                    ),
+                  ),
                   const SizedBox(height: 16),
                                                                           // Municipality dropdown
                     _isDataReady ? DropdownButtonFormField<String>(
@@ -552,7 +721,12 @@ class _SettingScreenState extends State<SettingScreen> with TickerProviderStateM
                            _municipalities.any((m) => m['name'] == _selectedMunicipality))
                         ? _selectedMunicipality
                         : null,
-                    onChanged: _isEditingProfile ? (String? newValue) async {
+                    hint: _isLoadingMunicipalities
+                        ? const Text('Loading municipalities...')
+                        : _selectedProvince == null
+                            ? const Text('Select province first')
+                            : const Text('Municipality'),
+                    onChanged: (_isEditingProfile && _selectedProvince != null) ? (String? newValue) async {
                       setState(() {
                         _selectedMunicipality = newValue;
                         _selectedBarangay = null; // Reset barangay when municipality changes
@@ -570,7 +744,7 @@ class _SettingScreenState extends State<SettingScreen> with TickerProviderStateM
                       }
                     } : null,
                                          validator: (value) {
-                       if (value == null || value.isEmpty) {
+                       if (_selectedProvince != null && (value == null || value.isEmpty)) {
                          return 'Please select a municipality';
                        }
                        return null;
@@ -587,7 +761,11 @@ class _SettingScreenState extends State<SettingScreen> with TickerProviderStateM
                            Icon(Icons.location_city, color: AppColors.darkGreen),
                            const SizedBox(width: 12),
                            Text(
-                             _isLoadingMunicipalities ? 'Loading municipalities...' : 'Municipality',
+                             _isLoadingMunicipalities 
+                                 ? 'Loading municipalities...' 
+                                 : _selectedProvince == null 
+                                     ? 'Select province first' 
+                                     : 'Municipality',
                              style: TextStyle(color: AppColors.darkGreen),
                            ),
                          ],
@@ -603,8 +781,8 @@ class _SettingScreenState extends State<SettingScreen> with TickerProviderStateM
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
                         ),
-                        filled: !_isEditingProfile || _selectedMunicipality == null,
-                        fillColor: (!_isEditingProfile || _selectedMunicipality == null) ? Colors.grey[50] : null,
+                        filled: !_isEditingProfile || _selectedProvince == null || _selectedMunicipality == null,
+                        fillColor: (!_isEditingProfile || _selectedProvince == null || _selectedMunicipality == null) ? Colors.grey[50] : null,
                         contentPadding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
                       ),
                     items: _barangays.map<DropdownMenuItem<String>>((barangay) {
@@ -617,11 +795,16 @@ class _SettingScreenState extends State<SettingScreen> with TickerProviderStateM
                            _barangays.any((b) => b['name'] == _selectedBarangay))
                         ? _selectedBarangay
                         : null,
-                    onChanged: (_isEditingProfile && _selectedMunicipality != null) ? (String? newValue) {
+                    onChanged: (_isEditingProfile && _selectedProvince != null && _selectedMunicipality != null) ? (String? newValue) {
                       setState(() {
                         _selectedBarangay = newValue;
                       });
                     } : null,
+                    hint: _isLoadingBarangays
+                        ? const Text('Loading barangays...')
+                        : _selectedProvince == null || _selectedMunicipality == null
+                            ? const Text('Select municipality first')
+                            : const Text('Barangay'),
                                          validator: (value) {
                        if (_selectedMunicipality != null && (value == null || value.isEmpty)) {
                          return 'Please select a barangay';
@@ -640,7 +823,11 @@ class _SettingScreenState extends State<SettingScreen> with TickerProviderStateM
                             Icon(Icons.home, color: AppColors.darkGreen),
                             const SizedBox(width: 12),
                             Text(
-                              _isLoadingBarangays ? 'Loading barangays...' : 'Barangay',
+                              _isLoadingBarangays 
+                                  ? 'Loading barangays...' 
+                                  : _selectedProvince == null || _selectedMunicipality == null
+                                      ? 'Select municipality first'
+                                      : 'Barangay',
                               style: TextStyle(color: AppColors.darkGreen),
                             ),
                           ],

@@ -570,7 +570,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
       case 6:
         return 'Settings';
       default:
-        return 'Cattalyze';
+        return '';
     }
   }
 
@@ -591,7 +591,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                 ),
                 _buildDrawerItem(
                   icon: Icons.person_rounded,
-                  text: 'Profile',
+                  text: 'My Profile',
                   index: 0,
                   onTap: () => _onNavItemTapped(0),
                 ),

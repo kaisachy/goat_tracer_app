@@ -5,7 +5,6 @@ import 'package:cattle_tracer_app/constants/app_colors.dart';
 import 'package:cattle_tracer_app/services/cattle/cattle_service.dart';
 import 'package:cattle_tracer_app/services/cattle/cattle_history_service.dart';
 import 'package:fl_chart/fl_chart.dart';
-import 'widgets/vaccination_dashboard_widget.dart';
 import 'widgets/breeding_analytics_widget.dart';
 import 'package:cattle_tracer_app/screens/nav/cattle/cattle_detail_screen.dart';
 
@@ -277,8 +276,6 @@ class _DashboardScreenState extends State<DashboardScreen>
               _buildStatusBreakdown(),
               const SizedBox(height: 20),
               _buildBreedingAnalytics(),
-              const SizedBox(height: 20),
-              _buildVaccinationDashboard(),
               const SizedBox(height: 20),
               _buildWeightAnalysis(),
               const SizedBox(height: 20),
@@ -1175,7 +1172,7 @@ class _DashboardScreenState extends State<DashboardScreen>
                 const Icon(Icons.access_time, color: AppColors.darkGreen, size: 24),
                 const SizedBox(width: 12),
                 const Text(
-                  'Recent Events (7 Days)',
+                  'Recent History Recorded',
                   style: TextStyle(
                     fontSize: 20,
                     fontWeight: FontWeight.bold,
@@ -1697,16 +1694,6 @@ class _DashboardScreenState extends State<DashboardScreen>
     return _buildAnimatedCard(
       delay: 150,
       child: const BreedingAnalyticsWidget(),
-    );
-  }
-
-  Widget _buildVaccinationDashboard() {
-    return _buildAnimatedCard(
-      delay: 200,
-      child: VaccinationDashboardWidget(
-        allCattle: allCattle,
-        allEvents: allEvents,
-      ),
     );
   }
 

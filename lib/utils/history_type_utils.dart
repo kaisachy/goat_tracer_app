@@ -24,42 +24,121 @@ class HistoryTypeUtils {
     switch (classificationLower) {
       case 'calf':
       case 'calves':
-        historyTypes = ['Sick', 'Treated', 'Weighed', 'Deworming', 'Hoof Trimming', 'Castrated', 'Weaned', 'Lost', 'Mortality', 'Other'];
+        historyTypes = [
+          'Sick',
+          'Treated',
+          'Weighed',
+          'Vaccinated',
+          'Deworming',
+          'Hoof Trimming',
+          'Castrated',
+          'Weaned',
+          'Mortality',
+          'Lost',
+          'Other',
+        ];
         print('DEBUG: Using Calf history types');
         break;
-        
       case 'heifer':
       case 'heifers':
-        historyTypes = ['Sick', 'Treated', 'Weighed', 'Breeding', 'Pregnant', 'Gives Birth', 'Aborted Pregnancy', 'Deworming', 'Hoof Trimming', 'Sold', 'Lost', 'Mortality', 'Other'];
+        historyTypes = [
+          'Vaccinated',
+          'Sick',
+          'Treated',
+          'Breeding',
+          'Pregnant',
+          'Gives Birth',
+          'Aborted Pregnancy',
+          'Weighed',
+          'Deworming',
+          'Hoof Trimming',
+          'Sold',
+          'Mortality',
+          'Lost',
+          'Other',
+        ];
         print('DEBUG: Using Heifer history types');
         break;
-        
       case 'cow':
       case 'cows':
-        historyTypes = ['Dry off', 'Sick', 'Treated', 'Breeding', 'Weighed', 'Gives Birth', 'Pregnant', 'Aborted Pregnancy', 'Deworming', 'Hoof Trimming', 'Sold', 'Lost', 'Mortality', 'Other'];
+        historyTypes = [
+          'Vaccinated',
+          'Sick',
+          'Treated',
+          'Breeding',
+          'Pregnant',
+          'Gives Birth',
+          'Aborted Pregnancy',
+          'Dry off',
+          'Weighed',
+          'Deworming',
+          'Hoof Trimming',
+          'Sold',
+          'Mortality',
+          'Lost',
+          'Other',
+        ];
         print('DEBUG: Using Cow history types');
         break;
-        
       case 'bull':
       case 'bulls':
-        historyTypes = ['Sick', 'Treated', 'Weighed', 'Breeding', 'Deworming', 'Hoof Trimming', 'Sold', 'Lost', 'Mortality', 'Other'];
+        historyTypes = [
+          'Vaccinated',
+          'Sick',
+          'Treated',
+          'Weighed',
+          'Deworming',
+          'Hoof Trimming',
+          'Sold',
+          'Mortality',
+          'Lost',
+          'Other',
+        ];
         print('DEBUG: Using Bull history types');
         break;
-        
       case 'steer':
       case 'steers':
-        historyTypes = ['Sick', 'Treated', 'Weighed', 'Deworming', 'Hoof Trimming', 'Sold', 'Lost', 'Mortality', 'Other'];
+        historyTypes = [
+          'Vaccinated',
+          'Sick',
+          'Treated',
+          'Weighed',
+          'Deworming',
+          'Hoof Trimming',
+          'Sold',
+          'Mortality',
+          'Lost',
+          'Other',
+        ];
         print('DEBUG: Using Steer history types');
         break;
-        
       case 'growers':
       case 'grower':
-        historyTypes = ['Sick', 'Treated', 'Weighed', 'Deworming', 'Hoof Trimming', 'Sold', 'Lost', 'Mortality', 'Other'];
+        historyTypes = [
+          'Vaccinated',
+          'Sick',
+          'Treated',
+          'Weighed',
+          'Deworming',
+          'Hoof Trimming',
+          'Sold',
+          'Mortality',
+          'Lost',
+          'Other',
+        ];
         print('DEBUG: Using Growers history types');
         break;
-        
       default:
-        historyTypes = ['Treated', 'Weighed', 'Deworming', 'Hoof Trimming', 'Lost', 'Mortality', 'Other'];
+        historyTypes = [
+          'Vaccinated',
+          'Treated',
+          'Weighed',
+          'Deworming',
+          'Hoof Trimming',
+          'Mortality',
+          'Lost',
+          'Other',
+        ];
         print('DEBUG: Using default history types for classification: $classificationLower');
         break;
     }

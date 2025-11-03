@@ -76,10 +76,13 @@ class HistoryStyledTextField extends StatelessWidget {
               width: 1,
             ),
           ),
-          contentPadding: const EdgeInsets.symmetric(
-            horizontal: 20,
-            vertical: 16,
+          contentPadding: const EdgeInsets.only(
+            left: 16,
+            right: 16,
+            top: 16,
+            bottom: 16,
           ),
+          isDense: true,
         ),
         validator: validator,
       ),

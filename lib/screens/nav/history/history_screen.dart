@@ -27,11 +27,180 @@ class _HistoryScreenState extends State<HistoryScreen> {
 
   // All possible history types
   List<String> get historyTypes {
-    return [
-      'All', 'Dry off', 'Treated', 'Breeding', 'Weighed', 'Gives Birth',
-      'Vaccinated', 'Pregnant', 'Aborted Pregnancy', 'Deworming',
-      'Hoof Trimming', 'Castrated', 'Weaned', 'Mortality', 'Lost', 'Sold', 'Other',
-    ];
+    // Reference order for grid: use HistoryTypeUtils for 'cow' (most complete)
+    final cowTypes = HistoryTypeUtils.getHistoryTypesForSex(null, classification: 'cow');
+    return [...cowTypes];
+  }
+
+  Widget _buildAddHistoryGrid() {
+    final allTypes = historyTypes.where((t) => t != 'Select type of history record').toList();
+    final knownTypesSet = {
+      'Vaccinated', 'Dry off', 'Sick', 'Treated', 'Breeding', 'Pregnant', 'Gives Birth', 'Aborted Pregnancy', 'Weighed', 'Deworming', 'Hoof Trimming', 'Castrated', 'Weaned', 'Mortality', 'Lost', 'Sold'
+    };
+    final gridTypes = <String>[];
+    bool hasOther = false;
+    for (final type in allTypes) {
+      if (type == 'Other') {
+        hasOther = true;
+      } else if (!knownTypesSet.contains(type)) {
+        gridTypes.add(type);
+      } else {
+        gridTypes.add(type);
+      }
+    }
+    return ListView(
+      padding: const EdgeInsets.all(16),
+      children: [
+        GridView.builder(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: 2,
+            crossAxisSpacing: 12,
+            mainAxisSpacing: 12,
+            childAspectRatio: 4 / 3,
+          ),
+          itemCount: gridTypes.length,
+          itemBuilder: (context, index) {
+            final type = gridTypes[index];
+            final color = HistoryTypeUtils.getHistoryColor(type);
+            final icon = HistoryTypeUtils.getHistoryIcon(type);
+            return Card(
+              elevation: 3,
+              shadowColor: color.withOpacity(0.25),
+              color: Colors.white,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+                side: BorderSide(color: color.withOpacity(0.25), width: 1),
+              ),
+              child: InkWell(
+                borderRadius: BorderRadius.circular(16),
+                onTap: () async {
+                  final selectedCattleTag = await showDialog<String>(
+                    context: context,
+                    barrierDismissible: false,
+                    builder: (BuildContext context) {
+                      return CattleSelectionModal(historyType: type);
+                    },
+                  );
+                  if (selectedCattleTag == null) return;
+                  await Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => CattleHistoryFormScreen(
+                        cattleTag: selectedCattleTag,
+                        initialHistoryType: type,
+                      ),
+                    ),
+                  );
+                  if (mounted) _refreshHistory();
+                },
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Expanded(
+                        child: Center(
+                          child: Container(
+                            width: 56,
+                            height: 56,
+                            decoration: BoxDecoration(
+                              color: color.withOpacity(0.12),
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(color: color.withOpacity(0.2)),
+                            ),
+                            child: Icon(icon, color: color, size: 28),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        type,
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                          color: AppColors.textPrimary,
+                        ),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            );
+          },
+        ),
+        if (hasOther)
+          Padding(
+            padding: const EdgeInsets.only(top: 12, left: 0, right: 0),
+            child: Card(
+              elevation: 3,
+              shadowColor: HistoryTypeUtils.getHistoryColor('Other').withOpacity(0.25),
+              color: Colors.white,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+                side: BorderSide(color: HistoryTypeUtils.getHistoryColor('Other').withOpacity(0.25), width: 1),
+              ),
+              child: InkWell(
+                borderRadius: BorderRadius.circular(16),
+                onTap: () async {
+                  final selectedCattleTag = await showDialog<String>(
+                    context: context,
+                    barrierDismissible: false,
+                    builder: (BuildContext context) {
+                      return CattleSelectionModal(historyType: 'Other');
+                    },
+                  );
+                  if (selectedCattleTag == null) return;
+                  await Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => CattleHistoryFormScreen(
+                        cattleTag: selectedCattleTag,
+                        initialHistoryType: 'Other',
+                      ),
+                    ),
+                  );
+                  if (mounted) _refreshHistory();
+                },
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 24),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Container(
+                        width: 56,
+                        height: 56,
+                        decoration: BoxDecoration(
+                          color: HistoryTypeUtils.getHistoryColor('Other').withOpacity(0.08),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: HistoryTypeUtils.getHistoryColor('Other').withOpacity(0.13)),
+                        ),
+                        child: Icon(HistoryTypeUtils.getHistoryIcon('Other'), color: HistoryTypeUtils.getHistoryColor('Other'), size: 28),
+                      ),
+                      const SizedBox(width: 28),
+                      Text(
+                        'Other',
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(
+                          fontSize: 17,
+                          fontWeight: FontWeight.w600,
+                          color: AppColors.textPrimary,
+                        ),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
+      ],
+    );
   }
 
   // List of history types that can be duplicated
@@ -628,29 +797,60 @@ class _HistoryScreenState extends State<HistoryScreen> {
 // Replace your existing _onAddHistory method with this updated version
   void _onAddHistory() async {
     try {
-      // First, show cattle selection modal
+      // Ask for history type first (excluding 'All')
+      final types = historyTypes.where((t) => t != 'All').toList();
+      final selectedType = await showDialog<String>(
+        context: context,
+        barrierDismissible: true,
+        builder: (context) {
+          return AlertDialog(
+            title: const Text('Select History Type'),
+            content: SizedBox(
+              width: double.maxFinite,
+              child: ListView.separated(
+                shrinkWrap: true,
+                itemCount: types.length,
+                separatorBuilder: (_, __) => const Divider(height: 1),
+                itemBuilder: (context, index) {
+                  final type = types[index];
+                  return ListTile(
+                    title: Text(type),
+                    onTap: () => Navigator.pop(context, type),
+                  );
+                },
+              ),
+            ),
+            actions: [
+              TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
+            ],
+          );
+        },
+      );
+
+      if (selectedType == null) return;
+
+      // Then show cattle selection filtered by the chosen history type
       final selectedCattleTag = await showDialog<String>(
         context: context,
         barrierDismissible: false,
         builder: (BuildContext context) {
-          return const CattleSelectionModal();
+          return CattleSelectionModal(historyType: selectedType);
         },
       );
 
-      // If user cancelled or no cattle was selected, return
       if (selectedCattleTag == null) return;
 
-      // Navigate to the history form with the selected cattle tag
+      // Navigate to the history form with the selected cattle tag and type
       final result = await Navigator.push(
         context,
         MaterialPageRoute(
           builder: (context) => CattleHistoryFormScreen(
             cattleTag: selectedCattleTag,
+            initialHistoryType: selectedType,
           ),
         ),
       );
 
-      // Handle the result from the form
       if (result == true && mounted) {
         await _refreshHistory();
         ScaffoldMessenger.of(context).showSnackBar(
@@ -696,9 +896,31 @@ class _HistoryScreenState extends State<HistoryScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
+    return DefaultTabController(
+      length: 2,
+      child: Scaffold(
       backgroundColor: Colors.grey.shade50,
-      body: Container(
+        body: Column(
+          children: [
+            Container(
+              color: Colors.white,
+              child: const TabBar(
+                indicatorColor: AppColors.vibrantGreen,
+                labelColor: AppColors.vibrantGreen,
+                unselectedLabelColor: Colors.grey,
+                tabs: [
+                  Tab(text: 'Add History'),
+                  Tab(text: 'History List'),
+                ],
+              ),
+            ),
+            Expanded(
+              child: TabBarView(
+                children: [
+                  // Tab 1: Add History (grid of history types)
+                  _buildAddHistoryGrid(),
+                  // Tab 2: History List (existing design)
+                  Container(
         padding: const EdgeInsets.all(16),
         child: Column(
           children: [
@@ -741,20 +963,10 @@ class _HistoryScreenState extends State<HistoryScreen> {
           ],
         ),
       ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: _onAddHistory,
-        backgroundColor: AppColors.vibrantGreen,
-        foregroundColor: Colors.white,
-        elevation: 4,
-        icon: const Icon(Icons.add_rounded),
-        label: const Text(
-          'Add History Record',
-          style: TextStyle(
-            fontWeight: FontWeight.w600,
+                ],
           ),
         ),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
+          ],
         ),
       ),
     );

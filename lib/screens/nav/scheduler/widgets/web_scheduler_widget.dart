@@ -225,6 +225,8 @@ class WebSchedulerWidget extends StatelessWidget {
     );
   }
 
+  
+
   Widget _buildCalendarDay({
     required DateTime date,
     required bool isCurrentMonth,
@@ -549,49 +551,57 @@ class WebSchedulerWidget extends StatelessWidget {
             ),
           ],
         ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisAlignment: MainAxisAlignment.center,
-          mainAxisSize: MainAxisSize.min,
+        child: Stack(
           children: [
-            Flexible(
-              child: Row(
-                children: [
-                  Expanded(
-                    child: isWeekView 
-                        ? Container() // Empty content for Week view
-                        : Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              // Title
-                              Text(
-                                schedule.title,
-                                style: TextStyle(
-                                  fontSize: isMobile ? 9 : 11,
-                                  color: Colors.white,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                                overflow: TextOverflow.ellipsis,
-                                maxLines: 1,
-                              ),
-                              if (eventHeight > 30) ...[
-                                SizedBox(height: 2),
-                                // Time range
-                                Text(
-                                  '${_formatTime(startTime.hour, startTime.minute)} - ${_formatTime(endTime.hour, endTime.minute)}',
-                                  style: TextStyle(
-                                    fontSize: isMobile ? 7 : 8,
-                                    color: Colors.white.withOpacity(0.9),
-                                  ),
-                                  overflow: TextOverflow.ellipsis,
-                                  maxLines: 1,
-                                ),
-                              ],
-                            ],
+            // Content (title/time) for Day view
+            Positioned.fill(
+              child: Align(
+                alignment: Alignment.centerLeft,
+                child: isWeekView
+                    ? SizedBox.shrink()
+                    : Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            schedule.title,
+                            style: TextStyle(
+                              fontSize: isMobile ? 9 : 11,
+                              color: Colors.white,
+                              fontWeight: FontWeight.w600,
+                            ),
+                            overflow: TextOverflow.ellipsis,
+                            maxLines: 1,
                           ),
+                          if (eventHeight > 30) ...[
+                            SizedBox(height: 2),
+                            Text(
+                              '${_formatTime(startTime.hour, startTime.minute)} - ${_formatTime(endTime.hour, endTime.minute)}',
+                              style: TextStyle(
+                                fontSize: isMobile ? 7 : 8,
+                                color: Colors.white.withOpacity(0.9),
+                              ),
+                              overflow: TextOverflow.ellipsis,
+                              maxLines: 1,
+                            ),
+                          ],
+                        ],
+                      ),
+              ),
+            ),
+            // Centered pulsing Tap to view text inside the green container
+            Positioned.fill(
+              child: Center(
+                child: _PulsingTapHint(
+                  text: 'Tap to view',
+                  style: TextStyle(
+                    fontSize: 9,
+                    color: Colors.white,
+                    fontWeight: FontWeight.w600,
+                    letterSpacing: 0.2,
                   ),
-                ],
+                ),
               ),
             ),
           ],
@@ -659,3 +669,52 @@ class WebSchedulerWidget extends StatelessWidget {
     return days[weekday - 1];
   }
 }
+ 
+ // Text-only pulsing hint used inside scheduled activity containers
+ class _PulsingTapHint extends StatefulWidget {
+   final String text;
+   final TextStyle style;
+   const _PulsingTapHint({super.key, required this.text, required this.style});
+ 
+   @override
+   State<_PulsingTapHint> createState() => _PulsingTapHintState();
+ }
+ 
+ class _PulsingTapHintState extends State<_PulsingTapHint>
+     with SingleTickerProviderStateMixin {
+   late final AnimationController _controller;
+   late final Animation<double> _scale;
+   late final Animation<double> _opacity;
+ 
+   @override
+   void initState() {
+     super.initState();
+     _controller = AnimationController(
+       vsync: this,
+       duration: const Duration(milliseconds: 1200),
+     )..repeat(reverse: true);
+     final CurvedAnimation curve = CurvedAnimation(
+       parent: _controller,
+       curve: Curves.easeInOut,
+     );
+     _scale = Tween<double>(begin: 0.95, end: 1.08).animate(curve);
+     _opacity = Tween<double>(begin: 0.7, end: 1.0).animate(curve);
+   }
+ 
+   @override
+   void dispose() {
+     _controller.dispose();
+     super.dispose();
+   }
+ 
+   @override
+   Widget build(BuildContext context) {
+     return FadeTransition(
+       opacity: _opacity,
+       child: ScaleTransition(
+         scale: _scale,
+         child: Text(widget.text, style: widget.style),
+       ),
+     );
+   }
+ }

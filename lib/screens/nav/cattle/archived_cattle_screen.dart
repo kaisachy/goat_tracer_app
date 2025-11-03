@@ -28,6 +28,60 @@ class _ArchivedCattleScreenState extends State<ArchivedCattleScreen> {
     _loadArchivedCattle();
   }
 
+  List<Widget> _buildAgeLine(Cattle cattle) {
+    String? ageText;
+    if (cattle.age != null && cattle.age!.toString().trim().isNotEmpty &&
+        cattle.age!.toString().trim().toLowerCase() != 'unknown' &&
+        cattle.age!.toString().trim().toLowerCase() != 'n/a') {
+      ageText = cattle.age!.toString().trim();
+    } else if (cattle.dateOfBirth != null && cattle.dateOfBirth!.isNotEmpty) {
+      final formatted = _formatAgeFromDob(cattle.dateOfBirth!);
+      if (formatted.isNotEmpty) ageText = formatted;
+    }
+
+    if (ageText == null) return const [];
+
+    return [
+      const SizedBox(height: 2),
+      Text(
+        'Age: $ageText',
+        style: const TextStyle(
+          fontSize: 13,
+          color: AppColors.textSecondary,
+        ),
+      ),
+    ];
+  }
+
+  String _formatAgeFromDob(String dobIso) {
+    try {
+      final dob = DateTime.parse(dobIso);
+      final now = DateTime.now();
+      int years = now.year - dob.year;
+      int months = now.month - dob.month;
+      int days = now.day - dob.day;
+
+      if (days < 0) {
+        final prevMonth = DateTime(now.year, now.month, 0);
+        days += prevMonth.day;
+        months -= 1;
+      }
+      if (months < 0) {
+        months += 12;
+        years -= 1;
+      }
+
+      if (years > 0) {
+        return months > 0 ? '${years}y ${months}m' : '${years}y';
+      }
+      if (months > 0) return '${months}m';
+      final d = now.difference(dob).inDays;
+      return d <= 1 ? '1d' : '${d}d';
+    } catch (_) {
+      return '';
+    }
+  }
+
   Future<void> _loadArchivedCattle() async {
     setState(() {
       _isLoading = true;
@@ -472,23 +526,15 @@ class _ArchivedCattleScreenState extends State<ArchivedCattleScreen> {
                           const SizedBox(height: 4),
                           // Classification and Breed inline
                           Text(
-                            '${cattle.classification}${cattle.breed != null && cattle.breed!.isNotEmpty ? ' • ${cattle.breed}' : ''}',
+                            '${cattle.classification}'
+                            '${(cattle.breed != null && cattle.breed!.isNotEmpty && cattle.breed!.toLowerCase() != 'unknown') ? ' • ${cattle.breed}' : ''}',
                             style: const TextStyle(
                               fontSize: 14,
                               color: AppColors.textSecondary,
                               fontWeight: FontWeight.w500,
                             ),
                           ),
-                          if (cattle.age != null) ...[
-                            const SizedBox(height: 2),
-                            Text(
-                              'Age: ${cattle.age}',
-                              style: const TextStyle(
-                                fontSize: 13,
-                                color: AppColors.textSecondary,
-                              ),
-                            ),
-                          ],
+                          ..._buildAgeLine(cattle),
                         ],
                       ),
                     ),

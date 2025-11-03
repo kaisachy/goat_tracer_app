@@ -269,6 +269,7 @@ class _CattleHeroSectionState extends State<CattleHeroSection> {
     );
   }
 
+  // ignore: unused_element
   Widget _buildScheduleCountButton(BuildContext context) {
     return _isLoadingSchedules
         ? _buildFloatingButton(

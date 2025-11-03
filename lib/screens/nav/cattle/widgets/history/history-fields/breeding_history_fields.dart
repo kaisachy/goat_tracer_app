@@ -197,7 +197,11 @@ class BreedingEventFieldsState extends BaseEventFieldsState<BreedingEventFields>
                              Column(
                  children: [
                    RadioListTile<String>(
-                     title: const Text('Artificial Insemination'),
+                     title: const Text(
+                       'Artificial Insemination',
+                       overflow: TextOverflow.ellipsis,
+                       maxLines: 1,
+                     ),
                      value: 'artificial_insemination',
                      groupValue: _breedingType,
                      onChanged: _onBreedingTypeChanged,
@@ -205,7 +209,11 @@ class BreedingEventFieldsState extends BaseEventFieldsState<BreedingEventFields>
                      visualDensity: VisualDensity.compact,
                    ),
                    RadioListTile<String>(
-                     title: const Text('Natural Breeding'),
+                     title: const Text(
+                       'Natural Breeding',
+                       overflow: TextOverflow.ellipsis,
+                       maxLines: 1,
+                     ),
                      value: 'natural_breeding',
                      groupValue: _breedingType,
                      onChanged: _onBreedingTypeChanged,

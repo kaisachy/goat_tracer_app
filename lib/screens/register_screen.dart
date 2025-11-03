@@ -27,13 +27,16 @@ class _RegisterScreenState extends State<RegisterScreen> {
   bool _isLoading = false;
   bool _isPasswordVisible = false;
   bool _isConfirmPasswordVisible = false;
+  bool _isLoadingProvinces = false;
   bool _isLoadingMunicipalities = false;
   bool _isLoadingBarangays = false;
 
   // Address data and selections
+  List<dynamic> _provinces = [];
   List<dynamic> _municipalities = [];
   List<dynamic> _barangays = [];
 
+  Map<String, dynamic>? _selectedProvince;
   Map<String, dynamic>? _selectedMunicipality;
   Map<String, dynamic>? _selectedBarangay;
 
@@ -43,16 +46,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
   bool _isGeocodingInProgress = false;
   Timer? _geocodeTimer;
 
-  // Fixed province data for Isabela
-  final Map<String, dynamic> _isabelaProvince = {
-    'name': 'Isabela',
-    'code': 'ISABELA'
-  };
-
   @override
   void initState() {
     super.initState();
-    _loadIsabelaMunicipalities();
+    _loadRegion2Provinces();
   }
 
   @override
@@ -66,15 +63,51 @@ class _RegisterScreenState extends State<RegisterScreen> {
     super.dispose();
   }
 
-  Future<void> _loadIsabelaMunicipalities() async {
+  Future<void> _loadRegion2Provinces() async {
+    setState(() => _isLoadingProvinces = true);
+    try {
+      print('Loading Region 2 provinces...');
+      final regions = await AddressService.getRegions();
+      final region2 = regions.firstWhere(
+        (r) => r['name'] == 'REGION II (CAGAYAN VALLEY)' || r['code'] == '020000000',
+        orElse: () => null,
+      );
+      
+      if (region2 == null) {
+        throw Exception('Region 2 not found');
+      }
+      
+      final provinces = await AddressService.getProvinces(region2['code']);
+      
+      setState(() {
+        _provinces = provinces;
+        _isLoadingProvinces = false;
+      });
+      print('Successfully loaded ${provinces.length} provinces');
+    } catch (e) {
+      print('Error loading provinces: $e');
+      setState(() => _isLoadingProvinces = false);
+      _showMessage(
+          'Failed to load provinces. Please check your internet connection.',
+          Colors.red);
+    }
+  }
+
+  Future<void> _loadMunicipalities(String provinceCode) async {
     setState(() => _isLoadingMunicipalities = true);
     try {
-      print('Loading Isabela municipalities...');
-      final municipalities = await AddressService.getIsabelaMunicipalities();
+      print('Loading municipalities for province code: $provinceCode');
+      final municipalities = await AddressService.getMunicipalities(provinceCode);
 
       setState(() {
         _municipalities = municipalities;
+        _barangays = [];
+        _selectedBarangay = null;
+        _selectedMunicipality = null;
         _isLoadingMunicipalities = false;
+        // Clear coordinates when province changes
+        _latitude = null;
+        _longitude = null;
       });
       print('Successfully loaded ${municipalities.length} municipalities');
     } catch (e) {
@@ -120,7 +153,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
   Future<void> _performGeocode() async {
     if (_isGeocodingInProgress) return;
     
-    final province = _isabelaProvince['name'];
+    final province = _selectedProvince?['name'];
     final municipality = _selectedMunicipality?['name'];
     final barangay = _selectedBarangay?['name'];
     
@@ -194,6 +227,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
     if (_formKey.currentState!.validate()) {
       // Additional validation for required address fields
+      if (_selectedProvince == null) {
+        _showMessage('Select a province.', Colors.red);
+        return;
+      }
       if (_selectedMunicipality == null) {
         _showMessage('Select a municipality.', Colors.red);
         return;
@@ -217,7 +254,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
           'email': _emailController.text.trim(),
           'password': _passwordController.text,
           'role': 'farmer', // Default role
-          'province': _isabelaProvince['name'], // Fixed to Isabela
+          'province': _selectedProvince?['name'] ?? '',
           'municipality': _selectedMunicipality?['name'],
           'barangay': _selectedBarangay?['name'],
         };
@@ -326,7 +363,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    'Join the Cattle Tracer community.',
+                    'Join the community.',
                     textAlign: TextAlign.center,
                     style: Theme.of(context).textTheme.titleMedium?.copyWith(
                       color: AppColors.textSecondary,
@@ -435,19 +472,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
   Widget _buildAddressFields() {
     return Column(
       children: [
-        // Province Field (styled like other input fields)
-        TextFormField(
-          readOnly: true,
-          decoration: _inputDecoration('Province', Icons.location_on, helper: 'Fixed to Isabela')
-              .copyWith(
-            suffixIcon: Padding(
-              padding: const EdgeInsets.all(12.0),
-              child: Icon(Icons.lock_outline,
-                  color: AppColors.textSecondary, size: 18),
-            ),
-          ),
-          controller: TextEditingController(text: _isabelaProvince['name']),
-        ),
+        // Province Dropdown
+        _buildProvinceDropdown(),
         const SizedBox(height: 20),
 
         // Municipality Dropdown with loading indicator
@@ -456,6 +482,77 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
         // Barangay Dropdown with loading indicator
         _buildBarangayDropdown(),
+      ],
+    );
+  }
+
+  Widget _buildProvinceDropdown() {
+    return Stack(
+      children: [
+        DropdownButtonFormField<String>(
+          value: _selectedProvince?['code']?.toString(),
+          decoration: _inputDecoration(
+            'Province',
+            Icons.location_on,
+            helper: 'Select your province',
+            requiredField: true,
+          ),
+          items: _provinces
+              .map((province) => DropdownMenuItem<String>(
+            value: province['code']?.toString(),
+            child: Text(province['name'] ?? 'Unknown Province'),
+          ))
+              .toList(),
+          onChanged: _isLoadingProvinces
+              ? null
+              : (String? newValue) {
+            if (newValue != null) {
+              final selectedProvince = _provinces.firstWhere(
+                (province) => province['code']?.toString() == newValue,
+                orElse: () => {},
+              );
+              setState(() {
+                _selectedProvince = selectedProvince.isNotEmpty ? selectedProvince : null;
+                _municipalities = [];
+                _barangays = [];
+                _selectedMunicipality = null;
+                _selectedBarangay = null;
+                // Clear coordinates when province changes
+                _latitude = null;
+                _longitude = null;
+              });
+              if (selectedProvince.isNotEmpty) {
+                print('📍 Province selected: ${selectedProvince['name']}, loading municipalities...');
+                _loadMunicipalities(selectedProvince['code']);
+              }
+            } else {
+              setState(() {
+                _selectedProvince = null;
+                _municipalities = [];
+                _barangays = [];
+                _selectedMunicipality = null;
+                _selectedBarangay = null;
+                // Clear coordinates when province is cleared
+                _latitude = null;
+                _longitude = null;
+              });
+            }
+          },
+          validator: (value) =>
+          value == null || value.isEmpty ? 'Select a province' : null,
+        ),
+        if (_isLoadingProvinces)
+          Positioned.fill(
+            child: Container(
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.7),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: const Center(
+                child: CircularProgressIndicator(),
+              ),
+            ),
+          ),
       ],
     );
   }
@@ -477,7 +574,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
             child: Text(municipality['name'] ?? 'Unknown Municipality'),
           ))
               .toList(),
-          onChanged: _isLoadingMunicipalities
+          onChanged: _isLoadingMunicipalities || _selectedProvince == null
               ? null
               : (String? newValue) {
             if (newValue != null) {
@@ -510,7 +607,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
             }
           },
           validator: (value) =>
-          value == null || value.isEmpty ? 'Select a municipality' : null,
+          _selectedProvince != null && (value == null || value.isEmpty) ? 'Select a municipality' : null,
+          hint: _selectedProvince == null
+              ? const Text('Select province first')
+              : const Text('Select municipality'),
         ),
         if (_isLoadingMunicipalities)
           Positioned.fill(
@@ -545,7 +645,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
             child: Text(barangay['name'] ?? 'Unknown Barangay'),
           ))
               .toList(),
-          onChanged: _isLoadingBarangays
+          onChanged: _isLoadingBarangays || _selectedMunicipality == null
               ? null
               : (String? newValue) {
             if (newValue != null) {
@@ -586,7 +686,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
             }
           },
           validator: (value) =>
-              value == null || value.isEmpty ? 'Select a barangay' : null,
+              _selectedMunicipality != null && (value == null || value.isEmpty) ? 'Select a barangay' : null,
+          hint: _selectedMunicipality == null
+              ? const Text('Select municipality first')
+              : const Text('Select barangay'),
         ),
         if (_isLoadingBarangays)
           Positioned.fill(

@@ -45,7 +45,49 @@ class SickEventFieldsState extends BaseEventFieldsState<SickEventFields> {
 
     final TextEditingController diseaseTypeCtrl = widget.controllers['disease_type']!;
     final TextEditingController diseaseOtherCtrl = widget.controllers['disease_type_other']!;
-    final String selected = diseaseTypeCtrl.text.isNotEmpty ? diseaseTypeCtrl.text : diseases.first;
+    final String? selected = diseaseTypeCtrl.text.isNotEmpty && diseases.contains(diseaseTypeCtrl.text) 
+        ? diseaseTypeCtrl.text 
+        : null;
+
+    // Create dropdown items with empty state option
+    final List<DropdownMenuItem<String?>> dropdownItems = [
+      DropdownMenuItem<String?>(
+        value: null,
+        child: Row(
+          children: [
+            Icon(Icons.arrow_drop_down_circle_outlined, size: 18, color: Colors.grey.shade600),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                'Select type of disease',
+                overflow: TextOverflow.ellipsis,
+                maxLines: 1,
+                style: TextStyle(
+                  color: Colors.grey.shade600,
+                  fontStyle: FontStyle.italic,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+      ...diseases.map((d) => DropdownMenuItem<String?>(
+            value: d,
+            child: Row(
+              children: [
+                const Icon(Icons.coronavirus_rounded, size: 18, color: Colors.red),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    d,
+                    overflow: TextOverflow.ellipsis,
+                    maxLines: 1,
+                  ),
+                ),
+              ],
+            ),
+          )),
+    ];
 
     return Column(
       children: [
@@ -58,28 +100,21 @@ class SickEventFieldsState extends BaseEventFieldsState<SickEventFields> {
             border: Border.all(color: Colors.grey.shade300),
           ),
           child: DropdownButtonHideUnderline(
-            child: DropdownButton<String>(
-              value: diseases.contains(selected) ? selected : 'Other',
+            child: DropdownButton<String?>(
+              value: selected,
               isExpanded: true,
               icon: const Icon(Icons.arrow_drop_down),
-              items: diseases
-                  .map((d) => DropdownMenuItem<String>(
-                        value: d,
-                        child: Row(
-                          children: [
-                            const Icon(Icons.coronavirus_rounded, size: 18, color: Colors.red),
-                            const SizedBox(width: 8),
-                            Text(d, overflow: TextOverflow.ellipsis),
-                          ],
-                        ),
-                      ))
-                  .toList(),
+              items: dropdownItems,
               onChanged: (val) {
-                if (val == null) return;
                 setState(() {
-                  diseaseTypeCtrl.text = val;
-                  if (val != 'Other') {
+                  if (val == null) {
+                    diseaseTypeCtrl.text = '';
                     diseaseOtherCtrl.text = '';
+                  } else {
+                    diseaseTypeCtrl.text = val;
+                    if (val != 'Other') {
+                      diseaseOtherCtrl.text = '';
+                    }
                   }
                 });
               },
@@ -87,7 +122,7 @@ class SickEventFieldsState extends BaseEventFieldsState<SickEventFields> {
           ),
         ),
         const SizedBox(height: 12),
-        if ((diseaseTypeCtrl.text.isEmpty && diseases.first == 'Other') || diseaseTypeCtrl.text == 'Other')
+        if (diseaseTypeCtrl.text == 'Other')
           HistoryStyledTextField(
             label: 'If Other, please specify',
             controller: diseaseOtherCtrl,

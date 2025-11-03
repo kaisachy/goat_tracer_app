@@ -5,6 +5,7 @@ import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import '../../../../../constants/app_colors.dart';
 import '../../../../../models/cattle.dart';
 import '../../../../../utils/history_type_utils.dart';
+import '../../../../../services/cattle/cattle_history_service.dart';
 
 
 class HistoryTypeDropdown extends StatefulWidget {
@@ -13,6 +14,7 @@ class HistoryTypeDropdown extends StatefulWidget {
   final Map<String, TextEditingController> controllers;
   final ValueChanged<String?> onHistoryTypeChanged;
   final Function(DateTime)? onHistoryDateSelected; // Add callback for date selection
+  final bool locked;
 
   const HistoryTypeDropdown({
     super.key,
@@ -21,6 +23,7 @@ class HistoryTypeDropdown extends StatefulWidget {
     required this.controllers,
     required this.onHistoryTypeChanged,
     this.onHistoryDateSelected, // Add this parameter
+    this.locked = false,
   });
 
   @override
@@ -28,12 +31,85 @@ class HistoryTypeDropdown extends StatefulWidget {
 }
 
 class HistoryTypeDropdownState extends State<HistoryTypeDropdown> {
-  List<String> get historyTypes {
-    return HistoryTypeUtils.getHistoryTypesForSex(
+  late List<String> filteredHistoryTypes = const [];
+
+  @override
+  void initState() {
+    super.initState();
+    _filterDropdownTypes();
+  }
+
+  @override
+  void didUpdateWidget(covariant HistoryTypeDropdown oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // Re-filter if cattleDetails changed
+    if (oldWidget.cattleDetails?.tagNo != widget.cattleDetails?.tagNo) {
+      _filterDropdownTypes();
+    }
+  }
+
+  Future<void> _filterDropdownTypes() async {
+    final allTypes = HistoryTypeUtils.getHistoryTypesForSex(
       widget.cattleDetails?.sex,
       classification: widget.cattleDetails?.classification,
     );
+    List<String> filtered = List<String>.from(allTypes);
+    if (widget.cattleDetails != null) {
+      final eventsForTag = await CattleHistoryService.getCattleHistoryByTag(widget.cattleDetails!.tagNo);
+      final hasSick = eventsForTag.any((e) => (e['history_type']?.toString().toLowerCase() ?? '') == 'sick');
+      final hasBreeding = eventsForTag.any((e) => (e['history_type']?.toString().toLowerCase() ?? '') == 'breeding');
+      final hasPregnant = eventsForTag.any((e) => (e['history_type']?.toString().toLowerCase() ?? '') == 'pregnant');
+      if (filtered.contains('Treated') && !hasSick) {
+        filtered = filtered.where((type) => type != 'Treated').toList();
+      }
+      if (filtered.contains('Pregnant') && !hasBreeding) {
+        filtered = filtered.where((type) => type != 'Pregnant').toList();
+      }
+      if (filtered.contains('Gives Birth') && !hasPregnant) {
+        filtered = filtered.where((type) => type != 'Gives Birth').toList();
+      }
+      if (filtered.contains('Aborted Pregnancy')) {
+        final classification = widget.cattleDetails!.classification.toLowerCase();
+        bool isEligibleClass = classification == 'cow' || classification == 'heifer';
+        // Find the latest Pregnant history record
+        final pregnantEvents = eventsForTag.where((e) => (e['history_type']?.toString().toLowerCase() ?? '') == 'pregnant').toList();
+        if (pregnantEvents.isNotEmpty && isEligibleClass) {
+          // Get the latest Pregnant record by date
+          pregnantEvents.sort((a, b) {
+            try {
+              final da = DateTime.parse(a['history_date']);
+              final db = DateTime.parse(b['history_date']);
+              return db.compareTo(da);
+            } catch (_) {
+              return 0;
+            }
+          });
+          final latestPregnant = pregnantEvents.first;
+          final latestPregnantDate = latestPregnant['history_date'];
+          // Look for any Gives Birth history after this date
+          final givesBirthAfterPregnant = eventsForTag.any((e) {
+            if ((e['history_type']?.toString().toLowerCase() ?? '') != 'gives birth') return false;
+            try {
+              final givesBirthDate = DateTime.parse(e['history_date']);
+              final pregnantDate = DateTime.parse(latestPregnantDate);
+              return givesBirthDate.isAfter(pregnantDate) || givesBirthDate.isAtSameMomentAs(pregnantDate);
+            } catch (_) {
+              return false;
+            }
+          });
+          if (givesBirthAfterPregnant) {
+            filtered = filtered.where((type) => type != 'Aborted Pregnancy').toList();
+          }
+        } else {
+          filtered = filtered.where((type) => type != 'Aborted Pregnancy').toList();
+        }
+      }
+    }
+    filteredHistoryTypes = filtered;
+    setState(() {});
   }
+
+  List<String> get historyTypes => filteredHistoryTypes;
 
   // Helper method to show date picker and update controller
   Future<void> _selectHistoryDate(BuildContext context, TextEditingController controller) async {
@@ -124,10 +200,12 @@ class HistoryTypeDropdownState extends State<HistoryTypeDropdown> {
     );
   }
 
+  bool _attemptedValidation = false;
+
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(20),
@@ -147,22 +225,29 @@ class HistoryTypeDropdownState extends State<HistoryTypeDropdown> {
               Container(
                 padding: const EdgeInsets.all(10),
                 decoration: BoxDecoration(
-                  color: AppColors.primary.withOpacity(0.15), // Fixed color
+                  color: AppColors.primary.withOpacity(0.15),
                   borderRadius: BorderRadius.circular(12),
                 ),
-                child: const Icon(
-                  Icons.history, // Fixed icon
-                  color: AppColors.primary,
-                  size: 20,
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(Icons.history, color: AppColors.primary, size: 20),
+                    if (widget.locked) ...[
+                      const SizedBox(width: 6),
+                      const Icon(Icons.lock, color: AppColors.primary, size: 16),
+                    ]
+                  ],
                 ),
               ),
               const SizedBox(width: 12),
-              const Text(
-                'History Information',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  color: AppColors.textPrimary,
+              const Expanded(
+                child: Text(
+                  'History Information',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.textPrimary,
+                  ),
                 ),
               ),
             ],
@@ -170,8 +255,11 @@ class HistoryTypeDropdownState extends State<HistoryTypeDropdown> {
           const SizedBox(height: 16),
 
           // History Type Dropdown
-          DropdownButtonFormField<String>(
-            value: historyTypes.contains(widget.selectedHistoryType) ? widget.selectedHistoryType : 'Select type of history record',
+          SizedBox(
+            width: double.infinity,
+            child: DropdownButtonFormField<String>(
+              autovalidateMode: _attemptedValidation ? AutovalidateMode.always : AutovalidateMode.disabled,
+              value: historyTypes.contains(widget.selectedHistoryType) ? widget.selectedHistoryType : 'Select type of history record',
             items: historyTypes.map((type) {
               final isPlaceholder = type == 'Select type of history record';
               final isLoading = type == 'Loading cattle information...';
@@ -223,9 +311,12 @@ class HistoryTypeDropdownState extends State<HistoryTypeDropdown> {
                 if (value == 'Select type of history record') {
                   return Text(
                     value,
+                    overflow: TextOverflow.ellipsis,
+                    maxLines: 1,
+                    softWrap: false,
                     style: TextStyle(
                       color: AppColors.textSecondary.withOpacity(0.7),
-                      fontSize: 16,
+                      fontSize: 15,
                       fontStyle: FontStyle.italic,
                     ),
                   );
@@ -234,9 +325,12 @@ class HistoryTypeDropdownState extends State<HistoryTypeDropdown> {
                 if (value == 'Loading cattle information...') {
                   return Text(
                     value,
+                    overflow: TextOverflow.ellipsis,
+                    maxLines: 1,
+                    softWrap: false,
                     style: const TextStyle(
                       color: Colors.grey,
-                      fontSize: 16,
+                      fontSize: 15,
                       fontStyle: FontStyle.italic,
                     ),
                   );
@@ -244,21 +338,29 @@ class HistoryTypeDropdownState extends State<HistoryTypeDropdown> {
 
                 return Text(
                   value,
+                  overflow: TextOverflow.ellipsis,
+                  maxLines: 1,
+                  softWrap: false,
                   style: const TextStyle(
                     color: AppColors.textPrimary,
-                    fontSize: 16,
+                    fontSize: 15,
                     fontWeight: FontWeight.w500,
                   ),
                 );
               }).toList();
             },
-            onChanged: widget.cattleDetails == null ? null : widget.onHistoryTypeChanged,
+            onChanged: (widget.cattleDetails == null || widget.locked)
+                ? null
+                : (val) {
+                    widget.onHistoryTypeChanged(val);
+                    setState(() => _attemptedValidation = true);
+                  },
             decoration: InputDecoration(
               labelText: 'History Type',
               prefixIcon: Container(
-                width: 40,
-                height: 40,
-                padding: const EdgeInsets.all(8),
+                width: 32,
+                height: 32,
+                padding: const EdgeInsets.all(5),
                 child: Container(
                   decoration: BoxDecoration(
                     color: HistoryTypeUtils.getHistoryColor(widget.selectedHistoryType).withOpacity(0.1),
@@ -269,19 +371,19 @@ class HistoryTypeDropdownState extends State<HistoryTypeDropdown> {
                         ? Icons.history
                         : HistoryTypeUtils.getHistoryIcon(widget.selectedHistoryType),
                     color: widget.selectedHistoryType == 'Select type of history record'
-                        ? AppColors.lightGreen
+                        ? AppColors.textSecondary
                         : HistoryTypeUtils.getHistoryColor(widget.selectedHistoryType),
-                    size: 18,
+                    size: 16,
                   ),
                 ),
               ),
               labelStyle: const TextStyle(
                 color: AppColors.textSecondary,
-                fontSize: 14,
+                fontSize: 15,
                 fontWeight: FontWeight.w500,
               ),
               filled: true,
-              fillColor: AppColors.lightGreen.withOpacity(0.05),
+              fillColor: widget.locked ? Colors.grey.shade100 : AppColors.lightGreen.withOpacity(0.05),
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(15),
                 borderSide: BorderSide.none,
@@ -289,7 +391,7 @@ class HistoryTypeDropdownState extends State<HistoryTypeDropdown> {
               enabledBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(15),
                 borderSide: BorderSide(
-                  color: AppColors.lightGreen.withOpacity(0.2),
+                  color: widget.locked ? Colors.grey.shade300 : AppColors.lightGreen.withOpacity(0.2),
                   width: 1,
                 ),
               ),
@@ -300,12 +402,16 @@ class HistoryTypeDropdownState extends State<HistoryTypeDropdown> {
                   width: 2,
                 ),
               ),
-              contentPadding: const EdgeInsets.symmetric(
-                horizontal: 20,
-                vertical: 16,
+              contentPadding: const EdgeInsets.only(
+                left: 12,
+                right: 12,
+                top: 16,
+                bottom: 16,
               ),
+              isDense: true,
             ),
             validator: (value) {
+              if (!_attemptedValidation) return null;
               if (value == null || value == 'Select type of history record') {
                 return 'Please select a history type';
               }
@@ -314,6 +420,7 @@ class HistoryTypeDropdownState extends State<HistoryTypeDropdown> {
               }
               return null;
             },
+            ),
           ),
           const SizedBox(height: 20),
 

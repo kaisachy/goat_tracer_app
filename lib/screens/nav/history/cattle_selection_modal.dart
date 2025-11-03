@@ -2,10 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:cattle_tracer_app/constants/app_colors.dart';
 import 'package:cattle_tracer_app/models/cattle.dart';
 import 'package:cattle_tracer_app/services/cattle/cattle_service.dart';
+import 'package:cattle_tracer_app/services/cattle/cattle_history_service.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 
 class CattleSelectionModal extends StatefulWidget {
-  const CattleSelectionModal({super.key});
+  final String? historyType; // Optional: filter cattle by history type applicability
+
+  const CattleSelectionModal({super.key, this.historyType});
 
   @override
   State<CattleSelectionModal> createState() => _CattleSelectionModalState();
@@ -18,6 +21,9 @@ class _CattleSelectionModalState extends State<CattleSelectionModal> {
   String? error;
   String searchQuery = '';
   Cattle? selectedCattle;
+  final Set<String> _tagsWithBreeding = {};
+  final Set<String> _tagsWithPregnant = {};
+  final Set<String> _tagsWithSick = {};
 
   @override
   void initState() {
@@ -29,11 +35,17 @@ class _CattleSelectionModalState extends State<CattleSelectionModal> {
     try {
       setState(() => isLoading = true);
       final cattle = await CattleService.getAllCattle();
+      // Optionally load history to support type-specific eligibility
+      await _maybeLoadHistoryEligibility();
 
       if (mounted) {
         setState(() {
           allCattle = cattle;
-          filteredCattle = cattle;
+          // Apply initial filter based on history type if provided
+          final base = widget.historyType == null
+              ? allCattle
+              : allCattle.where(_matchesHistoryClassification).toList();
+          filteredCattle = base;
           isLoading = false;
           error = null;
         });
@@ -48,22 +60,100 @@ class _CattleSelectionModalState extends State<CattleSelectionModal> {
     }
   }
 
+  Future<void> _maybeLoadHistoryEligibility() async {
+    final type = (widget.historyType ?? '').toLowerCase();
+    if (type != 'pregnant' && type != 'gives birth' && type != 'treated') return;
+
+    try {
+      final events = await CattleHistoryService.getCattleHistory();
+      _tagsWithBreeding.clear();
+      _tagsWithPregnant.clear();
+      for (final e in events) {
+        final tag = (e['cattle_tag'] ?? '').toString().trim();
+        if (tag.isEmpty) continue;
+        final evType = (e['history_type'] ?? '').toString().toLowerCase();
+        if (evType == 'breeding') {
+          _tagsWithBreeding.add(tag);
+        } else if (evType == 'pregnant') {
+          _tagsWithPregnant.add(tag);
+        } else if (evType == 'sick') {
+          _tagsWithSick.add(tag);
+        }
+      }
+    } catch (_) {
+      // If history cannot be loaded, leave sets empty and fall back to basic filters
+    }
+  }
+
   void _filterCattle(String query) {
     setState(() {
       searchQuery = query;
+      final base = widget.historyType == null
+          ? allCattle
+          : allCattle.where(_matchesHistoryClassification).toList();
+
       if (query.isEmpty) {
-        filteredCattle = allCattle;
+        filteredCattle = base;
       } else {
-        filteredCattle = allCattle.where((cattle) {
+        filteredCattle = base.where((cattle) {
           // Fix: Use the correct property name from your Cattle model
           // Replace 'tagNo' with whatever your actual property name is
           final tagNo = (cattle.tagNo).toLowerCase(); // Assuming your property is 'tagNo'
           final breed = (cattle.breed ?? '').toLowerCase();
+          final classification = (cattle.classification).toLowerCase();
           final searchLower = query.toLowerCase();
-          return tagNo.contains(searchLower) || breed.contains(searchLower);
+          return tagNo.contains(searchLower) || breed.contains(searchLower) || classification.contains(searchLower);
         }).toList();
       }
     });
+  }
+
+  bool _matchesHistoryClassification(Cattle cattle) {
+    final type = (widget.historyType ?? '').toLowerCase();
+    final sex = (cattle.sex).toLowerCase();
+    final cls = (cattle.classification).toLowerCase();
+
+    // Female-only history types
+    const femaleOnly = {
+      'dry off', 'gives birth', 'pregnant', 'aborted pregnancy', 'breeding'
+    };
+    // Male-only history types
+    const maleOnly = {
+      'castrated'
+    };
+    // Calf-only history types
+    const calfOnly = {
+      'weaned'
+    };
+
+    if (femaleOnly.contains(type)) {
+      final isFemaleEligible = sex == 'female' && (cls == 'cow' || cls == 'heifer');
+      if (!isFemaleEligible) return false;
+      // Extra eligibility rules
+      if (type == 'pregnant') {
+        // Require an existing Breeding record
+        return _tagsWithBreeding.contains(cattle.tagNo);
+      }
+      if (type == 'gives birth') {
+        // Require an existing Pregnant record
+        return _tagsWithPregnant.contains(cattle.tagNo);
+      }
+      return true; // breeding/dry off/aborted pregnancy baseline
+    }
+    if (maleOnly.contains(type)) {
+      return sex == 'male';
+    }
+    if (calfOnly.contains(type)) {
+      return cls == 'calf';
+    }
+
+    // Treated requires an existing Sick record
+    if (type == 'treated') {
+      return _tagsWithSick.contains(cattle.tagNo);
+    }
+
+    // Default: applicable to all classifications
+    return true;
   }
 
   void _selectCattle(Cattle cattle) {
@@ -358,17 +448,16 @@ class _CattleSelectionModalState extends State<CattleSelectionModal> {
                       color: isSelected ? AppColors.vibrantGreen : AppColors.textPrimary,
                     ),
                   ),
-                  if (cattle.breed != null && cattle.breed!.isNotEmpty) ...[
-                    const SizedBox(height: 2),
-                    Text(
-                      cattle.breed!,
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: Colors.grey.shade600,
-                        fontWeight: FontWeight.w500,
-                      ),
+                  const SizedBox(height: 2),
+                  Text(
+                    '${cattle.classification}'
+                    '${(cattle.breed != null && cattle.breed!.isNotEmpty && cattle.breed!.toLowerCase() != 'unknown') ? ' • ${cattle.breed}' : ''}',
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: Colors.grey.shade600,
+                      fontWeight: FontWeight.w500,
                     ),
-                  ],
+                  ),
                 ],
               ),
             ),

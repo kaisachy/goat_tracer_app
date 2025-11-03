@@ -55,18 +55,15 @@ class _FarmDetailsModalState extends State<FarmDetailsModal> {
   String? _selectedFarmClassification;
   
   // Address validation state variables
+  List<dynamic> _provinces = [];
   List<dynamic> _municipalities = [];
   List<dynamic> _barangays = [];
+  Map<String, dynamic>? _selectedProvince;
   Map<String, dynamic>? _selectedMunicipality;
   Map<String, dynamic>? _selectedBarangay;
+  bool _isLoadingProvinces = false;
   bool _isLoadingMunicipalities = false;
   bool _isLoadingBarangays = false;
-  
-  // Fixed province data for Isabela
-  final Map<String, dynamic> _isabelaProvince = {
-    'name': 'Isabela',
-    'code': '020000000'
-  };
 
   // Farm latitude and longitude fields
   double? _farmLatitude;
@@ -154,8 +151,40 @@ class _FarmDetailsModalState extends State<FarmDetailsModal> {
       _selectedFarmClassification = null;
     }
     
-    // Load municipalities and initialize address fields from structured data
-    _initializeAddressFromStructuredData(farm);
+    // Load provinces first, then initialize address fields from structured data
+    _loadRegion2Provinces().then((_) {
+      _initializeAddressFromStructuredData(farm);
+    });
+  }
+
+  Future<void> _loadRegion2Provinces() async {
+    setState(() => _isLoadingProvinces = true);
+    try {
+      print('Loading Region 2 provinces...');
+      final regions = await AddressService.getRegions();
+      final region2 = regions.firstWhere(
+        (r) => r['name'] == 'REGION II (CAGAYAN VALLEY)' || r['code'] == '020000000',
+        orElse: () => null,
+      );
+      
+      if (region2 == null) {
+        throw Exception('Region 2 not found');
+      }
+      
+      final provinces = await AddressService.getProvinces(region2['code']);
+      
+      setState(() {
+        _provinces = provinces;
+        _isLoadingProvinces = false;
+      });
+      print('Successfully loaded ${provinces.length} provinces');
+    } catch (e) {
+      print('Error loading provinces: $e');
+      setState(() => _isLoadingProvinces = false);
+      _showMessage(
+          'Failed to load provinces. Please check your internet connection.',
+          Colors.red);
+    }
   }
 
   @override
@@ -638,13 +667,19 @@ class _FarmDetailsModalState extends State<FarmDetailsModal> {
   }
 
   // Address validation methods
-  Future<void> _loadMunicipalities() async {
+  Future<void> _loadMunicipalities(String provinceCode) async {
     setState(() => _isLoadingMunicipalities = true);
     try {
-      final municipalities = await AddressService.getIsabelaMunicipalities();
+      final municipalities = await AddressService.getMunicipalities(provinceCode);
       setState(() {
         _municipalities = municipalities;
+        _barangays = [];
+        _selectedBarangay = null;
+        _selectedMunicipality = null;
         _isLoadingMunicipalities = false;
+        // Clear coordinates when province changes
+        _farmLatitude = null;
+        _farmLongitude = null;
       });
     } catch (e) {
       setState(() => _isLoadingMunicipalities = false);
@@ -699,7 +734,7 @@ class _FarmDetailsModalState extends State<FarmDetailsModal> {
 
   // Single-shot geocoding (JS parity)
   Future<void> _performSingleGeocode() async {
-    final province = _isabelaProvince['name'];
+    final province = _selectedProvince?['name'];
     final municipality = _selectedMunicipality?['name'];
     final barangay = _selectedBarangay?['name'];
 
@@ -776,27 +811,39 @@ class _FarmDetailsModalState extends State<FarmDetailsModal> {
     if (farm == null) return;
     
     try {
-      // Wait for municipalities to load first
-      if (_municipalities.isEmpty) {
-        await _loadMunicipalities();
+      // Wait for provinces to load first
+      if (_provinces.isEmpty) {
+        await _loadRegion2Provinces();
       }
       
       // Initialize from structured fields
+      final farmProvince = farm['farm_province']?.toString();
       final farmMunicipality = farm['farm_municipality']?.toString();
       final farmBarangay = farm['farm_barangay']?.toString();
       
-      if (farmMunicipality != null && farmMunicipality.isNotEmpty) {
-        // Find and select the municipality
-        for (var municipality in _municipalities) {
-          if (municipality['name'].toString().toLowerCase() == farmMunicipality.toLowerCase()) {
-            _selectedMunicipality = municipality;
-            await _loadBarangays(municipality['code']);
+      // Find and select the province
+      if (farmProvince != null && farmProvince.isNotEmpty) {
+        for (var province in _provinces) {
+          if (province['name'].toString().toLowerCase() == farmProvince.toLowerCase()) {
+            _selectedProvince = province;
+            await _loadMunicipalities(province['code']);
             
-            // Find and select the barangay
-            if (farmBarangay != null && farmBarangay.isNotEmpty) {
-              for (var barangay in _barangays) {
-                if (barangay['name'].toString().toLowerCase() == farmBarangay.toLowerCase()) {
-                  _selectedBarangay = barangay;
+            // Find and select the municipality
+            if (farmMunicipality != null && farmMunicipality.isNotEmpty) {
+              for (var municipality in _municipalities) {
+                if (municipality['name'].toString().toLowerCase() == farmMunicipality.toLowerCase()) {
+                  _selectedMunicipality = municipality;
+                  await _loadBarangays(municipality['code']);
+                  
+                  // Find and select the barangay
+                  if (farmBarangay != null && farmBarangay.isNotEmpty) {
+                    for (var barangay in _barangays) {
+                      if (barangay['name'].toString().toLowerCase() == farmBarangay.toLowerCase()) {
+                        _selectedBarangay = barangay;
+                        break;
+                      }
+                    }
+                  }
                   break;
                 }
               }
@@ -811,58 +858,130 @@ class _FarmDetailsModalState extends State<FarmDetailsModal> {
   }
 
   Widget _buildProvinceField() {
-    return Container(
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: TextFormField(
-        readOnly: true,
-        initialValue: _isabelaProvince['name'],
-        style: const TextStyle(
-          fontSize: 16,
-          color: AppColors.textPrimary,
-          fontWeight: FontWeight.w500,
-        ),
-        decoration: InputDecoration(
-          labelText: 'Province',
-          labelStyle: TextStyle(
-            color: AppColors.textSecondary,
-            fontSize: 16,
-            fontWeight: FontWeight.w500,
-          ),
-          prefixIcon: Container(
-            margin: const EdgeInsets.all(12),
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: AppColors.lightGreen.withOpacity(0.2),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: const FaIcon(
-              FontAwesomeIcons.mapLocation,
-              size: 18,
-              color: AppColors.primary,
-            ),
-          ),
-          filled: true,
-          fillColor: Colors.grey[50],
-          border: OutlineInputBorder(
+    return Stack(
+      children: [
+        Container(
+          decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(16),
-            borderSide: BorderSide(color: Colors.grey[200]!, width: 1.5),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.05),
+                blurRadius: 10,
+                offset: const Offset(0, 2),
+              ),
+            ],
           ),
-          enabledBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(16),
-            borderSide: BorderSide(color: Colors.grey[200]!, width: 1.5),
+          child: DropdownButtonFormField<String>(
+            value: _selectedProvince?['code']?.toString(),
+            decoration: InputDecoration(
+              labelText: 'Province',
+              labelStyle: TextStyle(
+                color: AppColors.textSecondary,
+                fontSize: 16,
+                fontWeight: FontWeight.w500,
+              ),
+              prefixIcon: Container(
+                margin: const EdgeInsets.all(12),
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: AppColors.lightGreen.withOpacity(0.2),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: const FaIcon(
+                  FontAwesomeIcons.mapLocation,
+                  size: 18,
+                  color: AppColors.primary,
+                ),
+              ),
+              filled: true,
+              fillColor: Colors.white,
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(16),
+                borderSide: BorderSide(color: Colors.grey[200]!, width: 1.5),
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(16),
+                borderSide: BorderSide(color: Colors.grey[200]!, width: 1.5),
+              ),
+              focusedBorder: const OutlineInputBorder(
+                borderRadius: BorderRadius.all(Radius.circular(16)),
+                borderSide: BorderSide(color: AppColors.primary, width: 2),
+              ),
+              errorBorder: const OutlineInputBorder(
+                borderRadius: BorderRadius.all(Radius.circular(16)),
+                borderSide: BorderSide(color: Colors.red, width: 2),
+              ),
+              focusedErrorBorder: const OutlineInputBorder(
+                borderRadius: BorderRadius.all(Radius.circular(16)),
+                borderSide: BorderSide(color: Colors.red, width: 2),
+              ),
+              contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
+            ),
+            items: _provinces.map<DropdownMenuItem<String>>((province) {
+              return DropdownMenuItem<String>(
+                value: province['code']?.toString(),
+                child: Text(province['name'] ?? 'Unknown Province'),
+              );
+            }).toList(),
+            onChanged: _isLoadingProvinces
+                ? null
+                : (String? newValue) {
+                    if (newValue != null) {
+                      final selectedProvince = _provinces.firstWhere(
+                        (province) => province['code']?.toString() == newValue,
+                        orElse: () => {},
+                      );
+                      setState(() {
+                        _selectedProvince = selectedProvince.isNotEmpty ? selectedProvince : null;
+                        _municipalities = [];
+                        _barangays = [];
+                        _selectedMunicipality = null;
+                        _selectedBarangay = null;
+                        // Clear coordinates when province changes
+                        _farmLatitude = null;
+                        _farmLongitude = null;
+                      });
+                      if (selectedProvince.isNotEmpty) {
+                        print('📍 Province selected: ${selectedProvince['name']}, loading municipalities...');
+                        _loadMunicipalities(selectedProvince['code']);
+                      }
+                    } else {
+                      setState(() {
+                        _selectedProvince = null;
+                        _municipalities = [];
+                        _barangays = [];
+                        _selectedMunicipality = null;
+                        _selectedBarangay = null;
+                        // Clear coordinates when province is cleared
+                        _farmLatitude = null;
+                        _farmLongitude = null;
+                      });
+                    }
+                  },
+            validator: (String? value) {
+              if (value == null || value.isEmpty) {
+                return 'Please select a province';
+              }
+              return null;
+            },
+            hint: _isLoadingProvinces
+                ? const Text('Loading provinces...')
+                : const Text('Select Province'),
           ),
-          contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
         ),
-      ),
+        if (_isLoadingProvinces)
+          Positioned.fill(
+            child: Container(
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.7),
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: const Center(
+                child: CircularProgressIndicator(),
+              ),
+            ),
+          ),
+      ],
     );
   }
 
@@ -930,7 +1049,9 @@ class _FarmDetailsModalState extends State<FarmDetailsModal> {
             child: Text(municipality['name'] ?? 'Unknown Municipality'),
           );
         }).toList(),
-        onChanged: (String? newValue) {
+        onChanged: _isLoadingMunicipalities || _selectedProvince == null
+            ? null
+            : (String? newValue) {
           if (newValue != null) {
             final selectedMunicipality = _municipalities.firstWhere(
               (municipality) => municipality['code']?.toString() == newValue,
@@ -964,12 +1085,16 @@ class _FarmDetailsModalState extends State<FarmDetailsModal> {
           }
         },
         validator: (String? value) {
-          if (value == null || value.isEmpty) {
+          if (_selectedProvince != null && (value == null || value.isEmpty)) {
             return 'Please select a municipality';
           }
           return null;
         },
-        hint: _isLoadingMunicipalities ? const Text('Loading municipalities...') : const Text('Municipality'),
+        hint: _isLoadingMunicipalities
+            ? const Text('Loading municipalities...')
+            : _selectedProvince == null
+                ? const Text('Select province first')
+                : const Text('Municipality'),
       ),
     );
   }
@@ -1009,7 +1134,7 @@ class _FarmDetailsModalState extends State<FarmDetailsModal> {
             ),
           ),
           filled: true,
-          fillColor: _selectedMunicipality == null ? Colors.grey[50] : Colors.white,
+          fillColor: _selectedProvince == null || _selectedMunicipality == null ? Colors.grey[50] : Colors.white,
           border: OutlineInputBorder(
             borderRadius: BorderRadius.circular(16),
             borderSide: BorderSide(color: Colors.grey[200]!, width: 1.5),
@@ -1038,7 +1163,7 @@ class _FarmDetailsModalState extends State<FarmDetailsModal> {
             child: Text(barangay['name'] ?? 'Unknown Barangay'),
           );
         }).toList(),
-        onChanged: _isLoadingBarangays || _selectedMunicipality == null
+        onChanged: _isLoadingBarangays || _selectedProvince == null || _selectedMunicipality == null
             ? null
             : (String? newValue) {
                 if (newValue != null) {
@@ -1086,7 +1211,7 @@ class _FarmDetailsModalState extends State<FarmDetailsModal> {
         },
         hint: _isLoadingBarangays
             ? const Text('Loading barangays...')
-            : _selectedMunicipality == null
+            : _selectedProvince == null || _selectedMunicipality == null
                 ? const Text('Select municipality first')
                 : const Text('Barangay'),
       ),
@@ -1182,10 +1307,10 @@ class _FarmDetailsModalState extends State<FarmDetailsModal> {
 
 
   String _formatFarmLocation() {
-    if (_selectedMunicipality != null && _selectedBarangay != null) {
-      return '${_selectedBarangay!['name']}, ${_selectedMunicipality!['name']}, ${_isabelaProvince['name']}';
-    } else if (_selectedMunicipality != null) {
-      return '${_selectedMunicipality!['name']}, ${_isabelaProvince['name']}';
+    if (_selectedProvince != null && _selectedMunicipality != null && _selectedBarangay != null) {
+      return '${_selectedBarangay!['name']}, ${_selectedMunicipality!['name']}, ${_selectedProvince!['name']}';
+    } else if (_selectedProvince != null && _selectedMunicipality != null) {
+      return '${_selectedMunicipality!['name']}, ${_selectedProvince!['name']}';
     } else {
       // Fallback to structured fields from widget data
       final farm = widget.farmDetails;
@@ -1274,7 +1399,7 @@ class _FarmDetailsModalState extends State<FarmDetailsModal> {
         'farm_classification': _selectedFarmClassification ?? '',
         'farm_land_area': _selectedFarmLandArea ?? '',
         'cooperative_affiliation': coopController.text,
-        'farm_province': _isabelaProvince['name'],
+        'farm_province': _selectedProvince?['name'] ?? '',
         'farm_municipality': _selectedMunicipality?['name'] ?? '',
         'farm_barangay': _selectedBarangay?['name'] ?? '',
       };

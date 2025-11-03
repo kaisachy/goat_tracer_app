@@ -37,8 +37,10 @@ class AddressService {
     try {
       print('Getting barangays for municipality: $municipalityCode');
       
+      // Try path parameter first (preferred), fallback to query parameter
+      Uri uri = Uri.parse('$_baseUrl/api/address/barangays/$municipalityCode');
       final response = await http.get(
-        Uri.parse('$_baseUrl/api/address/barangays?municipalityCode=$municipalityCode'),
+        uri,
         headers: {'Content-Type': 'application/json'},
       );
 
@@ -80,17 +82,25 @@ class AddressService {
   // Get provinces from backend API
   static Future<List<dynamic>> getProvinces(String regionCode) async {
     try {
+      print('Getting provinces for region code: $regionCode');
       final response = await http.get(
-        Uri.parse('$_baseUrl/api/address/provinces?regionCode=$regionCode'),
+        Uri.parse('$_baseUrl/api/address/provinces/$regionCode'),
         headers: {'Content-Type': 'application/json'},
       );
 
+      print('Provinces response status: ${response.statusCode}');
+      print('Provinces response body: ${response.body}');
+
       if (response.statusCode == 200) {
-        return jsonDecode(response.body);
+        final provinces = jsonDecode(response.body) as List<dynamic>;
+        print('Success! Found ${provinces.length} provinces');
+        return provinces;
       } else {
+        print('Failed to get provinces: ${response.body}');
         throw Exception('Failed to load provinces');
       }
     } catch (e) {
+      print('Error getting provinces: $e');
       throw Exception('Network error: $e');
     }
   }
@@ -98,17 +108,25 @@ class AddressService {
   // Get municipalities from backend API
   static Future<List<dynamic>> getMunicipalities(String provinceCode) async {
     try {
+      print('Getting municipalities for province code: $provinceCode');
       final response = await http.get(
-        Uri.parse('$_baseUrl/api/address/municipalities?provinceCode=$provinceCode'),
+        Uri.parse('$_baseUrl/api/address/municipalities/$provinceCode'),
         headers: {'Content-Type': 'application/json'},
       );
 
+      print('Municipalities response status: ${response.statusCode}');
+      print('Municipalities response body: ${response.body}');
+
       if (response.statusCode == 200) {
-        return jsonDecode(response.body);
+        final municipalities = jsonDecode(response.body) as List<dynamic>;
+        print('Success! Found ${municipalities.length} municipalities');
+        return municipalities;
       } else {
+        print('Failed to get municipalities: ${response.body}');
         throw Exception('Failed to load municipalities');
       }
     } catch (e) {
+      print('Error getting municipalities: $e');
       throw Exception('Network error: $e');
     }
   }

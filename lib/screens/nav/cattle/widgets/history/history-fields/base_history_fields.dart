@@ -8,6 +8,7 @@ import 'package:cattle_tracer_app/models/user.dart';
 
 import '../../../../../../services/cattle/cattle_service.dart';
 import '../../../../../../services/user_service.dart';
+import '../history_styled_text_field.dart';
 
 abstract class BaseEventFields extends StatefulWidget {
   final Map<String, TextEditingController> controllers;
@@ -25,6 +26,7 @@ abstract class BaseEventFieldsState<T extends BaseEventFields> extends State<T> 
   bool loadingBulls = false;
   bool loadingTechnicians = false;
   bool loadingFarmers = false;
+  bool _useTechnicianTextInput = false; // Toggle between dropdown and text input
 
   static const int cattleGestationPeriodDays = 283;
   static const int returnToHeatDays = 21;
@@ -356,7 +358,8 @@ abstract class BaseEventFieldsState<T extends BaseEventFields> extends State<T> 
           ),
           filled: true,
           fillColor: readOnly ? Colors.grey.shade50 : Colors.white,
-          contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
+          contentPadding: const EdgeInsets.only(left: 12, right: 12, top: 14, bottom: 14),
+          isDense: true,
         ),
         onTap: readOnly ? null : () => selectDate(context, controller, onDateSelected: onDateSelected),
         validator: (value) {
@@ -416,7 +419,8 @@ abstract class BaseEventFieldsState<T extends BaseEventFields> extends State<T> 
           ),
           filled: true,
           fillColor: isAutoFilled ? Colors.grey.shade100 : Colors.white, // Slightly grayed background when read-only
-          contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
+          contentPadding: const EdgeInsets.only(left: 12, right: 12, top: 14, bottom: 14),
+          isDense: true,
           suffixIcon: loadingBulls
               ? Container(
             width: 20,
@@ -437,7 +441,11 @@ abstract class BaseEventFieldsState<T extends BaseEventFields> extends State<T> 
                     )
                   : null,
         ),
-        hint: Text(loadingBulls ? 'Loading bulls...' : 'Select bull'),
+        hint: Text(
+          loadingBulls ? 'Loading bulls...' : 'Select bull',
+          overflow: TextOverflow.ellipsis,
+          maxLines: 1,
+        ),
         isExpanded: true,
         items: () {
           final items = bulls.map((bull) {
@@ -520,7 +528,8 @@ abstract class BaseEventFieldsState<T extends BaseEventFields> extends State<T> 
           ),
           filled: true,
           fillColor: Colors.white,
-          contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
+          contentPadding: const EdgeInsets.only(left: 12, right: 12, top: 14, bottom: 14),
+          isDense: true,
           suffixIcon: loadingBulls
               ? Container(
             width: 20,
@@ -530,7 +539,11 @@ abstract class BaseEventFieldsState<T extends BaseEventFields> extends State<T> 
           )
               : null,
         ),
-        hint: Text(loadingBulls ? 'Loading bulls...' : 'Select bull'),
+        hint: Text(
+          loadingBulls ? 'Loading bulls...' : 'Select bull',
+          overflow: TextOverflow.ellipsis,
+          maxLines: 1,
+        ),
         isExpanded: true,
         items: () {
           final current = (widget.controllers['bull_tag']?.text ?? '').trim();
@@ -575,44 +588,108 @@ abstract class BaseEventFieldsState<T extends BaseEventFields> extends State<T> 
       currentValue = null;
     }
 
+    // Auto-detect if we should use text input mode
+    // If current value is not empty and not in the dropdown list, use text input
+    if (currentValue != null && currentValue.isNotEmpty && technicians.isNotEmpty && !loadingTechnicians) {
+      final valueExists = technicians.any((technician) {
+        final displayName = '${technician.firstName} ${technician.lastName}'.trim();
+        return displayName.toLowerCase() == currentValue!.toLowerCase();
+      });
+      if (!valueExists && !_useTechnicianTextInput) {
+        // If value doesn't exist in dropdown and we haven't manually set text input mode,
+        // automatically switch to text input mode
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) {
+            setState(() {
+              _useTechnicianTextInput = true;
+            });
+          }
+        });
+      }
+    }
+
     print('=== Technician Dropdown Debug ===');
     print('Controller value: "$currentValue"');
     print('Loading technicians: $loadingTechnicians');
     print('Technicians count: ${technicians.length}');
+    print('Use text input: $_useTechnicianTextInput');
     print('Technicians: ${technicians.map((t) => '${t.firstName} ${t.lastName} (ID: ${t.id})').join(', ')}');
 
     // If still loading technicians, show loading state
     if (loadingTechnicians) {
-      return Container(
-        margin: const EdgeInsets.only(bottom: 16),
-        width: double.infinity,
-        child: DropdownButtonFormField<String>(
-          value: null,
-          decoration: InputDecoration(
-            labelText: 'Technician',
-            prefixIcon: const Icon(FontAwesomeIcons.userDoctor, color: AppColors.primary),
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(15),
-              borderSide: const BorderSide(color: AppColors.lightGreen),
-            ),
-            focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(15),
-              borderSide: const BorderSide(color: AppColors.primary, width: 2),
-            ),
-            filled: true,
-            fillColor: Colors.white,
-            contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 16), // Increased padding
-            suffixIcon: Container(
-              width: 20,
-              height: 20,
-              padding: const EdgeInsets.all(12),
-              child: const CircularProgressIndicator(strokeWidth: 2),
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            margin: const EdgeInsets.only(bottom: 8),
+            child: Text(
+              'Technician/Veterinarian',
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w500,
+                color: Colors.grey[700],
+              ),
+              overflow: TextOverflow.ellipsis,
+              maxLines: 1,
             ),
           ),
-          hint: const Text('Loading technicians...'),
-          items: const [],
-          onChanged: null,
-        ),
+          SizedBox(
+            width: double.infinity,
+            child: Container(
+              margin: const EdgeInsets.only(bottom: 16),
+              child: DropdownButtonFormField<String>(
+                value: null,
+                isExpanded: true,
+                decoration: InputDecoration(
+                  labelText: 'Technician',
+                  prefixIcon: const Icon(FontAwesomeIcons.userDoctor, color: AppColors.primary, size: 18),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(15),
+                    borderSide: const BorderSide(color: AppColors.lightGreen),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(15),
+                    borderSide: const BorderSide(color: AppColors.primary, width: 2),
+                  ),
+                  filled: true,
+                  fillColor: Colors.white,
+                  contentPadding: const EdgeInsets.only(left: 10, right: 36, top: 16, bottom: 16),
+                  isDense: true,
+                  suffixIcon: Container(
+                    width: 16,
+                    height: 16,
+                    padding: const EdgeInsets.all(6),
+                    alignment: Alignment.center,
+                    child: const SizedBox(
+                      width: 14,
+                      height: 14,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    ),
+                  ),
+                ),
+                hint: const Text(
+                  'Loading technicians...',
+                  overflow: TextOverflow.ellipsis,
+                  maxLines: 1,
+                  softWrap: false,
+                ),
+                selectedItemBuilder: (context) => [
+                  const SizedBox(
+                    width: double.infinity,
+                    child: Text(
+                      'Loading technicians...',
+                      overflow: TextOverflow.ellipsis,
+                      maxLines: 1,
+                      softWrap: false,
+                    ),
+                  ),
+                ],
+                items: const [],
+                onChanged: null,
+              ),
+            ),
+          ),
+        ],
       );
     }
 
@@ -705,10 +782,102 @@ abstract class BaseEventFieldsState<T extends BaseEventFields> extends State<T> 
     print('Final dropdown value: "$dropdownValue"');
     print('=== End Debug ===');
 
-    return Container(
-      margin: const EdgeInsets.only(bottom: 16),
-      width: double.infinity,
-      child: DropdownButtonFormField<String>(
+    // Return text input or dropdown based on mode
+    if (_useTechnicianTextInput) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Container(
+                margin: const EdgeInsets.only(bottom: 8),
+                child: Text(
+                  'Technician/Veterinarian',
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w500,
+                    color: Colors.grey[700],
+                  ),
+                ),
+              ),
+              TextButton.icon(
+                onPressed: () {
+                  setState(() {
+                    _useTechnicianTextInput = false;
+                    // Clear controller when switching to dropdown
+                    widget.controllers['technician']?.clear();
+                  });
+                },
+                icon: const Icon(Icons.swap_horiz, size: 16),
+                label: const Text(
+                  'Use Dropdown',
+                  style: TextStyle(fontSize: 12),
+                ),
+                style: TextButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  minimumSize: Size.zero,
+                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                ),
+              ),
+            ],
+          ),
+          HistoryStyledTextField(
+            label: 'Technician/Veterinarian Name',
+            controller: widget.controllers['technician']!,
+            hint: 'Enter technician or veterinarian name',
+            icon: FontAwesomeIcons.userDoctor,
+            validator: (value) {
+              if (value == null || value.trim().isEmpty) {
+                return 'Please enter technician/veterinarian name';
+              }
+              return null;
+            },
+          ),
+        ],
+      );
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Container(
+              margin: const EdgeInsets.only(bottom: 8),
+              child: Text(
+                'Technician/Veterinarian',
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w500,
+                  color: Colors.grey[700],
+                ),
+              ),
+            ),
+            TextButton.icon(
+              onPressed: () {
+                setState(() {
+                  _useTechnicianTextInput = true;
+                });
+              },
+              icon: const Icon(Icons.edit, size: 16),
+              label: const Text(
+                'Enter Name',
+                style: TextStyle(fontSize: 12),
+              ),
+              style: TextButton.styleFrom(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                minimumSize: Size.zero,
+                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+              ),
+            ),
+          ],
+        ),
+        Container(
+          margin: const EdgeInsets.only(bottom: 16),
+          width: double.infinity,
+          child: DropdownButtonFormField<String>(
         value: dropdownValue,
         decoration: InputDecoration(
           labelText: 'Technician',
@@ -723,9 +892,14 @@ abstract class BaseEventFieldsState<T extends BaseEventFields> extends State<T> 
           ),
           filled: true,
           fillColor: Colors.white,
-          contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 18), // Increased padding
+          contentPadding: const EdgeInsets.only(left: 12, right: 12, top: 18, bottom: 18),
+          isDense: true,
         ),
-        hint: const Text('Select technician'),
+        hint: const Text(
+          'Select technician',
+          overflow: TextOverflow.ellipsis,
+          maxLines: 1,
+        ),
         isExpanded: true,
         itemHeight: 70, // Set explicit item height to prevent overflow
         menuMaxHeight: 300, // Limit dropdown menu height for better UX
@@ -773,6 +947,8 @@ abstract class BaseEventFieldsState<T extends BaseEventFields> extends State<T> 
           }).toList();
         },
       ),
+        ),
+      ],
     );
   }
 
@@ -814,7 +990,8 @@ abstract class BaseEventFieldsState<T extends BaseEventFields> extends State<T> 
           ),
           filled: true,
           fillColor: Colors.white,
-          contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
+          contentPadding: const EdgeInsets.only(left: 12, right: 12, top: 14, bottom: 14),
+          isDense: true,
           suffixIcon: loadingBulls
               ? Container(
             width: 20,
@@ -824,7 +1001,11 @@ abstract class BaseEventFieldsState<T extends BaseEventFields> extends State<T> 
           )
               : null,
         ),
-        hint: Text(loadingBulls ? 'Loading options...' : 'Select semen used'),
+        hint: Text(
+          loadingBulls ? 'Loading options...' : 'Select semen used',
+          overflow: TextOverflow.ellipsis,
+          maxLines: 1,
+        ),
         isExpanded: true,
         items: allSemenOptions.map((semenOption) {
           return DropdownMenuItem<String>(
@@ -888,7 +1069,8 @@ abstract class BaseEventFieldsState<T extends BaseEventFields> extends State<T> 
             ),
             filled: true,
             fillColor: Colors.white,
-            contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 16),
+            contentPadding: const EdgeInsets.only(left: 12, right: 12, top: 16, bottom: 16),
+          isDense: true,
             suffixIcon: Container(
               width: 20,
               height: 20,
@@ -999,9 +1181,14 @@ abstract class BaseEventFieldsState<T extends BaseEventFields> extends State<T> 
           ),
           filled: true,
           fillColor: Colors.white,
-          contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 18),
+          contentPadding: const EdgeInsets.only(left: 12, right: 12, top: 18, bottom: 18),
+          isDense: true,
         ),
-        hint: const Text('Select farmer'),
+        hint: const Text(
+          'Select farmer',
+          overflow: TextOverflow.ellipsis,
+          maxLines: 1,
+        ),
         isExpanded: true,
         itemHeight: 70,
         menuMaxHeight: 300,

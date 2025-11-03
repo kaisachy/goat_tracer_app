@@ -2272,6 +2272,7 @@ class _CattleHistoryFormScreenState extends State<CattleHistoryFormScreen>
                               cattleDetails: _cattleDetails,
                               selectedHistoryType: selectedHistoryType,
                               controllers: _controllers,
+                              locked: !isEditing && widget.initialHistoryType != null,
                               onHistoryTypeChanged: (value) {
                                 if (value != null) {
                                   _handleHistoryTypeChanged(value);

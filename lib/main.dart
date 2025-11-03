@@ -19,7 +19,7 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Cattalyze',
+      title: '',
       theme: ThemeData(primarySwatch: Colors.green),
       home: const AuthWrapper(), // Use AuthWrapper instead of SplashScreen
       // Define named routes for navigation

@@ -121,17 +121,11 @@ class _LoginScreenState extends State<LoginScreen> {
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   // Branded Icon
-                  CircleAvatar(
-                    radius: 60,
-                    backgroundColor: Colors.transparent,
-                    child: ClipOval(
-                      child: Image.asset(
-                        'assets/images/logo.png',
-                        width: 120,
-                        height: 120,
-                        fit: BoxFit.cover,
-                      ),
-                    ),
+                  Image.asset(
+                    'assets/images/logo.png',
+                    width: 300,
+                    height: 90,
+                    fit: BoxFit.contain,
                   ),
                   const SizedBox(height: 20),
 
@@ -146,7 +140,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    'Sign in to your Cattle Tracer farmer account',
+                    'Sign in to your farmer account',
                     textAlign: TextAlign.center,
                     style: Theme.of(context).textTheme.titleMedium?.copyWith(
                       color: AppColors.textSecondary,

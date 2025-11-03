@@ -6,6 +6,11 @@ import 'package:cattle_tracer_app/services/cattle/cattle_service.dart';
 import 'package:cattle_tracer_app/screens/nav/cattle/cattle_form_screen.dart';
 import 'package:cattle_tracer_app/screens/nav/cattle/cattle_detail_screen.dart';
 import 'package:cattle_tracer_app/screens/nav/cattle/archived_cattle_screen.dart';
+import 'package:cattle_tracer_app/screens/nav/cattle/cattle_history_form_screen.dart';
+import 'package:cattle_tracer_app/screens/nav/cattle/modals/options/change_stage_option.dart';
+import 'package:cattle_tracer_app/screens/nav/cattle/modals/options/change_status_option.dart';
+import 'package:cattle_tracer_app/screens/nav/cattle/modals/options/archive_option.dart';
+import 'package:cattle_tracer_app/screens/nav/cattle/modals/options/delete_option.dart';
 import 'package:cattle_tracer_app/constants/app_colors.dart';
 import 'package:intl/intl.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
@@ -58,6 +63,168 @@ class _CattleScreenState extends State<CattleScreen>
     WidgetsBinding.instance.addObserver(this);
 
     _fetchCattle();
+  }
+
+  String _formatAge(String dobIso) {
+    try {
+      final dob = DateTime.parse(dobIso);
+      final now = DateTime.now();
+      int years = now.year - dob.year;
+      int months = now.month - dob.month;
+      int days = now.day - dob.day;
+
+      if (days < 0) {
+        final prevMonth = DateTime(now.year, now.month, 0);
+        days += prevMonth.day;
+        months -= 1;
+      }
+      if (months < 0) {
+        months += 12;
+        years -= 1;
+      }
+
+      if (years > 0) {
+        // Show years and optionally months
+        return months > 0 ? '${years}y ${months}m' : '${years}y';
+      }
+      if (months > 0) {
+        return '${months}m';
+      }
+      final d = now.difference(dob).inDays;
+      return d <= 1 ? '1d' : '${d}d';
+    } catch (_) {
+      return '';
+    }
+  }
+
+  Widget _buildAddCattleGrid() {
+    final List<Map<String, dynamic>> items = [
+      {
+        'label': 'Bull',
+        'iconPath': 'assets/images/cattle-icons/bull.png',
+        'color': AppColors.vibrantGreen,
+        'fallback': Icons.male,
+      },
+      {
+        'label': 'Cow',
+        'iconPath': 'assets/images/cattle-icons/cow.png',
+        'color': AppColors.primary,
+        'fallback': FontAwesomeIcons.cow,
+      },
+      {
+        'label': 'Steer',
+        'iconPath': 'assets/images/cattle-icons/steer.png',
+        'color': Colors.blue,
+        'fallback': Icons.pets,
+      },
+      {
+        'label': 'Heifer',
+        'iconPath': 'assets/images/cattle-icons/heifer.png',
+        'color': AppColors.accent,
+        'fallback': Icons.female,
+      },
+      {
+        'label': 'Grower (M)',
+        'classification': 'Growers',
+        'sex': 'Male',
+        'iconPath': 'assets/images/cattle-icons/growers.png',
+        'color': AppColors.lightGreen,
+        'fallback': Icons.trending_up,
+      },
+      {
+        'label': 'Grower (F)',
+        'classification': 'Growers',
+        'sex': 'Female',
+        'iconPath': 'assets/images/cattle-icons/growers.png',
+        'color': AppColors.lightGreen,
+        'fallback': Icons.trending_up,
+      },
+      {
+        'label': 'Calf (M)',
+        'classification': 'Calf',
+        'sex': 'Male',
+        'iconPath': 'assets/images/cattle-icons/calf.png',
+        'color': Colors.orange,
+        'fallback': Icons.child_care,
+      },
+      {
+        'label': 'Calf (F)',
+        'classification': 'Calf',
+        'sex': 'Female',
+        'iconPath': 'assets/images/cattle-icons/calf.png',
+        'color': Colors.orange,
+        'fallback': Icons.child_care,
+      },
+    ];
+
+    return GridView.builder(
+      padding: const EdgeInsets.all(16),
+      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: 2,
+        crossAxisSpacing: 12,
+        mainAxisSpacing: 12,
+        childAspectRatio: 4 / 3,
+      ),
+      itemCount: items.length,
+      itemBuilder: (context, index) {
+        final item = items[index];
+        final Color color = item['color'] as Color;
+        return Card(
+          elevation: 3,
+          shadowColor: color.withOpacity(0.25),
+          color: AppColors.cardBackground,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+            side: BorderSide(color: color.withOpacity(0.25), width: 1),
+          ),
+          child: InkWell(
+            borderRadius: BorderRadius.circular(16),
+            onTap: () {
+              final String label = item['label'] as String;
+              if (label.contains('Grower') || label.contains('Calf')) {
+                _navigateToForm(
+                  preSelectedClassification: item['classification'] as String,
+                  preSelectedSex: item['sex'] as String,
+                );
+              } else {
+                _navigateToForm(preSelectedClassification: label);
+              }
+            },
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Expanded(
+                    child: Center(
+                      child: Image.asset(
+                        item['iconPath'] as String,
+                        width: 56,
+                        height: 56,
+                        color: color,
+                        fit: BoxFit.contain,
+                        errorBuilder: (context, error, stackTrace) {
+                          return Icon(item['fallback'] as IconData, color: color, size: 48);
+                        },
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    item['label'] as String,
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.textPrimary,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
+    );
   }
 
   @override
@@ -135,6 +302,27 @@ class _CattleScreenState extends State<CattleScreen>
     _filterCattle();
   }
 
+  int _classificationSortKey(Cattle cattle) {
+    // Desired order:
+    // 0 Bull, 1 Cow, 2 Steer, 3 Heifer, 4 Male Growers, 5 Female Growers, 6 Male Calf, 7 Female Calf
+    switch (cattle.classification) {
+      case 'Bull':
+        return 0;
+      case 'Cow':
+        return 1;
+      case 'Steer':
+        return 2;
+      case 'Heifer':
+        return 3;
+      case 'Growers':
+        return cattle.sex == 'Female' ? 5 : 4;
+      case 'Calf':
+        return cattle.sex == 'Female' ? 7 : 6;
+      default:
+        return 99;
+    }
+  }
+
   void _filterCattle() {
     setState(() {
       _filteredCattleList = _cattleList.where((cattle) {
@@ -159,6 +347,14 @@ class _CattleScreenState extends State<CattleScreen>
         return matchesSearch && matchesSex && matchesClassification &&
             matchesStatus && matchesBreed && matchesGroupName;
       }).toList();
+      // Apply desired ordering
+      _filteredCattleList.sort((a, b) {
+        final ka = _classificationSortKey(a);
+        final kb = _classificationSortKey(b);
+        if (ka != kb) return ka.compareTo(kb);
+        // Tie-breaker: tag number ascending
+        return a.tagNo.toLowerCase().compareTo(b.tagNo.toLowerCase());
+      });
     });
   }
 
@@ -182,7 +378,7 @@ class _CattleScreenState extends State<CattleScreen>
     return groupNames.toList()..sort();
   }
 
-  void _navigateToForm({Cattle? cattle, String? preSelectedClassification}) async {
+  void _navigateToForm({Cattle? cattle, String? preSelectedClassification, String? preSelectedSex}) async {
     // The await/fetch pattern is kept as a fallback and for immediate refresh
     await Navigator.push(
       context,
@@ -190,6 +386,7 @@ class _CattleScreenState extends State<CattleScreen>
         builder: (_) => CattleFormScreen(
           cattle: cattle,
           preSelectedClassification: preSelectedClassification,
+          preSelectedSex: preSelectedSex,
         ),
       ),
     );
@@ -375,6 +572,86 @@ class _CattleScreenState extends State<CattleScreen>
     );
   }
 
+  void _showArchiveOptions(Cattle cattle) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Archive Reason'),
+        content: const Text('Select why you want to archive this cattle'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () async {
+              Navigator.pop(context);
+              await _archiveWithReason(cattle, 'Sold');
+            },
+            child: const Text('Sold'),
+          ),
+          TextButton(
+            onPressed: () async {
+              Navigator.pop(context);
+              await _archiveWithReason(cattle, 'Mortality');
+            },
+            child: const Text('Mortality'),
+          ),
+          TextButton(
+            onPressed: () async {
+              Navigator.pop(context);
+              await _archiveWithReason(cattle, 'Lost');
+            },
+            child: const Text('Lost'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _archiveWithReason(Cattle cattle, String reason) async {
+    try {
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => Center(
+          child: CircularProgressIndicator(
+            valueColor: AlwaysStoppedAnimation<Color>(AppColors.primary),
+          ),
+        ),
+      );
+
+      final success = await CattleService.archiveCattle(cattle.id, reason);
+
+      if (mounted) {
+        Navigator.pop(context); // close loading
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(success
+                ? 'Cattle archived as $reason'
+                : 'Failed to archive cattle'),
+            backgroundColor: success ? Colors.green[600] : Colors.red[700],
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+          ),
+        );
+        if (success) {
+          _fetchCattle();
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        Navigator.pop(context);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error: $e'),
+            backgroundColor: Colors.red[700],
+          ),
+        );
+      }
+    }
+  }
+
   Widget _buildCattleOptionsMenu(Cattle cattle) {
     return PopupMenuButton<String>(
       icon: Icon(
@@ -392,26 +669,151 @@ class _CattleScreenState extends State<CattleScreen>
       itemBuilder: (BuildContext context) => [
         PopupMenuItem<String>(
           value: 'edit',
+          height: 72,
           child: Row(
             children: [
               Container(
-                padding: const EdgeInsets.all(8),
+                width: 40,
+                height: 40,
                 decoration: BoxDecoration(
-                  color: AppColors.primary.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(8),
+                  color: AppColors.vibrantGreen.withOpacity(0.12),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: AppColors.vibrantGreen.withOpacity(0.2)),
                 ),
-                child: Icon(
-                  Icons.edit,
-                  color: AppColors.primary,
-                  size: 16,
-                ),
+                child: const Icon(Icons.edit_outlined, color: AppColors.vibrantGreen, size: 18),
               ),
               const SizedBox(width: 12),
-              const Text(
-                'Edit Cattle',
-                style: TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w500,
+              const Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text('Edit Cattle', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600)),
+                    SizedBox(height: 2),
+                    Text('Modify cattle details', style: TextStyle(fontSize: 12, color: AppColors.textSecondary)),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+        PopupMenuItem<String>(
+          value: 'add_event',
+          height: 72,
+          child: Row(
+            children: [
+              Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
+                  color: AppColors.darkGreen.withOpacity(0.12),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: AppColors.darkGreen.withOpacity(0.2)),
+                ),
+                child: const Icon(Icons.event_note_outlined, color: AppColors.darkGreen, size: 18),
+              ),
+              const SizedBox(width: 12),
+              const Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text('Add History Record', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600)),
+                    SizedBox(height: 2),
+                    Text('Record new history', style: TextStyle(fontSize: 12, color: AppColors.textSecondary)),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+        const PopupMenuDivider(),
+        PopupMenuItem<String>(
+          value: 'change_stage',
+          height: 72,
+          child: Row(
+            children: [
+              Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
+                  color: AppColors.lightGreen.withOpacity(0.12),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: AppColors.lightGreen.withOpacity(0.2)),
+                ),
+                child: const Icon(Icons.arrow_upward_outlined, color: AppColors.lightGreen, size: 18),
+              ),
+              const SizedBox(width: 12),
+              const Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text('Change Stage', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600)),
+                    SizedBox(height: 2),
+                    Text('Update cattle stage', style: TextStyle(fontSize: 12, color: AppColors.textSecondary)),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+        PopupMenuItem<String>(
+          value: 'change_status',
+          height: 72,
+          child: Row(
+            children: [
+              Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
+                  color: AppColors.vibrantGreen.withOpacity(0.12),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: AppColors.vibrantGreen.withOpacity(0.2)),
+                ),
+                child: const Icon(Icons.swap_horiz, color: AppColors.vibrantGreen, size: 18),
+              ),
+              const SizedBox(width: 12),
+              const Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text('Change Status', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600)),
+                    SizedBox(height: 2),
+                    Text('Update cattle status', style: TextStyle(fontSize: 12, color: AppColors.textSecondary)),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+        const PopupMenuDivider(),
+        PopupMenuItem<String>(
+          value: 'archive',
+          height: 72,
+          child: Row(
+            children: [
+              Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
+                  color: AppColors.gold.withOpacity(0.12),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: AppColors.gold.withOpacity(0.2)),
+                ),
+                child: const Icon(Icons.archive_outlined, color: AppColors.gold, size: 18),
+              ),
+              const SizedBox(width: 12),
+              const Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text('Archive', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600)),
+                    SizedBox(height: 2),
+                    Text('Move to archive', style: TextStyle(fontSize: 12, color: AppColors.textSecondary)),
+                  ],
                 ),
               ),
             ],
@@ -419,40 +821,60 @@ class _CattleScreenState extends State<CattleScreen>
         ),
         PopupMenuItem<String>(
           value: 'delete',
+          height: 72,
           child: Row(
             children: [
               Container(
-                padding: const EdgeInsets.all(8),
+                width: 40,
+                height: 40,
                 decoration: BoxDecoration(
-                  color: Colors.red.shade50,
-                  borderRadius: BorderRadius.circular(8),
+                  color: Colors.red.shade600.withOpacity(0.12),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: Colors.red.shade600.withOpacity(0.2)),
                 ),
-                child: Icon(
-                  Icons.delete,
-                  color: Colors.red.shade600,
-                  size: 16,
-                ),
+                child: Icon(Icons.delete_forever_outlined, color: Colors.red.shade600, size: 18),
               ),
               const SizedBox(width: 12),
-              Text(
-                'Delete Cattle',
-                style: TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w500,
-                  color: Colors.red.shade600,
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text('Delete Cattle', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: Colors.red.shade600)),
+                    const SizedBox(height: 2),
+                    Text('Permanently remove', style: TextStyle(fontSize: 12, color: Colors.red.shade400)),
+                  ],
                 ),
               ),
             ],
           ),
         ),
       ],
-      onSelected: (String value) {
+      onSelected: (String value) async {
         switch (value) {
           case 'edit':
             _navigateToForm(cattle: cattle);
             break;
+          case 'add_event':
+            await Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => CattleHistoryFormScreen(cattleTag: cattle.tagNo),
+              ),
+            );
+            _fetchCattle();
+            break;
+          case 'change_stage':
+            ChangeStageOption.show(context, cattle, _fetchCattle);
+            break;
+          case 'change_status':
+            ChangeStatusOption.show(context, cattle, _fetchCattle);
+            break;
+          case 'archive':
+            ArchiveOption.show(context, cattle: cattle, onCattleUpdated: _fetchCattle);
+            break;
           case 'delete':
-            _confirmDelete(cattle.id, cattle.tagNo);
+            DeleteOption.show(context);
             break;
         }
       },
@@ -560,6 +982,21 @@ class _CattleScreenState extends State<CattleScreen>
                                       ],
                                     ),
                                   ),
+                                  const SizedBox(width: 8),
+                                  if (cattle.status.isNotEmpty)
+                                    ConstrainedBox(
+                                      constraints: const BoxConstraints(maxWidth: 140),
+                                      child: Text(
+                                        cattle.status,
+                                        style: TextStyle(
+                                          fontSize: 13,
+                                          fontWeight: FontWeight.bold,
+                                          color: AppColors.accent,
+                                        ),
+                                        overflow: TextOverflow.ellipsis,
+                                        textAlign: TextAlign.right,
+                                    ),
+                                  ),
                                 ],
                               ),
                               const SizedBox(height: 4),
@@ -568,30 +1005,44 @@ class _CattleScreenState extends State<CattleScreen>
                                   Icon(Icons.category, size: 14, color: AppColors.textSecondary),
                                   const SizedBox(width: 4),
                                   Text(
-                                    cattle.classification,
+                                    (cattle.classification == 'Growers' || cattle.classification == 'Calf')
+                                        ? '${cattle.classification} (${cattle.sex})'
+                                        : cattle.classification,
                                     style: TextStyle(
                                       fontSize: 14,
                                       color: AppColors.textSecondary,
                                       fontWeight: FontWeight.w500,
                                     ),
                                   ),
-                                  if (cattle.status.isNotEmpty) ...[
-                                    Text(' • ', style: TextStyle(color: AppColors.textSecondary)),
-                                    const SizedBox(width: 4),
+                                  const Spacer(),
+                                  if (cattle.dateOfBirth != null)
+                                    Text(
+                                      'Age: ' + _formatAge(cattle.dateOfBirth!),
+                                      style: TextStyle(
+                                        fontSize: 13,
+                                        color: AppColors.textSecondary,
+                                      ),
+                                      textAlign: TextAlign.right,
+                                    ),
+                                ],
+                              ),
+                              if (cattle.breed != null && cattle.breed!.isNotEmpty) ...[
+                                const SizedBox(height: 4),
+                                Row(
+                                  children: [
                                     Expanded(
                                       child: Text(
-                                        cattle.status,
+                                        cattle.breed!,
                                         style: TextStyle(
-                                          fontSize: 14,
-                                          fontWeight: FontWeight.bold,
-                                          color: AppColors.accent,
+                                          fontSize: 13,
+                                          color: AppColors.textSecondary,
                                         ),
                                         overflow: TextOverflow.ellipsis,
                                       ),
                                     ),
-                                  ],
                                 ],
                               ),
+                              ],
                             ],
                           ),
                         ),
@@ -611,18 +1062,6 @@ class _CattleScreenState extends State<CattleScreen>
                               fontSize: 13,
                               color: AppColors.textSecondary,
                               fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                          const SizedBox(width: 16),
-                        ],
-                        if (cattle.dateOfBirth != null) ...[
-                          Icon(Icons.cake, size: 16, color: AppColors.primary),
-                          const SizedBox(width: 4),
-                          Text(
-                            DateFormat('MMM dd, yyyy').format(DateTime.parse(cattle.dateOfBirth!)),
-                            style: TextStyle(
-                              fontSize: 13,
-                              color: AppColors.textSecondary,
                             ),
                           ),
                         ],
@@ -708,10 +1147,25 @@ class _CattleScreenState extends State<CattleScreen>
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
+    return DefaultTabController(
+      length: 2,
+      child: Scaffold(
       backgroundColor: AppColors.pageBackground.withOpacity(0.1),
-      body: GestureDetector(
-        onTap: _isFabMenuOpen ? _closeFabMenu : null,
+        body: Column(
+          children: [
+            Container(
+              color: Colors.white,
+              child: const TabBar(
+                indicatorColor: AppColors.primary,
+                labelColor: AppColors.primary,
+                unselectedLabelColor: AppColors.textSecondary,
+                tabs: [
+                  Tab(text: 'Add Cattle'),
+                  Tab(text: 'Cattle List'),
+                ],
+              ),
+            ),
+            Expanded(
         child: _isLoading
           ? Center(
         child: Column(
@@ -731,7 +1185,12 @@ class _CattleScreenState extends State<CattleScreen>
           ],
         ),
       )
-          : Column(
+                  : TabBarView(
+                      children: [
+                        // Tab 1: Add Cattle (classification grid)
+                        _buildAddCattleGrid(),
+                        // Tab 2: Cattle List
+                        Column(
         children: [
           if (_cattleList.isNotEmpty) ...[
             CattleSearchFilterWidget(
@@ -754,7 +1213,6 @@ class _CattleScreenState extends State<CattleScreen>
               },
             ),
           ],
-
           Expanded(
             child: _filteredCattleList.isEmpty
                 ? _buildEmptyState()
@@ -762,7 +1220,7 @@ class _CattleScreenState extends State<CattleScreen>
               onRefresh: _fetchCattle,
               color: AppColors.primary,
               child: ListView.builder(
-                padding: const EdgeInsets.only(bottom: 80),
+                                        padding: const EdgeInsets.only(bottom: 16),
                 itemCount: _filteredCattleList.length,
                 itemBuilder: (context, index) =>
                     _buildCattleCard(_filteredCattleList[index], index),
@@ -771,133 +1229,10 @@ class _CattleScreenState extends State<CattleScreen>
           ),
         ],
       ),
-      ),
-      floatingActionButton: _isFabMenuOpen 
-        ? Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: [
-              // Classification FAB buttons
-              _buildFabButton(
-                'Cow',
-                'assets/images/cattle-icons/cow.png',
-                AppColors.primary,
-                5,
-                FontAwesomeIcons.cow,
-              ),
-              const SizedBox(height: 8),
-              _buildFabButton(
-                'Bull',
-                'assets/images/cattle-icons/bull.png',
-                AppColors.vibrantGreen,
-                4,
-                Icons.male,
-              ),
-              const SizedBox(height: 8),
-              _buildFabButton(
-                'Heifer',
-                'assets/images/cattle-icons/heifer.png',
-                AppColors.accent,
-                3,
-                Icons.female,
-              ),
-              const SizedBox(height: 8),
-              _buildFabButton(
-                'Steer',
-                'assets/images/cattle-icons/steer.png',
-                Colors.blue,
-                2,
-                Icons.pets,
-              ),
-              const SizedBox(height: 8),
-              _buildFabButton(
-                'Growers',
-                'assets/images/cattle-icons/growers.png',
-                AppColors.lightGreen,
-                1,
-                Icons.trending_up,
-              ),
-              const SizedBox(height: 8),
-              _buildFabButton(
-                'Calf',
-                'assets/images/cattle-icons/calf.png',
-                Colors.orange,
-                0,
-                Icons.child_care,
-              ),
-              const SizedBox(height: 16),
-              // Main FAB button
-              Container(
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                    colors: [
-                      AppColors.primary,
-                      AppColors.vibrantGreen,
                     ],
                   ),
-                  borderRadius: BorderRadius.circular(16),
-                  boxShadow: [
-                    BoxShadow(
-                      color: AppColors.primary.withOpacity(0.4),
-                      blurRadius: 12,
-                      offset: const Offset(0, 6),
                     ),
                   ],
-                ),
-                child: FloatingActionButton(
-                  onPressed: _toggleFabMenu,
-                  backgroundColor: Colors.transparent,
-                  elevation: 0,
-                  child: AnimatedRotation(
-                    turns: _isFabMenuOpen ? 0.25 : 0.0,
-                    duration: const Duration(milliseconds: 200),
-                    child: Icon(
-                      _isFabMenuOpen ? Icons.close : Icons.add,
-                      color: Colors.white,
-                      size: 28,
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          )
-        : Container(
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: [
-                  AppColors.primary,
-                  AppColors.vibrantGreen,
-                ],
-              ),
-              borderRadius: BorderRadius.circular(16),
-              boxShadow: [
-                BoxShadow(
-                  color: AppColors.primary.withOpacity(0.4),
-                  blurRadius: 12,
-                  offset: const Offset(0, 6),
-                ),
-              ],
-            ),
-            child: FloatingActionButton.extended(
-              onPressed: _toggleFabMenu,
-              backgroundColor: Colors.transparent,
-              elevation: 0,
-              icon: const Icon(
-                Icons.add,
-                color: Colors.white,
-                size: 28,
-              ),
-              label: const Text(
-                'Add',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
             ),
           ),
     );

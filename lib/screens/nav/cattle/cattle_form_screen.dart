@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:intl/intl.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-import 'dart:convert';
+// import 'package:shared_preferences/shared_preferences.dart';
+// import 'dart:convert';
 import 'dart:math';
 import '../../../constants/app_colors.dart';
 import '../../../models/cattle.dart';
@@ -13,11 +13,13 @@ import '../../../utils/cattle_age_classification.dart';
 class CattleFormScreen extends StatefulWidget {
   final Cattle? cattle;
   final String? preSelectedClassification;
+  final String? preSelectedSex; // New: allow preselecting sex for Growers/Calf
 
   const CattleFormScreen({
     super.key,
     this.cattle,
     this.preSelectedClassification,
+    this.preSelectedSex,
   });
 
   @override
@@ -30,7 +32,7 @@ class _CattleFormScreenState extends State<CattleFormScreen> {
   // Controllers for all form fields
   final _tagNoController = TextEditingController();
   final _weightController = TextEditingController();
-  final _notesController = TextEditingController();
+  // final _notesController = TextEditingController(); // Commented out: Notes field removed
 
   bool get _isEditing => widget.cattle != null;
 
@@ -44,7 +46,7 @@ class _CattleFormScreenState extends State<CattleFormScreen> {
   String? _motherTag;
   String? _fatherTag;
   String? _breed;
-  String? _groupName;
+  // String? _groupName; // Commented out: Group Name field removed
   String? _ageClassificationWarning;
 
   // Breed specific controls
@@ -78,7 +80,7 @@ class _CattleFormScreenState extends State<CattleFormScreen> {
 
   // NEW: Dynamic options from user preferences
   List<String> _breedOptions = [];
-  List<String> _groupNameOptions = [];
+  // List<String> _groupNameOptions = []; // Commented out: Group Name options removed
 
   // Options for dropdowns
   final List<String> sexOptions = ['Male', 'Female'];
@@ -236,107 +238,108 @@ class _CattleFormScreenState extends State<CattleFormScreen> {
       print('Warning: User not logged in, cannot load preferences');
       setState(() {
         _breedOptions = [];
-        _groupNameOptions = [];
+        // _groupNameOptions = []; // Commented out: Group Name options removed
       });
       return;
     }
 
-    final prefs = await SharedPreferences.getInstance();
-    final groupJson = prefs.getString('group_name_options_$userId') ?? '[]';
+    // final prefs = await SharedPreferences.getInstance(); // unused now
+    // final groupJson = prefs.getString('group_name_options_$userId') ?? '[]'; // Commented out: Group Name prefs
 
     setState(() {
       // Enforce fixed breed options with "Other"
       _breedOptions = List<String>.from(defaultBreedOptions);
-      _groupNameOptions = List<String>.from(jsonDecode(groupJson));
+      // _groupNameOptions = List<String>.from(jsonDecode(groupJson)); // Commented out: Group Name options
     });
   }
 
 
-  /// Save group name options to SharedPreferences for the current user
-  Future<void> _saveGroupNamesToPreferences() async {
-    final userId = await _currentUserId;
-    if (userId == null) {
-      print('Warning: User not logged in, cannot save preferences');
-      return;
-    }
+  // /// Save group name options to SharedPreferences for the current user
+  // Future<void> _saveGroupNamesToPreferences() async {
+  //   final userId = await _currentUserId;
+  //   if (userId == null) {
+  //     print('Warning: User not logged in, cannot save preferences');
+  //     return;
+  //   }
+  //
+  //   final prefs = await SharedPreferences.getInstance();
+  //   await prefs.setString('group_name_options_$userId', jsonEncode(_groupNameOptions));
+  // }
 
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString('group_name_options_$userId', jsonEncode(_groupNameOptions));
-  }
 
-
-  /// Add new group name option for the current user
-  Future<void> _addNewGroupName(String groupName) async {
-    final userId = await _currentUserId;
-    if (userId == null) {
-      _showErrorSnackBar('Please log in to save preferences');
-      return;
-    }
-
-    if (groupName.isNotEmpty && !_groupNameOptions.contains(groupName)) {
-      setState(() {
-        _groupNameOptions.add(groupName);
-        _groupNameOptions.sort();
-      });
-      await _saveGroupNamesToPreferences();
-      _showSuccessSnackBar('Group name added successfully');
-    } else if (_groupNameOptions.contains(groupName)) {
-      _showErrorSnackBar('Group name already exists');
-    }
-  }
+  // /// Add new group name option for the current user
+  // Future<void> _addNewGroupName(String groupName) async {
+  //   final userId = await _currentUserId;
+  //   if (userId == null) {
+  //     _showErrorSnackBar('Please log in to save preferences');
+  //     return;
+  //   }
+  //
+  //   if (groupName.isNotEmpty && !_groupNameOptions.contains(groupName)) {
+  //     setState(() {
+  //       _groupNameOptions.add(groupName);
+  //       _groupNameOptions.sort();
+  //     });
+  //     await _saveGroupNamesToPreferences();
+  //     _showSuccessSnackBar('Group name added successfully');
+  //   } else if (_groupNameOptions.contains(groupName)) {
+  //     _showErrorSnackBar('Group name already exists');
+  //   }
+  // }
 
   /// Edit existing breed option for the current user
 
-  /// Edit existing group name option for the current user
-  Future<void> _editGroupName(String oldGroupName, String newGroupName) async {
-    final userId = await _currentUserId;
-    if (userId == null) {
-      _showErrorSnackBar('Please log in to save preferences');
-      return;
-    }
-
-    if (newGroupName.isNotEmpty && newGroupName != oldGroupName) {
-      if (_groupNameOptions.contains(newGroupName)) {
-        _showErrorSnackBar('Group name already exists');
-        return;
-      }
-
-      setState(() {
-        final index = _groupNameOptions.indexOf(oldGroupName);
-        if (index != -1) {
-          _groupNameOptions[index] = newGroupName;
-          _groupNameOptions.sort();
-          if (_groupName == oldGroupName) {
-            _groupName = newGroupName;
-          }
-        }
-      });
-      await _saveGroupNamesToPreferences();
-      _showSuccessSnackBar('Group name updated successfully');
-    }
-  }
+  // /// Edit existing group name option for the current user
+  // Future<void> _editGroupName(String oldGroupName, String newGroupName) async {
+  //   final userId = await _currentUserId;
+  //   if (userId == null) {
+  //     _showErrorSnackBar('Please log in to save preferences');
+  //     return;
+  //   }
+  //
+  //   if (newGroupName.isNotEmpty && newGroupName != oldGroupName) {
+  //     if (_groupNameOptions.contains(newGroupName)) {
+  //       _showErrorSnackBar('Group name already exists');
+  //       return;
+  //     }
+  //
+  //     setState(() {
+  //       final index = _groupNameOptions.indexOf(oldGroupName);
+  //       if (index != -1) {
+  //         _groupNameOptions[index] = newGroupName;
+  //         _groupNameOptions.sort();
+  //         if (_groupName == oldGroupName) {
+  //           _groupName = newGroupName;
+  //         }
+  //       }
+  //     });
+  //     await _saveGroupNamesToPreferences();
+  //     _showSuccessSnackBar('Group name updated successfully');
+  //   }
+  // }
 
   /// Delete breed option for the current user
 
-  /// Delete group name option for the current user
-  Future<void> _deleteGroupName(String groupName) async {
-    final userId = await _currentUserId;
-    if (userId == null) {
-      _showErrorSnackBar('Please log in to save preferences');
-      return;
-    }
-
-    setState(() {
-      _groupNameOptions.remove(groupName);
-      if (_groupName == groupName) {
-        _groupName = null;
-      }
-    });
-    await _saveGroupNamesToPreferences();
-    _showSuccessSnackBar('Group name deleted successfully');
-  }
+  // /// Delete group name option for the current user
+  // Future<void> _deleteGroupName(String groupName) async {
+  //   final userId = await _currentUserId;
+  //   if (userId == null) {
+  //     _showErrorSnackBar('Please log in to save preferences');
+  //     return;
+  //   }
+  //
+  //   setState(() {
+  //     _groupNameOptions.remove(groupName);
+  //     if (_groupName == groupName) {
+  //       _groupName = null;
+  //     }
+  //   });
+  //   await _saveGroupNamesToPreferences();
+  //   _showSuccessSnackBar('Group name deleted successfully');
+  // }
 
   /// Show success snack bar
+  // ignore: unused_element
   void _showSuccessSnackBar(String message) {
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -488,6 +491,7 @@ class _CattleFormScreenState extends State<CattleFormScreen> {
   }
 
   /// Show source details modal for Purchased or Other options
+  // ignore: unused_element
   Future<void> _showSourceDetailsModal() async {
     // Extract existing details if editing
     String? existingDetails;
@@ -614,7 +618,7 @@ class _CattleFormScreenState extends State<CattleFormScreen> {
     if (c != null) {
       _tagNoController.text = c.tagNo; // Use tag as-is for web admin compatibility
       _weightController.text = c.weight?.toString() ?? '';
-      _notesController.text = c.notes ?? '';
+      // _notesController.text = c.notes ?? ''; // Commented out: Notes field removed
 
       // Set breed and group name
       _breed = c.breed;
@@ -623,7 +627,7 @@ class _CattleFormScreenState extends State<CattleFormScreen> {
         _otherBreedController.text = _breed!;
         _breed = 'Other';
       }
-      _groupName = c.groupName;
+      // _groupName = c.groupName; // Commented out: Group Name field removed
 
       // Set initial parent tags
       _motherTag = c.motherTag;
@@ -643,19 +647,19 @@ class _CattleFormScreenState extends State<CattleFormScreen> {
             ? c.classification
             : null;
       }
-      // Handle source and source details
-      if (c.sourceDetails != null && c.sourceDetails!.isNotEmpty) {
-        // If we have source details, show the combined format
-        _source = '${c.source} - ${c.sourceDetails}';
-        _sourceDetails = c.sourceDetails;
-      } else {
-        _source = sourceOptions.contains(c.source) ? c.source : null;
-        _sourceDetails = null;
-      }
+      // Handle source and source details (kept separate; no combined string)
+      _source = sourceOptions.contains(c.source) ? c.source : null;
+      _sourceDetails = (c.sourceDetails != null && c.sourceDetails!.isNotEmpty)
+          ? c.sourceDetails
+          : null;
     } else if (widget.preSelectedClassification != null) {
       // If we have a pre-selected classification for new cattle
       _classification = widget.preSelectedClassification;
       _handleClassificationSelection(widget.preSelectedClassification!);
+      // If a pre-selected sex was provided (e.g., Male Growers), prefill it
+      if (widget.preSelectedSex != null && (widget.preSelectedClassification == 'Growers' || widget.preSelectedClassification == 'Calf')) {
+        _sex = widget.preSelectedSex;
+      }
     }
   }
 
@@ -896,12 +900,12 @@ class _CattleFormScreenState extends State<CattleFormScreen> {
       'weight': double.tryParse(_weightController.text),
       'classification': _classification,
       'breed': textOrNull(resolvedBreed),
-      'group_name': textOrNull(_groupName),
+      // 'group_name': textOrNull(_groupName), // Commented out: Group Name removed from payload
       'source': _source,
       'source_details': _sourceDetails,
       'mother_tag': _motherTag,
       'father_tag': _fatherTag,
-      'notes': textOrNull(_notesController.text),
+      // 'notes': textOrNull(_notesController.text), // Commented out: Notes removed from payload
       'status': widget.cattle?.status ?? 'Healthy',
     };
 
@@ -1049,12 +1053,12 @@ class _CattleFormScreenState extends State<CattleFormScreen> {
       // Reset all form fields
       _tagNoController.clear();
       _weightController.clear();
-      _notesController.clear();
+      // _notesController.clear(); // Commented out: Notes field removed
       _otherBreedController.clear();
       
       // Reset dropdown values
       _breed = null;
-      _groupName = null;
+      // _groupName = null; // Commented out: Group Name field removed
       _motherTag = null;
       _fatherTag = null;
       _dateOfBirth = null;
@@ -1155,6 +1159,7 @@ class _CattleFormScreenState extends State<CattleFormScreen> {
   }
 
   /// Build dynamic dropdown with CRUD functionality
+  // ignore: unused_element
   Widget _buildDynamicDropdown({
     required String label,
     required String? value,
@@ -1395,8 +1400,13 @@ class _CattleFormScreenState extends State<CattleFormScreen> {
         DropdownButtonFormField<String>(
           value: options.contains(_breed) ? _breed : null,
           isExpanded: true,
+          autovalidateMode: AutovalidateMode.always,
+          validator: (value) => (value == null || value.isEmpty)
+              ? 'Breed is required'
+              : null,
+          hint: const Text('Select Breed (Required)'),
           decoration: InputDecoration(
-            labelText: 'Breed',
+            labelText: 'Breed (Required)',
             prefixIcon: Icon(FontAwesomeIcons.cow, color: AppColors.primary),
             border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
             focusedBorder: OutlineInputBorder(
@@ -1405,8 +1415,9 @@ class _CattleFormScreenState extends State<CattleFormScreen> {
             ),
             fillColor: AppColors.cardBackground,
             filled: true,
+            // helperText removed; labeled as (Required)
           ),
-          hint: const Text('Select Breed'),
+          // hint moved above with required text
           items: [
             const DropdownMenuItem<String>(
               value: null,
@@ -1432,7 +1443,8 @@ class _CattleFormScreenState extends State<CattleFormScreen> {
           TextFormField(
             controller: _otherBreedController,
             decoration: InputDecoration(
-              labelText: 'Specify Breed',
+              labelText: 'Specify Breed (Required)',
+              hintText: 'Enter breed (Required)',
               prefixIcon: Icon(Icons.edit, color: AppColors.primary),
               border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
               focusedBorder: OutlineInputBorder(
@@ -1441,6 +1453,7 @@ class _CattleFormScreenState extends State<CattleFormScreen> {
               ),
               fillColor: AppColors.cardBackground,
               filled: true,
+              // helperText removed; labeled as (Required)
             ),
             validator: (value) {
               if (_breed == 'Other' && (value == null || value.trim().isEmpty)) {
@@ -1494,8 +1507,10 @@ class _CattleFormScreenState extends State<CattleFormScreen> {
       value: _classification,
       validator: (value) => value == null ? 'Classification is required' : null,
       isExpanded: true,
+      autovalidateMode: AutovalidateMode.always,
+      hint: const Text('Select Classification (Required)'),
       decoration: InputDecoration(
-        labelText: 'Classification *',
+        labelText: 'Classification (Required)',
         prefixIcon: Icon(Icons.category, color: AppColors.primary),
         border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
         focusedBorder: OutlineInputBorder(
@@ -1507,14 +1522,21 @@ class _CattleFormScreenState extends State<CattleFormScreen> {
         suffixIcon: shouldLockClassification 
           ? Icon(Icons.lock, color: Colors.grey[600])
           : null,
+        // helperText removed; labeled as (Required)
       ),
-      hint: const Text('Select Classification'),
-      items: (widget.preSelectedClassification != null && !isEditing
-        ? ['Cow', 'Bull', 'Heifer', 'Steer', 'Growers', 'Calf'] 
-        : classificationOptions).map((option) => DropdownMenuItem(
-        value: option,
-        child: Text(option),
-      )).toList(),
+      // hint is defined once above; removing duplicate
+      items: [
+        const DropdownMenuItem<String>(
+          value: null,
+          child: Text('None'),
+        ),
+        ...((widget.preSelectedClassification != null && !isEditing
+            ? ['Cow', 'Bull', 'Heifer', 'Steer', 'Growers', 'Calf']
+            : classificationOptions)).map((option) => DropdownMenuItem(
+              value: option,
+              child: Text(option),
+            )),
+      ],
       onChanged: shouldLockClassification ? null : (value) {
         if (value != null) {
           _handleClassificationSelection(value);
@@ -1527,22 +1549,23 @@ class _CattleFormScreenState extends State<CattleFormScreen> {
   Widget _buildSexField() {
     final isEditing = widget.cattle != null;
     final preSelectedClassification = widget.preSelectedClassification;
+    final hasPreSelectedSex = widget.preSelectedSex != null;
     
     // For editing existing cattle, always allow sex selection
     // For new cattle with pre-selected classification:
     // - Allow sex selection for Growers and Calf
     // - Auto-fill and lock for Cow, Bull, Heifer, Steer
-    final allowSexSelection = isEditing || 
-                             preSelectedClassification == 'Growers' || 
-                             preSelectedClassification == 'Calf' || 
-                             preSelectedClassification == null;
+    final isGrowersOrCalf = preSelectedClassification == 'Growers' || preSelectedClassification == 'Calf';
+    final allowSexSelection = isEditing || (!hasPreSelectedSex && (isGrowersOrCalf || preSelectedClassification == null));
     
     return DropdownButtonFormField<String>(
       value: _sex,
       validator: (value) => value == null ? 'Sex is required' : null,
       isExpanded: true,
+      autovalidateMode: AutovalidateMode.always,
+      hint: const Text('Select Sex (Required)'),
       decoration: InputDecoration(
-        labelText: 'Sex *',
+        labelText: 'Sex (Required)',
         prefixIcon: Icon(Icons.wc, color: AppColors.primary),
         border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
         focusedBorder: OutlineInputBorder(
@@ -1554,12 +1577,19 @@ class _CattleFormScreenState extends State<CattleFormScreen> {
         suffixIcon: !allowSexSelection 
           ? Icon(Icons.lock, color: Colors.grey[600])
           : null,
+        // helperText removed; labeled as (Required)
       ),
-      hint: const Text('Select Sex'),
-      items: sexOptions.map((option) => DropdownMenuItem(
-        value: option,
-        child: Text(option),
-      )).toList(),
+      // hint moved above with required text
+      items: [
+        const DropdownMenuItem<String>(
+          value: null,
+          child: Text('None'),
+        ),
+        ...sexOptions.map((option) => DropdownMenuItem(
+              value: option,
+              child: Text(option),
+            )),
+      ],
       onChanged: allowSexSelection ? (value) {
         setState(() {
           _sex = value;
@@ -1578,8 +1608,10 @@ class _CattleFormScreenState extends State<CattleFormScreen> {
     return TextFormField(
       controller: _tagNoController,
       validator: (value) => value?.isEmpty == true ? 'Tag number is required' : null,
+      autovalidateMode: AutovalidateMode.always,
       decoration: InputDecoration(
-        labelText: 'Tag Number *',
+        labelText: 'Tag Number (Required)',
+        hintText: 'Enter tag number (Required)',
         prefixIcon: Icon(Icons.label, color: AppColors.primary),
         border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
         focusedBorder: OutlineInputBorder(
@@ -1588,6 +1620,7 @@ class _CattleFormScreenState extends State<CattleFormScreen> {
         ),
         fillColor: AppColors.cardBackground,
         filled: true,
+        // helperText removed; labeled as (Required)
         suffixIcon: _isGeneratingTag
             ? const Padding(
           padding: EdgeInsets.all(12.0),
@@ -1644,8 +1677,16 @@ class _CattleFormScreenState extends State<CattleFormScreen> {
               _buildCard(
                 child: Column(
                   children: [
-                    // Sex field
-                    _buildSexField(),
+                    // Sex field (hidden in add mode for Cow/Bull/Heifer/Steer; visible for Growers/Calf)
+                    if (!(
+                      widget.cattle == null && (
+                        widget.preSelectedClassification == 'Cow' ||
+                        widget.preSelectedClassification == 'Bull' ||
+                        widget.preSelectedClassification == 'Heifer' ||
+                        widget.preSelectedClassification == 'Steer'
+                      )
+                    ))
+                      _buildSexField(),
                     const SizedBox(height: 16),
                     // Classification field (read-only if pre-selected)
                     _buildClassificationField(),
@@ -1656,55 +1697,40 @@ class _CattleFormScreenState extends State<CattleFormScreen> {
                     const SizedBox(height: 16),
                     // Date of Birth
                     _buildDateField(
-                      label: 'Date of Birth',
+        label: 'Date of Birth (Optional)',
                       value: _dateOfBirth,
                       icon: Icons.cake,
                     ),
                     _buildAgeWarning(),
-                  ],
-                ),
-              ),
-
-              // Physical Characteristics Section
-              _buildSectionTitle('Physical Characteristics', Icons.monitor_weight),
-              _buildCard(
-                child: Column(
-                  children: [
+                    const SizedBox(height: 16),
+                    // Moved here: Breed and Weight fields
+                    _buildBreedField(),
+                    const SizedBox(height: 16),
                     _buildTextField(
                       controller: _weightController,
-                      label: 'Weight (kg)',
+        label: 'Weight (kg) (Optional)',
                       icon: Icons.monitor_weight,
                       keyboardType: TextInputType.number,
                     ),
-                    const SizedBox(height: 16),
-                    _buildBreedField(),
-                    const SizedBox(height: 16),
-                    _buildDynamicDropdown(
-                      label: 'Group Name',
-                      value: _groupName,
-                      options: _groupNameOptions,
-                      onChanged: (value) => setState(() => _groupName = value),
-                      icon: FontAwesomeIcons.groupArrowsRotate,
-                      onAdd: _addNewGroupName,
-                      onEdit: _editGroupName,
-                      onDelete: _deleteGroupName,
-                    ),
                   ],
                 ),
               ),
 
-              // Farm Information Section
-              _buildSectionTitle('Farm Information', Icons.agriculture),
+
+              // Source Details Section
+              _buildSectionTitle('Source Details', Icons.agriculture),
               _buildCard(
                 child: Column(
                   children: [
                     // Custom source dropdown that can show combined information
                     DropdownButtonFormField<String>(
                       value: _source,
+                      autovalidateMode: AutovalidateMode.always,
                       validator: (value) => value == null ? 'Source is required' : null,
                       isExpanded: true,
                       decoration: InputDecoration(
-                        labelText: 'Source *',
+                        labelText: 'Source (Required)',
+                        hintText: 'Select Source (Required)',
                         prefixIcon: Icon(Icons.source, color: AppColors.primary),
                         border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                         focusedBorder: OutlineInputBorder(
@@ -1713,94 +1739,62 @@ class _CattleFormScreenState extends State<CattleFormScreen> {
                         ),
                         fillColor: AppColors.cardBackground,
                         filled: true,
+                        // helperText removed; labeled as (Required)
                       ),
-                      hint: const Text('Select Source'),
-                      items: [
-                        // Add the base options
+                      hint: const Text('Select Source (Required)'),
+                      items: const [
+                        DropdownMenuItem<String>(
+                          value: null,
+                          child: Text('None'),
+                        ),
+                      ] + [
                         ...sourceOptions.map((option) => DropdownMenuItem<String>(
                           value: option,
                           child: Text(option),
                         )),
-                        // Add any custom combined options that exist
-                        if (_source != null && _source!.contains(' - '))
-                          DropdownMenuItem<String>(
-                            value: _source,
-                            child: Text(_source!),
-                          ),
                       ],
                       onChanged: (value) {
                         setState(() {
                           _source = value;
-                          // Show modal for Purchased or Other options
-                          if (value == 'Purchased' || value == 'Other') {
-                            WidgetsBinding.instance.addPostFrameCallback((_) {
-                              _showSourceDetailsModal();
-                            });
+                          if (value != 'Purchased' && value != 'Other') {
+                            _sourceDetails = null;
                           }
                         });
                       },
                     ),
-                    // Show edit button if we have source details
-                    if (_source != null && _source!.contains(' - ')) ...[
+                    if (_source == 'Purchased' || _source == 'Other') ...[
                       const SizedBox(height: 16),
-                      Row(
-                        children: [
-                          Expanded(
-                            child: Container(
-                              padding: const EdgeInsets.all(12),
-                              decoration: BoxDecoration(
-                                color: AppColors.primary.withOpacity(0.1),
-                                borderRadius: BorderRadius.circular(8),
-                                border: Border.all(
-                                  color: AppColors.primary.withOpacity(0.3),
-                                  width: 1,
-                                ),
-                              ),
-                              child: Row(
-                                children: [
-                                  Icon(
-                                    _source!.startsWith('Purchased') ? Icons.shopping_cart : Icons.info,
-                                    color: AppColors.primary,
-                                    size: 20,
-                                  ),
-                                  const SizedBox(width: 8),
-                                  Expanded(
-                                    child: Text(
-                                      _source!,
-                                      style: TextStyle(
-                                        color: AppColors.textPrimary,
-                                        fontWeight: FontWeight.w500,
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
+                      TextFormField(
+                        initialValue: _sourceDetails ?? '',
+                        onChanged: (val) => _sourceDetails = val.trim().isEmpty ? null : val.trim(),
+                        maxLines: 3,
+                        decoration: InputDecoration(
+                          labelText: (_source == 'Purchased' ? 'Purchase Source' : 'Acquisition Details') + ' (Optional)',
+                          hintText: _source == 'Purchased'
+                              ? 'e.g., John Smith Farm, Market XYZ, Auction House ABC'
+                              : 'e.g., Gift from neighbor, Inheritance, Trade, etc.',
+                          prefixIcon: Icon(_source == 'Purchased' ? Icons.shopping_cart : Icons.info, color: AppColors.primary),
+                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                          focusedBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: BorderSide(color: AppColors.primary, width: 2),
                           ),
-                          const SizedBox(width: 8),
-                          IconButton(
-                            onPressed: _showSourceDetailsModal,
-                            icon: Icon(Icons.edit, color: AppColors.primary),
-                            tooltip: 'Edit source details',
-                            style: IconButton.styleFrom(
-                              backgroundColor: AppColors.primary.withOpacity(0.1),
-                              padding: const EdgeInsets.all(12),
-                            ),
-                          ),
-                        ],
+                          fillColor: AppColors.cardBackground,
+                          filled: true,
+                        ),
                       ),
                     ],
                   ],
                 ),
               ),
 
-              // Genealogy Section
-              _buildSectionTitle('Genealogy', Icons.family_restroom),
+              // Parental Line Section
+              _buildSectionTitle('Parental Line', Icons.family_restroom),
               _buildCard(
                 child: Column(
                   children: [
                     _buildSearchableDropdown(
-                      label: 'Dam Tag (Mother)',
+                      label: 'Dam Tag (Mother) (Optional)',
                       value: _motherTag,
                       options: _femaleCattle,
                       onChanged: (value) => setState(() => _motherTag = value),
@@ -1808,7 +1802,7 @@ class _CattleFormScreenState extends State<CattleFormScreen> {
                     ),
                     const SizedBox(height: 16),
                     _buildSearchableDropdown(
-                      label: 'Sire Tag (Father)',
+                      label: 'Sire Tag (Father) (Optional)',
                       value: _fatherTag,
                       options: _maleCattle,
                       onChanged: (value) => setState(() => _fatherTag = value),
@@ -1818,16 +1812,16 @@ class _CattleFormScreenState extends State<CattleFormScreen> {
                 ),
               ),
 
-              // Additional Notes Section
-              _buildSectionTitle('Additional Notes', Icons.note),
-              _buildCard(
-                child: _buildTextField(
-                  controller: _notesController,
-                  label: 'Notes',
-                  icon: Icons.notes,
-                  maxLines: 4,
-                ),
-              ),
+              // Additional Notes Section (removed)
+              // _buildSectionTitle('Additional Notes', Icons.note),
+              // _buildCard(
+              //   child: _buildTextField(
+              //     controller: _notesController,
+              //     label: 'Notes',
+              //     icon: Icons.notes,
+              //     maxLines: 4,
+              //   ),
+              // ),
 
               const SizedBox(height: 32),
 
@@ -1842,7 +1836,7 @@ class _CattleFormScreenState extends State<CattleFormScreen> {
                     color: Colors.white,
                   ),
                   label: Text(
-                    widget.cattle == null ? 'Add Cattle' : 'Update Cattle',
+                    widget.cattle == null ? 'Submit' : 'Update Cattle',
                     style: const TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.w600,
@@ -1867,7 +1861,7 @@ class _CattleFormScreenState extends State<CattleFormScreen> {
   void dispose() {
     _tagNoController.dispose();
     _weightController.dispose();
-    _notesController.dispose();
+    // _notesController.dispose(); // Commented out: Notes field removed
     super.dispose();
   }
 }

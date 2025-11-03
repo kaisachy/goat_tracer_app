@@ -64,7 +64,8 @@ class SoldEventFieldsState extends BaseEventFieldsState<SoldEventFields> {
                 borderRadius: BorderRadius.circular(12),
                 borderSide: const BorderSide(color: Colors.red, width: 2),
               ),
-              contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+              contentPadding: const EdgeInsets.only(left: 16, right: 16, top: 16, bottom: 16),
+              isDense: true,
             ),
             validator: (value) {
               if (value == null || value.trim().isEmpty) {
