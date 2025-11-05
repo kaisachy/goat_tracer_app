@@ -674,7 +674,7 @@ class WebSchedulerWidget extends StatelessWidget {
  class _PulsingTapHint extends StatefulWidget {
    final String text;
    final TextStyle style;
-   const _PulsingTapHint({super.key, required this.text, required this.style});
+   const _PulsingTapHint({required this.text, required this.style});
  
    @override
    State<_PulsingTapHint> createState() => _PulsingTapHintState();
