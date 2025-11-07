@@ -1500,24 +1500,6 @@ class _HistoryScreenState extends State<HistoryScreen> {
                   height: 1.5,
                 ),
               ),
-              if (!isFiltering) ...[
-                const SizedBox(height: 32),
-                ElevatedButton.icon(
-                  onPressed: _onAddHistory,
-                  icon: const Icon(Icons.add_rounded),
-                  label: const Text('Add First History Record'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.vibrantGreen,
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-                    textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    elevation: 2,
-                  ),
-                ),
-              ],
             ],
           ),
         ),

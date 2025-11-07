@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import 'package:cattle_tracer_app/models/cattle.dart';
 import 'package:cattle_tracer_app/services/cattle/cattle_service.dart';
+import 'package:cattle_tracer_app/services/cattle/cattle_export_service.dart';
 import 'package:cattle_tracer_app/screens/nav/cattle/cattle_form_screen.dart';
 import 'package:cattle_tracer_app/screens/nav/cattle/cattle_detail_screen.dart';
 import 'package:cattle_tracer_app/screens/nav/cattle/archived_cattle_screen.dart';
@@ -11,6 +12,7 @@ import 'package:cattle_tracer_app/screens/nav/cattle/modals/options/change_stage
 import 'package:cattle_tracer_app/screens/nav/cattle/modals/options/change_status_option.dart';
 import 'package:cattle_tracer_app/screens/nav/cattle/modals/options/archive_option.dart';
 import 'package:cattle_tracer_app/screens/nav/cattle/modals/options/delete_option.dart';
+import 'package:cattle_tracer_app/screens/nav/history/cattle_selection_modal.dart';
 import 'package:cattle_tracer_app/constants/app_colors.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 
@@ -34,6 +36,7 @@ class _CattleScreenState extends State<CattleScreen>
   String _selectedStatus = 'All';
   String _selectedBreed = 'All';
   String _selectedGroupName = 'All';
+  String _selectedReportType = 'All';
   late AnimationController _animationController;
   late Animation<double> _fadeAnimation;
   
@@ -61,38 +64,6 @@ class _CattleScreenState extends State<CattleScreen>
     WidgetsBinding.instance.addObserver(this);
 
     _fetchCattle();
-  }
-
-  String _formatAge(String dobIso) {
-    try {
-      final dob = DateTime.parse(dobIso);
-      final now = DateTime.now();
-      int years = now.year - dob.year;
-      int months = now.month - dob.month;
-      int days = now.day - dob.day;
-
-      if (days < 0) {
-        final prevMonth = DateTime(now.year, now.month, 0);
-        days += prevMonth.day;
-        months -= 1;
-      }
-      if (months < 0) {
-        months += 12;
-        years -= 1;
-      }
-
-      if (years > 0) {
-        // Show years and optionally months
-        return months > 0 ? '${years}y ${months}m' : '${years}y';
-      }
-      if (months > 0) {
-        return '${months}m';
-      }
-      final d = now.difference(dob).inDays;
-      return d <= 1 ? '1d' : '${d}d';
-    } catch (_) {
-      return '';
-    }
   }
 
   Widget _buildAddCattleGrid() {
@@ -376,6 +347,37 @@ class _CattleScreenState extends State<CattleScreen>
     return groupNames.toList()..sort();
   }
 
+  String? _mapReportTypeToParam(String value) {
+    switch (value) {
+      case 'All':
+        return null;
+      case 'Bull':
+        return 'bull';
+      case 'Cow':
+        return 'cow';
+      case 'Steer':
+        return 'steer';
+      case 'Heifer':
+        return 'heifer';
+      case 'Growers (Male)':
+        return 'growers_male';
+      case 'Growers (Female)':
+        return 'growers_female';
+      case 'Calf (Male)':
+        return 'calf_male';
+      case 'Calf (Female)':
+        return 'calf_female';
+      case 'Breeding':
+        return 'breeding';
+      case 'Pregnant':
+        return 'pregnant';
+      case 'Sick':
+        return 'sick';
+      default:
+        return null;
+    }
+  }
+
   void _navigateToForm({Cattle? cattle, String? preSelectedClassification, String? preSelectedSex}) async {
     // The await/fetch pattern is kept as a fallback and for immediate refresh
     await Navigator.push(
@@ -424,182 +426,180 @@ class _CattleScreenState extends State<CattleScreen>
       itemBuilder: (BuildContext context) => [
         PopupMenuItem<String>(
           value: 'edit',
-          height: 72,
+          height: 36,
           child: Row(
             children: [
               Container(
-                width: 40,
-                height: 40,
+                width: 24,
+                height: 24,
                 decoration: BoxDecoration(
                   color: AppColors.vibrantGreen.withOpacity(0.12),
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(6),
                   border: Border.all(color: AppColors.vibrantGreen.withOpacity(0.2)),
                 ),
-                child: const Icon(Icons.edit_outlined, color: AppColors.vibrantGreen, size: 18),
+                child: const Icon(Icons.edit_outlined, color: AppColors.vibrantGreen, size: 14),
               ),
-              const SizedBox(width: 12),
+              const SizedBox(width: 8),
               const Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Text('Edit Cattle', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600)),
-                    SizedBox(height: 2),
-                    Text('Modify cattle details', style: TextStyle(fontSize: 12, color: AppColors.textSecondary)),
-                  ],
-                ),
+                child: Text('Edit Cattle', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
               ),
             ],
           ),
         ),
         PopupMenuItem<String>(
           value: 'add_event',
-          height: 72,
+          height: 36,
           child: Row(
             children: [
               Container(
-                width: 40,
-                height: 40,
+                width: 24,
+                height: 24,
                 decoration: BoxDecoration(
                   color: AppColors.darkGreen.withOpacity(0.12),
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(6),
                   border: Border.all(color: AppColors.darkGreen.withOpacity(0.2)),
                 ),
-                child: const Icon(Icons.event_note_outlined, color: AppColors.darkGreen, size: 18),
+                child: const Icon(Icons.event_note_outlined, color: AppColors.darkGreen, size: 14),
               ),
-              const SizedBox(width: 12),
+              const SizedBox(width: 8),
               const Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Text('Add History Record', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600)),
-                    SizedBox(height: 2),
-                    Text('Record new history', style: TextStyle(fontSize: 12, color: AppColors.textSecondary)),
-                  ],
-                ),
+                child: Text('Add History Record', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
               ),
             ],
           ),
         ),
-        const PopupMenuDivider(),
+        const PopupMenuDivider(height: 1),
         PopupMenuItem<String>(
           value: 'change_stage',
-          height: 72,
+          height: 36,
           child: Row(
             children: [
               Container(
-                width: 40,
-                height: 40,
+                width: 24,
+                height: 24,
                 decoration: BoxDecoration(
                   color: AppColors.lightGreen.withOpacity(0.12),
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(6),
                   border: Border.all(color: AppColors.lightGreen.withOpacity(0.2)),
                 ),
-                child: const Icon(Icons.arrow_upward_outlined, color: AppColors.lightGreen, size: 18),
+                child: const Icon(Icons.arrow_upward_outlined, color: AppColors.lightGreen, size: 14),
               ),
-              const SizedBox(width: 12),
+              const SizedBox(width: 8),
               const Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Text('Change Stage', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600)),
-                    SizedBox(height: 2),
-                    Text('Update cattle stage', style: TextStyle(fontSize: 12, color: AppColors.textSecondary)),
-                  ],
-                ),
+                child: Text('Change Stage', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
               ),
             ],
           ),
         ),
         PopupMenuItem<String>(
           value: 'change_status',
-          height: 72,
+          height: 36,
           child: Row(
             children: [
               Container(
-                width: 40,
-                height: 40,
+                width: 24,
+                height: 24,
                 decoration: BoxDecoration(
                   color: AppColors.vibrantGreen.withOpacity(0.12),
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(6),
                   border: Border.all(color: AppColors.vibrantGreen.withOpacity(0.2)),
                 ),
-                child: const Icon(Icons.swap_horiz, color: AppColors.vibrantGreen, size: 18),
+                child: const Icon(Icons.swap_horiz, color: AppColors.vibrantGreen, size: 14),
               ),
-              const SizedBox(width: 12),
+              const SizedBox(width: 8),
               const Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Text('Change Status', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600)),
-                    SizedBox(height: 2),
-                    Text('Update cattle status', style: TextStyle(fontSize: 12, color: AppColors.textSecondary)),
-                  ],
-                ),
+                child: Text('Change Status', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
               ),
             ],
           ),
         ),
-        const PopupMenuDivider(),
+        const PopupMenuDivider(height: 1),
         PopupMenuItem<String>(
-          value: 'archive',
-          height: 72,
+          value: 'export_excel',
+          height: 36,
           child: Row(
             children: [
               Container(
-                width: 40,
-                height: 40,
+                width: 24,
+                height: 24,
+                decoration: BoxDecoration(
+                  color: Colors.green.withOpacity(0.12),
+                  borderRadius: BorderRadius.circular(6),
+                  border: Border.all(color: Colors.green.withOpacity(0.2)),
+                ),
+                alignment: Alignment.center,
+                child: const FaIcon(FontAwesomeIcons.fileExcel, color: Colors.green, size: 14),
+              ),
+              const SizedBox(width: 8),
+              const Expanded(
+                child: Text('Download Excel Report', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
+              ),
+            ],
+          ),
+        ),
+        PopupMenuItem<String>(
+          value: 'export_pdf',
+          height: 36,
+          child: Row(
+            children: [
+              Container(
+                width: 24,
+                height: 24,
+                decoration: BoxDecoration(
+                  color: Colors.red.withOpacity(0.12),
+                  borderRadius: BorderRadius.circular(6),
+                  border: Border.all(color: Colors.red.withOpacity(0.2)),
+                ),
+                child: const Icon(Icons.picture_as_pdf_rounded, color: Colors.red, size: 14),
+              ),
+              const SizedBox(width: 8),
+              const Expanded(
+                child: Text('Generate PDF Report', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
+              ),
+            ],
+          ),
+        ),
+        const PopupMenuDivider(height: 1),
+        PopupMenuItem<String>(
+          value: 'archive',
+          height: 36,
+          child: Row(
+            children: [
+              Container(
+                width: 24,
+                height: 24,
                 decoration: BoxDecoration(
                   color: AppColors.gold.withOpacity(0.12),
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(6),
                   border: Border.all(color: AppColors.gold.withOpacity(0.2)),
                 ),
-                child: const Icon(Icons.archive_outlined, color: AppColors.gold, size: 18),
+                child: const Icon(Icons.archive_outlined, color: AppColors.gold, size: 14),
               ),
-              const SizedBox(width: 12),
+              const SizedBox(width: 8),
               const Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Text('Archive', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600)),
-                    SizedBox(height: 2),
-                    Text('Move to archive', style: TextStyle(fontSize: 12, color: AppColors.textSecondary)),
-                  ],
-                ),
+                child: Text('Archive', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
               ),
             ],
           ),
         ),
         PopupMenuItem<String>(
           value: 'delete',
-          height: 72,
+          height: 36,
           child: Row(
             children: [
               Container(
-                width: 40,
-                height: 40,
+                width: 24,
+                height: 24,
                 decoration: BoxDecoration(
                   color: Colors.red.shade600.withOpacity(0.12),
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(6),
                   border: Border.all(color: Colors.red.shade600.withOpacity(0.2)),
                 ),
-                child: Icon(Icons.delete_forever_outlined, color: Colors.red.shade600, size: 18),
+                child: Icon(Icons.delete_forever_outlined, color: Colors.red.shade600, size: 14),
               ),
-              const SizedBox(width: 12),
+              const SizedBox(width: 8),
               Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Text('Delete Cattle', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: Colors.red.shade600)),
-                    const SizedBox(height: 2),
-                    Text('Permanently remove', style: TextStyle(fontSize: 12, color: Colors.red.shade400)),
-                  ],
-                ),
+                child: Text('Delete Cattle', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Colors.red.shade600)),
               ),
             ],
           ),
@@ -611,13 +611,61 @@ class _CattleScreenState extends State<CattleScreen>
             _navigateToForm(cattle: cattle);
             break;
           case 'add_event':
-            await Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (context) => CattleHistoryFormScreen(cattleTag: cattle.tagNo),
-              ),
+            // Show cattle selection modal for adding history
+            final selectedTag = await showDialog<String>(
+              context: context,
+              builder: (context) => const CattleSelectionModal(),
             );
-            _fetchCattle();
+            if (selectedTag != null && context.mounted) {
+              await Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => CattleHistoryFormScreen(cattleTag: selectedTag),
+                ),
+              );
+              _fetchCattle();
+            }
+            break;
+          case 'export_excel':
+          case 'export_pdf':
+            // Show cattle selection modal for export
+            final selectedTag = await showDialog<String>(
+              context: context,
+              builder: (context) => const CattleSelectionModal(),
+            );
+            if (selectedTag != null && context.mounted) {
+              final selectedCattle = _cattleList.firstWhere(
+                (c) => c.tagNo == selectedTag,
+                orElse: () => cattle,
+              );
+              if (value == 'export_excel') {
+                ScaffoldMessenger.of(context).hideCurrentSnackBar();
+                final okX = await CattleExportService.downloadCattleExcel(selectedCattle.id.toString());
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(okX ? 'Excel report ready! Choose where to open/save.' : 'Failed to download Excel report.'),
+                      backgroundColor: okX ? Colors.green.shade600 : Colors.red.shade700,
+                      behavior: SnackBarBehavior.floating,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    ),
+                  );
+                }
+              } else if (value == 'export_pdf') {
+                ScaffoldMessenger.of(context).hideCurrentSnackBar();
+                final okP = await CattleExportService.downloadCattlePdf(selectedCattle.id.toString());
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(okP ? 'PDF report ready! Choose where to open/save.' : 'Failed to generate PDF report.'),
+                      backgroundColor: okP ? Colors.green.shade600 : Colors.red.shade700,
+                      behavior: SnackBarBehavior.floating,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    ),
+                  );
+                }
+              }
+            }
             break;
           case 'change_stage':
             ChangeStageOption.show(context, cattle, _fetchCattle);
@@ -770,15 +818,7 @@ class _CattleScreenState extends State<CattleScreen>
                                     ),
                                   ),
                                   const Spacer(),
-                                  if (cattle.dateOfBirth != null)
-                                    Text(
-                                      'Age: ' + _formatAge(cattle.dateOfBirth!),
-                                      style: TextStyle(
-                                        fontSize: 13,
-                                        color: AppColors.textSecondary,
-                                      ),
-                                      textAlign: TextAlign.right,
-                                    ),
+                                  // Age display removed as requested
                                 ],
                               ),
                               if (cattle.breed != null && cattle.breed!.isNotEmpty) ...[
@@ -879,22 +919,6 @@ class _CattleScreenState extends State<CattleScreen>
             ),
             textAlign: TextAlign.center,
           ),
-          if (!hasActiveFilters) ...[
-            const SizedBox(height: 24),
-            ElevatedButton.icon(
-              onPressed: () => _navigateToForm(),
-              icon: const Icon(Icons.add),
-              label: const Text('Add First Cattle'),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.primary,
-                foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-              ),
-            ),
-          ],
         ],
       ),
     );
@@ -966,6 +990,91 @@ class _CattleScreenState extends State<CattleScreen>
                   ),
                 );
               },
+            ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 4, 16, 0),
+              child: Row(
+                children: [
+                  // Report type selector
+                  ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 215),
+                    child: DropdownButtonFormField<String>(
+                      value: _selectedReportType,
+                      items: const [
+                        DropdownMenuItem(value: 'All', child: Text('All')),
+                        DropdownMenuItem(value: 'Bull', child: Text('Bull')),
+                        DropdownMenuItem(value: 'Cow', child: Text('Cow')),
+                        DropdownMenuItem(value: 'Steer', child: Text('Steer')),
+                        DropdownMenuItem(value: 'Heifer', child: Text('Heifer')),
+                        DropdownMenuItem(value: 'Growers (Male)', child: Text('Growers (Male)')),
+                        DropdownMenuItem(value: 'Growers (Female)', child: Text('Growers (Female)')),
+                        DropdownMenuItem(value: 'Calf (Male)', child: Text('Calf (Male)')),
+                        DropdownMenuItem(value: 'Calf (Female)', child: Text('Calf (Female)')),
+                        DropdownMenuItem(value: 'Breeding', child: Text('Breeding')),
+                        DropdownMenuItem(value: 'Pregnant', child: Text('Pregnant')),
+                        DropdownMenuItem(value: 'Sick', child: Text('Sick')),
+                      ],
+                      onChanged: (v) {
+                        setState(() { _selectedReportType = v ?? 'All'; });
+                      },
+                      decoration: const InputDecoration(
+                        labelText: 'Report type',
+                        border: OutlineInputBorder(),
+                        isDense: true,
+                        contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Container(
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF107C41),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: IconButton(
+                      tooltip: 'Export Excel',
+                      icon: const FaIcon(FontAwesomeIcons.fileExcel, color: Colors.white, size: 20),
+                      onPressed: () async {
+                        ScaffoldMessenger.of(context).hideCurrentSnackBar();
+                        final rt = _mapReportTypeToParam(_selectedReportType);
+                        final ok = await CattleExportService.downloadCattleListExcel(reportType: rt);
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text(ok ? 'Excel report ready! Choose where to open/save.' : 'Failed to download Excel report.'),
+                            backgroundColor: ok ? Colors.green.shade600 : Colors.red.shade700,
+                            behavior: SnackBarBehavior.floating,
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Container(
+                    decoration: BoxDecoration(
+                      color: Colors.red.shade600,
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: IconButton(
+                      tooltip: 'Export PDF',
+                      icon: const Icon(Icons.picture_as_pdf_rounded, color: Colors.white, size: 20),
+                      onPressed: () async {
+                        ScaffoldMessenger.of(context).hideCurrentSnackBar();
+                        final rt = _mapReportTypeToParam(_selectedReportType);
+                        final ok = await CattleExportService.downloadCattleListPdf(reportType: rt);
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text(ok ? 'PDF report ready! Choose where to open/save.' : 'Failed to generate PDF report.'),
+                            backgroundColor: ok ? Colors.green.shade600 : Colors.red.shade700,
+                            behavior: SnackBarBehavior.floating,
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                ],
+              ),
             ),
           ],
           Expanded(

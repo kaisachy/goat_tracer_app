@@ -57,20 +57,20 @@ class CattleLineageCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           SectionHeaderWidget(
-            icon: Icons.family_restroom,
-            title: 'Genealogy',
+            icon: Icons.account_tree,
+            title: 'Parental Line',
             color: AppColors.darkGreen,
           ),
           const SizedBox(height: 24),
           _buildParentInfoGrid(context, [
             _ParentInfoItemData(
-              icon: Icons.woman,
+              icon: Icons.female,
               title: 'Dam (Mother)',
               value: CattleDetailUtils.getParentDisplay(cattle.motherTag),
               tag: cattle.motherTag,
             ),
             _ParentInfoItemData(
-              icon: Icons.man,
+              icon: Icons.male,
               title: 'Sire (Father)',
               value: CattleDetailUtils.getParentDisplay(cattle.fatherTag),
               tag: cattle.fatherTag,

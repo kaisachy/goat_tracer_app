@@ -5,6 +5,7 @@ import 'package:cattle_tracer_app/services/cattle/cattle_history_service.dart';
 import 'package:cattle_tracer_app/constants/app_colors.dart';
 import 'package:cattle_tracer_app/screens/nav/cattle/cattle_detail_screen.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import 'package:cattle_tracer_app/services/cattle/cattle_export_service.dart';
 
 class ArchivedCattleScreen extends StatefulWidget {
   const ArchivedCattleScreen({super.key});
@@ -21,6 +22,7 @@ class _ArchivedCattleScreenState extends State<ArchivedCattleScreen> {
   bool _isLoading = true;
   String _searchQuery = '';
   String _selectedStatus = 'All';
+  String _selectedReportType = 'Lost';
 
   @override
   void initState() {
@@ -94,11 +96,8 @@ class _ArchivedCattleScreenState extends State<ArchivedCattleScreen> {
       final Map<String, Map<String, dynamic>> eventDetails = {};
       for (final cattleItem in cattle) {
         try {
-          final events = await CattleHistoryService.getCattleHistory();
-          final cattleEvents = events.where((event) =>
-              (event['cattle_tag']?.toString().trim().toLowerCase() ?? '') ==
-                  cattleItem.tagNo.trim().toLowerCase()
-          ).toList();
+          // Fetch only this cattle's history to ensure archive details are available
+          final cattleEvents = await CattleHistoryService.getCattleHistoryByTag(cattleItem.tagNo);
           
           // Find the most recent archive-related event
           final archiveEvent = cattleEvents.where((event) {
@@ -277,7 +276,84 @@ class _ArchivedCattleScreenState extends State<ArchivedCattleScreen> {
                   children: [
                     // Search and Filter Bar
                     _buildSearchAndFilterBar(),
-                    
+                    // Export controls row (below the filter bar)
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(16, 4, 16, 0),
+                      child: Row(
+                        children: [
+                          ConstrainedBox(
+                            constraints: const BoxConstraints(maxWidth: 215),
+                            child: DropdownButtonFormField<String>(
+                              value: _selectedReportType,
+                              items: const [
+                                DropdownMenuItem(value: 'Lost', child: Text('Lost')),
+                                DropdownMenuItem(value: 'Sold', child: Text('Sold')),
+                                DropdownMenuItem(value: 'Mortality', child: Text('Mortality')),
+                              ],
+                              onChanged: (v) {
+                                setState(() { _selectedReportType = v ?? 'Lost'; });
+                              },
+                              decoration: const InputDecoration(
+                                labelText: 'Report type',
+                                border: OutlineInputBorder(),
+                                isDense: true,
+                                contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Container(
+                            decoration: BoxDecoration(
+                              color: const Color(0xFF107C41),
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            child: IconButton(
+                              tooltip: 'Export Excel',
+                              icon: const FaIcon(FontAwesomeIcons.fileExcel, color: Colors.white, size: 20),
+                              onPressed: () async {
+                                final rt = _mapArchivedReportTypeToParam(_selectedReportType);
+                                final ok = await CattleExportService.downloadCattleListExcel(reportType: rt);
+                                if (!mounted) return;
+                                ScaffoldMessenger.of(context).hideCurrentSnackBar();
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Text(ok ? 'Excel report ready! Choose where to open/save.' : 'Failed to download Excel report.'),
+                                    backgroundColor: ok ? Colors.green.shade600 : Colors.red.shade700,
+                                    behavior: SnackBarBehavior.floating,
+                                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                  ),
+                                );
+                              },
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Container(
+                            decoration: BoxDecoration(
+                              color: Colors.red.shade600,
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            child: IconButton(
+                              tooltip: 'Export PDF',
+                              icon: const Icon(Icons.picture_as_pdf_rounded, color: Colors.white, size: 20),
+                              onPressed: () async {
+                                final rt = _mapArchivedReportTypeToParam(_selectedReportType);
+                                final ok = await CattleExportService.downloadCattleListPdf(reportType: rt);
+                                if (!mounted) return;
+                                ScaffoldMessenger.of(context).hideCurrentSnackBar();
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Text(ok ? 'PDF report ready! Choose where to open/save.' : 'Failed to generate PDF report.'),
+                                    backgroundColor: ok ? Colors.green.shade600 : Colors.red.shade700,
+                                    behavior: SnackBarBehavior.floating,
+                                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                  ),
+                                );
+                              },
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
                     // Cattle List
                     Expanded(
                       child: _filteredCattleList.isEmpty
@@ -381,6 +457,19 @@ class _ArchivedCattleScreenState extends State<ArchivedCattleScreen> {
         ],
       ),
     );
+  }
+
+  String _mapArchivedReportTypeToParam(String value) {
+    switch (value) {
+      case 'Lost':
+        return 'lost';
+      case 'Sold':
+        return 'sold';
+      case 'Mortality':
+        return 'dead';
+      default:
+        return 'lost';
+    }
   }
 
   void _showStatusFilterDialog() {
@@ -709,6 +798,15 @@ class _ArchivedCattleScreenState extends State<ArchivedCattleScreen> {
     final eventData = _cattleEventDetails[cattle.tagNo];
     
     if (eventData == null) {
+      // Fallback: show basic status information when no history record was found
+      final status = cattle.status.toLowerCase();
+      if (status == 'sold') {
+        return 'Sold (no detailed history record found).';
+      } else if (status == 'mortality') {
+        return 'Mortality (no detailed history record found).';
+      } else if (status == 'lost') {
+        return 'Lost (no detailed history record found).';
+      }
       return 'This cattle has been archived. Event details not available.';
     }
     

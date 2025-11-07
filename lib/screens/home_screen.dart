@@ -113,20 +113,9 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
       }
 
       // Auto-update cattle classifications based on age
-      final classificationUpdateCount = await CattleService.autoUpdateCattleClassifications();
+      final _ = await CattleService.autoUpdateCattleClassifications();
       
-      if (classificationUpdateCount > 0 && mounted) {
-        // Show a notification to the user about the classification updates
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('$classificationUpdateCount cattle classification(s) automatically updated based on age'),
-            backgroundColor: Colors.blue[600],
-            behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
-            duration: const Duration(seconds: 3),
-          ),
-        );
-      }
+      // Snackbar removed - auto-update runs silently in background
     } catch (e) {
       print('Error checking cattle status updates: $e');
     }
@@ -217,7 +206,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
       final refreshResults = await RefreshService.refreshAllData();
       
       // Also auto-update cattle classifications
-      final classificationUpdateCount = await CattleService.autoUpdateCattleClassifications();
+      final _ = await CattleService.autoUpdateCattleClassifications();
       
       // Dismiss loading indicator
       ScaffoldMessenger.of(context).hideCurrentSnackBar();
@@ -227,19 +216,13 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
       final hasErrors = refreshResults['errors'].isNotEmpty;
       final hasCattleUpdates = refreshResults['cattleStatusUpdates'].isNotEmpty;
       
-      // Add classification update info to the message if any
-      String finalMessage = message;
-      if (classificationUpdateCount > 0) {
-        finalMessage = message.isEmpty 
-            ? '$classificationUpdateCount cattle classification(s) updated'
-            : '$message\n$classificationUpdateCount classification(s) updated';
-      }
+      // Classification update info removed from snackbar message
       
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(finalMessage),
+          content: Text(message),
           backgroundColor: hasErrors ? Colors.orange[600] : 
-                          hasCattleUpdates || classificationUpdateCount > 0 ? Colors.green[600] : AppColors.lightGreen,
+                          hasCattleUpdates ? Colors.green[600] : AppColors.lightGreen,
           behavior: SnackBarBehavior.floating,
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
           duration: const Duration(seconds: 4),

@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:cattle_tracer_app/models/cattle.dart';
 import 'cattle_lineage_card.dart';
 import 'cattle_management_card.dart';
-import 'cattle_notes_section.dart';
 import 'detail_cattle_info_cards.dart';
 
 class CattleDetailsTabContent extends StatelessWidget {
@@ -47,11 +46,6 @@ class CattleDetailsTabContent extends StatelessWidget {
                 _buildAnimatedCard(
                   delay: 300,
                   child: CattleManagementCard(cattle: cattle),
-                ),
-                const SizedBox(height: 20),
-                _buildAnimatedCard(
-                  delay: 500,
-                  child: CattleNotesSection(cattle: cattle),
                 ),
               ],
             ),

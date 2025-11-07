@@ -14,6 +14,8 @@ import 'package:cattle_tracer_app/screens/nav/profile/widgets/farm_details_widge
 import 'package:cattle_tracer_app/screens/nav/profile/widgets/educational_background_widget.dart';
 import 'package:cattle_tracer_app/screens/nav/profile/widgets/trainings_seminars_widget.dart';
 import 'package:cattle_tracer_app/services/auth_service.dart';
+import 'package:cattle_tracer_app/services/profile/profile_export_service.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 
 class ProfileScreen extends StatefulWidget {
   final String userEmail;
@@ -683,23 +685,21 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
 
           // Profile Info Section
           Expanded(
-            child: Padding(
-              padding: const EdgeInsets.only(right: 50), // Add padding to prevent overlap with edit button
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Name
-                  Text(
-                    '${firstName ?? profile?['first_name'] ?? _storedFirstName ?? 'Unknown'} ${lastName ?? profile?['last_name'] ?? _storedLastName ?? 'User'}',
-                    style: TextStyle(
-                      color: Colors.grey.shade800,
-                      fontSize: 22,
-                      fontWeight: FontWeight.bold,
-                      height: 1.2,
-                    ),
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Name
+                Text(
+                  '${firstName ?? profile?['first_name'] ?? _storedFirstName ?? 'Unknown'} ${lastName ?? profile?['last_name'] ?? _storedLastName ?? 'User'}',
+                  style: TextStyle(
+                    color: Colors.grey.shade800,
+                    fontSize: 22,
+                    fontWeight: FontWeight.bold,
+                    height: 1.2,
                   ),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
                 const SizedBox(height: 8),
 
                 // Farm Classification Badge (hidden if null/empty)
@@ -739,40 +739,103 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
                         ),
                       )
                     : const SizedBox.shrink()),
-                ],
-              ),
+                
+                const SizedBox(height: 12),
+                
+                // Action Buttons Row
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                    // Edit Button
+                    Tooltip(
+                      message: isEditingMode ? 'Save Changes' : 'Edit Profile',
+                      child: GestureDetector(
+                        onTap: _toggleEditMode,
+                        child: Container(
+                          padding: const EdgeInsets.all(8),
+                          margin: const EdgeInsets.only(right: 8),
+                          decoration: BoxDecoration(
+                            color: isEditingMode ? Colors.green : AppColors.accent,
+                            borderRadius: BorderRadius.circular(8),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withOpacity(0.1),
+                                blurRadius: 4,
+                                offset: const Offset(0, 2),
+                              ),
+                            ],
+                          ),
+                          child: Icon(
+                            isEditingMode ? Icons.check_rounded : Icons.edit_rounded,
+                            color: Colors.white,
+                            size: 20,
+                          ),
+                        ),
+                      ),
+                    ),
+                    // Excel Export Button
+                    Tooltip(
+                      message: 'Download Excel Report',
+                      child: GestureDetector(
+                        onTap: () => _downloadExcelReport(profile),
+                        child: Container(
+                          padding: const EdgeInsets.all(8),
+                          margin: const EdgeInsets.only(right: 8),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF107C41), // Excel official dark green color
+                            borderRadius: BorderRadius.circular(8),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withOpacity(0.1),
+                                blurRadius: 4,
+                                offset: const Offset(0, 2),
+                              ),
+                            ],
+                          ),
+                          child: FaIcon(
+                            FontAwesomeIcons.fileExcel,
+                            color: Colors.white,
+                            size: 20,
+                          ),
+                        ),
+                      ),
+                    ),
+                    // PDF Export Button
+                    Tooltip(
+                      message: 'Generate PDF Report',
+                      child: GestureDetector(
+                        onTap: () => _downloadPdfReport(profile),
+                        child: Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: Colors.red[600],
+                            borderRadius: BorderRadius.circular(8),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withOpacity(0.1),
+                                blurRadius: 4,
+                                offset: const Offset(0, 2),
+                              ),
+                            ],
+                          ),
+                          child: Icon(
+                            Icons.picture_as_pdf_rounded,
+                            color: Colors.white,
+                            size: 20,
+                          ),
+                        ),
+                      ),
+                    ),
+                    ],
+                  ),
+                ),
+              ],
             ),
           ),
         ],
       ),
-
-      // Edit Button in Top Right
-      Positioned(
-        top: 0,
-        right: 0,
-      child: GestureDetector(
-      onTap: _toggleEditMode,
-        child: Container(
-          padding: const EdgeInsets.all(8),
-          decoration: BoxDecoration(
-            color: isEditingMode ? Colors.green : AppColors.primary,
-            borderRadius: BorderRadius.circular(8),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.1),
-                blurRadius: 4,
-                offset: const Offset(0, 2),
-              ),
-            ],
-          ),
-          child: Icon(
-            isEditingMode ? Icons.check_rounded : Icons.edit_rounded,
-            color: Colors.white,
-            size: 20,
-          ),
-        ),
-      ),
-    ),
     ],
     ),
 
@@ -896,6 +959,90 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
       return 'Size not specified';
     }
     return farmSize.toString();
+  }
+
+  Future<void> _downloadExcelReport(Map<String, dynamic>? profile) async {
+    HapticFeedback.lightImpact();
+    
+    // Get farmer ID
+    String? farmerId = profile?['user_id']?.toString();
+    if (farmerId == null || farmerId.isEmpty) {
+      // Try to get from AuthService as fallback
+      farmerId = await AuthService.getUserId();
+      if (farmerId == null || farmerId.isEmpty) {
+        farmerId = await AuthService.getCurrentUserId();
+      }
+    }
+
+    if (farmerId == null || farmerId.isEmpty) {
+      if (mounted) {
+        _showModernSnackBar('Unable to get user ID. Please try again.', isSuccess: false);
+      }
+      return;
+    }
+
+    _showModernLoadingDialog('Downloading Excel report...');
+    
+    try {
+      final success = await ProfileExportService.downloadExcelProfile(farmerId);
+      
+      if (mounted) {
+        Navigator.of(context, rootNavigator: true).pop();
+        if (success) {
+          _showModernSnackBar('Excel report ready! Choose where to save it.', isSuccess: true);
+        } else {
+          _showModernSnackBar('Failed to download Excel report. Please check your connection and try again.', isSuccess: false);
+        }
+      }
+    } catch (e) {
+      log('Error downloading Excel: $e');
+      if (mounted) {
+        Navigator.of(context, rootNavigator: true).pop();
+        _showModernSnackBar('Error: ${e.toString()}', isSuccess: false);
+      }
+    }
+  }
+
+  Future<void> _downloadPdfReport(Map<String, dynamic>? profile) async {
+    HapticFeedback.lightImpact();
+    
+    // Get farmer ID
+    String? farmerId = profile?['user_id']?.toString();
+    if (farmerId == null || farmerId.isEmpty) {
+      // Try to get from AuthService as fallback
+      farmerId = await AuthService.getUserId();
+      if (farmerId == null || farmerId.isEmpty) {
+        farmerId = await AuthService.getCurrentUserId();
+      }
+    }
+
+    if (farmerId == null || farmerId.isEmpty) {
+      if (mounted) {
+        _showModernSnackBar('Unable to get user ID. Please try again.', isSuccess: false);
+      }
+      return;
+    }
+
+    _showModernLoadingDialog('Generating PDF report...');
+    
+    try {
+      final success = await ProfileExportService.downloadPdfProfile(farmerId);
+      
+      if (mounted) {
+        Navigator.of(context, rootNavigator: true).pop();
+        if (success) {
+          _showModernSnackBar('PDF report ready! Choose where to save it.', isSuccess: true);
+        } else {
+          _showModernSnackBar('Failed to generate PDF report. Please check your connection and try again.', isSuccess: false);
+        }
+      }
+    } catch (e) {
+      log('Error downloading PDF: $e');
+      if (mounted) {
+        Navigator.of(context, rootNavigator: true).pop();
+        _showModernSnackBar('Error: ${e.toString()}', isSuccess: false);
+      }
+    }
   }
 
 

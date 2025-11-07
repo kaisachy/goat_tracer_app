@@ -3,6 +3,13 @@ import 'package:cattle_tracer_app/constants/app_colors.dart';
 import 'package:cattle_tracer_app/models/cattle.dart';
 import 'package:cattle_tracer_app/services/cattle/cattle_service.dart';
 import 'package:cattle_tracer_app/services/cattle/cattle_history_service.dart';
+import 'package:cattle_tracer_app/services/cattle/cattle_export_service.dart';
+import 'package:cattle_tracer_app/screens/nav/cattle/cattle_form_screen.dart';
+import 'package:cattle_tracer_app/screens/nav/cattle/cattle_history_form_screen.dart';
+import 'package:cattle_tracer_app/screens/nav/cattle/modals/options/change_stage_option.dart';
+import 'package:cattle_tracer_app/screens/nav/cattle/modals/options/change_status_option.dart';
+import 'package:cattle_tracer_app/screens/nav/cattle/modals/options/archive_option.dart';
+import 'package:cattle_tracer_app/screens/nav/cattle/modals/options/delete_option.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 
 class CattleSelectionModal extends StatefulWidget {
@@ -169,14 +176,44 @@ class _CattleSelectionModalState extends State<CattleSelectionModal> {
     }
   }
 
+  Future<void> _exportExcel() async {
+    if (selectedCattle == null) return;
+    ScaffoldMessenger.of(context).hideCurrentSnackBar();
+    final ok = await CattleExportService.downloadCattleExcel(selectedCattle!.id.toString());
+    if (!context.mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(ok ? 'Excel report ready! Choose where to open/save.' : 'Failed to download Excel report.'),
+        backgroundColor: ok ? Colors.green.shade600 : Colors.red.shade700,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      ),
+    );
+  }
+
+  Future<void> _exportPdf() async {
+    if (selectedCattle == null) return;
+    ScaffoldMessenger.of(context).hideCurrentSnackBar();
+    final ok = await CattleExportService.downloadCattlePdf(selectedCattle!.id.toString());
+    if (!context.mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(ok ? 'PDF report ready! Choose where to open/save.' : 'Failed to generate PDF report.'),
+        backgroundColor: ok ? Colors.green.shade600 : Colors.red.shade700,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Dialog(
       backgroundColor: Colors.transparent,
-      insetPadding: const EdgeInsets.all(16),
+      insetPadding: const EdgeInsets.all(24),
       child: Container(
         constraints: BoxConstraints(
-          maxHeight: MediaQuery.of(context).size.height * 0.8,
+          maxHeight: MediaQuery.of(context).size.height * 0.65,
         ),
         decoration: BoxDecoration(
           color: Colors.white,
@@ -194,7 +231,7 @@ class _CattleSelectionModalState extends State<CattleSelectionModal> {
           children: [
             // Header
             Container(
-              padding: const EdgeInsets.all(20),
+              padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
                 gradient: LinearGradient(
                   colors: [
@@ -218,19 +255,19 @@ class _CattleSelectionModalState extends State<CattleSelectionModal> {
               child: Row(
                 children: [
                   Container(
-                    padding: const EdgeInsets.all(12),
+                    padding: const EdgeInsets.all(8),
                     decoration: BoxDecoration(
                       color: AppColors.vibrantGreen.withOpacity(0.15),
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: BorderRadius.circular(10),
                       border: Border.all(color: AppColors.vibrantGreen.withOpacity(0.3)),
                     ),
                     child: const FaIcon(
                       FontAwesomeIcons.cow,
                       color: AppColors.vibrantGreen,
-                      size: 24,
+                      size: 18,
                     ),
                   ),
-                  const SizedBox(width: 16),
+                  const SizedBox(width: 12),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -238,7 +275,7 @@ class _CattleSelectionModalState extends State<CattleSelectionModal> {
                         const Text(
                           'Select Cattle',
                           style: TextStyle(
-                            fontSize: 20,
+                            fontSize: 18,
                             fontWeight: FontWeight.bold,
                             color: AppColors.textPrimary,
                           ),
@@ -246,7 +283,7 @@ class _CattleSelectionModalState extends State<CattleSelectionModal> {
                         Text(
                           'Choose a cattle to add a history record for',
                           style: TextStyle(
-                            fontSize: 14,
+                            fontSize: 12,
                             color: Colors.grey.shade600,
                           ),
                         ),
@@ -264,7 +301,7 @@ class _CattleSelectionModalState extends State<CattleSelectionModal> {
 
             // Search bar
             Padding(
-              padding: const EdgeInsets.all(16),
+              padding: const EdgeInsets.all(12),
               child: TextField(
                 onChanged: _filterCattle,
                 decoration: InputDecoration(
@@ -284,7 +321,7 @@ class _CattleSelectionModalState extends State<CattleSelectionModal> {
                     borderRadius: BorderRadius.circular(12),
                     borderSide: const BorderSide(color: AppColors.vibrantGreen, width: 2),
                   ),
-                  contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
                 ),
               ),
             ),
@@ -304,9 +341,9 @@ class _CattleSelectionModalState extends State<CattleSelectionModal> {
                   ? _buildEmptyState()
                   : ListView.separated(
                 shrinkWrap: true,
-                padding: const EdgeInsets.symmetric(horizontal: 16),
+                padding: const EdgeInsets.symmetric(horizontal: 12),
                 itemCount: filteredCattle.length,
-                separatorBuilder: (context, index) => const SizedBox(height: 8),
+                separatorBuilder: (context, index) => const SizedBox(height: 6),
                 itemBuilder: (context, index) {
                   final cattle = filteredCattle[index];
                   // Fix: Use the correct property name for comparison
@@ -318,7 +355,7 @@ class _CattleSelectionModalState extends State<CattleSelectionModal> {
 
             // Footer with action buttons
             Container(
-              padding: const EdgeInsets.all(20),
+              padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
                 color: Colors.grey.shade50,
                 borderRadius: const BorderRadius.only(
@@ -332,52 +369,94 @@ class _CattleSelectionModalState extends State<CattleSelectionModal> {
                   ),
                 ),
               ),
-              child: Row(
+              child: Column(
                 children: [
-                  Expanded(
-                    child: OutlinedButton(
-                      onPressed: () => Navigator.of(context).pop(),
-                      style: OutlinedButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                        side: BorderSide(color: Colors.grey.shade400),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
+                  // Export buttons (only show when cattle is selected)
+                  if (selectedCattle != null) ...[
+                    Row(
+                      children: [
+                        Expanded(
+                          child: OutlinedButton.icon(
+                            onPressed: _exportExcel,
+                            icon: const FaIcon(FontAwesomeIcons.fileExcel, size: 14),
+                            label: const Text('Export Excel', style: TextStyle(fontSize: 13)),
+                            style: OutlinedButton.styleFrom(
+                              padding: const EdgeInsets.symmetric(vertical: 10),
+                              side: BorderSide(color: Colors.green.shade400),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                            ),
+                          ),
                         ),
-                      ),
-                      child: Text(
-                        'Cancel',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
-                          color: Colors.grey.shade600,
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: OutlinedButton.icon(
+                            onPressed: _exportPdf,
+                            icon: const Icon(Icons.picture_as_pdf_rounded, size: 14),
+                            label: const Text('Export PDF', style: TextStyle(fontSize: 13)),
+                            style: OutlinedButton.styleFrom(
+                              padding: const EdgeInsets.symmetric(vertical: 10),
+                              side: BorderSide(color: Colors.red.shade400),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                            ),
+                          ),
                         ),
-                      ),
+                      ],
                     ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: ElevatedButton(
-                      onPressed: selectedCattle != null ? _confirmSelection : null,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: selectedCattle != null
-                            ? AppColors.vibrantGreen
-                            : Colors.grey.shade300,
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
+                    const SizedBox(height: 10),
+                  ],
+                  // Action buttons
+                  Row(
+                    children: [
+                      Expanded(
+                        child: OutlinedButton(
+                          onPressed: () => Navigator.of(context).pop(),
+                          style: OutlinedButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(vertical: 12),
+                            side: BorderSide(color: Colors.grey.shade400),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                          ),
+                          child: Text(
+                            'Cancel',
+                            style: TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w600,
+                              color: Colors.grey.shade600,
+                            ),
+                          ),
                         ),
-                        elevation: selectedCattle != null ? 2 : 0,
                       ),
-                      child: Text(
-                        'Select',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
-                          color: selectedCattle != null ? Colors.white : Colors.grey.shade500,
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: ElevatedButton(
+                          onPressed: selectedCattle != null ? _confirmSelection : null,
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: selectedCattle != null
+                                ? AppColors.vibrantGreen
+                                : Colors.grey.shade300,
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(vertical: 12),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            elevation: selectedCattle != null ? 2 : 0,
+                          ),
+                          child: Text(
+                            'Select',
+                            style: TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w600,
+                              color: selectedCattle != null ? Colors.white : Colors.grey.shade500,
+                            ),
+                          ),
                         ),
                       ),
-                    ),
+                    ],
                   ),
                 ],
               ),
@@ -393,7 +472,7 @@ class _CattleSelectionModalState extends State<CattleSelectionModal> {
       onTap: () => _selectCattle(cattle),
       borderRadius: BorderRadius.circular(12),
       child: Container(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
           color: isSelected ? AppColors.vibrantGreen.withOpacity(0.1) : Colors.white,
           borderRadius: BorderRadius.circular(12),
@@ -416,12 +495,12 @@ class _CattleSelectionModalState extends State<CattleSelectionModal> {
         child: Row(
           children: [
             Container(
-              padding: const EdgeInsets.all(12),
+              padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
                 color: isSelected
                     ? AppColors.vibrantGreen.withOpacity(0.2)
                     : Colors.grey.shade100,
-                borderRadius: BorderRadius.circular(10),
+                borderRadius: BorderRadius.circular(8),
                 border: Border.all(
                   color: isSelected
                       ? AppColors.vibrantGreen.withOpacity(0.3)
@@ -431,10 +510,10 @@ class _CattleSelectionModalState extends State<CattleSelectionModal> {
               child: FaIcon(
                 FontAwesomeIcons.cow,
                 color: isSelected ? AppColors.vibrantGreen : Colors.grey.shade600,
-                size: 20,
+                size: 16,
               ),
             ),
-            const SizedBox(width: 16),
+            const SizedBox(width: 12),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -443,7 +522,7 @@ class _CattleSelectionModalState extends State<CattleSelectionModal> {
                     // Fix: Use the correct property name
                     cattle.tagNo, // Assuming your property is 'tagNo'
                     style: TextStyle(
-                      fontSize: 16,
+                      fontSize: 15,
                       fontWeight: FontWeight.bold,
                       color: isSelected ? AppColors.vibrantGreen : AppColors.textPrimary,
                     ),
@@ -453,7 +532,7 @@ class _CattleSelectionModalState extends State<CattleSelectionModal> {
                     '${cattle.classification}'
                     '${(cattle.breed != null && cattle.breed!.isNotEmpty && cattle.breed!.toLowerCase() != 'unknown') ? ' • ${cattle.breed}' : ''}',
                     style: TextStyle(
-                      fontSize: 14,
+                      fontSize: 12,
                       color: Colors.grey.shade600,
                       fontWeight: FontWeight.w500,
                     ),
@@ -461,8 +540,10 @@ class _CattleSelectionModalState extends State<CattleSelectionModal> {
                 ],
               ),
             ),
+            _buildCattleOptionsMenu(cattle),
             if (isSelected)
               Container(
+                margin: const EdgeInsets.only(left: 8),
                 padding: const EdgeInsets.all(4),
                 decoration: const BoxDecoration(
                   color: AppColors.vibrantGreen,
@@ -477,6 +558,278 @@ class _CattleSelectionModalState extends State<CattleSelectionModal> {
           ],
         ),
       ),
+    );
+  }
+
+  Widget _buildCattleOptionsMenu(Cattle cattle) {
+    return PopupMenuButton<String>(
+      icon: Icon(
+        Icons.more_vert,
+        color: AppColors.textSecondary.withOpacity(0.8),
+        size: 20,
+      ),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+      ),
+      elevation: 8,
+      offset: const Offset(0, 10),
+      color: Colors.white,
+      shadowColor: Colors.black26,
+      onSelected: (String value) async {
+        switch (value) {
+          case 'edit':
+            if (!context.mounted) return;
+            await Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => CattleFormScreen(cattle: cattle),
+              ),
+            );
+            _loadCattle();
+            break;
+          case 'add_event':
+            if (!context.mounted) return;
+            await Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => CattleHistoryFormScreen(cattleTag: cattle.tagNo),
+              ),
+            );
+            _loadCattle();
+            break;
+          case 'change_stage':
+            if (!context.mounted) return;
+            ChangeStageOption.show(context, cattle, () {
+              _loadCattle();
+            });
+            break;
+          case 'change_status':
+            if (!context.mounted) return;
+            ChangeStatusOption.show(context, cattle, () {
+              _loadCattle();
+            });
+            break;
+          case 'export_excel':
+            ScaffoldMessenger.of(context).hideCurrentSnackBar();
+            final ok = await CattleExportService.downloadCattleExcel(cattle.id.toString());
+            if (!context.mounted) return;
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(ok ? 'Excel report ready! Choose where to open/save.' : 'Failed to download Excel report.'),
+                backgroundColor: ok ? Colors.green.shade600 : Colors.red.shade700,
+                behavior: SnackBarBehavior.floating,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              ),
+            );
+            break;
+          case 'export_pdf':
+            ScaffoldMessenger.of(context).hideCurrentSnackBar();
+            final ok = await CattleExportService.downloadCattlePdf(cattle.id.toString());
+            if (!context.mounted) return;
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(ok ? 'PDF report ready! Choose where to open/save.' : 'Failed to generate PDF report.'),
+                backgroundColor: ok ? Colors.green.shade600 : Colors.red.shade700,
+                behavior: SnackBarBehavior.floating,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              ),
+            );
+            break;
+          case 'archive':
+            if (!context.mounted) return;
+            ArchiveOption.show(context, cattle: cattle, onCattleUpdated: () {
+              _loadCattle();
+            });
+            break;
+          case 'delete':
+            if (!context.mounted) return;
+            DeleteOption.show(context);
+            _loadCattle();
+            break;
+        }
+      },
+      itemBuilder: (BuildContext context) => [
+        PopupMenuItem<String>(
+          value: 'edit',
+          height: 36,
+          child: Row(
+            children: [
+              Container(
+                width: 24,
+                height: 24,
+                decoration: BoxDecoration(
+                  color: AppColors.vibrantGreen.withOpacity(0.12),
+                  borderRadius: BorderRadius.circular(6),
+                  border: Border.all(color: AppColors.vibrantGreen.withOpacity(0.2)),
+                ),
+                child: const Icon(Icons.edit_outlined, color: AppColors.vibrantGreen, size: 14),
+              ),
+              const SizedBox(width: 8),
+              const Expanded(
+                child: Text('Edit Cattle', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
+              ),
+            ],
+          ),
+        ),
+        PopupMenuItem<String>(
+          value: 'add_event',
+          height: 36,
+          child: Row(
+            children: [
+              Container(
+                width: 24,
+                height: 24,
+                decoration: BoxDecoration(
+                  color: AppColors.darkGreen.withOpacity(0.12),
+                  borderRadius: BorderRadius.circular(6),
+                  border: Border.all(color: AppColors.darkGreen.withOpacity(0.2)),
+                ),
+                child: const Icon(Icons.event_note_outlined, color: AppColors.darkGreen, size: 14),
+              ),
+              const SizedBox(width: 8),
+              const Expanded(
+                child: Text('Add History Record', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
+              ),
+            ],
+          ),
+        ),
+        const PopupMenuDivider(height: 1),
+        PopupMenuItem<String>(
+          value: 'change_stage',
+          height: 36,
+          child: Row(
+            children: [
+              Container(
+                width: 24,
+                height: 24,
+                decoration: BoxDecoration(
+                  color: AppColors.lightGreen.withOpacity(0.12),
+                  borderRadius: BorderRadius.circular(6),
+                  border: Border.all(color: AppColors.lightGreen.withOpacity(0.2)),
+                ),
+                child: const Icon(Icons.arrow_upward_outlined, color: AppColors.lightGreen, size: 14),
+              ),
+              const SizedBox(width: 8),
+              const Expanded(
+                child: Text('Change Stage', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
+              ),
+            ],
+          ),
+        ),
+        PopupMenuItem<String>(
+          value: 'change_status',
+          height: 36,
+          child: Row(
+            children: [
+              Container(
+                width: 24,
+                height: 24,
+                decoration: BoxDecoration(
+                  color: AppColors.vibrantGreen.withOpacity(0.12),
+                  borderRadius: BorderRadius.circular(6),
+                  border: Border.all(color: AppColors.vibrantGreen.withOpacity(0.2)),
+                ),
+                child: const Icon(Icons.swap_horiz, color: AppColors.vibrantGreen, size: 14),
+              ),
+              const SizedBox(width: 8),
+              const Expanded(
+                child: Text('Change Status', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
+              ),
+            ],
+          ),
+        ),
+        const PopupMenuDivider(height: 1),
+        PopupMenuItem<String>(
+          value: 'export_excel',
+          height: 36,
+          child: Row(
+            children: [
+              Container(
+                width: 24,
+                height: 24,
+                decoration: BoxDecoration(
+                  color: Colors.green.withOpacity(0.12),
+                  borderRadius: BorderRadius.circular(6),
+                  border: Border.all(color: Colors.green.withOpacity(0.2)),
+                ),
+                alignment: Alignment.center,
+                child: const FaIcon(FontAwesomeIcons.fileExcel, color: Colors.green, size: 14),
+              ),
+              const SizedBox(width: 8),
+              const Expanded(
+                child: Text('Download Excel Report', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
+              ),
+            ],
+          ),
+        ),
+        PopupMenuItem<String>(
+          value: 'export_pdf',
+          height: 36,
+          child: Row(
+            children: [
+              Container(
+                width: 24,
+                height: 24,
+                decoration: BoxDecoration(
+                  color: Colors.red.withOpacity(0.12),
+                  borderRadius: BorderRadius.circular(6),
+                  border: Border.all(color: Colors.red.withOpacity(0.2)),
+                ),
+                child: const Icon(Icons.picture_as_pdf_rounded, color: Colors.red, size: 14),
+              ),
+              const SizedBox(width: 8),
+              const Expanded(
+                child: Text('Generate PDF Report', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
+              ),
+            ],
+          ),
+        ),
+        const PopupMenuDivider(height: 1),
+        PopupMenuItem<String>(
+          value: 'archive',
+          height: 36,
+          child: Row(
+            children: [
+              Container(
+                width: 24,
+                height: 24,
+                decoration: BoxDecoration(
+                  color: AppColors.gold.withOpacity(0.12),
+                  borderRadius: BorderRadius.circular(6),
+                  border: Border.all(color: AppColors.gold.withOpacity(0.2)),
+                ),
+                child: const Icon(Icons.archive_outlined, color: AppColors.gold, size: 14),
+              ),
+              const SizedBox(width: 8),
+              const Expanded(
+                child: Text('Archive', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
+              ),
+            ],
+          ),
+        ),
+        PopupMenuItem<String>(
+          value: 'delete',
+          height: 36,
+          child: Row(
+            children: [
+              Container(
+                width: 24,
+                height: 24,
+                decoration: BoxDecoration(
+                  color: Colors.red.shade600.withOpacity(0.12),
+                  borderRadius: BorderRadius.circular(6),
+                  border: Border.all(color: Colors.red.shade600.withOpacity(0.2)),
+                ),
+                child: Icon(Icons.delete_forever_outlined, color: Colors.red.shade600, size: 14),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text('Delete Cattle', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Colors.red.shade600)),
+              ),
+            ],
+          ),
+        ),
+      ],
     );
   }
 

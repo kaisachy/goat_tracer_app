@@ -55,12 +55,15 @@ class _FarmDetailsModalState extends State<FarmDetailsModal> {
   String? _selectedFarmClassification;
   
   // Address validation state variables
+  List<dynamic> _regions = [];
   List<dynamic> _provinces = [];
   List<dynamic> _municipalities = [];
   List<dynamic> _barangays = [];
+  Map<String, dynamic>? _selectedRegion;
   Map<String, dynamic>? _selectedProvince;
   Map<String, dynamic>? _selectedMunicipality;
   Map<String, dynamic>? _selectedBarangay;
+  bool _isLoadingRegions = false;
   bool _isLoadingProvinces = false;
   bool _isLoadingMunicipalities = false;
   bool _isLoadingBarangays = false;
@@ -151,39 +154,65 @@ class _FarmDetailsModalState extends State<FarmDetailsModal> {
       _selectedFarmClassification = null;
     }
     
-    // Load provinces first, then initialize address fields from structured data
-    _loadRegion2Provinces().then((_) {
+    // Load regions then provinces for selected region, then initialize address
+    _loadRegions().then((_) {
       _initializeAddressFromStructuredData(farm);
     });
   }
 
-  Future<void> _loadRegion2Provinces() async {
+  Future<void> _loadRegions() async {
+    setState(() => _isLoadingRegions = true);
+    try {
+      print('Loading regions...');
+      final regions = await AddressService.getRegions();
+      setState(() {
+        _regions = regions;
+        _isLoadingRegions = false;
+      });
+      // Determine initial region: saved farm_region or Region 2 default
+      final savedRegionName = widget.farmDetails?['farm_region']?.toString();
+      Map<String, dynamic>? initialRegion;
+      if (savedRegionName != null && savedRegionName.isNotEmpty) {
+        initialRegion = regions.firstWhere(
+          (r) => (r['name']?.toString().toLowerCase() == savedRegionName.toLowerCase()) ||
+                  (savedRegionName.toLowerCase().contains((r['name'] ?? '').toString().toLowerCase())),
+          orElse: () => {},
+        );
+      }
+      initialRegion ??= regions.firstWhere(
+        (r) => r['name'] == 'REGION II (CAGAYAN VALLEY)' || r['code'] == '020000000' ||
+               (r['name']?.toString().toLowerCase().contains('cagayan valley') ?? false),
+        orElse: () => regions.isNotEmpty ? regions.first : {},
+      );
+      if (initialRegion != null && initialRegion.isNotEmpty) {
+        setState(() => _selectedRegion = initialRegion);
+        await _loadProvincesForRegion(initialRegion['code']);
+      }
+    } catch (e) {
+      print('Error loading regions: $e');
+      setState(() => _isLoadingRegions = false);
+      _showMessage('Failed to load regions. Please try again.', Colors.red);
+    }
+  }
+
+  Future<void> _loadProvincesForRegion(String regionCode) async {
     setState(() => _isLoadingProvinces = true);
     try {
-      print('Loading Region 2 provinces...');
-      final regions = await AddressService.getRegions();
-      final region2 = regions.firstWhere(
-        (r) => r['name'] == 'REGION II (CAGAYAN VALLEY)' || r['code'] == '020000000',
-        orElse: () => null,
-      );
-      
-      if (region2 == null) {
-        throw Exception('Region 2 not found');
-      }
-      
-      final provinces = await AddressService.getProvinces(region2['code']);
-      
+      final provinces = await AddressService.getProvinces(regionCode);
       setState(() {
         _provinces = provinces;
+        _selectedProvince = null;
+        _municipalities = [];
+        _barangays = [];
+        _selectedMunicipality = null;
+        _selectedBarangay = null;
         _isLoadingProvinces = false;
       });
-      print('Successfully loaded ${provinces.length} provinces');
+      print('Loaded ${provinces.length} provinces for region $regionCode');
     } catch (e) {
-      print('Error loading provinces: $e');
+      print('Error loading provinces for region: $e');
       setState(() => _isLoadingProvinces = false);
-      _showMessage(
-          'Failed to load provinces. Please check your internet connection.',
-          Colors.red);
+      _showMessage('Failed to load provinces for selected region.', Colors.red);
     }
   }
 
@@ -811,9 +840,26 @@ class _FarmDetailsModalState extends State<FarmDetailsModal> {
     if (farm == null) return;
     
     try {
-      // Wait for provinces to load first
-      if (_provinces.isEmpty) {
-        await _loadRegion2Provinces();
+      // Ensure regions are loaded
+      if (_regions.isEmpty) {
+        await _loadRegions();
+      }
+      // Select saved region if present
+      final farmRegion = farm['farm_region']?.toString();
+      if (farmRegion != null && farmRegion.isNotEmpty && _regions.isNotEmpty) {
+        final match = _regions.firstWhere(
+          (r) => (r['name']?.toString().toLowerCase() == farmRegion.toLowerCase()) ||
+                  (farmRegion.toLowerCase().contains((r['name'] ?? '').toString().toLowerCase())),
+          orElse: () => {},
+        );
+        if (match.isNotEmpty) {
+          setState(() => _selectedRegion = match);
+          await _loadProvincesForRegion(match['code']);
+        }
+      }
+      // If provinces somehow still not loaded, load for current selected region
+      if (_provinces.isEmpty && _selectedRegion != null) {
+        await _loadProvincesForRegion(_selectedRegion!['code']);
       }
       
       // Initialize from structured fields
@@ -1265,6 +1311,8 @@ class _FarmDetailsModalState extends State<FarmDetailsModal> {
           const SizedBox(height: 20),
           
           // Address Fields
+          _buildRegionDropdown(),
+          const SizedBox(height: 16),
           _buildProvinceField(),
           const SizedBox(height: 16),
 
@@ -1277,6 +1325,119 @@ class _FarmDetailsModalState extends State<FarmDetailsModal> {
           // Farm coordinates status hidden
           const SizedBox.shrink(),
         ],
+      ),
+    );
+  }
+
+  Widget _buildRegionDropdown() {
+    return Container(
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: DropdownButtonFormField<String>(
+        value: _selectedRegion?['code']?.toString(),
+        decoration: InputDecoration(
+          labelText: 'Region',
+          labelStyle: TextStyle(
+            color: AppColors.textSecondary,
+            fontSize: 16,
+            fontWeight: FontWeight.w500,
+          ),
+          prefixIcon: Container(
+            margin: const EdgeInsets.all(12),
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: AppColors.lightGreen.withOpacity(0.2),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: const FaIcon(
+              FontAwesomeIcons.globe,
+              size: 18,
+              color: AppColors.primary,
+            ),
+          ),
+          filled: true,
+          fillColor: Colors.white,
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(16),
+            borderSide: BorderSide(color: Colors.grey[200]!, width: 1.5),
+          ),
+          enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(16),
+            borderSide: BorderSide(color: Colors.grey[200]!, width: 1.5),
+          ),
+          focusedBorder: const OutlineInputBorder(
+            borderRadius: BorderRadius.all(Radius.circular(16)),
+            borderSide: BorderSide(color: AppColors.primary, width: 2),
+          ),
+          errorBorder: const OutlineInputBorder(
+            borderRadius: BorderRadius.all(Radius.circular(16)),
+            borderSide: BorderSide(color: Colors.red, width: 2),
+          ),
+          focusedErrorBorder: const OutlineInputBorder(
+            borderRadius: BorderRadius.all(Radius.circular(16)),
+            borderSide: BorderSide(color: Colors.red, width: 2),
+          ),
+          contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
+        ),
+        items: _regions.map<DropdownMenuItem<String>>((region) {
+          return DropdownMenuItem<String>(
+            value: region['code']?.toString(),
+            child: Text(region['name'] ?? 'Unknown Region'),
+          );
+        }).toList(),
+        onChanged: _isLoadingRegions
+            ? null
+            : (String? newValue) async {
+                if (newValue != null) {
+                  final selected = _regions.firstWhere(
+                    (r) => r['code']?.toString() == newValue,
+                    orElse: () => {},
+                  );
+                  setState(() {
+                    _selectedRegion = selected.isNotEmpty ? selected : null;
+                    _selectedProvince = null;
+                    _selectedMunicipality = null;
+                    _selectedBarangay = null;
+                    _provinces = [];
+                    _municipalities = [];
+                    _barangays = [];
+                    _farmLatitude = null;
+                    _farmLongitude = null;
+                  });
+                  if (selected.isNotEmpty) {
+                    await _loadProvincesForRegion(selected['code']);
+                  }
+                } else {
+                  setState(() {
+                    _selectedRegion = null;
+                    _selectedProvince = null;
+                    _selectedMunicipality = null;
+                    _selectedBarangay = null;
+                    _provinces = [];
+                    _municipalities = [];
+                    _barangays = [];
+                    _farmLatitude = null;
+                    _farmLongitude = null;
+                  });
+                }
+              },
+        validator: (String? value) {
+          if (value == null || value.isEmpty) {
+            return 'Please select a region';
+          }
+          return null;
+        },
+        hint: _isLoadingRegions
+            ? const Text('Loading regions...')
+            : const Text('Select Region'),
       ),
     );
   }
@@ -1308,9 +1469,13 @@ class _FarmDetailsModalState extends State<FarmDetailsModal> {
 
   String _formatFarmLocation() {
     if (_selectedProvince != null && _selectedMunicipality != null && _selectedBarangay != null) {
-      return '${_selectedBarangay!['name']}, ${_selectedMunicipality!['name']}, ${_selectedProvince!['name']}';
+      final regionName = _selectedRegion?['name']?.toString();
+      final base = '${_selectedBarangay!['name']}, ${_selectedMunicipality!['name']}, ${_selectedProvince!['name']}';
+      return regionName != null && regionName.isNotEmpty ? '$base, $regionName' : base;
     } else if (_selectedProvince != null && _selectedMunicipality != null) {
-      return '${_selectedMunicipality!['name']}, ${_selectedProvince!['name']}';
+      final regionName = _selectedRegion?['name']?.toString();
+      final base = '${_selectedMunicipality!['name']}, ${_selectedProvince!['name']}';
+      return regionName != null && regionName.isNotEmpty ? '$base, $regionName' : base;
     } else {
       // Fallback to structured fields from widget data
       final farm = widget.farmDetails;
@@ -1319,6 +1484,7 @@ class _FarmDetailsModalState extends State<FarmDetailsModal> {
         if (farm['farm_barangay']?.toString().isNotEmpty == true) parts.add(farm['farm_barangay']);
         if (farm['farm_municipality']?.toString().isNotEmpty == true) parts.add(farm['farm_municipality']);
         if (farm['farm_province']?.toString().isNotEmpty == true) parts.add(farm['farm_province']);
+        if (farm['farm_region']?.toString().isNotEmpty == true) parts.add(farm['farm_region']);
         if (parts.isNotEmpty) return parts.join(', ');
       }
       return 'None';
@@ -1399,6 +1565,7 @@ class _FarmDetailsModalState extends State<FarmDetailsModal> {
         'farm_classification': _selectedFarmClassification ?? '',
         'farm_land_area': _selectedFarmLandArea ?? '',
         'cooperative_affiliation': coopController.text,
+        'farm_region': _selectedRegion?['name'] ?? '',
         'farm_province': _selectedProvince?['name'] ?? '',
         'farm_municipality': _selectedMunicipality?['name'] ?? '',
         'farm_barangay': _selectedBarangay?['name'] ?? '',

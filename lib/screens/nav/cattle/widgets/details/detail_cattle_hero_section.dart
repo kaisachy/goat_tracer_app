@@ -6,9 +6,15 @@ import 'package:cattle_tracer_app/models/cattle.dart';
 import 'package:cattle_tracer_app/constants/app_colors.dart';
 import 'package:cattle_tracer_app/utils/cattle_detail_utils.dart';
 import 'package:cattle_tracer_app/screens/nav/cattle/modals/photo_options_modal.dart';
-import 'package:cattle_tracer_app/screens/nav/cattle/modals/cattle_options_modal.dart';
 import 'package:cattle_tracer_app/screens/nav/cattle/widgets/details/cattle_schedules_section.dart';
 import 'package:cattle_tracer_app/services/schedule/schedule_service.dart';
+import 'package:cattle_tracer_app/services/cattle/cattle_export_service.dart';
+import 'package:cattle_tracer_app/services/cattle/cattle_service.dart';
+import 'package:cattle_tracer_app/screens/nav/cattle/modals/options/change_stage_option.dart';
+import 'package:cattle_tracer_app/screens/nav/cattle/modals/options/change_status_option.dart';
+import 'package:cattle_tracer_app/screens/nav/cattle/modals/options/archive_option.dart';
+import 'package:cattle_tracer_app/screens/nav/cattle/modals/options/delete_option.dart';
+import 'package:cattle_tracer_app/screens/nav/history/cattle_selection_modal.dart';
 
 class CattleHeroSection extends StatefulWidget {
   final Cattle cattle;
@@ -254,7 +260,7 @@ class _CattleHeroSectionState extends State<CattleHeroSection> {
         Positioned(
           top: 40,
           right: 20,
-          child: _buildMoreOptionsButton(),
+          child: _buildMoreOptionsMenu(context),
         ),
         Positioned(
           bottom: 20,
@@ -377,17 +383,6 @@ class _CattleHeroSectionState extends State<CattleHeroSection> {
       context: context,
       currentImagePath: widget.cattle.cattlePicture,
       onImageUpdate: widget.onImageUpdate,
-    );
-  }
-
-  void _showCattleOptionsModal(BuildContext context) {
-    CattleOptionsModal.show(
-      context: context,
-      cattle: widget.cattle,
-      onAddEvent: widget.onAddEvent,
-      onEditCattle: widget.onEditCattle,
-      onCattleUpdated: widget.onCattleUpdated,
-      isArchived: widget.isArchived,
     );
   }
 
@@ -635,12 +630,272 @@ class _CattleHeroSectionState extends State<CattleHeroSection> {
     );
   }
 
-  Widget _buildMoreOptionsButton() {
-    return _buildFloatingButton(
-      icon: Icons.more_vert,
-      onTap: () {
-        _showCattleOptionsModal(context);
-      },
+  Widget _buildMoreOptionsMenu(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white.withOpacity(0.9),
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.1),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: PopupMenuButton<String>(
+        icon: const Icon(Icons.more_vert, color: AppColors.textPrimary, size: 20),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        elevation: 8,
+        offset: const Offset(0, 10),
+        color: Colors.white,
+        shadowColor: Colors.black26,
+        onSelected: (value) async {
+          switch (value) {
+            case 'edit':
+              widget.onEditCattle(widget.cattle);
+              break;
+            case 'add_event':
+              widget.onAddEvent();
+              break;
+            case 'change_stage':
+              ChangeStageOption.show(context, widget.cattle, widget.onCattleUpdated ?? () {});
+              break;
+            case 'change_status':
+              ChangeStatusOption.show(context, widget.cattle, widget.onCattleUpdated ?? () {});
+              break;
+            case 'export_excel':
+            case 'export_pdf':
+              // Show cattle selection modal for export
+              final selectedTag = await showDialog<String>(
+                context: context,
+                builder: (context) => const CattleSelectionModal(),
+              );
+              if (selectedTag != null && context.mounted) {
+                // Find the selected cattle
+                final allCattle = await CattleService.getAllCattle();
+                final selectedCattle = allCattle.firstWhere(
+                  (c) => c.tagNo == selectedTag,
+                  orElse: () => widget.cattle,
+                );
+                if (value == 'export_excel') {
+                  ScaffoldMessenger.of(context).hideCurrentSnackBar();
+                  final ok = await CattleExportService.downloadCattleExcel(selectedCattle.id.toString());
+                  if (!context.mounted) return;
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(ok ? 'Excel report ready! Choose where to open/save.' : 'Failed to download Excel report.'),
+                      backgroundColor: ok ? Colors.green.shade600 : Colors.red.shade700,
+                      behavior: SnackBarBehavior.floating,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    ),
+                  );
+                } else if (value == 'export_pdf') {
+                  ScaffoldMessenger.of(context).hideCurrentSnackBar();
+                  final ok = await CattleExportService.downloadCattlePdf(selectedCattle.id.toString());
+                  if (!context.mounted) return;
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(ok ? 'PDF report ready! Choose where to open/save.' : 'Failed to generate PDF report.'),
+                      backgroundColor: ok ? Colors.green.shade600 : Colors.red.shade700,
+                      behavior: SnackBarBehavior.floating,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    ),
+                  );
+                }
+              }
+              break;
+            case 'archive':
+              ArchiveOption.show(context, cattle: widget.cattle, onCattleUpdated: widget.onCattleUpdated ?? () {});
+              break;
+            case 'delete':
+              DeleteOption.show(context);
+              break;
+          }
+        },
+        itemBuilder: (context) => [
+          PopupMenuItem<String>(
+            value: 'edit',
+            height: 36,
+            child: Row(
+              children: [
+                Container(
+                  width: 24,
+                  height: 24,
+                  decoration: BoxDecoration(
+                    color: AppColors.vibrantGreen.withOpacity(0.12),
+                    borderRadius: BorderRadius.circular(6),
+                    border: Border.all(color: AppColors.vibrantGreen.withOpacity(0.2)),
+                  ),
+                  child: const Icon(Icons.edit_outlined, color: AppColors.vibrantGreen, size: 14),
+                ),
+                const SizedBox(width: 8),
+                const Expanded(
+                  child: Text('Edit Cattle', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
+                ),
+              ],
+            ),
+          ),
+          PopupMenuItem<String>(
+            value: 'add_event',
+            height: 36,
+            child: Row(
+              children: [
+                Container(
+                  width: 24,
+                  height: 24,
+                  decoration: BoxDecoration(
+                    color: AppColors.darkGreen.withOpacity(0.12),
+                    borderRadius: BorderRadius.circular(6),
+                    border: Border.all(color: AppColors.darkGreen.withOpacity(0.2)),
+                  ),
+                  child: const Icon(Icons.event_note_outlined, color: AppColors.darkGreen, size: 14),
+                ),
+                const SizedBox(width: 8),
+                const Expanded(
+                  child: Text('Add History Record', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
+                ),
+              ],
+            ),
+          ),
+          const PopupMenuDivider(height: 1),
+          PopupMenuItem<String>(
+            value: 'change_stage',
+            height: 36,
+            child: Row(
+              children: [
+                Container(
+                  width: 24,
+                  height: 24,
+                  decoration: BoxDecoration(
+                    color: AppColors.lightGreen.withOpacity(0.12),
+                    borderRadius: BorderRadius.circular(6),
+                    border: Border.all(color: AppColors.lightGreen.withOpacity(0.2)),
+                  ),
+                  child: const Icon(Icons.arrow_upward_outlined, color: AppColors.lightGreen, size: 14),
+                ),
+                const SizedBox(width: 8),
+                const Expanded(
+                  child: Text('Change Stage', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
+                ),
+              ],
+            ),
+          ),
+          PopupMenuItem<String>(
+            value: 'change_status',
+            height: 36,
+            child: Row(
+              children: [
+                Container(
+                  width: 24,
+                  height: 24,
+                  decoration: BoxDecoration(
+                    color: AppColors.vibrantGreen.withOpacity(0.12),
+                    borderRadius: BorderRadius.circular(6),
+                    border: Border.all(color: AppColors.vibrantGreen.withOpacity(0.2)),
+                  ),
+                  child: const Icon(Icons.swap_horiz, color: AppColors.vibrantGreen, size: 14),
+                ),
+                const SizedBox(width: 8),
+                const Expanded(
+                  child: Text('Change Status', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
+                ),
+              ],
+            ),
+          ),
+          const PopupMenuDivider(height: 1),
+          PopupMenuItem<String>(
+            value: 'export_excel',
+            height: 36,
+            child: Row(
+              children: [
+                Container(
+                  width: 24,
+                  height: 24,
+                  decoration: BoxDecoration(
+                    color: Colors.green.withOpacity(0.12),
+                    borderRadius: BorderRadius.circular(6),
+                    border: Border.all(color: Colors.green.withOpacity(0.2)),
+                  ),
+                  alignment: Alignment.center,
+                  child: const FaIcon(FontAwesomeIcons.fileExcel, color: Colors.green, size: 14),
+                ),
+                const SizedBox(width: 8),
+                const Expanded(
+                  child: Text('Download Excel Report', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
+                ),
+              ],
+            ),
+          ),
+          PopupMenuItem<String>(
+            value: 'export_pdf',
+            height: 36,
+            child: Row(
+              children: [
+                Container(
+                  width: 24,
+                  height: 24,
+                  decoration: BoxDecoration(
+                    color: Colors.red.withOpacity(0.12),
+                    borderRadius: BorderRadius.circular(6),
+                    border: Border.all(color: Colors.red.withOpacity(0.2)),
+                  ),
+                  child: const Icon(Icons.picture_as_pdf_rounded, color: Colors.red, size: 14),
+                ),
+                const SizedBox(width: 8),
+                const Expanded(
+                  child: Text('Generate PDF Report', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
+                ),
+              ],
+            ),
+          ),
+          const PopupMenuDivider(height: 1),
+          PopupMenuItem<String>(
+            value: 'archive',
+            height: 36,
+            child: Row(
+              children: [
+                Container(
+                  width: 24,
+                  height: 24,
+                  decoration: BoxDecoration(
+                    color: AppColors.gold.withOpacity(0.12),
+                    borderRadius: BorderRadius.circular(6),
+                    border: Border.all(color: AppColors.gold.withOpacity(0.2)),
+                  ),
+                  child: const Icon(Icons.archive_outlined, color: AppColors.gold, size: 14),
+                ),
+                const SizedBox(width: 8),
+                const Expanded(
+                  child: Text('Archive', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
+                ),
+              ],
+            ),
+          ),
+          PopupMenuItem<String>(
+            value: 'delete',
+            height: 36,
+            child: Row(
+              children: [
+                Container(
+                  width: 24,
+                  height: 24,
+                  decoration: BoxDecoration(
+                    color: Colors.red.shade600.withOpacity(0.12),
+                    borderRadius: BorderRadius.circular(6),
+                    border: Border.all(color: Colors.red.shade600.withOpacity(0.2)),
+                  ),
+                  child: Icon(Icons.delete_forever_outlined, color: Colors.red.shade600, size: 14),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text('Delete Cattle', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Colors.red.shade600)),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
     );
   }
 

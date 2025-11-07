@@ -324,17 +324,8 @@ class _HistoryCattleTabContentState extends State<HistoryCattleTabContent> {
       final matchesFilter = selectedEventType == 'All' ||
           type == selectedEventType.toLowerCase();
 
-      // Additional filter: only show event that are valid for the cattle's sex
-      final sex = widget.cattle.sex.toLowerCase();
-      final validEventTypes = sex == 'female'
-          ? ['dry off', 'sick', 'treated', 'breeding', 'weighed', 'gives birth', 'vaccinated',
-        'pregnant', 'aborted pregnancy', 'deworming', 'hoof trimming', 'mortality', 'lost', 'sold', 'other']
-          : ['sick', 'treated', 'breeding', 'weighed', 'vaccinated', 'deworming', 'hoof trimming',
-        'castrated', 'weaned', 'mortality', 'lost', 'sold', 'other'];
-
-      final matchesSex = validEventTypes.contains(type);
-
-      return matchesSearch && matchesFilter && matchesSex;
+      // Show all events regardless of cattle sex or type (archived cattle should see everything)
+      return matchesSearch && matchesFilter;
     }).toList();
   }
 
@@ -833,8 +824,8 @@ class _HistoryCattleTabContentState extends State<HistoryCattleTabContent> {
           AnimatedContainer(
             duration: const Duration(milliseconds: 300),
             curve: Curves.easeInOut,
-            height: isExpanded && details.isNotEmpty && eventType.toLowerCase() != 'other' ? null : 0,
-            child: isExpanded && details.isNotEmpty && eventType.toLowerCase() != 'other'
+            height: isExpanded && details.isNotEmpty ? null : 0,
+            child: isExpanded && details.isNotEmpty
                 ? Container(
               width: double.infinity,
               padding: const EdgeInsets.all(16),

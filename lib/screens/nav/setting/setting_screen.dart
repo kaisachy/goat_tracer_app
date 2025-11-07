@@ -36,12 +36,15 @@ class _SettingScreenState extends State<SettingScreen> with TickerProviderStateM
   bool _obscureConfirmPassword = true;
 
   // Address-related variables
+  List<dynamic> _regions = [];
   List<dynamic> _provinces = [];
   List<dynamic> _municipalities = [];
   List<dynamic> _barangays = [];
+  String? _selectedRegion; // region name
   String? _selectedProvince;
   String? _selectedMunicipality;
   String? _selectedBarangay;
+  bool _isLoadingRegions = false;
   bool _isLoadingProvinces = false;
   bool _isLoadingMunicipalities = false;
   bool _isLoadingBarangays = false;
@@ -92,8 +95,8 @@ class _SettingScreenState extends State<SettingScreen> with TickerProviderStateM
     try {
       _isInitializing = true;
       
-      // Load provinces first
-      await _loadRegion2Provinces();
+      // Load regions first
+      await _loadRegions();
       
       // Then load user data (which will load municipalities and barangays based on province)
       await _loadUserData();
@@ -104,28 +107,36 @@ class _SettingScreenState extends State<SettingScreen> with TickerProviderStateM
     }
   }
 
-  Future<void> _loadRegion2Provinces() async {
+  Future<void> _loadRegions() async {
+    try {
+      setState(() => _isLoadingRegions = true);
+      final regions = await AddressService.getRegions();
+      setState(() {
+        _regions = regions;
+        _isLoadingRegions = false;
+      });
+    } catch (e) {
+      setState(() => _isLoadingRegions = false);
+      debugPrint('Error loading regions: $e');
+    }
+  }
+
+  Future<void> _loadProvincesForRegion(String regionCode) async {
     try {
       setState(() => _isLoadingProvinces = true);
-      final regions = await AddressService.getRegions();
-      final region2 = regions.firstWhere(
-        (r) => r['name'] == 'REGION II (CAGAYAN VALLEY)' || r['code'] == '020000000',
-        orElse: () => null,
-      );
-      
-      if (region2 == null) {
-        throw Exception('Region 2 not found');
-      }
-      
-      final provinces = await AddressService.getProvinces(region2['code']);
-      
+      final provinces = await AddressService.getProvinces(regionCode);
       setState(() {
         _provinces = provinces;
+        _municipalities = [];
+        _barangays = [];
+        _selectedProvince = null;
+        _selectedMunicipality = null;
+        _selectedBarangay = null;
         _isLoadingProvinces = false;
       });
     } catch (e) {
       setState(() => _isLoadingProvinces = false);
-      debugPrint('Error loading provinces: $e');
+      debugPrint('Error loading provinces for region: $e');
     }
   }
 
@@ -227,11 +238,38 @@ class _SettingScreenState extends State<SettingScreen> with TickerProviderStateM
         _isLoading = false;
       });
 
+      // If we have user's province, find and set its region first, then load provinces
+      if (user.province != null && user.province!.isNotEmpty && _regions.isNotEmpty) {
+        try {
+          // Find region for user's province by scanning regions' provinces
+          String? matchedRegionName;
+          String? matchedRegionCode;
+          for (final r in _regions) {
+            try {
+              final provs = await AddressService.getProvinces(r['code']);
+              if (provs.any((p) => p['name'] == user.province)) {
+                matchedRegionName = r['name'];
+                matchedRegionCode = r['code']?.toString();
+                break;
+              }
+            } catch (_) {}
+          }
+          if (matchedRegionName != null && matchedRegionCode != null) {
+            setState(() {
+              _selectedRegion = matchedRegionName;
+            });
+            await _loadProvincesForRegion(matchedRegionCode);
+          }
+        } catch (e) {
+          debugPrint('Failed to auto-detect region for user province: $e');
+        }
+      }
+
       // Wait for provinces to be loaded before setting address selection
       if (_provinces.isEmpty) {
         setState(() => _isLoading = false);
         debugPrint('Provinces not loaded yet, skipping address initialization');
-        return; // Exit early - provinces should already be loaded by _initializeData()
+        return;
       }
 
       // Set province and load address data in sequence
@@ -630,6 +668,71 @@ class _SettingScreenState extends State<SettingScreen> with TickerProviderStateM
                         );
                       }
                     },
+                  ),
+                  const SizedBox(height: 16),
+                  // Region dropdown
+                  _isDataReady ? DropdownButtonFormField<String>(
+                    decoration: InputDecoration(
+                      labelText: 'Region',
+                      labelStyle: TextStyle(color: AppColors.darkGreen),
+                      prefixIcon: Icon(Icons.map_outlined, color: AppColors.darkGreen),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      filled: !_isEditingProfile,
+                      fillColor: !_isEditingProfile ? Colors.grey[50] : null,
+                      contentPadding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
+                    ),
+                    items: _regions.map<DropdownMenuItem<String>>((region) {
+                      return DropdownMenuItem<String>(
+                        value: region['name'],
+                        child: Text(region['name']),
+                      );
+                    }).toList(),
+                    value: (_selectedRegion != null &&
+                           _regions.any((r) => r['name'] == _selectedRegion))
+                        ? _selectedRegion
+                        : null,
+                    onChanged: _isEditingProfile ? (String? newValue) async {
+                      setState(() {
+                        _selectedRegion = newValue;
+                        _selectedProvince = null;
+                        _selectedMunicipality = null;
+                        _selectedBarangay = null;
+                        _provinces = [];
+                        _municipalities = [];
+                        _barangays = [];
+                      });
+                      if (newValue != null) {
+                        final region = _regions.firstWhere((r) => r['name'] == newValue, orElse: () => null);
+                        if (region != null && region['code'] != null) {
+                          await _loadProvincesForRegion(region['code']);
+                        }
+                      }
+                    } : null,
+                    validator: (value) {
+                      if (value == null || value.isEmpty) {
+                        return 'Please select a region';
+                      }
+                      return null;
+                    },
+                  ) : Container(
+                    padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
+                    decoration: BoxDecoration(
+                      border: Border.all(color: Colors.grey[300]!),
+                      borderRadius: BorderRadius.circular(12),
+                      color: Colors.grey[50],
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(Icons.map_outlined, color: AppColors.darkGreen),
+                        const SizedBox(width: 12),
+                        Text(
+                          _isLoadingRegions ? 'Loading regions...' : 'Region',
+                          style: TextStyle(color: AppColors.darkGreen),
+                        ),
+                      ],
+                    ),
                   ),
                   const SizedBox(height: 16),
                   // Province dropdown

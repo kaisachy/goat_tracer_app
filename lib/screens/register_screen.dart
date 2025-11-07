@@ -30,12 +30,15 @@ class _RegisterScreenState extends State<RegisterScreen> {
   bool _isLoadingProvinces = false;
   bool _isLoadingMunicipalities = false;
   bool _isLoadingBarangays = false;
+  bool _isLoadingRegions = false;
 
   // Address data and selections
+  List<dynamic> _regions = [];
   List<dynamic> _provinces = [];
   List<dynamic> _municipalities = [];
   List<dynamic> _barangays = [];
 
+  Map<String, dynamic>? _selectedRegion;
   Map<String, dynamic>? _selectedProvince;
   Map<String, dynamic>? _selectedMunicipality;
   Map<String, dynamic>? _selectedBarangay;
@@ -49,7 +52,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
   @override
   void initState() {
     super.initState();
-    _loadRegion2Provinces();
+    _loadRegions();
   }
 
   @override
@@ -63,33 +66,42 @@ class _RegisterScreenState extends State<RegisterScreen> {
     super.dispose();
   }
 
-  Future<void> _loadRegion2Provinces() async {
+  Future<void> _loadRegions() async {
+    setState(() => _isLoadingRegions = true);
+    try {
+      print('Loading regions...');
+      final regions = await AddressService.getRegions();
+      setState(() {
+        _regions = regions;
+        _isLoadingRegions = false;
+      });
+      print('Successfully loaded ${regions.length} regions');
+    } catch (e) {
+      print('Error loading regions: $e');
+      setState(() => _isLoadingRegions = false);
+      _showMessage('Failed to load regions. Please check your internet connection.', Colors.red);
+    }
+  }
+
+  Future<void> _loadProvincesForRegion(String regionCode) async {
     setState(() => _isLoadingProvinces = true);
     try {
-      print('Loading Region 2 provinces...');
-      final regions = await AddressService.getRegions();
-      final region2 = regions.firstWhere(
-        (r) => r['name'] == 'REGION II (CAGAYAN VALLEY)' || r['code'] == '020000000',
-        orElse: () => null,
-      );
-      
-      if (region2 == null) {
-        throw Exception('Region 2 not found');
-      }
-      
-      final provinces = await AddressService.getProvinces(region2['code']);
-      
+      print('Loading provinces for region code: $regionCode');
+      final provinces = await AddressService.getProvinces(regionCode);
       setState(() {
         _provinces = provinces;
+        _municipalities = [];
+        _barangays = [];
+        _selectedProvince = null;
+        _selectedMunicipality = null;
+        _selectedBarangay = null;
         _isLoadingProvinces = false;
       });
       print('Successfully loaded ${provinces.length} provinces');
     } catch (e) {
       print('Error loading provinces: $e');
       setState(() => _isLoadingProvinces = false);
-      _showMessage(
-          'Failed to load provinces. Please check your internet connection.',
-          Colors.red);
+      _showMessage('Failed to load provinces. Please check your internet connection.', Colors.red);
     }
   }
 
@@ -254,6 +266,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
           'email': _emailController.text.trim(),
           'password': _passwordController.text,
           'role': 'farmer', // Default role
+        'region': _selectedRegion?['name'] ?? '',
           'province': _selectedProvince?['name'] ?? '',
           'municipality': _selectedMunicipality?['name'],
           'barangay': _selectedBarangay?['name'],
@@ -472,6 +485,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
   Widget _buildAddressFields() {
     return Column(
       children: [
+        // Region Dropdown
+        _buildRegionDropdown(),
+        const SizedBox(height: 20),
+
         // Province Dropdown
         _buildProvinceDropdown(),
         const SizedBox(height: 20),
@@ -482,6 +499,79 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
         // Barangay Dropdown with loading indicator
         _buildBarangayDropdown(),
+      ],
+    );
+  }
+
+  Widget _buildRegionDropdown() {
+    return Stack(
+      children: [
+        DropdownButtonFormField<String>(
+          value: _selectedRegion?['code']?.toString(),
+          decoration: _inputDecoration(
+            'Region',
+            Icons.map_outlined,
+            helper: 'Select your region',
+            requiredField: true,
+          ),
+          items: _regions
+              .map((region) => DropdownMenuItem<String>(
+                    value: region['code']?.toString(),
+                    child: Text(region['name'] ?? 'Unknown Region'),
+                  ))
+              .toList(),
+          onChanged: _isLoadingRegions
+              ? null
+              : (String? newValue) {
+                  if (newValue != null) {
+                    final selectedRegion = _regions.firstWhere(
+                      (region) => region['code']?.toString() == newValue,
+                      orElse: () => {},
+                    );
+                    setState(() {
+                      _selectedRegion = selectedRegion.isNotEmpty ? selectedRegion : null;
+                      // Clear lower levels
+                      _provinces = [];
+                      _municipalities = [];
+                      _barangays = [];
+                      _selectedProvince = null;
+                      _selectedMunicipality = null;
+                      _selectedBarangay = null;
+                      _latitude = null;
+                      _longitude = null;
+                    });
+                    if (selectedRegion.isNotEmpty) {
+                      print('🗺️ Region selected: ${selectedRegion['name']}, loading provinces...');
+                      _loadProvincesForRegion(selectedRegion['code']);
+                    }
+                  } else {
+                    setState(() {
+                      _selectedRegion = null;
+                      _provinces = [];
+                      _municipalities = [];
+                      _barangays = [];
+                      _selectedProvince = null;
+                      _selectedMunicipality = null;
+                      _selectedBarangay = null;
+                      _latitude = null;
+                      _longitude = null;
+                    });
+                  }
+                },
+          validator: (value) => value == null || value.isEmpty ? 'Select a region' : null,
+        ),
+        if (_isLoadingRegions)
+          Positioned.fill(
+            child: Container(
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.7),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: const Center(
+                child: CircularProgressIndicator(),
+              ),
+            ),
+          ),
       ],
     );
   }
@@ -503,7 +593,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
             child: Text(province['name'] ?? 'Unknown Province'),
           ))
               .toList(),
-          onChanged: _isLoadingProvinces
+          onChanged: _isLoadingProvinces || _selectedRegion == null
               ? null
               : (String? newValue) {
             if (newValue != null) {
@@ -538,8 +628,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
               });
             }
           },
-          validator: (value) =>
-          value == null || value.isEmpty ? 'Select a province' : null,
+          validator: (value) => _selectedRegion != null && (value == null || value.isEmpty) ? 'Select a province' : null,
+          hint: _selectedRegion == null ? const Text('Select region first') : const Text('Select province'),
         ),
         if (_isLoadingProvinces)
           Positioned.fill(

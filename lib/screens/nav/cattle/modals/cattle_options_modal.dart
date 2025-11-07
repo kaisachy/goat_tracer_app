@@ -102,7 +102,7 @@ class CattleOptionsModal {
           subtitle: 'Update cattle status',
           color: AppColors.vibrantGreen,
         ),
-        _buildDivider(),
+        // _buildDivider(),
         // _buildDropdownItem(
         //   value: 'weight_report',
         //   icon: FontAwesomeIcons.chartLine,

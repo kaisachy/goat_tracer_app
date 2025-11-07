@@ -45,11 +45,6 @@ class CattleManagementCard extends StatelessWidget {
               title: 'Source',
               value: CattleDetailUtils.getSourceDisplay(cattle.source, cattle.sourceDetails),
             ),
-            InfoItemData(
-              icon: Icons.groups,
-              title: 'Group',
-              value: CattleDetailUtils.getGroupDisplay(cattle.groupName),
-            ),
           ]),
         ],
       ),
