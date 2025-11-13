@@ -15,11 +15,12 @@ class EducationalBackgroundService {
     }
 
     try {
+      final authHeader = 'Bearer ${token.trim()}';
       final response = await http.get(
         Uri.parse('$_baseUrl/farmer/education'),
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': 'Bearer $token',
+          'Authorization': authHeader,
         },
       );
 

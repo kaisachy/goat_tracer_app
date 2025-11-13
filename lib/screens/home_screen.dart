@@ -58,6 +58,8 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     if (state == AppLifecycleState.resumed) {
       _checkAuthenticationStatus();
       _checkCattleStatusUpdates();
+      // Refresh profile data when app resumes
+      _loadProfileData();
     }
   }
 
@@ -144,9 +146,17 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
 
       if (mounted) {
         setState(() {
-          _profile = profileData;
+          _profile = profileData ?? {};
           _isLoadingProfile = false;
         });
+        
+        // Debug log to check if profile_picture is present
+        if (profileData != null) {
+          print('Profile loaded - profile_picture present: ${profileData['profile_picture'] != null && profileData['profile_picture'].toString().isNotEmpty}');
+          if (profileData['profile_picture'] != null) {
+            print('Profile picture length: ${profileData['profile_picture'].toString().length}');
+          }
+        }
       }
     } catch (e) {
       print('Error loading profile data: $e');
@@ -204,6 +214,9 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
 
       // Perform comprehensive refresh for all data
       final refreshResults = await RefreshService.refreshAllData();
+      
+      // Refresh profile data to ensure drawer shows latest profile picture
+      await _loadProfileData();
       
       // Also auto-update cattle classifications
       final _ = await CattleService.autoUpdateCattleClassifications();
@@ -521,7 +534,11 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
         leading: IconButton(
           icon: const Icon(Icons.menu),
           tooltip: 'Open Menu',
-          onPressed: () => _scaffoldKey.currentState?.openDrawer(),
+          onPressed: () {
+            // Refresh profile data when opening drawer
+            _loadProfileData();
+            _scaffoldKey.currentState?.openDrawer();
+          },
         ),
         actions: [
           IconButton(
@@ -671,21 +688,38 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
         profilePicture.isNotEmpty) {
 
       try {
+        // Remove data URL prefix if present (e.g., "data:image/png;base64,")
+        String base64String = profilePicture;
+        if (base64String.contains(',')) {
+          base64String = base64String.split(',').last;
+        }
+        
+        // Trim whitespace
+        base64String = base64String.trim();
+        
         // Decode the base64 image
-        final imageBytes = base64Decode(profilePicture);
+        final imageBytes = base64Decode(base64String);
 
-        return CircleAvatar(
-          backgroundColor: AppColors.cardBackground,
-          backgroundImage: MemoryImage(imageBytes),
-          onBackgroundImageError: (exception, stackTrace) {
-            // Handle image loading error
-            print('Error loading profile image: $exception');
-          },
-        );
+        if (imageBytes.isNotEmpty) {
+          return CircleAvatar(
+            backgroundColor: AppColors.cardBackground,
+            backgroundImage: MemoryImage(imageBytes),
+            onBackgroundImageError: (exception, stackTrace) {
+              // Handle image loading error
+              print('Error loading profile image: $exception');
+              print('Stack trace: $stackTrace');
+            },
+          );
+        } else {
+          print('Decoded image bytes are empty');
+        }
       } catch (e) {
         print('Error decoding profile image: $e');
+        print('Profile picture value (first 50 chars): ${profilePicture.substring(0, profilePicture.length > 50 ? 50 : profilePicture.length)}');
         // Fall through to default avatar
       }
+    } else {
+      print('Profile picture is null or empty. Profile data: ${_profile?.keys.toList()}');
     }
 
     // Default avatar when no profile picture is available

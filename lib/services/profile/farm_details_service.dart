@@ -16,11 +16,13 @@ class FarmDetailsService {
     }
 
     try {
+      final authHeader = 'Bearer ${token.trim()}';
+      log('🔍 FarmDetailsService DEBUG: Authorization header: Bearer ${token.substring(0, token.length > 20 ? 20 : token.length)}...');
       final response = await http.get(
         Uri.parse('$_baseUrl/farmer/farm'),
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': 'Bearer $token',
+          'Authorization': authHeader,
         },
       );
 

@@ -22,12 +22,16 @@ class PersonalInformationService {
     }
 
     try {
+      final trimmedToken = token.trim();
+      final authHeader = 'Bearer $trimmedToken';
       log('🔍 PersonalInformationService DEBUG: Making API call to $_baseUrl/farmer/profile');
+      log('🔍 PersonalInformationService DEBUG: Token (first 20 chars): ${trimmedToken.substring(0, trimmedToken.length > 20 ? 20 : trimmedToken.length)}...');
+      log('🔍 PersonalInformationService DEBUG: Authorization header length: ${authHeader.length}');
       final response = await http.get(
         Uri.parse('$_baseUrl/farmer/profile'),
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': 'Bearer $token',
+          'Authorization': authHeader,
         },
       );
 
@@ -57,11 +61,12 @@ class PersonalInformationService {
     }
 
     try {
+      final trimmedToken = token.trim();
       final response = await http.post(
         Uri.parse('$_baseUrl/farmer/profile'),
         headers: {
           'Content-Type': 'application/json; charset=UTF-8',
-          'Authorization': 'Bearer $token',
+          'Authorization': 'Bearer $trimmedToken',
         },
         body: jsonEncode(data),
       );
@@ -88,11 +93,12 @@ class PersonalInformationService {
     }
 
     try {
+      final trimmedToken = token.trim();
       final response = await http.put(
         Uri.parse('$_baseUrl/farmer/profile'),
         headers: {
           'Content-Type': 'application/json; charset=UTF-8',
-          'Authorization': 'Bearer $token',
+          'Authorization': 'Bearer $trimmedToken',
         },
         body: jsonEncode(data),
       );
@@ -119,10 +125,11 @@ class PersonalInformationService {
     }
 
     try {
+      final trimmedToken = token.trim();
       final uri = Uri.parse('$_baseUrl/farmer/profile/picture');
       final request = http.MultipartRequest('POST', uri);
 
-      request.headers['Authorization'] = 'Bearer $token';
+      request.headers['Authorization'] = 'Bearer $trimmedToken';
       request.headers['Accept'] = 'application/json';
 
       request.files.add(
@@ -157,10 +164,11 @@ class PersonalInformationService {
     }
 
     try {
+      final trimmedToken = token.trim();
       final response = await http.delete(
         Uri.parse('$_baseUrl/farmer/profile/picture'),
         headers: {
-          'Authorization': 'Bearer $token',
+          'Authorization': 'Bearer $trimmedToken',
         },
       );
 

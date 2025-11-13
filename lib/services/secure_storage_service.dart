@@ -4,11 +4,14 @@ class SecureStorageService {
   final _storage = const FlutterSecureStorage();
 
   Future<void> saveToken(String token) async {
-    await _storage.write(key: 'auth_token', value: token);
+    await _storage.write(key: 'auth_token', value: token.trim());
   }
 
   Future<String?> getToken() async {
-    return await _storage.read(key: 'auth_token');
+    final token = await _storage.read(key: 'auth_token');
+    if (token == null) return null;
+    final trimmed = token.trim();
+    return trimmed.isEmpty ? null : trimmed;
   }
 
   Future<void> deleteToken() async {

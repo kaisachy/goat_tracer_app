@@ -989,30 +989,32 @@ class _CattleFormScreenState extends State<CattleFormScreen> {
       barrierDismissible: false,
       builder: (BuildContext context) {
         return AlertDialog(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-          title: Row(
-            children: [
-              Icon(Icons.add_circle, color: AppColors.primary, size: 28),
-              const SizedBox(width: 12),
-              const Text('Add Another Cattle'),
-            ],
-          ),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          contentPadding: const EdgeInsets.fromLTRB(24, 24, 24, 16),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                'Cattle added successfully!',
-                style: TextStyle(
-                  color: AppColors.vibrantGreen,
-                  fontWeight: FontWeight.w600,
-                  fontSize: 16,
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                decoration: BoxDecoration(
+                  color: AppColors.vibrantGreen.withOpacity(0.12),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Text(
+                  '${_getClassificationLabel()} added successfully.',
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.vibrantGreen,
+                  ),
                 ),
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 12),
               Text(
-                'Would you like to add another ${_classification?.toLowerCase() ?? 'cattle'}?',
-                style: const TextStyle(fontSize: 16),
+                'Add another ${_classification?.toLowerCase() ?? 'cattle'}?',
+                style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
               ),
             ],
           ),
@@ -1022,24 +1024,20 @@ class _CattleFormScreenState extends State<CattleFormScreen> {
                 Navigator.pop(context); // Close dialog
                 Navigator.pop(context, true); // Close form and return to cattle list
               },
-              child: Text(
-                'No, Done',
-                style: TextStyle(color: Colors.grey[600]),
+              style: TextButton.styleFrom(
+                foregroundColor: Colors.grey[700],
               ),
+              child: const Text('No'),
             ),
-            ElevatedButton(
+            TextButton(
               onPressed: () {
                 Navigator.pop(context); // Close dialog
                 _resetFormForNewCattle(); // Reset form for new cattle of same classification
               },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.primary,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+              style: TextButton.styleFrom(
+                foregroundColor: AppColors.primary,
               ),
-              child: const Text(
-                'Yes, Add Another',
-                style: TextStyle(color: Colors.white),
-              ),
+              child: const Text('Yes'),
             ),
           ],
         );
@@ -1076,6 +1074,17 @@ class _CattleFormScreenState extends State<CattleFormScreen> {
         _classification = null;
       }
     });
+  }
+
+  String _getClassificationLabel() {
+    final classification = _classification?.trim();
+    if (classification == null || classification.isEmpty) {
+      return 'Cattle';
+    }
+    if (classification.length == 1) {
+      return classification.toUpperCase();
+    }
+    return classification[0].toUpperCase() + classification.substring(1).toLowerCase();
   }
 
   /// Builds a searchable dropdown for parent selection
