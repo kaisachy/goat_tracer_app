@@ -65,7 +65,7 @@ class ScheduleTypeDropdown extends StatelessWidget {
         color = Colors.brown;
         break;
       case ScheduleType.weigh:
-        icon = FontAwesomeIcons.weight;
+        icon = FontAwesomeIcons.weightScale;
         color = Colors.blue;
         break;
       case ScheduleType.deworming:

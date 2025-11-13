@@ -29,17 +29,17 @@ class BreedingEventFieldsState extends BaseEventFieldsState<BreedingEventFields>
       if (existingValue.isNotEmpty) {
         // Use existing value (for editing)
         _breedingType = existingValue;
-        print('DEBUG: Using existing breeding_type from controller: $existingValue');
+        debugPrint('DEBUG: Using existing breeding_type from controller: $existingValue');
       } else {
         // Set default value (for new history)
         widget.controllers['breeding_type']!.text = _breedingType;
-        print('DEBUG: Initialized breeding_type controller with default: $_breedingType');
+        debugPrint('DEBUG: Initialized breeding_type controller with default: $_breedingType');
       }
 
       // Listen for external updates to breeding_type (e.g., inference during edit)
       widget.controllers['breeding_type']!.addListener(_onExternalBreedingTypeControllerChanged);
     } else {
-      print('DEBUG: breeding_type controller is null!');
+      debugPrint('DEBUG: breeding_type controller is null!');
     }
   }
 
@@ -118,7 +118,7 @@ class BreedingEventFieldsState extends BaseEventFieldsState<BreedingEventFields>
 
     if (semenUsed.isNotEmpty) {
       // Do not mirror semen to bull_tag for AI (bull_tag is only for Natural Breeding)
-      print('DEBUG: Semen selected (pure tag): $semenUsed');
+      debugPrint('DEBUG: Semen selected (pure tag): $semenUsed');
     } else {
       // Clear bull_tag if no semen selected
       if (widget.controllers['bull_tag'] != null) {
@@ -135,9 +135,9 @@ class BreedingEventFieldsState extends BaseEventFieldsState<BreedingEventFields>
         // Store breeding type in controller for form submission
         if (widget.controllers['breeding_type'] != null) {
           widget.controllers['breeding_type']!.text = value;
-          print('DEBUG: Updated breeding_type controller with: $value');
+          debugPrint('DEBUG: Updated breeding_type controller with: $value');
         } else {
-          print('DEBUG: breeding_type controller is null in _onBreedingTypeChanged!');
+          debugPrint('DEBUG: breeding_type controller is null in _onBreedingTypeChanged!');
         }
         
         // Clear fields when switching breeding types
@@ -158,7 +158,7 @@ class BreedingEventFieldsState extends BaseEventFieldsState<BreedingEventFields>
     final controllerValue = widget.controllers['breeding_type']?.text ?? '';
     if (controllerValue.isEmpty) return;
     if (controllerValue != _breedingType) {
-      print('DEBUG: External breeding_type change detected: "$controllerValue" (was $_breedingType)');
+      debugPrint('DEBUG: External breeding_type change detected: "$controllerValue" (was $_breedingType)');
       setState(() {
         _breedingType = controllerValue;
         // When switching types externally, do not nuke user data unnecessarily;
@@ -171,11 +171,11 @@ class BreedingEventFieldsState extends BaseEventFieldsState<BreedingEventFields>
 
   @override
   Widget build(BuildContext context) {
-    print('DEBUG: BreedingEventFields build() called');
-    print('DEBUG: needsBulls() returns: ${needsBulls()}');
-    print('DEBUG: needsTechnicians() returns: ${needsTechnicians()}');
-    print('DEBUG: semen_used controller value: "${widget.controllers['semen_used']?.text}"');
-    print('DEBUG: bull_tag controller value: "${widget.controllers['bull_tag']?.text}"');
+    debugPrint('DEBUG: BreedingEventFields build() called');
+    debugPrint('DEBUG: needsBulls() returns: ${needsBulls()}');
+    debugPrint('DEBUG: needsTechnicians() returns: ${needsTechnicians()}');
+    debugPrint('DEBUG: semen_used controller value: "${widget.controllers['semen_used']?.text}"');
+    debugPrint('DEBUG: bull_tag controller value: "${widget.controllers['bull_tag']?.text}"');
 
     return Column(
       children: [
@@ -231,9 +231,9 @@ class BreedingEventFieldsState extends BaseEventFieldsState<BreedingEventFields>
           // Semen dropdown (this will populate the bull_tag automatically)
           Builder(
             builder: (context) {
-              print('DEBUG: About to call buildSemenDropdown()');
+              debugPrint('DEBUG: About to call buildSemenDropdown()');
               final semenWidget = buildSemenDropdown();
-              print('DEBUG: buildSemenDropdown() returned widget type: ${semenWidget.runtimeType}');
+              debugPrint('DEBUG: buildSemenDropdown() returned widget type: ${semenWidget.runtimeType}');
               return semenWidget;
             },
           ),

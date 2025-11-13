@@ -33,7 +33,7 @@ class UIHelpers {
                       width: 40,
                       height: 40,
                       decoration: BoxDecoration(
-                        color: AppColors.vibrantGreen.withOpacity(0.1),
+                        color: AppColors.vibrantGreen.withValues(alpha: 0.1),
                         shape: BoxShape.circle,
                       ),
                       child: Icon(
@@ -88,7 +88,7 @@ class UIHelpers {
                   width: 60,
                   height: 60,
                   decoration: BoxDecoration(
-                    color: Colors.red.withOpacity(0.1),
+                    color: Colors.red.withValues(alpha: 0.1),
                     shape: BoxShape.circle,
                   ),
                   child: const Icon(
@@ -180,7 +180,7 @@ class UIHelpers {
               Container(
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.2),
+                  color: Colors.white.withValues(alpha: 0.2),
                   shape: BoxShape.circle,
                 ),
                 child: Icon(

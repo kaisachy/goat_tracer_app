@@ -41,12 +41,12 @@ class CattleLineageCard extends StatelessWidget {
         color: AppColors.cardBackground,
         borderRadius: BorderRadius.circular(20),
         border: Border.all(
-          color: AppColors.darkGreen.withOpacity(0.1),
+          color: AppColors.darkGreen.withValues(alpha: 0.1),
           width: 1,
         ),
         boxShadow: [
           BoxShadow(
-            color: AppColors.darkGreen.withOpacity(0.08),
+            color: AppColors.darkGreen.withValues(alpha: 0.08),
             blurRadius: 16,
             offset: const Offset(0, 4),
             spreadRadius: 0,
@@ -81,10 +81,10 @@ class CattleLineageCard extends StatelessWidget {
             width: double.infinity,
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: AppColors.darkGreen.withOpacity(0.05),
+              color: AppColors.darkGreen.withValues(alpha: 0.05),
               borderRadius: BorderRadius.circular(16),
               border: Border.all(
-                color: AppColors.darkGreen.withOpacity(0.15),
+                color: AppColors.darkGreen.withValues(alpha: 0.15),
                 width: 1,
               ),
             ),
@@ -169,7 +169,7 @@ class CattleLineageCard extends StatelessWidget {
           color: AppColors.cardBackground,
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
-            color: AppColors.darkGreen.withOpacity(0.3),
+            color: AppColors.darkGreen.withValues(alpha: 0.3),
             width: 1,
           ),
         ),
@@ -188,7 +188,7 @@ class CattleLineageCard extends StatelessWidget {
             Container(
               padding: const EdgeInsets.all(4),
               decoration: BoxDecoration(
-                color: AppColors.darkGreen.withOpacity(0.1),
+                color: AppColors.darkGreen.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(6),
               ),
               child: const Icon(
@@ -220,10 +220,10 @@ class CattleLineageCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: AppColors.darkGreen.withOpacity(0.05),
+        color: AppColors.darkGreen.withValues(alpha: 0.05),
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: AppColors.darkGreen.withOpacity(0.15),
+          color: AppColors.darkGreen.withValues(alpha: 0.15),
           width: 1,
         ),
       ),
@@ -271,7 +271,7 @@ class CattleLineageCard extends StatelessWidget {
                   child: Container(
                     padding: const EdgeInsets.all(4),
                     decoration: BoxDecoration(
-                      color: AppColors.darkGreen.withOpacity(0.1),
+                      color: AppColors.darkGreen.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(6),
                     ),
                     child: const Icon(
@@ -296,11 +296,12 @@ class CattleLineageCard extends StatelessWidget {
       return;
     }
     try {
+      final navigator = Navigator.of(context);
       final cattle = await CattleService.getCattleByTag(tag);
+      if (!context.mounted) return;
       if (cattle != null) {
         // TODO: Update this to a proper navigation solution if needed, e.g. Navigator.pushNamed
-        Navigator.push(
-          context,
+        navigator.push(
           MaterialPageRoute(
             builder: (context) => CattleDetailScreen(cattle: cattle),
           ),
@@ -331,6 +332,7 @@ class CattleLineageCard extends StatelessWidget {
   }
 
   void _navigateDirectly(BuildContext context, String tag) async {
+    final navigator = Navigator.of(context);
     try {
       showDialog(
         context: context,
@@ -340,10 +342,10 @@ class CattleLineageCard extends StatelessWidget {
         ),
       );
       final cattle = await CattleService.getCattleByTag(tag);
-      Navigator.pop(context);
+      if (!context.mounted) return;
+      navigator.pop();
       if (cattle != null) {
-        Navigator.push(
-          context,
+        navigator.push(
           MaterialPageRoute(
             builder: (context) => CattleDetailScreen(cattle: cattle),
           ),
@@ -352,9 +354,13 @@ class CattleLineageCard extends StatelessWidget {
         _showCattleNotFound(context, tag);
       }
     } catch (fallbackError) {
-      Navigator.pop(context);
+      if (context.mounted && navigator.canPop()) {
+        navigator.pop();
+      }
       log('Direct navigation also failed: $fallbackError');
-      _showNavigationError(context, tag, fallbackError.toString());
+      if (context.mounted) {
+        _showNavigationError(context, tag, fallbackError.toString());
+      }
     }
   }
 
@@ -403,3 +409,4 @@ class _ParentInfoItemData {
     this.tag,
   });
 }
+

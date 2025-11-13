@@ -1,28 +1,29 @@
+import 'package:flutter/foundation.dart';
 import 'package:cattle_tracer_app/models/cattle.dart';
 
 class CattleAgeClassification {
   // Age ranges in months
-  static const int CALF_MAX_AGE = 8;
-  static const int GROWER_MIN_AGE = 8;
-  static const int GROWER_MAX_AGE = 18;
-  static const int HEIFER_STEER_MIN_AGE = 18;
-  static const int HEIFER_STEER_MAX_AGE = 24; // Upper bound is exclusive in logic below
-  static const int COW_BULL_MIN_AGE = 24; // Inclusive: >= 24 months is Cow/Bull
+  static const int calfMaxAge = 8;
+  static const int growerMinAge = 8;
+  static const int growerMaxAge = 18;
+  static const int heiferSteerMinAge = 18;
+  static const int heiferSteerMaxAge = 24; // Upper bound is exclusive in logic below
+  static const int cowBullMinAge = 24; // Inclusive: >= 24 months is Cow/Bull
 
   /// Get the expected classification based on age and sex
   static String getExpectedClassification(int ageInMonths, String sex) {
-    if (ageInMonths <= CALF_MAX_AGE) {
+    if (ageInMonths <= calfMaxAge) {
       return 'Calf';
-    } else if (ageInMonths > GROWER_MIN_AGE && ageInMonths <= GROWER_MAX_AGE) {
+    } else if (ageInMonths > growerMinAge && ageInMonths <= growerMaxAge) {
       return 'Growers';
-    } else if (ageInMonths > HEIFER_STEER_MIN_AGE && ageInMonths < HEIFER_STEER_MAX_AGE) {
+    } else if (ageInMonths > heiferSteerMinAge && ageInMonths < heiferSteerMaxAge) {
       if (sex == 'Female') {
         return 'Heifer';
       } else if (sex == 'Male') {
         return 'Steer';
       }
       return 'Heifer'; // Default fallback
-    } else if (ageInMonths >= COW_BULL_MIN_AGE) {
+    } else if (ageInMonths >= cowBullMinAge) {
       if (sex == 'Female') {
         return 'Cow';
       } else if (sex == 'Male') {
@@ -109,11 +110,11 @@ class CattleAgeClassification {
       }
 
       // Classification needs to be updated
-      print('🔄 Auto-updating cattle ${cattle.tagNo} classification: "${cattle.classification}" -> "$expectedClassification" (Age: ${ageInMonths} months)');
+      debugPrint('🔄 Auto-updating cattle ${cattle.tagNo} classification: "${cattle.classification}" -> "$expectedClassification" (Age: $ageInMonths months)');
       
       return cattle.copyWith(classification: expectedClassification);
     } catch (e) {
-      print('Error in autoUpdateClassificationIfNeeded: $e');
+      debugPrint('Error in autoUpdateClassificationIfNeeded: $e');
       return null;
     }
   }
@@ -134,3 +135,4 @@ class CattleAgeClassification {
   }
 
 }
+

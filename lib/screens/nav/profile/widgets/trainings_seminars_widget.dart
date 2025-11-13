@@ -36,7 +36,7 @@ class TrainingsSeminarsWidget extends StatelessWidget {
                     width: 48,
                     height: 48,
                     decoration: BoxDecoration(
-                      color: AppColors.lightGreen.withOpacity(0.2),
+                      color: AppColors.lightGreen.withValues(alpha: 0.2),
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: const Icon(Icons.workspace_premium, color: AppColors.primary, size: 24),

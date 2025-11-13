@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'dart:developer';
+import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import '../config.dart';
 import 'secure_storage_service.dart';
@@ -88,19 +89,19 @@ class AuthService {
       }
 
       if (data['success'] == true) {
-        print('🔍 AuthService DEBUG: Login successful, saving data...');
+        debugPrint('🔍 AuthService DEBUG: Login successful, saving data...');
         // Save token and user data
         await _storage.saveToken(data['token']);
-        print('🔍 AuthService DEBUG: Token saved');
+        debugPrint('🔍 AuthService DEBUG: Token saved');
 
         if (data['user'] != null && data['user']['id'] != null) {
           final userId = data['user']['id'].toString();
-          print('🔍 AuthService DEBUG: Saving user ID: $userId');
+          debugPrint('🔍 AuthService DEBUG: Saving user ID: $userId');
           await _storage.write(
               key: 'user_id',
               value: userId
           );
-          print('🔍 AuthService DEBUG: User ID saved to storage');
+          debugPrint('🔍 AuthService DEBUG: User ID saved to storage');
 
           // Save additional user info for easy access
           await _storage.write(
@@ -235,9 +236,9 @@ class AuthService {
   }
 
   static Future<String?> getUserId() async {
-    print('🔍 AuthService DEBUG: getUserId() called');
+    debugPrint('🔍 AuthService DEBUG: getUserId() called');
     final userId = await _storage.read(key: 'user_id');
-    print('🔍 AuthService DEBUG: User ID from storage: $userId');
+    debugPrint('🔍 AuthService DEBUG: User ID from storage: $userId');
     return userId;
   }
 
@@ -306,85 +307,85 @@ class AuthService {
 
   /// Check if user is authenticated and has valid token
   static Future<bool> isAuthenticated() async {
-    print('🔍 AuthService DEBUG: isAuthenticated() called');
+    debugPrint('🔍 AuthService DEBUG: isAuthenticated() called');
     final token = await getToken();
-    print('🔍 AuthService DEBUG: Token exists: ${token != null}');
+    debugPrint('🔍 AuthService DEBUG: Token exists: ${token != null}');
     if (token == null) {
-      print('🔍 AuthService DEBUG: ❌ No token - not authenticated');
+      debugPrint('🔍 AuthService DEBUG: ❌ No token - not authenticated');
       return false;
     }
 
     try {
-      print('🔍 AuthService DEBUG: Checking token validity...');
+      debugPrint('🔍 AuthService DEBUG: Checking token validity...');
       final parts = token.split('.');
-      print('🔍 AuthService DEBUG: Token parts count: ${parts.length}');
+      debugPrint('🔍 AuthService DEBUG: Token parts count: ${parts.length}');
       if (parts.length != 3) {
-        print('🔍 AuthService DEBUG: ❌ Invalid token format - not 3 parts');
+        debugPrint('🔍 AuthService DEBUG: ❌ Invalid token format - not 3 parts');
         return false;
       }
 
-      print('🔍 AuthService DEBUG: Decoding token payload...');
+      debugPrint('🔍 AuthService DEBUG: Decoding token payload...');
       final payload = json.decode(
           utf8.decode(base64Url.decode(base64Url.normalize(parts[1])))
       );
-      print('🔍 AuthService DEBUG: Token payload: $payload');
+      debugPrint('🔍 AuthService DEBUG: Token payload: $payload');
 
       final exp = payload['exp'];
-      print('🔍 AuthService DEBUG: Token expiration: $exp');
+      debugPrint('🔍 AuthService DEBUG: Token expiration: $exp');
       if (exp == null) {
-        print('🔍 AuthService DEBUG: ❌ No expiration in token');
+        debugPrint('🔍 AuthService DEBUG: ❌ No expiration in token');
         return false;
       }
 
       final currentTime = DateTime.now().millisecondsSinceEpoch ~/ 1000;
-      print('🔍 AuthService DEBUG: Current time: $currentTime');
+      debugPrint('🔍 AuthService DEBUG: Current time: $currentTime');
       final isValid = currentTime < exp;
-      print('🔍 AuthService DEBUG: Token is valid: $isValid');
+      debugPrint('🔍 AuthService DEBUG: Token is valid: $isValid');
       return isValid;
     } catch (e) {
-      print('🔍 AuthService DEBUG: ❌ Error checking token validity: $e');
+      debugPrint('🔍 AuthService DEBUG: ❌ Error checking token validity: $e');
       return false;
     }
   }
 
   /// Get current user ID from token claims
   static Future<String?> getCurrentUserId() async {
-    print('🔍 AuthService DEBUG: getCurrentUserId() called');
+    debugPrint('🔍 AuthService DEBUG: getCurrentUserId() called');
     final token = await getToken();
-    print('🔍 AuthService DEBUG: Token exists: ${token != null}');
+    debugPrint('🔍 AuthService DEBUG: Token exists: ${token != null}');
     if (token == null) {
-      print('🔍 AuthService DEBUG: ❌ No token found');
+      debugPrint('🔍 AuthService DEBUG: ❌ No token found');
       return null;
     }
 
     try {
-      print('🔍 AuthService DEBUG: Decoding JWT token...');
+      debugPrint('🔍 AuthService DEBUG: Decoding JWT token...');
       final parts = token.split('.');
-      print('🔍 AuthService DEBUG: Token parts count: ${parts.length}');
+      debugPrint('🔍 AuthService DEBUG: Token parts count: ${parts.length}');
       if (parts.length != 3) {
-        print('🔍 AuthService DEBUG: ❌ Invalid token format - not 3 parts');
+        debugPrint('🔍 AuthService DEBUG: ❌ Invalid token format - not 3 parts');
         return null;
       }
 
-      print('🔍 AuthService DEBUG: Decoding payload (part 1)...');
+      debugPrint('🔍 AuthService DEBUG: Decoding payload (part 1)...');
       final payload = json.decode(
           utf8.decode(base64Url.decode(base64Url.normalize(parts[1])))
       );
-      print('🔍 AuthService DEBUG: Token payload: $payload');
+      debugPrint('🔍 AuthService DEBUG: Token payload: $payload');
 
       final userId = payload['sub']?.toString();
-      print('🔍 AuthService DEBUG: User ID from token (sub): $userId');
+      debugPrint('🔍 AuthService DEBUG: User ID from token (sub): $userId');
       
       // Also check for other possible user ID fields
       final userIdAlt = payload['user_id']?.toString();
-      print('🔍 AuthService DEBUG: User ID from token (user_id): $userIdAlt');
+      debugPrint('🔍 AuthService DEBUG: User ID from token (user_id): $userIdAlt');
       
       final userIdAlt2 = payload['id']?.toString();
-      print('🔍 AuthService DEBUG: User ID from token (id): $userIdAlt2');
+      debugPrint('🔍 AuthService DEBUG: User ID from token (id): $userIdAlt2');
 
       return userId ?? userIdAlt ?? userIdAlt2;
     } catch (e) {
-      print('🔍 AuthService DEBUG: ❌ Error decoding user ID from token: $e');
+      debugPrint('🔍 AuthService DEBUG: ❌ Error decoding user ID from token: $e');
       return null;
     }
   }
@@ -404,7 +405,7 @@ class AuthService {
 
       return payload['role']?.toString();
     } catch (e) {
-      print('Error decoding user role from token: $e');
+      debugPrint('Error decoding user role from token: $e');
       return null;
     }
   }

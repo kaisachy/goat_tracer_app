@@ -150,9 +150,9 @@ class _EducationFormModalState extends State<EducationFormModal> {
                   decoration: BoxDecoration(
                     gradient: LinearGradient(
                       colors: [
-                        AppColors.lightGreen.withOpacity(0.3),
-                        AppColors.vibrantGreen.withOpacity(0.3),
-                        AppColors.lightGreen.withOpacity(0.3),
+                        AppColors.lightGreen.withValues(alpha: 0.3),
+                        AppColors.vibrantGreen.withValues(alpha: 0.3),
+                        AppColors.lightGreen.withValues(alpha: 0.3),
                       ],
                     ),
                   ),
@@ -216,7 +216,7 @@ class _EducationFormModalState extends State<EducationFormModal> {
                         onPressed: isLoading ? null : () => Navigator.pop(context),
                         style: OutlinedButton.styleFrom(
                           foregroundColor: AppColors.textSecondary,
-                          side: BorderSide(color: AppColors.textSecondary.withOpacity(0.3)),
+                          side: BorderSide(color: AppColors.textSecondary.withValues(alpha: 0.3)),
                           padding: const EdgeInsets.symmetric(vertical: 16),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(12),
@@ -244,7 +244,7 @@ class _EducationFormModalState extends State<EducationFormModal> {
                             borderRadius: BorderRadius.circular(12),
                           ),
                           elevation: 2,
-                          shadowColor: AppColors.primary.withOpacity(0.2),
+                          shadowColor: AppColors.primary.withValues(alpha: 0.2),
                         ),
                         child: isLoading
                             ? const SizedBox(
@@ -310,7 +310,7 @@ class _EducationFormModalState extends State<EducationFormModal> {
           decoration: InputDecoration(
             hintText: hint,
             hintStyle: TextStyle(
-              color: AppColors.textSecondary.withOpacity(0.6),
+              color: AppColors.textSecondary.withValues(alpha: 0.6),
               fontSize: 15,
             ),
             prefixIcon: Icon(
@@ -323,13 +323,13 @@ class _EducationFormModalState extends State<EducationFormModal> {
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
               borderSide: BorderSide(
-                color: AppColors.textSecondary.withOpacity(0.1),
+                color: AppColors.textSecondary.withValues(alpha: 0.1),
               ),
             ),
             enabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
               borderSide: BorderSide(
-                color: AppColors.textSecondary.withOpacity(0.1),
+                color: AppColors.textSecondary.withValues(alpha: 0.1),
               ),
             ),
             focusedBorder: OutlineInputBorder(
@@ -397,13 +397,13 @@ class _EducationFormModalState extends State<EducationFormModal> {
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
                 borderSide: BorderSide(
-                  color: AppColors.textSecondary.withOpacity(0.1),
+                  color: AppColors.textSecondary.withValues(alpha: 0.1),
                 ),
               ),
               enabledBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
                 borderSide: BorderSide(
-                  color: AppColors.textSecondary.withOpacity(0.1),
+                  color: AppColors.textSecondary.withValues(alpha: 0.1),
                 ),
               ),
               contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
@@ -599,33 +599,32 @@ class _EducationFormModalState extends State<EducationFormModal> {
 
       // Don't save if all fields are empty
       if (allFieldsEmpty) {
-        if (context.mounted) {
-          Navigator.pop(context);
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Row(
-                children: [
-                  Icon(
-                    Icons.info_outline,
-                    color: Colors.white,
-                    size: 20,
-                  ),
-                  const SizedBox(width: 12),
-                  const Text(
-                    'No data to save.',
-                    style: TextStyle(fontSize: 16),
-                  ),
-                ],
-              ),
-              backgroundColor: AppColors.textSecondary,
-              behavior: SnackBarBehavior.floating,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(8),
-              ),
-              margin: const EdgeInsets.all(16),
+        if (!mounted) return;
+        Navigator.pop(context);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Row(
+              children: [
+                Icon(
+                  Icons.info_outline,
+                  color: Colors.white,
+                  size: 20,
+                ),
+                const SizedBox(width: 12),
+                const Text(
+                  'No data to save.',
+                  style: TextStyle(fontSize: 16),
+                ),
+              ],
             ),
-          );
-        }
+            backgroundColor: AppColors.textSecondary,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(8),
+            ),
+            margin: const EdgeInsets.all(16),
+          ),
+        );
         return;
       }
 
@@ -669,10 +668,10 @@ class _EducationFormModalState extends State<EducationFormModal> {
         success = await EducationalBackgroundService.updateEducationalBackground(updateData);
       }
 
-      if (context.mounted) {
-        setState(() => isLoading = false);
-        Navigator.pop(context);
-        ScaffoldMessenger.of(context).showSnackBar(
+      if (!mounted) return;
+      setState(() => isLoading = false);
+      Navigator.pop(context);
+      ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Row(
               children: [
@@ -700,8 +699,7 @@ class _EducationFormModalState extends State<EducationFormModal> {
             margin: const EdgeInsets.all(16),
           ),
         );
-        if (success) widget.onSaveSuccess();
-      }
+      if (success) widget.onSaveSuccess();
     }
   }
 }

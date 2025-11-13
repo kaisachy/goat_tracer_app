@@ -403,7 +403,7 @@ class _CattleDetailScreenState extends State<CattleDetailScreen>
               Container(
                 padding: const EdgeInsets.all(6),
                 decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.2),
+                  color: Colors.white.withValues(alpha: 0.2),
                   shape: BoxShape.circle,
                 ),
                 child: Icon(
@@ -529,7 +529,7 @@ class _CattleDetailScreenState extends State<CattleDetailScreen>
                   child: SizedBox(
                     height: 2,
                     child: LinearProgressIndicator(
-                      backgroundColor: Colors.white.withOpacity(0.5),
+                      backgroundColor: Colors.white.withValues(alpha: 0.5),
                       valueColor: const AlwaysStoppedAnimation<Color>(AppColors.vibrantGreen),
                     ),
                   ),

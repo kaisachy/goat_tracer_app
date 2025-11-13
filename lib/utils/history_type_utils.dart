@@ -15,8 +15,8 @@ class HistoryTypeUtils {
     final classificationLower = classification.toLowerCase().trim();
 
     // Debug logging
-    print('DEBUG: Classification: $classification');
-    print('DEBUG: Classification lower: $classificationLower');
+    debugPrint('DEBUG: Classification: $classification');
+    debugPrint('DEBUG: Classification lower: $classificationLower');
 
     // Determine history types based on classification only (matching PHP web logic)
     List<String> historyTypes = [];
@@ -37,7 +37,7 @@ class HistoryTypeUtils {
           'Lost',
           'Other',
         ];
-        print('DEBUG: Using Calf history types');
+        debugPrint('DEBUG: Using Calf history types');
         break;
       case 'heifer':
       case 'heifers':
@@ -57,7 +57,7 @@ class HistoryTypeUtils {
           'Lost',
           'Other',
         ];
-        print('DEBUG: Using Heifer history types');
+        debugPrint('DEBUG: Using Heifer history types');
         break;
       case 'cow':
       case 'cows':
@@ -78,7 +78,7 @@ class HistoryTypeUtils {
           'Lost',
           'Other',
         ];
-        print('DEBUG: Using Cow history types');
+        debugPrint('DEBUG: Using Cow history types');
         break;
       case 'bull':
       case 'bulls':
@@ -94,7 +94,7 @@ class HistoryTypeUtils {
           'Lost',
           'Other',
         ];
-        print('DEBUG: Using Bull history types');
+        debugPrint('DEBUG: Using Bull history types');
         break;
       case 'steer':
       case 'steers':
@@ -110,7 +110,7 @@ class HistoryTypeUtils {
           'Lost',
           'Other',
         ];
-        print('DEBUG: Using Steer history types');
+        debugPrint('DEBUG: Using Steer history types');
         break;
       case 'growers':
       case 'grower':
@@ -126,7 +126,7 @@ class HistoryTypeUtils {
           'Lost',
           'Other',
         ];
-        print('DEBUG: Using Growers history types');
+        debugPrint('DEBUG: Using Growers history types');
         break;
       default:
         historyTypes = [
@@ -139,11 +139,11 @@ class HistoryTypeUtils {
           'Lost',
           'Other',
         ];
-        print('DEBUG: Using default history types for classification: $classificationLower');
+        debugPrint('DEBUG: Using default history types for classification: $classificationLower');
         break;
     }
 
-    print('DEBUG: Final history types: ${historyTypes.join(', ')}');
+    debugPrint('DEBUG: Final history types: ${historyTypes.join(', ')}');
     return [...baseTypes, ...historyTypes];
   }
 

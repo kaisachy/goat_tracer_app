@@ -118,7 +118,7 @@ class CalendarWidget extends StatelessWidget {
         Container(
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: AppColors.primary.withOpacity(0.1),
+            color: AppColors.primary.withValues(alpha: 0.1),
             borderRadius: BorderRadius.circular(12),
           ),
           child: Row(
@@ -192,7 +192,7 @@ class CalendarWidget extends StatelessWidget {
           color: isSelected 
               ? AppColors.primary 
               : isToday 
-                  ? AppColors.primary.withOpacity(0.1)
+                  ? AppColors.primary.withValues(alpha: 0.1)
                   : Colors.transparent,
           borderRadius: BorderRadius.circular(8),
           border: isToday 
@@ -265,7 +265,7 @@ class CalendarWidget extends StatelessWidget {
           color: isSelected 
               ? AppColors.primary 
               : isToday 
-                  ? AppColors.primary.withOpacity(0.1)
+                  ? AppColors.primary.withValues(alpha: 0.1)
                   : Colors.transparent,
           borderRadius: BorderRadius.circular(8),
           border: isToday 
@@ -353,7 +353,7 @@ class CalendarWidget extends StatelessWidget {
           borderRadius: BorderRadius.circular(12),
           boxShadow: [
             BoxShadow(
-              color: Colors.grey.withOpacity(0.1),
+              color: Colors.grey.withValues(alpha: 0.1),
               spreadRadius: 1,
               blurRadius: 3,
               offset: const Offset(0, 1),
@@ -516,3 +516,4 @@ class CalendarWidget extends StatelessWidget {
     return days[weekday - 1];
   }
 }
+

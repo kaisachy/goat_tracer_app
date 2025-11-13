@@ -91,7 +91,7 @@ class _CattleHeroSectionState extends State<CattleHeroSection> {
         ),
         boxShadow: [
           BoxShadow(
-            color: AppColors.darkGreen.withOpacity(0.08),
+            color: AppColors.darkGreen.withValues(alpha: 0.08),
             blurRadius: 25,
             offset: const Offset(0, 10),
             spreadRadius: 0,
@@ -117,7 +117,7 @@ class _CattleHeroSectionState extends State<CattleHeroSection> {
                           Container(
                             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                             decoration: BoxDecoration(
-                              color: AppColors.lightGreen.withOpacity(0.15),
+                              color: AppColors.lightGreen.withValues(alpha: 0.15),
                               borderRadius: BorderRadius.circular(12),
                             ),
                             child: Row(
@@ -131,7 +131,7 @@ class _CattleHeroSectionState extends State<CattleHeroSection> {
                                 const SizedBox(width: 6),
                                 Flexible(
                                   child: Text(
-                                    '${widget.cattle.tagNo}',
+                                    widget.cattle.tagNo,
                                     style: const TextStyle(
                                       fontSize: 16,
                                       color: AppColors.textSecondary,
@@ -195,8 +195,8 @@ class _CattleHeroSectionState extends State<CattleHeroSection> {
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
                 colors: [
-                  AppColors.lightGreen.withOpacity(0.2),
-                  AppColors.vibrantGreen.withOpacity(0.1),
+                  AppColors.lightGreen.withValues(alpha: 0.2),
+                  AppColors.vibrantGreen.withValues(alpha: 0.1),
                   Colors.white,
                 ],
                 stops: const [0.0, 0.5, 1.0],
@@ -213,10 +213,10 @@ class _CattleHeroSectionState extends State<CattleHeroSection> {
                   Container(
                     padding: const EdgeInsets.all(20),
                     decoration: BoxDecoration(
-                      color: AppColors.lightGreen.withOpacity(0.1),
+                      color: AppColors.lightGreen.withValues(alpha: 0.1),
                       shape: BoxShape.circle,
                       border: Border.all(
-                        color: AppColors.lightGreen.withOpacity(0.3),
+                        color: AppColors.lightGreen.withValues(alpha: 0.3),
                         width: 2,
                       ),
                     ),
@@ -372,7 +372,7 @@ class _CattleHeroSectionState extends State<CattleHeroSection> {
         child: Icon(
           Icons.broken_image,
           size: 40,
-          color: AppColors.textSecondary.withOpacity(0.6),
+          color: AppColors.textSecondary.withValues(alpha: 0.6),
         ),
       ),
     );
@@ -404,7 +404,7 @@ class _CattleHeroSectionState extends State<CattleHeroSection> {
               borderRadius: BorderRadius.circular(24),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.15),
+                  color: Colors.black.withValues(alpha: 0.15),
                   blurRadius: 30,
                   offset: const Offset(0, 15),
                 ),
@@ -435,7 +435,7 @@ class _CattleHeroSectionState extends State<CattleHeroSection> {
                       Container(
                         padding: const EdgeInsets.all(12),
                         decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.15),
+                          color: Colors.white.withValues(alpha: 0.15),
                           borderRadius: BorderRadius.circular(12),
                         ),
                         child: const Icon(
@@ -463,7 +463,7 @@ class _CattleHeroSectionState extends State<CattleHeroSection> {
                       ),
                       Container(
                         decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.1),
+                          color: Colors.white.withValues(alpha: 0.1),
                           borderRadius: BorderRadius.circular(10),
                         ),
                         child: IconButton(
@@ -483,10 +483,10 @@ class _CattleHeroSectionState extends State<CattleHeroSection> {
                     width: double.infinity,
                     padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
                     decoration: BoxDecoration(
-                      color: AppColors.lightGreen.withOpacity(0.1),
+                      color: AppColors.lightGreen.withValues(alpha: 0.1),
                       border: Border(
                         bottom: BorderSide(
-                          color: AppColors.lightGreen.withOpacity(0.2),
+                          color: AppColors.lightGreen.withValues(alpha: 0.2),
                           width: 1,
                         ),
                       ),
@@ -524,7 +524,7 @@ class _CattleHeroSectionState extends State<CattleHeroSection> {
                         Icon(
                           Icons.info_outline,
                           size: 18,
-                          color: AppColors.textSecondary.withOpacity(0.7),
+                          color: AppColors.textSecondary.withValues(alpha: 0.7),
                         ),
                       ],
                     ),
@@ -562,17 +562,17 @@ class _CattleHeroSectionState extends State<CattleHeroSection> {
             width: 120,
             height: 120,
             decoration: BoxDecoration(
-              color: AppColors.lightGreen.withOpacity(0.1),
+              color: AppColors.lightGreen.withValues(alpha: 0.1),
               shape: BoxShape.circle,
               border: Border.all(
-                color: AppColors.lightGreen.withOpacity(0.3),
+                color: AppColors.lightGreen.withValues(alpha: 0.3),
                 width: 2,
               ),
             ),
             child: Icon(
               Icons.schedule_outlined,
               size: 50,
-              color: AppColors.lightGreen.withOpacity(0.8),
+              color: AppColors.lightGreen.withValues(alpha: 0.8),
             ),
           ),
           const SizedBox(height: 24),
@@ -590,7 +590,7 @@ class _CattleHeroSectionState extends State<CattleHeroSection> {
             textAlign: TextAlign.center,
             style: TextStyle(
               fontSize: 14,
-              color: AppColors.textSecondary.withOpacity(0.8),
+              color: AppColors.textSecondary.withValues(alpha: 0.8),
               height: 1.5,
             ),
           ),
@@ -598,10 +598,10 @@ class _CattleHeroSectionState extends State<CattleHeroSection> {
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: AppColors.lightBackground.withOpacity(0.5),
+              color: AppColors.lightBackground.withValues(alpha: 0.5),
               borderRadius: BorderRadius.circular(16),
               border: Border.all(
-                color: AppColors.lightGreen.withOpacity(0.2),
+                color: AppColors.lightGreen.withValues(alpha: 0.2),
                 width: 1,
               ),
             ),
@@ -611,14 +611,14 @@ class _CattleHeroSectionState extends State<CattleHeroSection> {
                 Icon(
                   Icons.lightbulb_outline,
                   size: 20,
-                  color: AppColors.textSecondary.withOpacity(0.7),
+                  color: AppColors.textSecondary.withValues(alpha: 0.7),
                 ),
                 const SizedBox(width: 8),
                 Text(
                   'Tap "Add Schedule" to create your first schedule',
                   style: TextStyle(
                     fontSize: 12,
-                    color: AppColors.textSecondary.withOpacity(0.8),
+                    color: AppColors.textSecondary.withValues(alpha: 0.8),
                     fontWeight: FontWeight.w500,
                   ),
                 ),
@@ -633,11 +633,11 @@ class _CattleHeroSectionState extends State<CattleHeroSection> {
   Widget _buildMoreOptionsMenu(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.9),
+        color: Colors.white.withValues(alpha: 0.9),
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.1),
+            color: Colors.black.withValues(alpha: 0.1),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -669,20 +669,23 @@ class _CattleHeroSectionState extends State<CattleHeroSection> {
               // Show cattle selection modal for export
               final selectedTag = await showDialog<String>(
                 context: context,
-                builder: (context) => const CattleSelectionModal(),
+                builder: (dialogContext) => const CattleSelectionModal(),
               );
-              if (selectedTag != null && context.mounted) {
+              if (selectedTag != null) {
+                if (!context.mounted) break;
                 // Find the selected cattle
                 final allCattle = await CattleService.getAllCattle();
+                if (!context.mounted) break;
                 final selectedCattle = allCattle.firstWhere(
                   (c) => c.tagNo == selectedTag,
                   orElse: () => widget.cattle,
                 );
                 if (value == 'export_excel') {
-                  ScaffoldMessenger.of(context).hideCurrentSnackBar();
+                  final messenger = ScaffoldMessenger.of(context);
+                  messenger.hideCurrentSnackBar();
                   final ok = await CattleExportService.downloadCattleExcel(selectedCattle.id.toString());
-                  if (!context.mounted) return;
-                  ScaffoldMessenger.of(context).showSnackBar(
+                  if (!context.mounted) break;
+                  messenger.showSnackBar(
                     SnackBar(
                       content: Text(ok ? 'Excel report ready! Choose where to open/save.' : 'Failed to download Excel report.'),
                       backgroundColor: ok ? Colors.green.shade600 : Colors.red.shade700,
@@ -691,10 +694,11 @@ class _CattleHeroSectionState extends State<CattleHeroSection> {
                     ),
                   );
                 } else if (value == 'export_pdf') {
-                  ScaffoldMessenger.of(context).hideCurrentSnackBar();
+                  final messenger = ScaffoldMessenger.of(context);
+                  messenger.hideCurrentSnackBar();
                   final ok = await CattleExportService.downloadCattlePdf(selectedCattle.id.toString());
-                  if (!context.mounted) return;
-                  ScaffoldMessenger.of(context).showSnackBar(
+                  if (!context.mounted) break;
+                  messenger.showSnackBar(
                     SnackBar(
                       content: Text(ok ? 'PDF report ready! Choose where to open/save.' : 'Failed to generate PDF report.'),
                       backgroundColor: ok ? Colors.green.shade600 : Colors.red.shade700,
@@ -723,9 +727,9 @@ class _CattleHeroSectionState extends State<CattleHeroSection> {
                   width: 24,
                   height: 24,
                   decoration: BoxDecoration(
-                    color: AppColors.vibrantGreen.withOpacity(0.12),
+                    color: AppColors.vibrantGreen.withValues(alpha: 0.12),
                     borderRadius: BorderRadius.circular(6),
-                    border: Border.all(color: AppColors.vibrantGreen.withOpacity(0.2)),
+                    border: Border.all(color: AppColors.vibrantGreen.withValues(alpha: 0.2)),
                   ),
                   child: const Icon(Icons.edit_outlined, color: AppColors.vibrantGreen, size: 14),
                 ),
@@ -745,9 +749,9 @@ class _CattleHeroSectionState extends State<CattleHeroSection> {
                   width: 24,
                   height: 24,
                   decoration: BoxDecoration(
-                    color: AppColors.darkGreen.withOpacity(0.12),
+                    color: AppColors.darkGreen.withValues(alpha: 0.12),
                     borderRadius: BorderRadius.circular(6),
-                    border: Border.all(color: AppColors.darkGreen.withOpacity(0.2)),
+                    border: Border.all(color: AppColors.darkGreen.withValues(alpha: 0.2)),
                   ),
                   child: const Icon(Icons.event_note_outlined, color: AppColors.darkGreen, size: 14),
                 ),
@@ -768,9 +772,9 @@ class _CattleHeroSectionState extends State<CattleHeroSection> {
                   width: 24,
                   height: 24,
                   decoration: BoxDecoration(
-                    color: AppColors.lightGreen.withOpacity(0.12),
+                    color: AppColors.lightGreen.withValues(alpha: 0.12),
                     borderRadius: BorderRadius.circular(6),
-                    border: Border.all(color: AppColors.lightGreen.withOpacity(0.2)),
+                    border: Border.all(color: AppColors.lightGreen.withValues(alpha: 0.2)),
                   ),
                   child: const Icon(Icons.arrow_upward_outlined, color: AppColors.lightGreen, size: 14),
                 ),
@@ -790,9 +794,9 @@ class _CattleHeroSectionState extends State<CattleHeroSection> {
                   width: 24,
                   height: 24,
                   decoration: BoxDecoration(
-                    color: AppColors.vibrantGreen.withOpacity(0.12),
+                    color: AppColors.vibrantGreen.withValues(alpha: 0.12),
                     borderRadius: BorderRadius.circular(6),
-                    border: Border.all(color: AppColors.vibrantGreen.withOpacity(0.2)),
+                    border: Border.all(color: AppColors.vibrantGreen.withValues(alpha: 0.2)),
                   ),
                   child: const Icon(Icons.swap_horiz, color: AppColors.vibrantGreen, size: 14),
                 ),
@@ -813,9 +817,9 @@ class _CattleHeroSectionState extends State<CattleHeroSection> {
                   width: 24,
                   height: 24,
                   decoration: BoxDecoration(
-                    color: Colors.green.withOpacity(0.12),
+                    color: Colors.green.withValues(alpha: 0.12),
                     borderRadius: BorderRadius.circular(6),
-                    border: Border.all(color: Colors.green.withOpacity(0.2)),
+                    border: Border.all(color: Colors.green.withValues(alpha: 0.2)),
                   ),
                   alignment: Alignment.center,
                   child: const FaIcon(FontAwesomeIcons.fileExcel, color: Colors.green, size: 14),
@@ -836,9 +840,9 @@ class _CattleHeroSectionState extends State<CattleHeroSection> {
                   width: 24,
                   height: 24,
                   decoration: BoxDecoration(
-                    color: Colors.red.withOpacity(0.12),
+                    color: Colors.red.withValues(alpha: 0.12),
                     borderRadius: BorderRadius.circular(6),
-                    border: Border.all(color: Colors.red.withOpacity(0.2)),
+                    border: Border.all(color: Colors.red.withValues(alpha: 0.2)),
                   ),
                   child: const Icon(Icons.picture_as_pdf_rounded, color: Colors.red, size: 14),
                 ),
@@ -859,9 +863,9 @@ class _CattleHeroSectionState extends State<CattleHeroSection> {
                   width: 24,
                   height: 24,
                   decoration: BoxDecoration(
-                    color: AppColors.gold.withOpacity(0.12),
+                    color: AppColors.gold.withValues(alpha: 0.12),
                     borderRadius: BorderRadius.circular(6),
-                    border: Border.all(color: AppColors.gold.withOpacity(0.2)),
+                    border: Border.all(color: AppColors.gold.withValues(alpha: 0.2)),
                   ),
                   child: const Icon(Icons.archive_outlined, color: AppColors.gold, size: 14),
                 ),
@@ -881,9 +885,9 @@ class _CattleHeroSectionState extends State<CattleHeroSection> {
                   width: 24,
                   height: 24,
                   decoration: BoxDecoration(
-                    color: Colors.red.shade600.withOpacity(0.12),
+                    color: Colors.red.shade600.withValues(alpha: 0.12),
                     borderRadius: BorderRadius.circular(6),
-                    border: Border.all(color: Colors.red.shade600.withOpacity(0.2)),
+                    border: Border.all(color: Colors.red.shade600.withValues(alpha: 0.2)),
                   ),
                   child: Icon(Icons.delete_forever_outlined, color: Colors.red.shade600, size: 14),
                 ),
@@ -902,11 +906,11 @@ class _CattleHeroSectionState extends State<CattleHeroSection> {
   Widget _buildFloatingButton({required IconData icon, required VoidCallback onTap}) {
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.9),
+        color: Colors.white.withValues(alpha: 0.9),
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.1),
+            color: Colors.black.withValues(alpha: 0.1),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -923,17 +927,17 @@ class _CattleHeroSectionState extends State<CattleHeroSection> {
     return Positioned.fill(
       child: Container(
         decoration: BoxDecoration(
-          color: Colors.black.withOpacity(0.6),
+          color: Colors.black.withValues(alpha: 0.6),
         ),
         child: Center(
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 20),
             decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.95),
+              color: Colors.white.withValues(alpha: 0.95),
               borderRadius: BorderRadius.circular(20),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.1),
+                  color: Colors.black.withValues(alpha: 0.1),
                   blurRadius: 20,
                   offset: const Offset(0, 10),
                 ),
@@ -946,7 +950,7 @@ class _CattleHeroSectionState extends State<CattleHeroSection> {
                   width: 50,
                   height: 50,
                   decoration: BoxDecoration(
-                    color: AppColors.lightGreen.withOpacity(0.1),
+                    color: AppColors.lightGreen.withValues(alpha: 0.1),
                     shape: BoxShape.circle,
                   ),
                   child: const CircularProgressIndicator(
@@ -967,7 +971,7 @@ class _CattleHeroSectionState extends State<CattleHeroSection> {
                 Text(
                   'Please wait while we save your changes',
                   style: TextStyle(
-                    color: AppColors.textSecondary.withOpacity(0.8),
+                    color: AppColors.textSecondary.withValues(alpha: 0.8),
                     fontSize: 13,
                   ),
                   textAlign: TextAlign.center,

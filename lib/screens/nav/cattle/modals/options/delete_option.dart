@@ -21,7 +21,7 @@ class DeleteOption {
                   width: 60,
                   height: 60,
                   decoration: BoxDecoration(
-                    color: Colors.red.withOpacity(0.1),
+                    color: Colors.red.withValues(alpha: 0.1),
                     shape: BoxShape.circle,
                   ),
                   child: Icon(
@@ -120,6 +120,7 @@ class DeleteOption {
 
     // Navigate back after a short delay
     Future.delayed(const Duration(milliseconds: 1500), () {
+      if (!context.mounted) return;
       if (Navigator.canPop(context)) {
         Navigator.pop(context);
       }

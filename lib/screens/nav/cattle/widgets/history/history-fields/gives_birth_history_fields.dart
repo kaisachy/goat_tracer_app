@@ -52,14 +52,14 @@ class GivesBirthEventFieldsState extends BaseEventFieldsState<GivesBirthEventFie
 
   @override
   void onBullsLoaded() {
-    print('DEBUG: GivesBirthEventFields onBullsLoaded called');
+    debugPrint('DEBUG: GivesBirthEventFields onBullsLoaded called');
     // If semen_used has a value but bull_tag is empty, try to derive bull tag from semen label
     final semenText = widget.controllers['semen_used']?.text ?? '';
     final bullText = widget.controllers['bull_tag']?.text ?? '';
-    print('DEBUG: Current semen: $semenText, bull: $bullText');
+    debugPrint('DEBUG: Current semen: $semenText, bull: $bullText');
     
     if (semenText.isNotEmpty && bullText.isEmpty) {
-      print('DEBUG: Extracting bull tag from semen in onBullsLoaded for Gives Birth');
+      debugPrint('DEBUG: Extracting bull tag from semen in onBullsLoaded for Gives Birth');
       // Expected semen format examples:
       // - "TAG123 (Name) Semen"
       // - "TAG123 Semen"
@@ -74,10 +74,10 @@ class GivesBirthEventFieldsState extends BaseEventFieldsState<GivesBirthEventFie
         stop = paren;
       }
       final bullTag = stop == -1 ? extracted : extracted.substring(0, stop).trim();
-      print('DEBUG: Extracted bull tag for Gives Birth: $bullTag');
+      debugPrint('DEBUG: Extracted bull tag for Gives Birth: $bullTag');
       if (bullTag.isNotEmpty) {
         widget.controllers['bull_tag']?.text = bullTag;
-        print('DEBUG: Set bull_tag controller for Gives Birth to: $bullTag');
+        debugPrint('DEBUG: Set bull_tag controller for Gives Birth to: $bullTag');
         if (mounted) setState(() {});
       }
     }
@@ -113,7 +113,7 @@ class GivesBirthEventFieldsState extends BaseEventFieldsState<GivesBirthEventFie
     if (calfTagString.contains(',')) {
       // Multiple calves - split by comma and load each one
       final calfTags = calfTagString.split(',').map((tag) => tag.trim()).where((tag) => tag.isNotEmpty).toList();
-      print('Loading multiple calves: $calfTags');
+      debugPrint('Loading multiple calves: $calfTags');
       
       final List<Map<String, dynamic>> loadedCalves = [];
       
@@ -145,10 +145,10 @@ class GivesBirthEventFieldsState extends BaseEventFieldsState<GivesBirthEventFie
               },
             };
             loadedCalves.add(calfData);
-            print('Loaded calf: ${calf.tagNo} with ID: ${calf.id}');
+            debugPrint('Loaded calf: ${calf.tagNo} with ID: ${calf.id}');
           }
         } catch (e) {
-          print('Error loading calf $calfTag: $e');
+          debugPrint('Error loading calf $calfTag: $e');
         }
       }
       
@@ -157,7 +157,7 @@ class GivesBirthEventFieldsState extends BaseEventFieldsState<GivesBirthEventFie
           _calves.clear();
           _calves.addAll(loadedCalves);
         });
-        print('Loaded ${loadedCalves.length} existing calves');
+        debugPrint('Loaded ${loadedCalves.length} existing calves');
       }
     }
   }

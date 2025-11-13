@@ -122,7 +122,7 @@ class ArchiveOption {
                   width: 48,
                   height: 48,
                   decoration: BoxDecoration(
-                    color: color.withOpacity(0.1),
+                    color: color.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Icon(
@@ -180,10 +180,13 @@ class ArchiveOption {
       ),
     );
 
+    if (!context.mounted) return;
+
     // If event was successfully created, archive the cattle
     if (result == true) {
       try {
         final success = await CattleService.archiveCattle(cattle.id, 'Sold');
+        if (!context.mounted) return;
         
         if (success) {
           UIHelpers.showEnhancedSnackbar(
@@ -195,6 +198,7 @@ class ArchiveOption {
           );
           onCattleUpdated?.call();
         } else {
+          if (!context.mounted) return;
           UIHelpers.showEnhancedSnackbar(
             context,
             Icons.error,
@@ -204,6 +208,7 @@ class ArchiveOption {
           );
         }
       } catch (e) {
+        if (!context.mounted) return;
         UIHelpers.showEnhancedSnackbar(
           context,
           Icons.error,
@@ -227,10 +232,13 @@ class ArchiveOption {
       ),
     );
 
+    if (!context.mounted) return;
+
     // If event was successfully created, archive the cattle
     if (result == true) {
       try {
         final success = await CattleService.archiveCattle(cattle.id, 'Mortality');
+        if (!context.mounted) return;
         
         if (success) {
           UIHelpers.showEnhancedSnackbar(
@@ -242,6 +250,7 @@ class ArchiveOption {
           );
           onCattleUpdated?.call();
         } else {
+          if (!context.mounted) return;
           UIHelpers.showEnhancedSnackbar(
             context,
             Icons.error,
@@ -251,6 +260,7 @@ class ArchiveOption {
           );
         }
       } catch (e) {
+        if (!context.mounted) return;
         UIHelpers.showEnhancedSnackbar(
           context,
           Icons.error,
@@ -274,10 +284,13 @@ class ArchiveOption {
       ),
     );
 
+    if (!context.mounted) return;
+
     // If event was successfully created, archive the cattle
     if (result == true) {
       try {
         final success = await CattleService.archiveCattle(cattle.id, 'Lost');
+        if (!context.mounted) return;
         
         if (success) {
           UIHelpers.showEnhancedSnackbar(
@@ -289,6 +302,7 @@ class ArchiveOption {
           );
           onCattleUpdated?.call();
         } else {
+          if (!context.mounted) return;
           UIHelpers.showEnhancedSnackbar(
             context,
             Icons.error,
@@ -298,6 +312,7 @@ class ArchiveOption {
           );
         }
       } catch (e) {
+        if (!context.mounted) return;
         UIHelpers.showEnhancedSnackbar(
           context,
           Icons.error,

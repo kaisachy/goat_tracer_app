@@ -46,7 +46,7 @@ class _AuthGuardState extends State<AuthGuard> {
         _isChecking = false;
       });
     } catch (e) {
-      print('Authentication check failed: $e');
+      debugPrint('Authentication check failed: $e');
       _redirectToLogin();
     }
   }

@@ -254,7 +254,7 @@ class _BreedingSuccessDashboardState extends State<BreedingSuccessDashboard>
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
-            color: Colors.grey.withOpacity(0.1),
+            color: Colors.grey.withValues(alpha: 0.1),
             blurRadius: 8,
             offset: const Offset(0, 2),
           ),
@@ -283,7 +283,7 @@ class _BreedingSuccessDashboardState extends State<BreedingSuccessDashboard>
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                       decoration: BoxDecoration(
-                        color: AppColors.primary.withOpacity(0.1),
+                        color: AppColors.primary.withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: Text(
@@ -401,10 +401,10 @@ class _BreedingSuccessDashboardState extends State<BreedingSuccessDashboard>
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
           decoration: BoxDecoration(
             border: Border.all(
-              color: value != null ? AppColors.primary.withOpacity(0.5) : Colors.grey[300]!,
+              color: value != null ? AppColors.primary.withValues(alpha: 0.5) : Colors.grey[300]!,
             ),
             borderRadius: BorderRadius.circular(8),
-            color: value != null ? AppColors.primary.withOpacity(0.05) : Colors.grey[50],
+            color: value != null ? AppColors.primary.withValues(alpha: 0.05) : Colors.grey[50],
           ),
           child: DropdownButtonHideUnderline(
             child: DropdownButton<String>(
@@ -472,12 +472,12 @@ class _BreedingSuccessDashboardState extends State<BreedingSuccessDashboard>
           decoration: BoxDecoration(
             border: Border.all(
               color: _selectedBreedingType != null
-                  ? AppColors.primary.withOpacity(0.5)
+                  ? AppColors.primary.withValues(alpha: 0.5)
                   : Colors.grey[300]!,
             ),
             borderRadius: BorderRadius.circular(8),
             color: _selectedBreedingType != null
-                ? AppColors.primary.withOpacity(0.05)
+                ? AppColors.primary.withValues(alpha: 0.05)
                 : Colors.grey[50],
           ),
           child: DropdownButtonHideUnderline(
@@ -539,12 +539,12 @@ class _BreedingSuccessDashboardState extends State<BreedingSuccessDashboard>
           decoration: BoxDecoration(
             border: Border.all(
               color: _selectedSuccessStatus != null
-                  ? AppColors.primary.withOpacity(0.5)
+                  ? AppColors.primary.withValues(alpha: 0.5)
                   : Colors.grey[300]!,
             ),
             borderRadius: BorderRadius.circular(8),
             color: _selectedSuccessStatus != null
-                ? AppColors.primary.withOpacity(0.05)
+                ? AppColors.primary.withValues(alpha: 0.05)
                 : Colors.grey[50],
           ),
           child: DropdownButtonHideUnderline(
@@ -636,12 +636,12 @@ class _BreedingSuccessDashboardState extends State<BreedingSuccessDashboard>
             decoration: BoxDecoration(
               border: Border.all(
                 color: _selectedDateRange != null
-                    ? AppColors.primary.withOpacity(0.5)
+                    ? AppColors.primary.withValues(alpha: 0.5)
                     : Colors.grey[300]!,
               ),
               borderRadius: BorderRadius.circular(8),
               color: _selectedDateRange != null
-                  ? AppColors.primary.withOpacity(0.05)
+                  ? AppColors.primary.withValues(alpha: 0.05)
                   : Colors.grey[50],
             ),
             child: Row(
@@ -755,12 +755,12 @@ class _BreedingSuccessDashboardState extends State<BreedingSuccessDashboard>
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
-            color: color.withOpacity(0.1),
+            color: color.withValues(alpha: 0.1),
             blurRadius: 8,
             offset: const Offset(0, 2),
           ),
         ],
-        border: Border.all(color: color.withOpacity(0.2)),
+        border: Border.all(color: color.withValues(alpha: 0.2)),
       ),
       child: Column(
         children: [
@@ -879,7 +879,7 @@ class _BreedingSuccessDashboardState extends State<BreedingSuccessDashboard>
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
-            color: Colors.grey.withOpacity(0.1),
+            color: Colors.grey.withValues(alpha: 0.1),
             blurRadius: 8,
             offset: const Offset(0, 2),
           ),
@@ -924,7 +924,7 @@ class _BreedingSuccessDashboardState extends State<BreedingSuccessDashboard>
                       Icon(
                         icon,
                         size: 12,
-                        color: hasData ? primaryColor.withOpacity(0.7) : Colors.grey[400],
+                        color: hasData ? primaryColor.withValues(alpha: 0.7) : Colors.grey[400],
                       ),
                     ],
                   ),

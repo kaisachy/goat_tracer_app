@@ -162,7 +162,7 @@ class _PersonalInformationModalState extends State<PersonalInformationModal> wit
                 ),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.1),
+                    color: Colors.black.withValues(alpha: 0.1),
                     blurRadius: 20,
                     offset: const Offset(0, -5),
                   ),
@@ -211,7 +211,7 @@ class _PersonalInformationModalState extends State<PersonalInformationModal> wit
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: AppColors.lightGreen.withOpacity(0.2),
+                color: AppColors.lightGreen.withValues(alpha: 0.2),
                 borderRadius: BorderRadius.circular(12),
               ),
               child: const Icon(
@@ -261,7 +261,7 @@ class _PersonalInformationModalState extends State<PersonalInformationModal> wit
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         elevation: 2,
-        shadowColor: AppColors.primary.withOpacity(0.2),
+        shadowColor: AppColors.primary.withValues(alpha: 0.2),
       ),
       icon: _isSaving
           ? const SizedBox(
@@ -294,7 +294,7 @@ class _PersonalInformationModalState extends State<PersonalInformationModal> wit
             Container(
               padding: const EdgeInsets.all(20),
               decoration: BoxDecoration(
-                color: AppColors.lightGreen.withOpacity(0.2),
+                color: AppColors.lightGreen.withValues(alpha: 0.2),
                 shape: BoxShape.circle,
               ),
               child: const CircularProgressIndicator(
@@ -361,9 +361,9 @@ class _PersonalInformationModalState extends State<PersonalInformationModal> wit
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: AppColors.lightGreen.withOpacity(0.1),
+        color: AppColors.lightGreen.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.lightGreen.withOpacity(0.3)),
+        border: Border.all(color: AppColors.lightGreen.withValues(alpha: 0.3)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -484,7 +484,7 @@ class _PersonalInformationModalState extends State<PersonalInformationModal> wit
         margin: const EdgeInsets.all(12),
         padding: const EdgeInsets.all(8),
         decoration: BoxDecoration(
-          color: AppColors.lightGreen.withOpacity(0.2),
+          color: AppColors.lightGreen.withValues(alpha: 0.2),
           borderRadius: BorderRadius.circular(8),
         ),
         child: Icon(
@@ -526,14 +526,14 @@ class _PersonalInformationModalState extends State<PersonalInformationModal> wit
       decoration: BoxDecoration(
         color: AppColors.cardBackground,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.lightGreen.withOpacity(0.3)),
+        border: Border.all(color: AppColors.lightGreen.withValues(alpha: 0.3)),
       ),
       child: Row(
         children: [
           Container(
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
-              color: AppColors.lightGreen.withOpacity(0.2),
+              color: AppColors.lightGreen.withValues(alpha: 0.2),
               borderRadius: BorderRadius.circular(8),
             ),
             child: Icon(

@@ -96,7 +96,7 @@ class ChangeStageOption {
         Container(
           padding: const EdgeInsets.all(8),
           decoration: BoxDecoration(
-            color: AppColors.lightGreen.withOpacity(0.1),
+            color: AppColors.lightGreen.withValues(alpha: 0.1),
             borderRadius: BorderRadius.circular(12),
           ),
           child: const Icon(
@@ -320,12 +320,15 @@ class ChangeStageOption {
       };
 
       final success = await CattleService.updateCattleInformation(updateData);
+      if (!context.mounted) return;
       Navigator.pop(context);
 
       if (success) {
         // Close the stage selection form modal
+        if (!context.mounted) return;
         Navigator.pop(context);
         
+        if (!context.mounted) return;
         UIHelpers.showEnhancedSnackbar(
           context,
           FontAwesomeIcons.arrowUpRightFromSquare,
@@ -339,6 +342,7 @@ class ChangeStageOption {
           onCattleUpdated?.call();
         });
       } else {
+        if (!context.mounted) return;
         UIHelpers.showErrorDialog(
           context,
           'Update Failed',
@@ -346,10 +350,12 @@ class ChangeStageOption {
         );
       }
     } catch (e) {
+      if (!context.mounted) return;
       if (Navigator.canPop(context)) {
         Navigator.pop(context);
       }
 
+      if (!context.mounted) return;
       UIHelpers.showErrorDialog(
         context,
         'Update Error',

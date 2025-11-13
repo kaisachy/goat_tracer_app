@@ -18,7 +18,7 @@ class _ArchivedCattleScreenState extends State<ArchivedCattleScreen> {
   List<Cattle> _archivedCattle = [];
   List<Cattle> _filteredCattleList = [];
   Map<String, Map<String, dynamic>> _cattleEventDetails = {};
-  Map<String, bool> _expandedCards = {};
+  final Map<String, bool> _expandedCards = {};
   bool _isLoading = true;
   String _searchQuery = '';
   String _selectedStatus = 'All';
@@ -73,12 +73,16 @@ class _ArchivedCattleScreenState extends State<ArchivedCattleScreen> {
         years -= 1;
       }
 
+      final yearsLabel = '${years}y';
+      final monthsLabel = '${months}m';
+
       if (years > 0) {
-        return months > 0 ? '${years}y ${months}m' : '${years}y';
+        return months > 0 ? '$yearsLabel $monthsLabel' : yearsLabel;
       }
-      if (months > 0) return '${months}m';
+      if (months > 0) return monthsLabel;
       final d = now.difference(dob).inDays;
-      return d <= 1 ? '1d' : '${d}d';
+      final daysLabel = '${d}d';
+      return d <= 1 ? '1d' : daysLabel;
     } catch (_) {
       return '';
     }
@@ -117,7 +121,7 @@ class _ArchivedCattleScreenState extends State<ArchivedCattleScreen> {
           }
         } catch (e) {
           // If we can't fetch event details for this cattle, continue with others
-          print('Error fetching event details for ${cattleItem.tagNo}: $e');
+          debugPrint('Error fetching event details for ${cattleItem.tagNo}: $e');
         }
       }
       
@@ -311,11 +315,12 @@ class _ArchivedCattleScreenState extends State<ArchivedCattleScreen> {
                               tooltip: 'Export Excel',
                               icon: const FaIcon(FontAwesomeIcons.fileExcel, color: Colors.white, size: 20),
                               onPressed: () async {
+                                final messenger = ScaffoldMessenger.of(context);
                                 final rt = _mapArchivedReportTypeToParam(_selectedReportType);
                                 final ok = await CattleExportService.downloadCattleListExcel(reportType: rt);
-                                if (!mounted) return;
-                                ScaffoldMessenger.of(context).hideCurrentSnackBar();
-                                ScaffoldMessenger.of(context).showSnackBar(
+                                if (!context.mounted) return;
+                                messenger.hideCurrentSnackBar();
+                                messenger.showSnackBar(
                                   SnackBar(
                                     content: Text(ok ? 'Excel report ready! Choose where to open/save.' : 'Failed to download Excel report.'),
                                     backgroundColor: ok ? Colors.green.shade600 : Colors.red.shade700,
@@ -336,11 +341,12 @@ class _ArchivedCattleScreenState extends State<ArchivedCattleScreen> {
                               tooltip: 'Export PDF',
                               icon: const Icon(Icons.picture_as_pdf_rounded, color: Colors.white, size: 20),
                               onPressed: () async {
+                                final messenger = ScaffoldMessenger.of(context);
                                 final rt = _mapArchivedReportTypeToParam(_selectedReportType);
                                 final ok = await CattleExportService.downloadCattleListPdf(reportType: rt);
-                                if (!mounted) return;
-                                ScaffoldMessenger.of(context).hideCurrentSnackBar();
-                                ScaffoldMessenger.of(context).showSnackBar(
+                                if (!context.mounted) return;
+                                messenger.hideCurrentSnackBar();
+                                messenger.showSnackBar(
                                   SnackBar(
                                     content: Text(ok ? 'PDF report ready! Choose where to open/save.' : 'Failed to generate PDF report.'),
                                     backgroundColor: ok ? Colors.green.shade600 : Colors.red.shade700,
@@ -384,10 +390,10 @@ class _ArchivedCattleScreenState extends State<ArchivedCattleScreen> {
               decoration: BoxDecoration(
                 color: AppColors.cardBackground,
                 borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: AppColors.lightGreen.withOpacity(0.3)),
+                border: Border.all(color: AppColors.lightGreen.withValues(alpha: 0.3)),
                 boxShadow: [
                   BoxShadow(
-                    color: AppColors.primary.withOpacity(0.1),
+                    color: AppColors.primary.withValues(alpha: 0.1),
                     blurRadius: 8,
                     offset: const Offset(0, 2),
                   ),
@@ -414,11 +420,11 @@ class _ArchivedCattleScreenState extends State<ArchivedCattleScreen> {
               color: _selectedStatus != 'All' ? AppColors.primary : AppColors.cardBackground,
               borderRadius: BorderRadius.circular(16),
               border: Border.all(
-                color: _selectedStatus != 'All' ? AppColors.primary : AppColors.lightGreen.withOpacity(0.3)
+                color: _selectedStatus != 'All' ? AppColors.primary : AppColors.lightGreen.withValues(alpha: 0.3)
               ),
               boxShadow: [
                 BoxShadow(
-                  color: AppColors.primary.withOpacity(0.1),
+                  color: AppColors.primary.withValues(alpha: 0.1),
                   blurRadius: 8,
                   offset: const Offset(0, 2),
                 ),
@@ -581,9 +587,9 @@ class _ArchivedCattleScreenState extends State<ArchivedCattleScreen> {
                       height: 40,
                       decoration: BoxDecoration(
                         borderRadius: BorderRadius.circular(12),
-                        color: _getStatusColor(cattle.status).withOpacity(0.1),
+                        color: _getStatusColor(cattle.status).withValues(alpha: 0.1),
                         border: Border.all(
-                          color: _getStatusColor(cattle.status).withOpacity(0.3),
+                          color: _getStatusColor(cattle.status).withValues(alpha: 0.3),
                           width: 2,
                         ),
                       ),
@@ -632,10 +638,10 @@ class _ArchivedCattleScreenState extends State<ArchivedCattleScreen> {
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                       decoration: BoxDecoration(
-                        color: _getStatusColor(cattle.status).withOpacity(0.1),
+                        color: _getStatusColor(cattle.status).withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(12),
                         border: Border.all(
-                          color: _getStatusColor(cattle.status).withOpacity(0.3),
+                          color: _getStatusColor(cattle.status).withValues(alpha: 0.3),
                         ),
                       ),
                       child: Text(
@@ -697,7 +703,7 @@ class _ArchivedCattleScreenState extends State<ArchivedCattleScreen> {
                       child: Container(
                         padding: const EdgeInsets.all(8),
                         decoration: BoxDecoration(
-                          color: AppColors.lightGreen.withOpacity(0.1),
+                          color: AppColors.lightGreen.withValues(alpha: 0.1),
                           borderRadius: BorderRadius.circular(8),
                         ),
                         child: Icon(
@@ -729,10 +735,10 @@ class _ArchivedCattleScreenState extends State<ArchivedCattleScreen> {
                             width: double.infinity,
                             padding: const EdgeInsets.all(12),
                             decoration: BoxDecoration(
-                              color: _getStatusColor(cattle.status).withOpacity(0.05),
+                              color: _getStatusColor(cattle.status).withValues(alpha: 0.05),
                               borderRadius: BorderRadius.circular(8),
                               border: Border.all(
-                                color: _getStatusColor(cattle.status).withOpacity(0.2),
+                                color: _getStatusColor(cattle.status).withValues(alpha: 0.2),
                               ),
                             ),
                             child: Column(
@@ -882,3 +888,6 @@ class _ArchivedCattleScreenState extends State<ArchivedCattleScreen> {
     }
   }
 }
+
+
+

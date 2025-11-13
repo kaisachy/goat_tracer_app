@@ -167,7 +167,7 @@ class _HistorySearchFilterBarState extends State<HistorySearchFilterBar> {
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withValues(alpha: 0.05),
             blurRadius: 8,
             offset: const Offset(0, 2),
           ),
@@ -244,7 +244,7 @@ class _HistorySearchFilterBarState extends State<HistorySearchFilterBar> {
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withValues(alpha: 0.05),
             blurRadius: 8,
             offset: const Offset(0, 2),
           ),
@@ -252,7 +252,7 @@ class _HistorySearchFilterBarState extends State<HistorySearchFilterBar> {
         border: isFiltered
             ? null
             : Border.all(
-          color: AppColors.lightGreen.withOpacity(0.3),
+          color: AppColors.lightGreen.withValues(alpha: 0.3),
           width: 1,
         ),
       ),
@@ -298,7 +298,7 @@ class _HistorySearchFilterBarState extends State<HistorySearchFilterBar> {
                     height: isNarrow ? 6 : 8,
                     decoration: BoxDecoration(
                       color: isFiltered
-                          ? Colors.white.withOpacity(0.8)
+                          ? Colors.white.withValues(alpha: 0.8)
                           : AppColors.vibrantGreen,
                       shape: BoxShape.circle,
                     ),

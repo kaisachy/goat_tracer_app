@@ -104,7 +104,7 @@ class ChangeStatusOption {
         Container(
           padding: const EdgeInsets.all(8),
           decoration: BoxDecoration(
-            color: AppColors.vibrantGreen.withOpacity(0.1),
+            color: AppColors.vibrantGreen.withValues(alpha: 0.1),
             borderRadius: BorderRadius.circular(12),
           ),
           child: const Icon(
@@ -344,8 +344,8 @@ class ChangeStatusOption {
         iconColor = AppColors.gold;
         break;
       case 'mortality':
-        iconData = FontAwesomeIcons.bookDead;
-        iconColor = Colors.black;
+        iconData = FontAwesomeIcons.bookSkull;
+        iconColor = Colors.redAccent;
         break;
       case 'lost':
         iconData = FontAwesomeIcons.magnifyingGlass;
@@ -375,12 +375,15 @@ class ChangeStatusOption {
       };
 
       final success = await CattleService.updateCattleInformation(updateData);
+      if (!context.mounted) return;
       Navigator.pop(context);
 
       if (success) {
         // Close the status selection form modal
+        if (!context.mounted) return;
         Navigator.pop(context);
         
+        if (!context.mounted) return;
         UIHelpers.showEnhancedSnackbar(
           context,
           Icons.swap_horiz,
@@ -393,6 +396,7 @@ class ChangeStatusOption {
           onCattleUpdated?.call();
         });
       } else {
+        if (!context.mounted) return;
         UIHelpers.showErrorDialog(
           context,
           'Update Failed',
@@ -400,10 +404,12 @@ class ChangeStatusOption {
         );
       }
     } catch (e) {
+      if (!context.mounted) return;
       if (Navigator.canPop(context)) {
         Navigator.pop(context);
       }
 
+      if (!context.mounted) return;
       UIHelpers.showErrorDialog(
         context,
         'Update Error',

@@ -60,43 +60,43 @@ class _HistoryDuplicationModalState extends State<HistoryDuplicationModal> {
       final originalEventType = widget.originalEvent['history_type']?.toString().toLowerCase() ?? '';
       final originalCattleTag = widget.originalEvent['cattle_tag']?.toString() ?? '';
 
-      print('Debug: Loading cattle for event type: $originalEventType');
-      print('Debug: Total cattle loaded: ${allCattle.length}');
+      debugPrint('Debug: Loading cattle for event type: $originalEventType');
+      debugPrint('Debug: Total cattle loaded: ${allCattle.length}');
 
       // Filter cattle based on event type, sex, classification, and status
       final availableCattle = allCattle.where((cattle) {
         // Check if cattle is healthy
         if (cattle.status.toLowerCase() != 'healthy') {
-          print('Debug: Skipping ${cattle.tagNo} - status: ${cattle.status}');
+          debugPrint('Debug: Skipping ${cattle.tagNo} - status: ${cattle.status}');
           return false;
         }
 
         // Skip the original cattle
         if (cattle.tagNo.trim().toLowerCase() == originalCattleTag.trim().toLowerCase()) {
-          print('Debug: Skipping ${cattle.tagNo} - original cattle');
+          debugPrint('Debug: Skipping ${cattle.tagNo} - original cattle');
           return false;
         }
 
         // Check sex compatibility
         if (!_isEventTypeValidForGender(originalEventType, cattle.sex)) {
-          print('Debug: Skipping ${cattle.tagNo} - sex incompatible: ${cattle.sex}');
+          debugPrint('Debug: Skipping ${cattle.tagNo} - sex incompatible: ${cattle.sex}');
           return false;
         }
 
         // Check classification compatibility for breeding event
         if (!_isEventTypeValidForClassification(originalEventType, cattle.classification)) {
-          print('Debug: Skipping ${cattle.tagNo} - classification incompatible: ${cattle.classification}');
+          debugPrint('Debug: Skipping ${cattle.tagNo} - classification incompatible: ${cattle.classification}');
           return false;
         }
 
-        print('Debug: Including ${cattle.tagNo} - sex: ${cattle.sex}, classification: ${cattle.classification}');
+        debugPrint('Debug: Including ${cattle.tagNo} - sex: ${cattle.sex}, classification: ${cattle.classification}');
         return true;
       }).toList();
 
       // Sort cattle by tag number
       availableCattle.sort((a, b) => a.tagNo.compareTo(b.tagNo));
 
-      print('Debug: Available cattle after filtering: ${availableCattle.length}');
+      debugPrint('Debug: Available cattle after filtering: ${availableCattle.length}');
 
       setState(() {
         _allCattle = availableCattle;
@@ -104,7 +104,7 @@ class _HistoryDuplicationModalState extends State<HistoryDuplicationModal> {
         _isLoading = false;
       });
     } catch (e) {
-      print('Debug: Error loading cattle: $e');
+      debugPrint('Debug: Error loading cattle: $e');
       setState(() => _isLoading = false);
       if (mounted) {
         _showErrorSnackBar('Failed to load cattle: $e');
@@ -318,7 +318,7 @@ class _HistoryDuplicationModalState extends State<HistoryDuplicationModal> {
         } catch (e) {
           failedCount++;
           failedTags.add(cattleTag);
-          print('Debug: Error duplicating event for $cattleTag: $e');
+          debugPrint('Debug: Error duplicating event for $cattleTag: $e');
         }
       }
 
@@ -333,7 +333,7 @@ class _HistoryDuplicationModalState extends State<HistoryDuplicationModal> {
         }
       }
     } catch (e) {
-      print('Debug: Error in _duplicateEvents: $e');
+      debugPrint('Debug: Error in _duplicateEvents: $e');
       if (mounted) {
         _showErrorSnackBar('Error duplicating event: $e');
       }
@@ -400,7 +400,7 @@ class _HistoryDuplicationModalState extends State<HistoryDuplicationModal> {
                   Container(
                     padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
-                      color: AppColors.vibrantGreen.withOpacity(0.1),
+                      color: AppColors.vibrantGreen.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: const Icon(
@@ -528,9 +528,9 @@ class _HistoryDuplicationModalState extends State<HistoryDuplicationModal> {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                 decoration: BoxDecoration(
-                  color: AppColors.lightGreen.withOpacity(0.1),
+                  color: AppColors.lightGreen.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: AppColors.lightGreen.withOpacity(0.3)),
+                  border: Border.all(color: AppColors.lightGreen.withValues(alpha: 0.3)),
                 ),
                 child: Row(
                   children: [

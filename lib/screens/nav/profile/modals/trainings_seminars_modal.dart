@@ -98,7 +98,7 @@ class _TrainingsSeminarsModalState extends State<TrainingsSeminarsModal> {
                         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                         elevation: 2,
-                        shadowColor: AppColors.primary.withOpacity(0.2),
+                        shadowColor: AppColors.primary.withValues(alpha: 0.2),
                       ),
                       icon: _saving
                           ? const SizedBox(
@@ -279,11 +279,11 @@ class _TrainingsSeminarsModalState extends State<TrainingsSeminarsModal> {
             fillColor: enabled ? AppColors.pageBackground : Colors.grey.shade100,
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(color: Colors.grey.withOpacity(0.2)),
+              borderSide: BorderSide(color: Colors.grey.withValues(alpha: 0.2)),
             ),
             enabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(color: Colors.grey.withOpacity(0.2)),
+              borderSide: BorderSide(color: Colors.grey.withValues(alpha: 0.2)),
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),

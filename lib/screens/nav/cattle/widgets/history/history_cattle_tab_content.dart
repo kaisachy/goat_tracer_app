@@ -150,7 +150,7 @@ class _HistoryCattleTabContentState extends State<HistoryCattleTabContent> {
             if (success) {
               deletedCount++;
             } else {
-              print('Failed to delete duplicate event with ID: $eventId');
+              debugPrint('Failed to delete duplicate event with ID: $eventId');
             }
           }
         }
@@ -168,7 +168,7 @@ class _HistoryCattleTabContentState extends State<HistoryCattleTabContent> {
           );
         }
       } catch (e) {
-        print('Error deleting duplicate event: $e');
+        debugPrint('Error deleting duplicate event: $e');
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
@@ -717,12 +717,12 @@ class _HistoryCattleTabContentState extends State<HistoryCattleTabContent> {
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: eventColor.withOpacity(0.1),
+            color: eventColor.withValues(alpha: 0.1),
             blurRadius: 12,
             offset: const Offset(0, 4),
           ),
         ],
-        border: Border.all(color: eventColor.withOpacity(0.2)),
+        border: Border.all(color: eventColor.withValues(alpha: 0.2)),
       ),
       child: Column(
         children: [
@@ -749,9 +749,9 @@ class _HistoryCattleTabContentState extends State<HistoryCattleTabContent> {
                   Container(
                     padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
-                      color: eventColor.withOpacity(0.15),
+                      color: eventColor.withValues(alpha: 0.15),
                       borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: eventColor.withOpacity(0.3)),
+                      border: Border.all(color: eventColor.withValues(alpha: 0.3)),
                     ),
                     child: Icon(HistoryTypeUtils.getHistoryIcon(eventType), color: eventColor, size: 24),
                   ),
@@ -842,7 +842,7 @@ class _HistoryCattleTabContentState extends State<HistoryCattleTabContent> {
                   Container(
                     width: double.infinity,
                     height: 1,
-                    color: eventColor.withOpacity(0.2),
+                    color: eventColor.withValues(alpha: 0.2),
                     margin: const EdgeInsets.only(bottom: 16),
                   ),
                   ...details.asMap().entries.map((entry) {
@@ -876,7 +876,7 @@ class _HistoryCattleTabContentState extends State<HistoryCattleTabContent> {
             style: TextStyle(
               fontSize: 13,
               fontWeight: FontWeight.w600,
-              color: AppColors.textPrimary.withOpacity(0.7),
+              color: AppColors.textPrimary.withValues(alpha: 0.7),
             ),
           ),
         ),
@@ -1115,14 +1115,14 @@ class _HistoryCattleTabContentState extends State<HistoryCattleTabContent> {
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
                     colors: [
-                      AppColors.lightGreen.withOpacity(0.1),
-                      AppColors.vibrantGreen.withOpacity(0.05),
+                      AppColors.lightGreen.withValues(alpha: 0.1),
+                      AppColors.vibrantGreen.withValues(alpha: 0.05),
                     ],
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
                   ),
                   shape: BoxShape.circle,
-                  border: Border.all(color: AppColors.lightGreen.withOpacity(0.2)),
+                  border: Border.all(color: AppColors.lightGreen.withValues(alpha: 0.2)),
                 ),
                 child: Icon(
                   isFiltering ? Icons.search_off_rounded : Icons.event_note_rounded,

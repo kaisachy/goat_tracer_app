@@ -365,7 +365,7 @@ class _VaccinationScheduleScreenState extends State<VaccinationScheduleScreen>
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
-            color: Colors.grey.withOpacity(0.1),
+            color: Colors.grey.withValues(alpha: 0.1),
             spreadRadius: 1,
             blurRadius: 4,
             offset: const Offset(0, 2),
@@ -379,8 +379,8 @@ class _VaccinationScheduleScreenState extends State<VaccinationScheduleScreen>
             decoration: BoxDecoration(
               gradient: LinearGradient(
                 colors: [
-                  AppColors.vibrantGreen.withOpacity(0.1),
-                  AppColors.vibrantGreen.withOpacity(0.05),
+                  AppColors.vibrantGreen.withValues(alpha: 0.1),
+                  AppColors.vibrantGreen.withValues(alpha: 0.05),
                 ],
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
@@ -390,7 +390,7 @@ class _VaccinationScheduleScreenState extends State<VaccinationScheduleScreen>
                 topRight: Radius.circular(12),
               ),
               border: Border.all(
-                color: AppColors.vibrantGreen.withOpacity(0.2),
+                color: AppColors.vibrantGreen.withValues(alpha: 0.2),
                 width: 1,
               ),
             ),
@@ -417,10 +417,10 @@ class _VaccinationScheduleScreenState extends State<VaccinationScheduleScreen>
                           Container(
                             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                             decoration: BoxDecoration(
-                              color: AppColors.vibrantGreen.withOpacity(0.1),
+                              color: AppColors.vibrantGreen.withValues(alpha: 0.1),
                               borderRadius: BorderRadius.circular(6),
                               border: Border.all(
-                                color: AppColors.vibrantGreen.withOpacity(0.3),
+                                color: AppColors.vibrantGreen.withValues(alpha: 0.3),
                                 width: 1,
                               ),
                             ),
@@ -786,7 +786,7 @@ class _VaccinationScheduleScreenState extends State<VaccinationScheduleScreen>
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withValues(alpha: 0.05),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -818,9 +818,9 @@ class _VaccinationScheduleScreenState extends State<VaccinationScheduleScreen>
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: AppColors.vibrantGreen.withOpacity(0.05),
+        color: AppColors.vibrantGreen.withValues(alpha: 0.05),
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: AppColors.vibrantGreen.withOpacity(0.2)),
+        border: Border.all(color: AppColors.vibrantGreen.withValues(alpha: 0.2)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -891,5 +891,6 @@ class _VaccinationScheduleScreenState extends State<VaccinationScheduleScreen>
 
 
 }
+
 
 

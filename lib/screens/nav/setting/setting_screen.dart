@@ -399,14 +399,17 @@ class _SettingScreenState extends State<SettingScreen> with TickerProviderStateM
         barangay: _selectedBarangay,
       );
 
+      if (!mounted) return;
       setState(() {
         _currentUser = updatedUser;
         _isEditingProfile = false;
       });
 
+      if (!mounted) return;
       Navigator.of(context, rootNavigator: true).pop(); // Close loading dialog
       _showSuccessSnackBar('Profile updated successfully!');
     } catch (e) {
+      if (!mounted) return;
       Navigator.of(context, rootNavigator: true).pop(); // Close loading dialog
       String errorMessage = e.toString().replaceFirst('Exception: ', '');
       _showErrorSnackBar(errorMessage);
@@ -456,6 +459,7 @@ class _SettingScreenState extends State<SettingScreen> with TickerProviderStateM
       );
 
       if (success) {
+        if (!mounted) return;
         setState(() => _isChangingPassword = false);
         _currentPasswordController.clear();
         _newPasswordController.clear();
@@ -463,13 +467,16 @@ class _SettingScreenState extends State<SettingScreen> with TickerProviderStateM
         // Reset form validation
         _passwordFormKey.currentState?.reset();
 
+        if (!mounted) return;
         Navigator.of(context, rootNavigator: true).pop(); // Close loading dialog
         _showSuccessSnackBar('Password changed successfully!');
       } else {
+        if (!mounted) return;
         Navigator.of(context, rootNavigator: true).pop(); // Close loading dialog
         _showErrorSnackBar('Failed to change password');
       }
     } catch (e) {
+      if (!mounted) return;
       Navigator.of(context, rootNavigator: true).pop(); // Close loading dialog
       String raw = e.toString().replaceFirst('Exception: ', '');
       final lower = raw.toLowerCase();
@@ -502,7 +509,7 @@ class _SettingScreenState extends State<SettingScreen> with TickerProviderStateM
               borderRadius: BorderRadius.circular(16),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.1),
+                  color: Colors.black.withValues(alpha: 0.1),
                   blurRadius: 12,
                   offset: const Offset(0, 4),
                 )
@@ -949,7 +956,7 @@ class _SettingScreenState extends State<SettingScreen> with TickerProviderStateM
                             borderRadius: BorderRadius.circular(12),
                           ),
                           elevation: 2,
-                          shadowColor: Colors.black.withOpacity(0.1),
+                          shadowColor: Colors.black.withValues(alpha: 0.1),
                         ),
                         child: const Text(
                           'Save Changes',
@@ -1052,7 +1059,7 @@ class _SettingScreenState extends State<SettingScreen> with TickerProviderStateM
                    decoration: BoxDecoration(
                      color: AppColors.lightBackground,
                      borderRadius: BorderRadius.circular(12),
-                     border: Border.all(color: AppColors.darkGreen.withOpacity(0.3)),
+                     border: Border.all(color: AppColors.darkGreen.withValues(alpha: 0.3)),
                    ),
                    child: Row(
                      children: [
@@ -1167,7 +1174,7 @@ class _SettingScreenState extends State<SettingScreen> with TickerProviderStateM
                       borderRadius: BorderRadius.circular(12),
                     ),
                     elevation: 2,
-                    shadowColor: Colors.black.withOpacity(0.1),
+                    shadowColor: Colors.black.withValues(alpha: 0.1),
                   ),
                   child: const Text(
                     'Change Password',

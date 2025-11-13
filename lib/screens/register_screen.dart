@@ -69,15 +69,15 @@ class _RegisterScreenState extends State<RegisterScreen> {
   Future<void> _loadRegions() async {
     setState(() => _isLoadingRegions = true);
     try {
-      print('Loading regions...');
+      debugPrint('Loading regions...');
       final regions = await AddressService.getRegions();
       setState(() {
         _regions = regions;
         _isLoadingRegions = false;
       });
-      print('Successfully loaded ${regions.length} regions');
+      debugPrint('Successfully loaded ${regions.length} regions');
     } catch (e) {
-      print('Error loading regions: $e');
+      debugPrint('Error loading regions: $e');
       setState(() => _isLoadingRegions = false);
       _showMessage('Failed to load regions. Please check your internet connection.', Colors.red);
     }
@@ -86,7 +86,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
   Future<void> _loadProvincesForRegion(String regionCode) async {
     setState(() => _isLoadingProvinces = true);
     try {
-      print('Loading provinces for region code: $regionCode');
+      debugPrint('Loading provinces for region code: $regionCode');
       final provinces = await AddressService.getProvinces(regionCode);
       setState(() {
         _provinces = provinces;
@@ -97,9 +97,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
         _selectedBarangay = null;
         _isLoadingProvinces = false;
       });
-      print('Successfully loaded ${provinces.length} provinces');
+      debugPrint('Successfully loaded ${provinces.length} provinces');
     } catch (e) {
-      print('Error loading provinces: $e');
+      debugPrint('Error loading provinces: $e');
       setState(() => _isLoadingProvinces = false);
       _showMessage('Failed to load provinces. Please check your internet connection.', Colors.red);
     }
@@ -108,7 +108,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
   Future<void> _loadMunicipalities(String provinceCode) async {
     setState(() => _isLoadingMunicipalities = true);
     try {
-      print('Loading municipalities for province code: $provinceCode');
+      debugPrint('Loading municipalities for province code: $provinceCode');
       final municipalities = await AddressService.getMunicipalities(provinceCode);
 
       setState(() {
@@ -121,9 +121,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
         _latitude = null;
         _longitude = null;
       });
-      print('Successfully loaded ${municipalities.length} municipalities');
+      debugPrint('Successfully loaded ${municipalities.length} municipalities');
     } catch (e) {
-      print('Error loading municipalities: $e');
+      debugPrint('Error loading municipalities: $e');
       setState(() => _isLoadingMunicipalities = false);
       _showMessage(
           'Failed to load municipalities. Please check your internet connection.',
@@ -142,10 +142,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
       });
       // Only trigger geocoding if a barangay is already selected (for edit mode)
       if (_selectedBarangay != null && _selectedBarangay!['name'] != null && _selectedBarangay!['name'].isNotEmpty) {
-        print('Barangays loaded, existing barangay selected: ${_selectedBarangay!['name']}, triggering geocoding...');
+        debugPrint('Barangays loaded, existing barangay selected: ${_selectedBarangay!['name']}, triggering geocoding...');
         _debounceGeocode();
       } else {
-        print('Barangays loaded, no barangay selected yet - waiting for user selection');
+        debugPrint('Barangays loaded, no barangay selected yet - waiting for user selection');
       }
     } catch (e) {
       setState(() => _isLoadingBarangays = false);
@@ -175,10 +175,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
     setState(() => _isGeocodingInProgress = true);
     
     try {
-      print('=== FLUTTER GEOCODING DEBUG ===');
-      print('Province: $province');
-      print('Municipality: $municipality');
-      print('Barangay: $barangay');
+      debugPrint('=== FLUTTER GEOCODING DEBUG ===');
+      debugPrint('Province: $province');
+      debugPrint('Municipality: $municipality');
+      debugPrint('Barangay: $barangay');
       
       final queryParams = {
         'province': province,
@@ -189,7 +189,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
       final uri = Uri.parse('${AppConfig.baseUrl}/api/geocode')
           .replace(queryParameters: queryParams);
       
-      print('Geocoding URL: $uri');
+      debugPrint('Geocoding URL: $uri');
       
       final response = await http.get(
         uri,
@@ -199,11 +199,11 @@ class _RegisterScreenState extends State<RegisterScreen> {
         },
       );
       
-      print('Geocoding response status: ${response.statusCode}');
+      debugPrint('Geocoding response status: ${response.statusCode}');
       
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
-        print('Geocoding response data: $data');
+        debugPrint('Geocoding response data: $data');
         
         if (data['success'] == true && 
             data['data'] != null && 
@@ -218,16 +218,16 @@ class _RegisterScreenState extends State<RegisterScreen> {
               _latitude = lat;
               _longitude = lng;
             });
-            print('Coordinates set successfully: $lat, $lng');
+            debugPrint('Coordinates set successfully: $lat, $lng');
           }
         } else {
-          print('No coordinates found in response');
+          debugPrint('No coordinates found in response');
         }
       } else {
-        print('Geocoding failed with status: ${response.statusCode}');
+        debugPrint('Geocoding failed with status: ${response.statusCode}');
       }
     } catch (e) {
-      print('Geocoding error: $e');
+      debugPrint('Geocoding error: $e');
     } finally {
       setState(() => _isGeocodingInProgress = false);
     }
@@ -252,7 +252,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
       // Attempt geocoding before submission if coordinates are empty and barangay is selected
       if ((_latitude == null || _longitude == null) && _selectedBarangay != null && _selectedBarangay!['name'] != null && _selectedBarangay!['name'].isNotEmpty) {
-        print('Coordinates empty before submit, attempting geocoding...');
+        debugPrint('Coordinates empty before submit, attempting geocoding...');
         await _performGeocode();
         // Wait a bit for geocoding to complete
         await Future.delayed(const Duration(milliseconds: 1000));
@@ -278,7 +278,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
           requestBody['longitude'] = _longitude!.toStringAsFixed(7);
         }
         
-        print('Registration request body: $requestBody');
+        debugPrint('Registration request body: $requestBody');
         
         final response = await http.post(
           url,
@@ -299,22 +299,22 @@ class _RegisterScreenState extends State<RegisterScreen> {
           }
         } else {
           final errorMessage = data['message'] ?? 'Registration failed. Status: ${response.statusCode}';
-          print('Server Error: $errorMessage');
+          debugPrint('Server Error: $errorMessage');
           _showMessage(errorMessage, Colors.red);
         }
       } on http.ClientException catch (e) {
         if (mounted) {
-          print('Network Error: ${e.message}');
+          debugPrint('Network Error: ${e.message}');
           _showMessage('Network error: ${e.message}', Colors.red);
         }
       } on FormatException catch (e) {
         if (mounted) {
-          print('JSON Parsing Error: $e');
+          debugPrint('JSON Parsing Error: $e');
           _showMessage('Invalid response format from server. Please try again.', Colors.red);
         }
       } catch (e) {
         if (mounted) {
-          print('Unexpected Error: $e');
+          debugPrint('Unexpected Error: $e');
           _showMessage('An unexpected error occurred: ${e.toString()}', Colors.red);
         }
       } finally {
@@ -541,7 +541,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       _longitude = null;
                     });
                     if (selectedRegion.isNotEmpty) {
-                      print('🗺️ Region selected: ${selectedRegion['name']}, loading provinces...');
+                      debugPrint('🗺️ Region selected: ${selectedRegion['name']}, loading provinces...');
                       _loadProvincesForRegion(selectedRegion['code']);
                     }
                   } else {
@@ -564,7 +564,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
           Positioned.fill(
             child: Container(
               decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.7),
+                color: Colors.white.withValues(alpha: 0.7),
                 borderRadius: BorderRadius.circular(12),
               ),
               child: const Center(
@@ -612,7 +612,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 _longitude = null;
               });
               if (selectedProvince.isNotEmpty) {
-                print('📍 Province selected: ${selectedProvince['name']}, loading municipalities...');
+                debugPrint('📍 Province selected: ${selectedProvince['name']}, loading municipalities...');
                 _loadMunicipalities(selectedProvince['code']);
               }
             } else {
@@ -635,7 +635,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
           Positioned.fill(
             child: Container(
               decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.7),
+                color: Colors.white.withValues(alpha: 0.7),
                 borderRadius: BorderRadius.circular(12),
               ),
               child: const Center(
@@ -681,7 +681,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 _longitude = null;
               });
               if (selectedMunicipality.isNotEmpty) {
-                print('🏙️ Municipality selected: ${selectedMunicipality['name']}, loading barangays...');
+                debugPrint('🏙️ Municipality selected: ${selectedMunicipality['name']}, loading barangays...');
                 _loadBarangays(selectedMunicipality['code']);
                 // Note: Geocoding will only happen when barangay is selected
               }
@@ -706,7 +706,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
           Positioned.fill(
             child: Container(
               decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.7),
+                color: Colors.white.withValues(alpha: 0.7),
                 borderRadius: BorderRadius.circular(12),
               ),
               child: const Center(
@@ -751,7 +751,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
               
               // Trigger debounced geocoding when barangay is selected (coordinates will be updated)
               if (selectedBarangay.isNotEmpty) {
-                print('🎯 Barangay selected: ${selectedBarangay['name']}, starting fresh geocoding...');
+                debugPrint('🎯 Barangay selected: ${selectedBarangay['name']}, starting fresh geocoding...');
                 // Clear previous coordinates immediately
                 setState(() {
                   _latitude = null;
@@ -760,7 +760,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 _debounceGeocode();
               } else {
                 // Only clear coordinates when barangay is cleared/empty
-                print('Barangay cleared, clearing coordinates');
+                debugPrint('Barangay cleared, clearing coordinates');
                 setState(() {
                   _latitude = null;
                   _longitude = null;
@@ -785,7 +785,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
           Positioned.fill(
             child: Container(
               decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.7),
+                color: Colors.white.withValues(alpha: 0.7),
                 borderRadius: BorderRadius.circular(12),
               ),
               child: const Center(
@@ -913,7 +913,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
       padding: const EdgeInsets.symmetric(vertical: 16),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       elevation: 5,
-      shadowColor: AppColors.primary.withOpacity(0.4),
+      shadowColor: AppColors.primary.withValues(alpha: 0.4),
     );
   }
 

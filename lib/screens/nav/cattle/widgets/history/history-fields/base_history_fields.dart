@@ -62,20 +62,20 @@ abstract class BaseEventFieldsState<T extends BaseEventFields> extends State<T> 
   void onBullsLoaded() {}
 
   Future<void> fetchBulls() async {
-    print('DEBUG: fetchBulls started');
+        debugPrint('DEBUG: fetchBulls started');
     setState(() => loadingBulls = true);
     try {
       final allCattle = await CattleService.getAllCattle();
-      print('DEBUG: fetchBulls - loaded ${allCattle.length} total cattle');
+      debugPrint('DEBUG: fetchBulls - loaded ${allCattle.length} total cattle');
       
       final bullsList = allCattle.where((cattle) =>
       cattle.classification.toLowerCase() == 'bull' &&
           cattle.status.toLowerCase() == 'healthy'
       ).toList();
       
-      print('DEBUG: fetchBulls - found ${bullsList.length} healthy bulls');
+      debugPrint('DEBUG: fetchBulls - found ${bullsList.length} healthy bulls');
       for (final bull in bullsList) {
-        print('DEBUG: fetchBulls - bull: ${bull.tagNo} (${bull.classification}, ${bull.status})');
+        debugPrint('DEBUG: fetchBulls - bull: ${bull.tagNo} (${bull.classification}, ${bull.status})');
       }
 
       setState(() {
@@ -83,12 +83,12 @@ abstract class BaseEventFieldsState<T extends BaseEventFields> extends State<T> 
         loadingBulls = false;
       });
       
-      print('DEBUG: fetchBulls - bulls list updated, calling onBullsLoaded');
+      debugPrint('DEBUG: fetchBulls - bulls list updated, calling onBullsLoaded');
 
       // Notify subclasses that bulls have been loaded
       onBullsLoaded();
     } catch (e) {
-      print('DEBUG: fetchBulls - error: $e');
+      debugPrint('DEBUG: fetchBulls - error: $e');
       setState(() => loadingBulls = false);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -102,50 +102,50 @@ abstract class BaseEventFieldsState<T extends BaseEventFields> extends State<T> 
   }
 
   Future<void> fetchTechnicians() async {
-    print('🔍 DEBUG: Starting fetchTechnicians...');
+        debugPrint('🔍 DEBUG: Starting fetchTechnicians...');
     setState(() => loadingTechnicians = true);
 
     try {
-      print('🔍 DEBUG: About to call UserService().getUsersByRoles...');
+      debugPrint('🔍 DEBUG: About to call UserService().getUsersByRoles...');
 
       // Try multiple approaches to debug the issue
 
       // APPROACH 1: Try without any roles first to see if we get any users
-      print('🔍 DEBUG: Trying to fetch ALL users first...');
+      debugPrint('🔍 DEBUG: Trying to fetch ALL users first...');
       try {
         final allUsers = await UserService().getUsersByRoles();
-        print('🔍 DEBUG: All users count: ${allUsers.length}');
+        debugPrint('🔍 DEBUG: All users count: ${allUsers.length}');
         for (var user in allUsers) {
-          print('🔍 DEBUG: User: ${user.firstName} ${user.lastName} - Role: "${user.role}"');
+          debugPrint('🔍 DEBUG: User: ${user.firstName} ${user.lastName} - Role: "${user.role}"');
         }
       } catch (e) {
-        print('🔍 DEBUG: Error fetching all users: $e');
+        debugPrint('🔍 DEBUG: Error fetching all users: $e');
       }
 
       // APPROACH 2: Try the dedicated getTechnicians method
-      print('🔍 DEBUG: Trying getTechnicians method...');
+      debugPrint('🔍 DEBUG: Trying getTechnicians method...');
       try {
         final directTechnicians = await UserService().getTechnicians();
-        print('🔍 DEBUG: Direct technicians count: ${directTechnicians.length}');
+        debugPrint('🔍 DEBUG: Direct technicians count: ${directTechnicians.length}');
         for (var tech in directTechnicians) {
-          print('🔍 DEBUG: Direct technician: ${tech.firstName} ${tech.lastName} - Role: "${tech.role}"');
+          debugPrint('🔍 DEBUG: Direct technician: ${tech.firstName} ${tech.lastName} - Role: "${tech.role}"');
         }
       } catch (e) {
-        print('🔍 DEBUG: Error with getTechnicians: $e');
+        debugPrint('🔍 DEBUG: Error with getTechnicians: $e');
       }
 
       // APPROACH 3: Try with the specific roles you want
-      print('🔍 DEBUG: Trying with roles [pvo, lgu]...');
+      debugPrint('🔍 DEBUG: Trying with roles [pvo, lgu]...');
       final techniciansList = await UserService().getUsersByRoles(roles: ['pvo', 'lgu']);
-      print('🔍 DEBUG: PVO/LGU users count: ${techniciansList.length}');
+      debugPrint('🔍 DEBUG: PVO/LGU users count: ${techniciansList.length}');
 
       // APPROACH 4: Try with uppercase roles
-      print('🔍 DEBUG: Trying with roles [PVO, LGU]...');
+      debugPrint('🔍 DEBUG: Trying with roles [PVO, LGU]...');
       try {
         final upperCaseTechs = await UserService().getUsersByRoles(roles: ['PVO', 'LGU']);
-        print('🔍 DEBUG: Uppercase PVO/LGU users count: ${upperCaseTechs.length}');
+        debugPrint('🔍 DEBUG: Uppercase PVO/LGU users count: ${upperCaseTechs.length}');
       } catch (e) {
-        print('🔍 DEBUG: Error with uppercase roles: $e');
+        debugPrint('🔍 DEBUG: Error with uppercase roles: $e');
       }
 
       if (mounted) {
@@ -155,12 +155,12 @@ abstract class BaseEventFieldsState<T extends BaseEventFields> extends State<T> 
           loadingTechnicians = false;
         });
 
-        print('🔍 DEBUG: Final technicians assigned: ${technicians.length}');
+        debugPrint('🔍 DEBUG: Final technicians assigned: ${technicians.length}');
         _validateCurrentTechnicianSelection();
       }
     } catch (e, stackTrace) {
-      print('🔍 DEBUG: Exception in fetchTechnicians: $e');
-      print('🔍 DEBUG: Stack trace: $stackTrace');
+      debugPrint('🔍 DEBUG: Exception in fetchTechnicians: $e');
+      debugPrint('🔍 DEBUG: Stack trace: $stackTrace');
 
       if (mounted) {
         setState(() => loadingTechnicians = false);
@@ -173,19 +173,19 @@ abstract class BaseEventFieldsState<T extends BaseEventFields> extends State<T> 
       }
     }
 
-    print('🔍 DEBUG: fetchTechnicians completed');
+        debugPrint('🔍 DEBUG: fetchTechnicians completed');
   }
 
   Future<void> fetchFarmers() async {
-    print('🔍 DEBUG: Starting fetchFarmers...');
+        debugPrint('🔍 DEBUG: Starting fetchFarmers...');
     setState(() => loadingFarmers = true);
 
     try {
-      print('🔍 DEBUG: About to call UserService().getUsersByRoles for farmers...');
+      debugPrint('🔍 DEBUG: About to call UserService().getUsersByRoles for farmers...');
 
       // Fetch users with farmer role
       final farmersList = await UserService().getUsersByRoles(roles: ['farmer']);
-      print('🔍 DEBUG: Farmers count: ${farmersList.length}');
+      debugPrint('🔍 DEBUG: Farmers count: ${farmersList.length}');
 
       if (mounted) {
         setState(() {
@@ -193,12 +193,12 @@ abstract class BaseEventFieldsState<T extends BaseEventFields> extends State<T> 
           loadingFarmers = false;
         });
 
-        print('🔍 DEBUG: Final farmers assigned: ${farmers.length}');
+        debugPrint('🔍 DEBUG: Final farmers assigned: ${farmers.length}');
         _validateCurrentFarmerSelection();
       }
     } catch (e, stackTrace) {
-      print('🔍 DEBUG: Exception in fetchFarmers: $e');
-      print('🔍 DEBUG: Stack trace: $stackTrace');
+      debugPrint('🔍 DEBUG: Exception in fetchFarmers: $e');
+      debugPrint('🔍 DEBUG: Stack trace: $stackTrace');
 
       if (mounted) {
         setState(() => loadingFarmers = false);
@@ -211,7 +211,7 @@ abstract class BaseEventFieldsState<T extends BaseEventFields> extends State<T> 
       }
     }
 
-    print('🔍 DEBUG: fetchFarmers completed');
+        debugPrint('🔍 DEBUG: fetchFarmers completed');
   }
 
   // Helper method to validate current technician selection after loading
@@ -382,13 +382,13 @@ abstract class BaseEventFieldsState<T extends BaseEventFields> extends State<T> 
       width: double.infinity,
       child: DropdownButtonFormField<String>(
         value: () {
-          print('DEBUG: buildBullDropdown - current controller value: "$current"');
-          print('DEBUG: buildBullDropdown - bulls list length: ${bulls.length}');
-          print('DEBUG: buildBullDropdown - bulls tags: ${bulls.map((b) => b.tagNo).join(', ')}');
-          print('DEBUG: buildBullDropdown - isAutoFilled: $isAutoFilled');
+          debugPrint('DEBUG: buildBullDropdown - current controller value: "$current"');
+          debugPrint('DEBUG: buildBullDropdown - bulls list length: ${bulls.length}');
+          debugPrint('DEBUG: buildBullDropdown - bulls tags: ${bulls.map((b) => b.tagNo).join(', ')}');
+          debugPrint('DEBUG: buildBullDropdown - isAutoFilled: $isAutoFilled');
           
           if (current.isEmpty) {
-            print('DEBUG: buildBullDropdown - current is empty, returning null');
+            debugPrint('DEBUG: buildBullDropdown - current is empty, returning null');
             return null;
           }
           
@@ -397,13 +397,13 @@ abstract class BaseEventFieldsState<T extends BaseEventFields> extends State<T> 
           
           // If the current value is not in the bulls list, add it as a temporary option
           if (!lowerToOriginal.containsKey(current.toLowerCase())) {
-            print('DEBUG: buildBullDropdown - current value "$current" not found in bulls list, adding as temporary option');
+            debugPrint('DEBUG: buildBullDropdown - current value "$current" not found in bulls list, adding as temporary option');
             options.add(current);
             lowerToOriginal[current.toLowerCase()] = current;
           }
           
           final result = lowerToOriginal[current.toLowerCase()] ?? current;
-          print('DEBUG: buildBullDropdown - calculated value: "$result"');
+          debugPrint('DEBUG: buildBullDropdown - calculated value: "$result"');
           return result;
         }(),
         decoration: InputDecoration(
@@ -464,7 +464,7 @@ abstract class BaseEventFieldsState<T extends BaseEventFields> extends State<T> 
           
           // If current value is not in bulls list, add it as a temporary option
           if (isAutoFilled) {
-            print('DEBUG: buildBullDropdown - adding temporary item for "$current"');
+            debugPrint('DEBUG: buildBullDropdown - adding temporary item for "$current"');
             items.insert(0, DropdownMenuItem<String>(
               value: current,
               child: SizedBox(
@@ -512,7 +512,7 @@ abstract class BaseEventFieldsState<T extends BaseEventFields> extends State<T> 
           final match = lowerToOriginal[current.toLowerCase()];
           // Debug
           // ignore: avoid_print
-          print('Bull dropdown - current: "$current", options: ${options.join(', ')}');
+          debugPrint('Bull dropdown - current: "$current", options: ${options.join(', ')}');
           return match ?? current;
         }(),
         decoration: InputDecoration(
@@ -608,12 +608,12 @@ abstract class BaseEventFieldsState<T extends BaseEventFields> extends State<T> 
       }
     }
 
-    print('=== Technician Dropdown Debug ===');
-    print('Controller value: "$currentValue"');
-    print('Loading technicians: $loadingTechnicians');
-    print('Technicians count: ${technicians.length}');
-    print('Use text input: $_useTechnicianTextInput');
-    print('Technicians: ${technicians.map((t) => '${t.firstName} ${t.lastName} (ID: ${t.id})').join(', ')}');
+        debugPrint('=== Technician Dropdown Debug ===');
+        debugPrint('Controller value: "$currentValue"');
+        debugPrint('Loading technicians: $loadingTechnicians');
+        debugPrint('Technicians count: ${technicians.length}');
+        debugPrint('Use text input: $_useTechnicianTextInput');
+        debugPrint('Technicians: ${technicians.map((t) => '${t.firstName} ${t.lastName} (ID: ${t.id})').join(', ')}');
 
     // If still loading technicians, show loading state
     if (loadingTechnicians) {
@@ -724,7 +724,7 @@ abstract class BaseEventFieldsState<T extends BaseEventFields> extends State<T> 
                 technician.role.toUpperCase(),
                 style: TextStyle(
                   fontSize: 13, // Slightly smaller font for role
-                  color: AppColors.textSecondary.withOpacity(0.7),
+                  color: AppColors.textSecondary.withValues(alpha: 0.7),
                   fontWeight: FontWeight.w400,
                   height: 1.1, // Tighter line height for subtitle
                 ),
@@ -737,7 +737,7 @@ abstract class BaseEventFieldsState<T extends BaseEventFields> extends State<T> 
       );
     }).toList();
 
-    print('Dropdown items: ${dropdownItems.map((item) => item.value).join(', ')}');
+        debugPrint('Dropdown items: ${dropdownItems.map((item) => item.value).join(', ')}');
 
     // Check if the current value exists in the available options
     bool valueExists = false;
@@ -749,7 +749,7 @@ abstract class BaseEventFieldsState<T extends BaseEventFields> extends State<T> 
         // Check if the current value matches either the full unique value or just the display name
         return itemValue == currentVal || itemValue.startsWith('$currentVal (ID: ');
       });
-      print('Checking if "$currentValue" exists in dropdown items: $valueExists');
+      debugPrint('Checking if "$currentValue" exists in dropdown items: $valueExists');
     }
 
     // Determine the dropdown value to use
@@ -765,11 +765,11 @@ abstract class BaseEventFieldsState<T extends BaseEventFields> extends State<T> 
         orElse: () => dropdownItems.first, // Fallback, shouldn't happen
       );
       dropdownValue = matchingItem.value;
-      print('Using existing value: "$dropdownValue"');
+      debugPrint('Using existing value: "$dropdownValue"');
     } else {
       dropdownValue = null;
       if (currentValue != null && !valueExists) {
-        print('Current value "$currentValue" not found in technicians, clearing...');
+        debugPrint('Current value "$currentValue" not found in technicians, clearing...');
         // Clear the controller if the value doesn't exist
         WidgetsBinding.instance.addPostFrameCallback((_) {
           if (mounted) {
@@ -779,8 +779,8 @@ abstract class BaseEventFieldsState<T extends BaseEventFields> extends State<T> 
       }
     }
 
-    print('Final dropdown value: "$dropdownValue"');
-    print('=== End Debug ===');
+        debugPrint('Final dropdown value: "$dropdownValue"');
+        debugPrint('=== End Debug ===');
 
     // Return text input or dropdown based on mode
     if (_useTechnicianTextInput) {
@@ -905,7 +905,7 @@ abstract class BaseEventFieldsState<T extends BaseEventFields> extends State<T> 
         menuMaxHeight: 300, // Limit dropdown menu height for better UX
         items: dropdownItems,
         onChanged: (value) {
-          print('Technician dropdown changed to: "$value"');
+          debugPrint('Technician dropdown changed to: "$value"');
           // Extract display name from unique value (remove ID part)
           String displayName = value ?? '';
           if (displayName.contains(' (ID: ')) {
@@ -913,7 +913,7 @@ abstract class BaseEventFieldsState<T extends BaseEventFields> extends State<T> 
           }
           // Update the controller with the display name
           widget.controllers['technician']?.text = displayName;
-          print('Controller updated to: "${widget.controllers['technician']?.text}"');
+          debugPrint('Controller updated to: "${widget.controllers['technician']?.text}"');
 
           // Force a rebuild to ensure the UI reflects the change
           if (mounted) {
@@ -970,7 +970,7 @@ abstract class BaseEventFieldsState<T extends BaseEventFields> extends State<T> 
     final dropdownValue = currentValue.isNotEmpty && exists ? currentValue : null;
     // Debug
     // ignore: avoid_print
-    print('Semen dropdown - current: "$currentValue", exists: $exists, options: ${allSemenOptions.join(', ')}');
+        debugPrint('Semen dropdown - current: "$currentValue", exists: $exists, options: ${allSemenOptions.join(', ')}');
 
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
@@ -1044,10 +1044,10 @@ abstract class BaseEventFieldsState<T extends BaseEventFields> extends State<T> 
       currentValue = null;
     }
 
-    print('=== Farmer Dropdown Debug ===');
-    print('Controller value: "$currentValue"');
-    print('Loading farmers: $loadingFarmers');
-    print('Farmers count: ${farmers.length}');
+        debugPrint('=== Farmer Dropdown Debug ===');
+        debugPrint('Controller value: "$currentValue"');
+        debugPrint('Loading farmers: $loadingFarmers');
+        debugPrint('Farmers count: ${farmers.length}');
 
     // If still loading farmers, show loading state
     if (loadingFarmers) {
@@ -1114,7 +1114,7 @@ abstract class BaseEventFieldsState<T extends BaseEventFields> extends State<T> 
                 farmer.role.toUpperCase(),
                 style: TextStyle(
                   fontSize: 13,
-                  color: AppColors.textSecondary.withOpacity(0.7),
+                  color: AppColors.textSecondary.withValues(alpha: 0.7),
                   fontWeight: FontWeight.w400,
                   height: 1.1,
                 ),
@@ -1127,7 +1127,7 @@ abstract class BaseEventFieldsState<T extends BaseEventFields> extends State<T> 
       );
     }).toList();
 
-    print('Dropdown items: ${dropdownItems.map((item) => item.value).join(', ')}');
+        debugPrint('Dropdown items: ${dropdownItems.map((item) => item.value).join(', ')}');
 
     // Check if the current value exists in the available options
     bool valueExists = false;
@@ -1139,18 +1139,18 @@ abstract class BaseEventFieldsState<T extends BaseEventFields> extends State<T> 
         // Check if the current value matches either the full unique value or just the display name
         return itemValue == currentVal || itemValue.startsWith('$currentVal (ID: ');
       });
-      print('Checking if "$currentValue" exists in dropdown items: $valueExists');
+      debugPrint('Checking if "$currentValue" exists in dropdown items: $valueExists');
     }
 
     // Determine the dropdown value to use
     String? dropdownValue;
     if (currentValue != null && valueExists) {
       dropdownValue = currentValue.trim();
-      print('Using existing value: "$dropdownValue"');
+      debugPrint('Using existing value: "$dropdownValue"');
     } else {
       dropdownValue = null;
       if (currentValue != null && !valueExists) {
-        print('Current value "$currentValue" not found in farmers, clearing...');
+        debugPrint('Current value "$currentValue" not found in farmers, clearing...');
         // Clear the controller if the value doesn't exist
         WidgetsBinding.instance.addPostFrameCallback((_) {
           if (mounted) {
@@ -1160,8 +1160,8 @@ abstract class BaseEventFieldsState<T extends BaseEventFields> extends State<T> 
       }
     }
 
-    print('Final dropdown value: "$dropdownValue"');
-    print('=== End Debug ===');
+        debugPrint('Final dropdown value: "$dropdownValue"');
+        debugPrint('=== End Debug ===');
 
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
@@ -1194,10 +1194,10 @@ abstract class BaseEventFieldsState<T extends BaseEventFields> extends State<T> 
         menuMaxHeight: 300,
         items: dropdownItems,
         onChanged: (value) {
-          print('Farmer dropdown changed to: "$value"');
+          debugPrint('Farmer dropdown changed to: "$value"');
           // Update the controller with the display name
           widget.controllers['farmer']?.text = value ?? '';
-          print('Controller updated to: "${widget.controllers['farmer']?.text}"');
+          debugPrint('Controller updated to: "${widget.controllers['farmer']?.text}"');
 
           // Force a rebuild to ensure the UI reflects the change
           if (mounted) {

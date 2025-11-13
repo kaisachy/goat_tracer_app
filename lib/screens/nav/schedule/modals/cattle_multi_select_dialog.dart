@@ -75,7 +75,7 @@ class _CattleMultiSelectDialogState extends State<CattleMultiSelectDialog> {
           borderRadius: BorderRadius.circular(20),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.1),
+              color: Colors.black.withValues(alpha: 0.1),
               blurRadius: 20,
               offset: const Offset(0, 10),
             ),
@@ -100,7 +100,7 @@ class _CattleMultiSelectDialogState extends State<CattleMultiSelectDialog> {
       padding: const EdgeInsets.fromLTRB(24, 24, 24, 16),
       decoration: BoxDecoration(
         gradient: LinearGradient(
-          colors: [AppColors.primary, AppColors.primary.withOpacity(0.8)],
+          colors: [AppColors.primary, AppColors.primary.withValues(alpha: 0.8)],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
@@ -117,7 +117,7 @@ class _CattleMultiSelectDialogState extends State<CattleMultiSelectDialog> {
               Container(
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.2),
+                  color: Colors.white.withValues(alpha: 0.2),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: const FaIcon(
@@ -141,7 +141,7 @@ class _CattleMultiSelectDialogState extends State<CattleMultiSelectDialog> {
                 onPressed: () => Navigator.pop(context),
                 icon: const Icon(Icons.close, color: Colors.white),
                 style: IconButton.styleFrom(
-                  backgroundColor: Colors.white.withOpacity(0.2),
+                  backgroundColor: Colors.white.withValues(alpha: 0.2),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(8),
                   ),
@@ -153,7 +153,7 @@ class _CattleMultiSelectDialogState extends State<CattleMultiSelectDialog> {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
             decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.2),
+              color: Colors.white.withValues(alpha: 0.2),
               borderRadius: BorderRadius.circular(20),
             ),
             child: Text(
@@ -348,7 +348,7 @@ class _CattleMultiSelectDialogState extends State<CattleMultiSelectDialog> {
               child: Container(
                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                 decoration: BoxDecoration(
-                  color: AppColors.primary.withOpacity(0.1),
+                  color: AppColors.primary.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(20),
                 ),
                 child: Row(
@@ -394,12 +394,12 @@ class _CattleMultiSelectDialogState extends State<CattleMultiSelectDialog> {
             return Container(
               margin: const EdgeInsets.only(bottom: 8),
               decoration: BoxDecoration(
-                color: isSelected ? AppColors.primary.withOpacity(0.05) : Colors.white,
+                color: isSelected ? AppColors.primary.withValues(alpha: 0.05) : Colors.white,
                 borderRadius: BorderRadius.circular(12),
                 border: Border.all(
                   color: isBlocked
-                      ? Colors.orange.withOpacity(0.6)
-                      : (isSelected ? AppColors.primary.withOpacity(0.3) : Colors.grey[200]!),
+                      ? Colors.orange.withValues(alpha: 0.6)
+                      : (isSelected ? AppColors.primary.withValues(alpha: 0.3) : Colors.grey[200]!),
                   width: isSelected ? 2 : 1,
                 ),
               ),
@@ -464,10 +464,10 @@ class _CattleMultiSelectDialogState extends State<CattleMultiSelectDialog> {
       width: 48,
       height: 48,
       decoration: BoxDecoration(
-        color: isSelected ? color.withOpacity(0.2) : color.withOpacity(0.1),
+        color: isSelected ? color.withValues(alpha: 0.2) : color.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
-          color: isSelected ? color : color.withOpacity(0.3),
+          color: isSelected ? color : color.withValues(alpha: 0.3),
           width: isSelected ? 2 : 1,
         ),
       ),
@@ -521,7 +521,7 @@ class _CattleMultiSelectDialogState extends State<CattleMultiSelectDialog> {
               child: Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                 decoration: BoxDecoration(
-                  color: _getClassificationColor(cattle.classification).withOpacity(0.15),
+                  color: _getClassificationColor(cattle.classification).withValues(alpha: 0.15),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Text(
@@ -541,9 +541,9 @@ class _CattleMultiSelectDialogState extends State<CattleMultiSelectDialog> {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                 decoration: BoxDecoration(
-                  color: Colors.orange.withOpacity(0.12),
+                  color: Colors.orange.withValues(alpha: 0.12),
                   borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: Colors.orange.withOpacity(0.5)),
+                  border: Border.all(color: Colors.orange.withValues(alpha: 0.5)),
                 ),
                 child: const Text(
                   'Already Scheduled',
@@ -624,9 +624,9 @@ class _CattleMultiSelectDialogState extends State<CattleMultiSelectDialog> {
               width: double.infinity,
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: AppColors.primary.withOpacity(0.1),
+                color: AppColors.primary.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: AppColors.primary.withOpacity(0.3)),
+                border: Border.all(color: AppColors.primary.withValues(alpha: 0.3)),
               ),
               child: Row(
                 children: [

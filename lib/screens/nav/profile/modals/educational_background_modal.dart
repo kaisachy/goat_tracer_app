@@ -74,7 +74,7 @@ class _EducationalBackgroundModalState extends State<EducationalBackgroundModal>
                       margin: const EdgeInsets.only(bottom: 12),
                       child: ListTile(
                         leading: CircleAvatar(
-                          backgroundColor: AppColors.lightGreen.withOpacity(0.2),
+                          backgroundColor: AppColors.lightGreen.withValues(alpha: 0.2),
                           child: const Icon(Icons.school, color: AppColors.primary),
                         ),
                         title: Text(level, style: const TextStyle(fontWeight: FontWeight.w600)),

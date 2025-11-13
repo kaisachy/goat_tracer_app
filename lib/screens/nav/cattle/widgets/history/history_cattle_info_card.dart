@@ -97,18 +97,18 @@ class HistoryCattleInfoCard extends StatelessWidget {
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
           colors: [
-            AppColors.vibrantGreen.withOpacity(0.1),
-            AppColors.lightGreen.withOpacity(0.05),
+            AppColors.vibrantGreen.withValues(alpha: 0.1),
+            AppColors.lightGreen.withValues(alpha: 0.05),
           ],
         ),
         borderRadius: BorderRadius.circular(20),
         border: Border.all(
-          color: AppColors.lightGreen.withOpacity(0.3),
+          color: AppColors.lightGreen.withValues(alpha: 0.3),
           width: 1,
         ),
         boxShadow: [
           BoxShadow(
-            color: AppColors.darkGreen.withOpacity(0.08),
+            color: AppColors.darkGreen.withValues(alpha: 0.08),
             blurRadius: 15,
             offset: const Offset(0, 5),
           ),
@@ -123,7 +123,7 @@ class HistoryCattleInfoCard extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.all(10),
                 decoration: BoxDecoration(
-                  color: AppColors.vibrantGreen.withOpacity(0.15),
+                  color: AppColors.vibrantGreen.withValues(alpha: 0.15),
                   borderRadius: BorderRadius.circular(15),
                 ),
                 child: const Icon(
@@ -138,7 +138,7 @@ class HistoryCattleInfoCard extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      '${cattleDetails!.tagNo}',
+                      cattleDetails!.tagNo,
                       style: const TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.bold,
@@ -167,10 +167,10 @@ class HistoryCattleInfoCard extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                 decoration: BoxDecoration(
-                  color: _getStatusColor(cattleDetails!.status).withOpacity(0.15),
+                  color: _getStatusColor(cattleDetails!.status).withValues(alpha: 0.15),
                   borderRadius: BorderRadius.circular(20),
                   border: Border.all(
-                    color: _getStatusColor(cattleDetails!.status).withOpacity(0.3),
+                    color: _getStatusColor(cattleDetails!.status).withValues(alpha: 0.3),
                     width: 1,
                   ),
                 ),

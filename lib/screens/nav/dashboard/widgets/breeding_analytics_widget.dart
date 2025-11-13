@@ -153,7 +153,7 @@ class _BreedingAnalyticsWidgetState extends State<BreedingAnalyticsWidget>
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withValues(alpha: 0.05),
             blurRadius: 20,
             offset: const Offset(0, 8),
           ),
@@ -334,7 +334,7 @@ class _BreedingAnalyticsWidgetState extends State<BreedingAnalyticsWidget>
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                       decoration: BoxDecoration(
-                        color: AppColors.darkGreen.withOpacity(0.1),
+                        color: AppColors.darkGreen.withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(8),
                       ),
                       child: Text(
@@ -442,10 +442,10 @@ class _BreedingAnalyticsWidgetState extends State<BreedingAnalyticsWidget>
           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
           decoration: BoxDecoration(
             border: Border.all(
-              color: value != null ? AppColors.darkGreen.withOpacity(0.5) : Colors.grey[300]!,
+              color: value != null ? AppColors.darkGreen.withValues(alpha: 0.5) : Colors.grey[300]!,
             ),
             borderRadius: BorderRadius.circular(6),
-            color: value != null ? AppColors.darkGreen.withOpacity(0.05) : Colors.white,
+            color: value != null ? AppColors.darkGreen.withValues(alpha: 0.05) : Colors.white,
           ),
           child: DropdownButtonHideUnderline(
               child: DropdownButton<String>(
@@ -537,12 +537,12 @@ class _BreedingAnalyticsWidgetState extends State<BreedingAnalyticsWidget>
               decoration: BoxDecoration(
                 border: Border.all(
                   color: _selectedDateRange != null
-                      ? AppColors.darkGreen.withOpacity(0.5)
+                      ? AppColors.darkGreen.withValues(alpha: 0.5)
                       : Colors.grey[300]!,
                 ),
                 borderRadius: BorderRadius.circular(6),
                 color: _selectedDateRange != null
-                    ? AppColors.darkGreen.withOpacity(0.05)
+                    ? AppColors.darkGreen.withValues(alpha: 0.05)
                     : Colors.white,
               ),
             child: Row(
@@ -648,9 +648,9 @@ class _BreedingAnalyticsWidgetState extends State<BreedingAnalyticsWidget>
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.05),
+        color: color.withValues(alpha: 0.05),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: color.withOpacity(0.2)),
+        border: Border.all(color: color.withValues(alpha: 0.2)),
       ),
       child: Column(
         children: [
@@ -797,7 +797,7 @@ class _BreedingAnalyticsWidgetState extends State<BreedingAnalyticsWidget>
                     Icon(
                       icon,
                       size: 10,
-                      color: hasData ? primaryColor.withOpacity(0.7) : Colors.grey[400],
+                      color: hasData ? primaryColor.withValues(alpha: 0.7) : Colors.grey[400],
                     ),
                   ],
                 ),
@@ -883,3 +883,4 @@ class _BreedingAnalyticsWidgetState extends State<BreedingAnalyticsWidget>
     );
   }
 }
+

@@ -523,23 +523,27 @@ class _ScheduleContentWidgetState extends State<ScheduleContentWidget> with Tick
   void _confirmDeleteSchedule(Schedule schedule) {
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
+      builder: (dialogContext) => AlertDialog(
         title: const Text('Delete Schedule'),
         content: Text('Are you sure you want to delete "${schedule.title}"?'),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context),
+            onPressed: () => Navigator.pop(dialogContext),
             child: const Text('Cancel'),
           ),
           TextButton(
             onPressed: () async {
               try {
                 await ScheduleService.deleteSchedule(schedule.id ?? 0);
-                Navigator.pop(context);
-                loadSchedules();
+                if (!dialogContext.mounted) return;
+                Navigator.pop(dialogContext);
+                if (!mounted) return;
+                await loadSchedules();
                 _showSnackBar('Schedule deleted successfully');
               } catch (e) {
-                Navigator.pop(context);
+                if (!dialogContext.mounted) return;
+                Navigator.pop(dialogContext);
+                if (!mounted) return;
                 _showSnackBar('Failed to delete schedule: ${e.toString()}', isError: true);
               }
             },

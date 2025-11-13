@@ -49,7 +49,7 @@ class CattleOptionsModal {
         borderRadius: BorderRadius.circular(20),
       ),
       color: Colors.white,
-      shadowColor: Colors.black.withOpacity(0.15),
+      shadowColor: Colors.black.withValues(alpha: 0.15),
       constraints: const BoxConstraints(
         minWidth: 250,
         maxWidth: 300,
@@ -135,9 +135,17 @@ class CattleOptionsModal {
         ),
       ],
     ).then((String? selectedValue) {
+      if (!context.mounted) return;
       if (selectedValue != null) {
-        _handleMenuSelection(context, selectedValue, cattle, onAddEvent,
-            onEditCattle, onCattleUpdated, isArchived);
+        _handleMenuSelection(
+          context,
+          selectedValue,
+          cattle,
+          onAddEvent,
+          onEditCattle,
+          onCattleUpdated,
+          isArchived,
+        );
       }
     });
   }
@@ -162,10 +170,10 @@ class CattleOptionsModal {
               width: 40,
               height: 40,
               decoration: BoxDecoration(
-                color: color.withOpacity(0.12),
+                color: color.withValues(alpha: 0.12),
                 borderRadius: BorderRadius.circular(12),
                 border: Border.all(
-                  color: color.withOpacity(0.2),
+                  color: color.withValues(alpha: 0.2),
                   width: 1,
                 ),
               ),

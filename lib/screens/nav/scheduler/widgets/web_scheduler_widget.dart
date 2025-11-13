@@ -242,9 +242,9 @@ class WebSchedulerWidget extends StatelessWidget {
         margin: const EdgeInsets.all(1),
         decoration: BoxDecoration(
           color: isSelected 
-              ? AppColors.primary.withOpacity(0.1)
+              ? AppColors.primary.withValues(alpha: 0.1)
               : hasSchedules 
-                  ? AppColors.vibrantGreen.withOpacity(0.1) // Mark scheduled dates with vibrant green
+                  ? AppColors.vibrantGreen.withValues(alpha: 0.1) // Mark scheduled dates with vibrant green
                   : Colors.transparent,
           borderRadius: BorderRadius.circular(8),
           border: isToday 
@@ -289,7 +289,7 @@ class WebSchedulerWidget extends StatelessWidget {
     for (int hour = 0; hour < 24; hour++) {
       // Build the time slot row
       timeSlots.add(
-        Container(
+        SizedBox(
           height: hourHeight,
           child: Row(
             children: [
@@ -402,7 +402,7 @@ class WebSchedulerWidget extends StatelessWidget {
     for (int hour = 0; hour < 24; hour++) {
       // Build the time slot row
       timeSlots.add(
-        Container(
+        SizedBox(
           height: hourHeight,
           child: Row(
             children: [
@@ -545,7 +545,7 @@ class WebSchedulerWidget extends StatelessWidget {
           borderRadius: BorderRadius.circular(4),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.1),
+              color: Colors.black.withValues(alpha: 0.1),
               blurRadius: 2,
               offset: Offset(0, 1),
             ),
@@ -580,7 +580,7 @@ class WebSchedulerWidget extends StatelessWidget {
                               '${_formatTime(startTime.hour, startTime.minute)} - ${_formatTime(endTime.hour, endTime.minute)}',
                               style: TextStyle(
                                 fontSize: isMobile ? 7 : 8,
-                                color: Colors.white.withOpacity(0.9),
+                                color: Colors.white.withValues(alpha: 0.9),
                               ),
                               overflow: TextOverflow.ellipsis,
                               maxLines: 1,
@@ -718,3 +718,4 @@ class WebSchedulerWidget extends StatelessWidget {
      );
    }
  }
+

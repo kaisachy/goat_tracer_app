@@ -61,17 +61,17 @@ class _HistoryScreenState extends State<HistoryScreen> {
             childAspectRatio: 4 / 3,
           ),
           itemCount: gridTypes.length,
-          itemBuilder: (context, index) {
+          itemBuilder: (gridContext, index) {
             final type = gridTypes[index];
             final color = HistoryTypeUtils.getHistoryColor(type);
             final icon = HistoryTypeUtils.getHistoryIcon(type);
             return Card(
               elevation: 3,
-              shadowColor: color.withOpacity(0.25),
+              shadowColor: color.withValues(alpha: 0.25),
               color: Colors.white,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(16),
-                side: BorderSide(color: color.withOpacity(0.25), width: 1),
+                side: BorderSide(color: color.withValues(alpha: 0.25), width: 1),
               ),
               child: InkWell(
                 borderRadius: BorderRadius.circular(16),
@@ -79,21 +79,21 @@ class _HistoryScreenState extends State<HistoryScreen> {
                   final selectedCattleTag = await showDialog<String>(
                     context: context,
                     barrierDismissible: false,
-                    builder: (BuildContext context) {
+                    builder: (dialogContext) {
                       return CattleSelectionModal(historyType: type);
                     },
                   );
-                  if (selectedCattleTag == null) return;
-                  await Navigator.push(
-                    context,
+                  if (!mounted || selectedCattleTag == null) return;
+                  await Navigator.of(context).push(
                     MaterialPageRoute(
-                      builder: (context) => CattleHistoryFormScreen(
+                      builder: (routeContext) => CattleHistoryFormScreen(
                         cattleTag: selectedCattleTag,
                         initialHistoryType: type,
                       ),
                     ),
                   );
-                  if (mounted) _refreshHistory();
+                  if (!mounted) return;
+                  await _refreshHistory();
                 },
                 child: Padding(
                   padding: const EdgeInsets.all(16),
@@ -106,9 +106,9 @@ class _HistoryScreenState extends State<HistoryScreen> {
                             width: 56,
                             height: 56,
                             decoration: BoxDecoration(
-                              color: color.withOpacity(0.12),
+                              color: color.withValues(alpha: 0.12),
                               borderRadius: BorderRadius.circular(12),
-                              border: Border.all(color: color.withOpacity(0.2)),
+                              border: Border.all(color: color.withValues(alpha: 0.2)),
                             ),
                             child: Icon(icon, color: color, size: 28),
                           ),
@@ -138,11 +138,11 @@ class _HistoryScreenState extends State<HistoryScreen> {
             padding: const EdgeInsets.only(top: 12, left: 0, right: 0),
             child: Card(
               elevation: 3,
-              shadowColor: HistoryTypeUtils.getHistoryColor('Other').withOpacity(0.25),
+              shadowColor: HistoryTypeUtils.getHistoryColor('Other').withValues(alpha: 0.25),
               color: Colors.white,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(16),
-                side: BorderSide(color: HistoryTypeUtils.getHistoryColor('Other').withOpacity(0.25), width: 1),
+                side: BorderSide(color: HistoryTypeUtils.getHistoryColor('Other').withValues(alpha: 0.25), width: 1),
               ),
               child: InkWell(
                 borderRadius: BorderRadius.circular(16),
@@ -150,21 +150,21 @@ class _HistoryScreenState extends State<HistoryScreen> {
                   final selectedCattleTag = await showDialog<String>(
                     context: context,
                     barrierDismissible: false,
-                    builder: (BuildContext context) {
+                    builder: (dialogContext) {
                       return CattleSelectionModal(historyType: 'Other');
                     },
                   );
-                  if (selectedCattleTag == null) return;
-                  await Navigator.push(
-                    context,
+                  if (!mounted || selectedCattleTag == null) return;
+                  await Navigator.of(context).push(
                     MaterialPageRoute(
-                      builder: (context) => CattleHistoryFormScreen(
+                      builder: (routeContext) => CattleHistoryFormScreen(
                         cattleTag: selectedCattleTag,
                         initialHistoryType: 'Other',
                       ),
                     ),
                   );
-                  if (mounted) _refreshHistory();
+                  if (!mounted) return;
+                  await _refreshHistory();
                 },
                 child: Padding(
                   padding: const EdgeInsets.symmetric(vertical: 24),
@@ -175,9 +175,9 @@ class _HistoryScreenState extends State<HistoryScreen> {
                         width: 56,
                         height: 56,
                         decoration: BoxDecoration(
-                          color: HistoryTypeUtils.getHistoryColor('Other').withOpacity(0.08),
+                          color: HistoryTypeUtils.getHistoryColor('Other').withValues(alpha: 0.08),
                           borderRadius: BorderRadius.circular(12),
-                          border: Border.all(color: HistoryTypeUtils.getHistoryColor('Other').withOpacity(0.13)),
+                          border: Border.all(color: HistoryTypeUtils.getHistoryColor('Other').withValues(alpha: 0.13)),
                         ),
                         child: Icon(HistoryTypeUtils.getHistoryIcon('Other'), color: HistoryTypeUtils.getHistoryColor('Other'), size: 28),
                       ),
@@ -224,10 +224,10 @@ class _HistoryScreenState extends State<HistoryScreen> {
 
   Future<void> _loadAllCattleHistory() async {
     try {
-      print('DEBUG: _loadAllCattleHistory started');
+      debugPrint('DEBUG: _loadAllCattleHistory started');
       setState(() => isLoading = true);
       final historyRecords = await CattleHistoryService.getCattleHistory();
-      print('DEBUG: Loaded ${historyRecords.length} history records from service');
+      debugPrint('DEBUG: Loaded ${historyRecords.length} history records from service');
 
       // Remove duplicates and delete them from database
       final uniqueHistoryRecords = await _removeDuplicateHistoryRecordsFromDB(historyRecords);
@@ -265,9 +265,9 @@ class _HistoryScreenState extends State<HistoryScreen> {
   }
 
   Future<void> _refreshHistory() async {
-    print('DEBUG: _refreshHistory called');
+    debugPrint('DEBUG: _refreshHistory called');
     await _loadAllCattleHistory();
-    print('DEBUG: _refreshHistory completed');
+    debugPrint('DEBUG: _refreshHistory completed');
   }
 
   // Helper method to remove duplicate history records and delete them from database
@@ -312,7 +312,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
             if (success) {
               deletedCount++;
             } else {
-              print('Failed to delete duplicate history record with ID: $historyRecordId');
+              debugPrint('Failed to delete duplicate history record with ID: $historyRecordId');
             }
           }
         }
@@ -330,7 +330,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
           );
         }
       } catch (e) {
-        print('Error deleting duplicate history records: $e');
+        debugPrint('Error deleting duplicate history records: $e');
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
@@ -896,7 +896,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withValues(alpha: 0.05),
             blurRadius: 8,
             offset: const Offset(0, 2),
           ),
@@ -982,12 +982,12 @@ class _HistoryScreenState extends State<HistoryScreen> {
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: historyColor.withOpacity(0.1),
+            color: historyColor.withValues(alpha: 0.1),
             blurRadius: 12,
             offset: const Offset(0, 4),
           ),
         ],
-        border: Border.all(color: historyColor.withOpacity(0.2)),
+        border: Border.all(color: historyColor.withValues(alpha: 0.2)),
       ),
       child: Column(
         children: [
@@ -1014,9 +1014,9 @@ class _HistoryScreenState extends State<HistoryScreen> {
                   Container(
                     padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
-                      color: historyColor.withOpacity(0.15),
+                      color: historyColor.withValues(alpha: 0.15),
                       borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: historyColor.withOpacity(0.3)),
+                      border: Border.all(color: historyColor.withValues(alpha: 0.3)),
                     ),
                     child: Icon(HistoryTypeUtils.getHistoryIcon(historyType), color: historyColor, size: 24),
                   ),
@@ -1038,9 +1038,9 @@ class _HistoryScreenState extends State<HistoryScreen> {
                         Container(
                           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                           decoration: BoxDecoration(
-                            color: historyColor.withOpacity(0.1),
+                            color: historyColor.withValues(alpha: 0.1),
                             borderRadius: BorderRadius.circular(12),
-                            border: Border.all(color: historyColor.withOpacity(0.3)),
+                            border: Border.all(color: historyColor.withValues(alpha: 0.3)),
                           ),
                           child: Text(
                             cattleTag,
@@ -1124,7 +1124,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
                   Container(
                     width: double.infinity,
                     height: 1,
-                    color: historyColor.withOpacity(0.2),
+                    color: historyColor.withValues(alpha: 0.2),
                     margin: const EdgeInsets.only(bottom: 16),
                   ),
                   ...details.asMap().entries.map((entry) {
@@ -1158,7 +1158,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
             style: TextStyle(
               fontSize: 13,
               fontWeight: FontWeight.w600,
-              color: AppColors.textPrimary.withOpacity(0.7),
+              color: AppColors.textPrimary.withValues(alpha: 0.7),
             ),
           ),
         ),
@@ -1364,14 +1364,14 @@ class _HistoryScreenState extends State<HistoryScreen> {
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
                     colors: [
-                      AppColors.lightGreen.withOpacity(0.1),
-                      AppColors.vibrantGreen.withOpacity(0.05),
+                      AppColors.lightGreen.withValues(alpha: 0.1),
+                      AppColors.vibrantGreen.withValues(alpha: 0.05),
                     ],
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
                   ),
                   shape: BoxShape.circle,
-                  border: Border.all(color: AppColors.lightGreen.withOpacity(0.2)),
+                  border: Border.all(color: AppColors.lightGreen.withValues(alpha: 0.2)),
                 ),
                 child: Icon(
                   isFiltering ? Icons.search_off_rounded : Icons.event_note_rounded,

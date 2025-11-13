@@ -13,12 +13,12 @@ class ScheduleUtils {
         return FontAwesomeIcons.syringe;
       case 'deworming':
         return FontAwesomeIcons.pills;
-      case 'hoof trimming':
-        return FontAwesomeIcons.cut;
+      case 'hoof_trimming':
+        return FontAwesomeIcons.scissors;
       case 'feed':
         return FontAwesomeIcons.bowlFood;
       case 'weigh':
-        return FontAwesomeIcons.weight;
+        return FontAwesomeIcons.weightScale;
       case 'breeding':
         return FontAwesomeIcons.heart;
       default:
@@ -305,7 +305,7 @@ class ScheduleStatusChip extends StatelessWidget {
         vertical: isSmall ? 2 : 4,
       ),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
+        color: color.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(isSmall ? 4 : 6),
       ),
       child: Text(
@@ -337,7 +337,7 @@ class ScheduleTypeIcon extends StatelessWidget {
     return Container(
       padding: EdgeInsets.all(8),
       decoration: BoxDecoration(
-        color: (color ?? AppColors.primary).withOpacity(0.1),
+        color: (color ?? AppColors.primary).withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(8),
       ),
       child: FaIcon(

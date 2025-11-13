@@ -102,7 +102,7 @@ class _ScheduleHeaderState extends State<ScheduleHeader> {
                   borderRadius: BorderRadius.circular(8),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withOpacity(0.08),
+                      color: Colors.black.withValues(alpha: 0.08),
                       blurRadius: 6,
                       offset: const Offset(0, 2),
                     ),
@@ -168,7 +168,7 @@ class _ScheduleHeaderState extends State<ScheduleHeader> {
             borderRadius: BorderRadius.circular(8),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.08),
+                color: Colors.black.withValues(alpha: 0.08),
                 blurRadius: 6,
                 offset: const Offset(0, 2),
               ),
@@ -367,10 +367,10 @@ class _PulsingRedDotState extends State<_PulsingRedDot>
                 height: 20 * _glowAnimation.value,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  color: Colors.red.withOpacity(0.3 * (1 - _glowAnimation.value)),
+                  color: Colors.red.withValues(alpha: 0.3 * (1 - _glowAnimation.value)),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.red.withOpacity(0.4 * _glowAnimation.value),
+                      color: Colors.red.withValues(alpha: 0.4 * _glowAnimation.value),
                       blurRadius: 8 * _glowAnimation.value,
                       spreadRadius: 2 * _glowAnimation.value,
                     ),
@@ -390,12 +390,12 @@ class _PulsingRedDotState extends State<_PulsingRedDot>
                   ),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.red.withOpacity(0.6),
+                      color: Colors.red.withValues(alpha: 0.6),
                       blurRadius: 6,
                       offset: const Offset(0, 2),
                     ),
                     BoxShadow(
-                      color: Colors.red.withOpacity(0.3),
+                      color: Colors.red.withValues(alpha: 0.3),
                       blurRadius: 12,
                       spreadRadius: 1,
                     ),
@@ -409,4 +409,5 @@ class _PulsingRedDotState extends State<_PulsingRedDot>
     );
   }
 }
+
 

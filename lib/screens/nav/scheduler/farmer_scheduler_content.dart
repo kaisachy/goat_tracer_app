@@ -131,7 +131,7 @@ class _FarmerSchedulerContentWidgetState extends State<FarmerSchedulerContentWid
                   end: Alignment.bottomRight,
                   colors: [
                     AppColors.vibrantGreen,
-                    AppColors.vibrantGreen.withOpacity(0.8),
+                    AppColors.vibrantGreen.withValues(alpha: 0.8),
                   ],
                 ),
                 borderRadius: const BorderRadius.only(
@@ -140,7 +140,7 @@ class _FarmerSchedulerContentWidgetState extends State<FarmerSchedulerContentWid
                 ),
                 boxShadow: [
                   BoxShadow(
-                    color: AppColors.vibrantGreen.withOpacity(0.3),
+                    color: AppColors.vibrantGreen.withValues(alpha: 0.3),
                     blurRadius: 10,
                     offset: const Offset(0, 4),
                   ),
@@ -152,7 +152,7 @@ class _FarmerSchedulerContentWidgetState extends State<FarmerSchedulerContentWid
                   Container(
                     padding: const EdgeInsets.all(8),
                     decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.2),
+                      color: Colors.white.withValues(alpha: 0.2),
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Icon(
@@ -180,7 +180,7 @@ class _FarmerSchedulerContentWidgetState extends State<FarmerSchedulerContentWid
                         Container(
                           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                           decoration: BoxDecoration(
-                            color: Colors.white.withOpacity(0.2),
+                            color: Colors.white.withValues(alpha: 0.2),
                             borderRadius: BorderRadius.circular(12),
                           ),
                           child: Text(
@@ -221,13 +221,13 @@ class _FarmerSchedulerContentWidgetState extends State<FarmerSchedulerContentWid
                           begin: Alignment.topLeft,
                           end: Alignment.bottomRight,
                           colors: [
-                            AppColors.vibrantGreen.withOpacity(0.1),
-                            AppColors.vibrantGreen.withOpacity(0.05),
+                            AppColors.vibrantGreen.withValues(alpha: 0.1),
+                            AppColors.vibrantGreen.withValues(alpha: 0.05),
                           ],
                         ),
                         borderRadius: BorderRadius.circular(16),
                         border: Border.all(
-                          color: AppColors.vibrantGreen.withOpacity(0.2),
+                          color: AppColors.vibrantGreen.withValues(alpha: 0.2),
                           width: 1,
                         ),
                       ),
@@ -318,7 +318,7 @@ class _FarmerSchedulerContentWidgetState extends State<FarmerSchedulerContentWid
                         border: Border.all(color: Colors.grey[200]!),
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.grey.withOpacity(0.1),
+                            color: Colors.grey.withValues(alpha: 0.1),
                             blurRadius: 10,
                             offset: const Offset(0, 2),
                           ),
@@ -365,7 +365,7 @@ class _FarmerSchedulerContentWidgetState extends State<FarmerSchedulerContentWid
         Container(
           padding: const EdgeInsets.all(8),
           decoration: BoxDecoration(
-            color: iconColor.withOpacity(0.1),
+            color: iconColor.withValues(alpha: 0.1),
             borderRadius: BorderRadius.circular(8),
           ),
           child: Icon(icon, size: 18, color: iconColor),
@@ -474,7 +474,7 @@ class _FarmerSchedulerContentWidgetState extends State<FarmerSchedulerContentWid
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.1),
+            color: Colors.black.withValues(alpha: 0.1),
             spreadRadius: 1,
             blurRadius: 3,
             offset: const Offset(0, 1),
@@ -668,3 +668,4 @@ class _FarmerSchedulerContentWidgetState extends State<FarmerSchedulerContentWid
   }
 
 }
+

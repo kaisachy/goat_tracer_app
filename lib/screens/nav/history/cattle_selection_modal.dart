@@ -178,10 +178,11 @@ class _CattleSelectionModalState extends State<CattleSelectionModal> {
 
   Future<void> _exportExcel() async {
     if (selectedCattle == null) return;
-    ScaffoldMessenger.of(context).hideCurrentSnackBar();
+    final messenger = ScaffoldMessenger.of(context);
+    messenger.hideCurrentSnackBar();
     final ok = await CattleExportService.downloadCattleExcel(selectedCattle!.id.toString());
-    if (!context.mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
+    if (!mounted) return;
+    messenger.showSnackBar(
       SnackBar(
         content: Text(ok ? 'Excel report ready! Choose where to open/save.' : 'Failed to download Excel report.'),
         backgroundColor: ok ? Colors.green.shade600 : Colors.red.shade700,
@@ -193,10 +194,11 @@ class _CattleSelectionModalState extends State<CattleSelectionModal> {
 
   Future<void> _exportPdf() async {
     if (selectedCattle == null) return;
-    ScaffoldMessenger.of(context).hideCurrentSnackBar();
+    final messenger = ScaffoldMessenger.of(context);
+    messenger.hideCurrentSnackBar();
     final ok = await CattleExportService.downloadCattlePdf(selectedCattle!.id.toString());
-    if (!context.mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
+    if (!mounted) return;
+    messenger.showSnackBar(
       SnackBar(
         content: Text(ok ? 'PDF report ready! Choose where to open/save.' : 'Failed to generate PDF report.'),
         backgroundColor: ok ? Colors.green.shade600 : Colors.red.shade700,
@@ -220,7 +222,7 @@ class _CattleSelectionModalState extends State<CattleSelectionModal> {
           borderRadius: BorderRadius.circular(20),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.15),
+              color: Colors.black.withValues(alpha: 0.15),
               blurRadius: 20,
               offset: const Offset(0, 8),
             ),
@@ -235,8 +237,8 @@ class _CattleSelectionModalState extends State<CattleSelectionModal> {
               decoration: BoxDecoration(
                 gradient: LinearGradient(
                   colors: [
-                    AppColors.vibrantGreen.withOpacity(0.1),
-                    AppColors.lightGreen.withOpacity(0.05),
+                    AppColors.vibrantGreen.withValues(alpha: 0.1),
+                    AppColors.lightGreen.withValues(alpha: 0.05),
                   ],
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
@@ -247,7 +249,7 @@ class _CattleSelectionModalState extends State<CattleSelectionModal> {
                 ),
                 border: Border(
                   bottom: BorderSide(
-                    color: AppColors.vibrantGreen.withOpacity(0.2),
+                    color: AppColors.vibrantGreen.withValues(alpha: 0.2),
                     width: 1,
                   ),
                 ),
@@ -257,9 +259,9 @@ class _CattleSelectionModalState extends State<CattleSelectionModal> {
                   Container(
                     padding: const EdgeInsets.all(8),
                     decoration: BoxDecoration(
-                      color: AppColors.vibrantGreen.withOpacity(0.15),
+                      color: AppColors.vibrantGreen.withValues(alpha: 0.15),
                       borderRadius: BorderRadius.circular(10),
-                      border: Border.all(color: AppColors.vibrantGreen.withOpacity(0.3)),
+                      border: Border.all(color: AppColors.vibrantGreen.withValues(alpha: 0.3)),
                     ),
                     child: const FaIcon(
                       FontAwesomeIcons.cow,
@@ -474,18 +476,18 @@ class _CattleSelectionModalState extends State<CattleSelectionModal> {
       child: Container(
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
-          color: isSelected ? AppColors.vibrantGreen.withOpacity(0.1) : Colors.white,
+          color: isSelected ? AppColors.vibrantGreen.withValues(alpha: 0.1) : Colors.white,
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
             color: isSelected
-                ? AppColors.vibrantGreen.withOpacity(0.5)
+                ? AppColors.vibrantGreen.withValues(alpha: 0.5)
                 : Colors.grey.shade300,
             width: isSelected ? 2 : 1,
           ),
           boxShadow: isSelected
               ? [
             BoxShadow(
-              color: AppColors.vibrantGreen.withOpacity(0.2),
+              color: AppColors.vibrantGreen.withValues(alpha: 0.2),
               blurRadius: 8,
               offset: const Offset(0, 2),
             ),
@@ -498,12 +500,12 @@ class _CattleSelectionModalState extends State<CattleSelectionModal> {
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
                 color: isSelected
-                    ? AppColors.vibrantGreen.withOpacity(0.2)
+                    ? AppColors.vibrantGreen.withValues(alpha: 0.2)
                     : Colors.grey.shade100,
                 borderRadius: BorderRadius.circular(8),
                 border: Border.all(
                   color: isSelected
-                      ? AppColors.vibrantGreen.withOpacity(0.3)
+                      ? AppColors.vibrantGreen.withValues(alpha: 0.3)
                       : Colors.grey.shade300,
                 ),
               ),
@@ -565,7 +567,7 @@ class _CattleSelectionModalState extends State<CattleSelectionModal> {
     return PopupMenuButton<String>(
       icon: Icon(
         Icons.more_vert,
-        color: AppColors.textSecondary.withOpacity(0.8),
+        color: AppColors.textSecondary.withValues(alpha: 0.8),
         size: 20,
       ),
       shape: RoundedRectangleBorder(
@@ -578,42 +580,45 @@ class _CattleSelectionModalState extends State<CattleSelectionModal> {
       onSelected: (String value) async {
         switch (value) {
           case 'edit':
-            if (!context.mounted) return;
+            if (!mounted) break;
             await Navigator.push(
               context,
               MaterialPageRoute(
                 builder: (context) => CattleFormScreen(cattle: cattle),
               ),
             );
+            if (!mounted) break;
             _loadCattle();
             break;
           case 'add_event':
-            if (!context.mounted) return;
+            if (!mounted) break;
             await Navigator.push(
               context,
               MaterialPageRoute(
                 builder: (context) => CattleHistoryFormScreen(cattleTag: cattle.tagNo),
               ),
             );
+            if (!mounted) break;
             _loadCattle();
             break;
           case 'change_stage':
-            if (!context.mounted) return;
+            if (!mounted) break;
             ChangeStageOption.show(context, cattle, () {
               _loadCattle();
             });
             break;
           case 'change_status':
-            if (!context.mounted) return;
+            if (!mounted) break;
             ChangeStatusOption.show(context, cattle, () {
               _loadCattle();
             });
             break;
           case 'export_excel':
-            ScaffoldMessenger.of(context).hideCurrentSnackBar();
+            final messenger = ScaffoldMessenger.of(context);
+            messenger.hideCurrentSnackBar();
             final ok = await CattleExportService.downloadCattleExcel(cattle.id.toString());
-            if (!context.mounted) return;
-            ScaffoldMessenger.of(context).showSnackBar(
+            if (!mounted) break;
+            messenger.showSnackBar(
               SnackBar(
                 content: Text(ok ? 'Excel report ready! Choose where to open/save.' : 'Failed to download Excel report.'),
                 backgroundColor: ok ? Colors.green.shade600 : Colors.red.shade700,
@@ -623,10 +628,11 @@ class _CattleSelectionModalState extends State<CattleSelectionModal> {
             );
             break;
           case 'export_pdf':
-            ScaffoldMessenger.of(context).hideCurrentSnackBar();
+            final messenger = ScaffoldMessenger.of(context);
+            messenger.hideCurrentSnackBar();
             final ok = await CattleExportService.downloadCattlePdf(cattle.id.toString());
-            if (!context.mounted) return;
-            ScaffoldMessenger.of(context).showSnackBar(
+            if (!mounted) break;
+            messenger.showSnackBar(
               SnackBar(
                 content: Text(ok ? 'PDF report ready! Choose where to open/save.' : 'Failed to generate PDF report.'),
                 backgroundColor: ok ? Colors.green.shade600 : Colors.red.shade700,
@@ -636,13 +642,13 @@ class _CattleSelectionModalState extends State<CattleSelectionModal> {
             );
             break;
           case 'archive':
-            if (!context.mounted) return;
+            if (!mounted) break;
             ArchiveOption.show(context, cattle: cattle, onCattleUpdated: () {
               _loadCattle();
             });
             break;
           case 'delete':
-            if (!context.mounted) return;
+            if (!mounted) break;
             DeleteOption.show(context);
             _loadCattle();
             break;
@@ -658,9 +664,9 @@ class _CattleSelectionModalState extends State<CattleSelectionModal> {
                 width: 24,
                 height: 24,
                 decoration: BoxDecoration(
-                  color: AppColors.vibrantGreen.withOpacity(0.12),
+                  color: AppColors.vibrantGreen.withValues(alpha: 0.12),
                   borderRadius: BorderRadius.circular(6),
-                  border: Border.all(color: AppColors.vibrantGreen.withOpacity(0.2)),
+                  border: Border.all(color: AppColors.vibrantGreen.withValues(alpha: 0.2)),
                 ),
                 child: const Icon(Icons.edit_outlined, color: AppColors.vibrantGreen, size: 14),
               ),
@@ -680,9 +686,9 @@ class _CattleSelectionModalState extends State<CattleSelectionModal> {
                 width: 24,
                 height: 24,
                 decoration: BoxDecoration(
-                  color: AppColors.darkGreen.withOpacity(0.12),
+                  color: AppColors.darkGreen.withValues(alpha: 0.12),
                   borderRadius: BorderRadius.circular(6),
-                  border: Border.all(color: AppColors.darkGreen.withOpacity(0.2)),
+                  border: Border.all(color: AppColors.darkGreen.withValues(alpha: 0.2)),
                 ),
                 child: const Icon(Icons.event_note_outlined, color: AppColors.darkGreen, size: 14),
               ),
@@ -703,9 +709,9 @@ class _CattleSelectionModalState extends State<CattleSelectionModal> {
                 width: 24,
                 height: 24,
                 decoration: BoxDecoration(
-                  color: AppColors.lightGreen.withOpacity(0.12),
+                  color: AppColors.lightGreen.withValues(alpha: 0.12),
                   borderRadius: BorderRadius.circular(6),
-                  border: Border.all(color: AppColors.lightGreen.withOpacity(0.2)),
+                  border: Border.all(color: AppColors.lightGreen.withValues(alpha: 0.2)),
                 ),
                 child: const Icon(Icons.arrow_upward_outlined, color: AppColors.lightGreen, size: 14),
               ),
@@ -725,9 +731,9 @@ class _CattleSelectionModalState extends State<CattleSelectionModal> {
                 width: 24,
                 height: 24,
                 decoration: BoxDecoration(
-                  color: AppColors.vibrantGreen.withOpacity(0.12),
+                  color: AppColors.vibrantGreen.withValues(alpha: 0.12),
                   borderRadius: BorderRadius.circular(6),
-                  border: Border.all(color: AppColors.vibrantGreen.withOpacity(0.2)),
+                  border: Border.all(color: AppColors.vibrantGreen.withValues(alpha: 0.2)),
                 ),
                 child: const Icon(Icons.swap_horiz, color: AppColors.vibrantGreen, size: 14),
               ),
@@ -748,9 +754,9 @@ class _CattleSelectionModalState extends State<CattleSelectionModal> {
                 width: 24,
                 height: 24,
                 decoration: BoxDecoration(
-                  color: Colors.green.withOpacity(0.12),
+                  color: Colors.green.withValues(alpha: 0.12),
                   borderRadius: BorderRadius.circular(6),
-                  border: Border.all(color: Colors.green.withOpacity(0.2)),
+                  border: Border.all(color: Colors.green.withValues(alpha: 0.2)),
                 ),
                 alignment: Alignment.center,
                 child: const FaIcon(FontAwesomeIcons.fileExcel, color: Colors.green, size: 14),
@@ -771,9 +777,9 @@ class _CattleSelectionModalState extends State<CattleSelectionModal> {
                 width: 24,
                 height: 24,
                 decoration: BoxDecoration(
-                  color: Colors.red.withOpacity(0.12),
+                  color: Colors.red.withValues(alpha: 0.12),
                   borderRadius: BorderRadius.circular(6),
-                  border: Border.all(color: Colors.red.withOpacity(0.2)),
+                  border: Border.all(color: Colors.red.withValues(alpha: 0.2)),
                 ),
                 child: const Icon(Icons.picture_as_pdf_rounded, color: Colors.red, size: 14),
               ),
@@ -794,9 +800,9 @@ class _CattleSelectionModalState extends State<CattleSelectionModal> {
                 width: 24,
                 height: 24,
                 decoration: BoxDecoration(
-                  color: AppColors.gold.withOpacity(0.12),
+                  color: AppColors.gold.withValues(alpha: 0.12),
                   borderRadius: BorderRadius.circular(6),
-                  border: Border.all(color: AppColors.gold.withOpacity(0.2)),
+                  border: Border.all(color: AppColors.gold.withValues(alpha: 0.2)),
                 ),
                 child: const Icon(Icons.archive_outlined, color: AppColors.gold, size: 14),
               ),
@@ -816,9 +822,9 @@ class _CattleSelectionModalState extends State<CattleSelectionModal> {
                 width: 24,
                 height: 24,
                 decoration: BoxDecoration(
-                  color: Colors.red.shade600.withOpacity(0.12),
+                  color: Colors.red.shade600.withValues(alpha: 0.12),
                   borderRadius: BorderRadius.circular(6),
-                  border: Border.all(color: Colors.red.shade600.withOpacity(0.2)),
+                  border: Border.all(color: Colors.red.shade600.withValues(alpha: 0.2)),
                 ),
                 child: Icon(Icons.delete_forever_outlined, color: Colors.red.shade600, size: 14),
               ),

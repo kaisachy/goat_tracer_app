@@ -1,6 +1,6 @@
 import 'package:cattle_tracer_app/services/cattle/cattle_history_service.dart';
 import 'package:cattle_tracer_app/services/cattle/cattle_service.dart';
-import 'package:flutter/src/material/date.dart';
+import 'package:flutter/material.dart';
 
 class BreedingAnalysisService {
   static Future<Map<String, dynamic>> getBreedingSuccessAnalysis({
@@ -82,8 +82,8 @@ class BreedingAnalysisService {
         }).toList();
       }
       if (selectedBreedingType != null && selectedBreedingType.isNotEmpty) {
-        print('DEBUG: Filtering by breeding type: $selectedBreedingType');
-        print('DEBUG: Events before filter: ${filteredBreedingEvents.length}');
+        debugPrint('DEBUG: Filtering by breeding type: $selectedBreedingType');
+        debugPrint('DEBUG: Events before filter: ${filteredBreedingEvents.length}');
         filteredBreedingEvents = filteredBreedingEvents.where((event) {
           String eventType = event['breeding_type']?.toString() ?? '';
           // Normalize human-readable types to snake_case for comparison
@@ -107,10 +107,10 @@ class BreedingAnalysisService {
               eventType = 'unknown';
             }
           }
-          print('DEBUG: Event breeding_type: $eventType, comparing with: $selectedBreedingType');
+          debugPrint('DEBUG: Event breeding_type: $eventType, comparing with: $selectedBreedingType');
           return eventType == selectedBreedingType;
         }).toList();
-        print('DEBUG: Events after filter: ${filteredBreedingEvents.length}');
+        debugPrint('DEBUG: Events after filter: ${filteredBreedingEvents.length}');
       }
 
       // Analyze breeding success
@@ -222,13 +222,13 @@ class BreedingAnalysisService {
           }
         }
 
-        print('DEBUG: Analyzing breeding for cow $cowTag on ${breeding['history_date']} (${daysSinceBreeding} days ago)');
-        print('DEBUG: Responsible bull: $responsibleBull');
-        print('DEBUG: Breeding type: $breedingType');
+        debugPrint('DEBUG: Analyzing breeding for cow $cowTag on ${breeding['history_date']} ($daysSinceBreeding days ago)');
+        debugPrint('DEBUG: Responsible bull: $responsibleBull');
+        debugPrint('DEBUG: Breeding type: $breedingType');
 
         // Check if breeding is too recent to determine success/failure
         if (daysSinceBreeding < 25) {
-          print('DEBUG: ⏳ Breeding too recent (${daysSinceBreeding} days) - marking as pending');
+          debugPrint('DEBUG: ⏳ Breeding too recent ($daysSinceBreeding days) - marking as pending');
           pendingBreedings.add({
             'history_date': breeding['history_date'],
             'breeding_type': breedingType,
@@ -244,14 +244,14 @@ class BreedingAnalysisService {
           final daysDifference = pregnancyDate.difference(breedingDate).inDays;
           final pregnancyBull = _getResponsibleBull(pregnancy);
           
-          print('DEBUG: Checking pregnancy on ${pregnancy['history_date']} (${daysDifference} days later)');
-          print('DEBUG: Pregnancy bull: $pregnancyBull');
+          debugPrint('DEBUG: Checking pregnancy on ${pregnancy['history_date']} ($daysDifference days later)');
+          debugPrint('DEBUG: Pregnancy bull: $pregnancyBull');
           
           if (daysDifference >= 25 && daysDifference <= 60) {
             // Check if the same bull is responsible
             if (_isSameBull(responsibleBull, pregnancyBull)) {
               foundPregnancy = true;
-              print('DEBUG: ✅ Pregnancy match found!');
+              debugPrint('DEBUG: ✅ Pregnancy match found!');
               successfulBreedings.add({
                 'history_date': breeding['history_date'],
                 'breeding_type': breeding['breeding_type'],
@@ -268,7 +268,7 @@ class BreedingAnalysisService {
         if (!foundPregnancy) {
           // Only mark as failed if enough time has passed (more than 60 days)
           if (daysSinceBreeding > 60) {
-            print('DEBUG: ❌ No pregnancy/birth match found after ${daysSinceBreeding} days - marking as failed');
+            debugPrint('DEBUG: ❌ No pregnancy/birth match found after $daysSinceBreeding days - marking as failed');
             failedBreedings.add({
               'history_date': breeding['history_date'],
               'breeding_type': breedingType,
@@ -276,7 +276,7 @@ class BreedingAnalysisService {
               'status': 'failed',
             });
           } else {
-            print('DEBUG: ⏳ No pregnancy/birth match found but only ${daysSinceBreeding} days passed - marking as pending');
+            debugPrint('DEBUG: ⏳ No pregnancy/birth match found but only $daysSinceBreeding days passed - marking as pending');
             pendingBreedings.add({
               'history_date': breeding['history_date'],
               'breeding_type': breedingType,
@@ -441,7 +441,7 @@ class BreedingAnalysisService {
       
       return cowTags..sort();
     } catch (e) {
-      print('DEBUG: Error getting available cows: $e');
+      debugPrint('DEBUG: Error getting available cows: $e');
       return [];
     }
   }
@@ -493,13 +493,13 @@ class BreedingAnalysisService {
         }
       }
       
-      print('DEBUG: Available breeding types found: ${breedingTypes.toList()}');
-      print('DEBUG: Total breeding events found: ${breedingEvents.length}');
+      debugPrint('DEBUG: Available breeding types found: ${breedingTypes.toList()}');
+      debugPrint('DEBUG: Total breeding events found: ${breedingEvents.length}');
       for (final event in breedingEvents) {
-        print('DEBUG: Event breeding_type: ${event['breeding_type']}');
-        print('DEBUG: Event semen_used: ${event['semen_used']}');
-        print('DEBUG: Event bull_tag: ${event['bull_tag']}');
-        print('DEBUG: ---');
+        debugPrint('DEBUG: Event breeding_type: ${event['breeding_type']}');
+        debugPrint('DEBUG: Event semen_used: ${event['semen_used']}');
+        debugPrint('DEBUG: Event bull_tag: ${event['bull_tag']}');
+        debugPrint('DEBUG: ---');
       }
       
       // Map raw values to user-friendly labels
@@ -525,8 +525,10 @@ class BreedingAnalysisService {
       
       return breedingTypeOptions;
     } catch (e) {
-      print('DEBUG: Error getting available breeding types: $e');
+      debugPrint('DEBUG: Error getting available breeding types: $e');
       return [];
     }
   }
 }
+
+

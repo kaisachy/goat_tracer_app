@@ -225,9 +225,9 @@ class _DashboardScreenState extends State<DashboardScreen>
               Container(
                 padding: const EdgeInsets.all(24),
                 decoration: BoxDecoration(
-                  color: AppColors.vibrantGreen.withOpacity(0.1),
+                  color: AppColors.vibrantGreen.withValues(alpha: 0.1),
                   shape: BoxShape.circle,
-                  border: Border.all(color: AppColors.vibrantGreen.withOpacity(0.3)),
+                  border: Border.all(color: AppColors.vibrantGreen.withValues(alpha: 0.3)),
                 ),
                 child: Icon(
                   FontAwesomeIcons.cow,
@@ -338,7 +338,7 @@ class _DashboardScreenState extends State<DashboardScreen>
           borderRadius: BorderRadius.circular(20),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.05),
+              color: Colors.black.withValues(alpha: 0.05),
               blurRadius: 20,
               offset: const Offset(0, 8),
             ),
@@ -381,7 +381,7 @@ class _DashboardScreenState extends State<DashboardScreen>
                     Text(
                       availableTags.isEmpty
                           ? 'No weighed history recorded'
-                          : 'No weighed history for #${selectedTag}',
+                          : 'No weighed history for #$selectedTag',
                       style: TextStyle(color: Colors.grey.shade600),
                     ),
                   ],
@@ -454,7 +454,7 @@ class _DashboardScreenState extends State<DashboardScreen>
                           dotData: FlDotData(show: true),
                           belowBarData: BarAreaData(
                             show: true,
-                            color: AppColors.darkGreen.withOpacity(0.12),
+                            color: AppColors.darkGreen.withValues(alpha: 0.12),
                           ),
                           spots: spots,
                         ),
@@ -485,7 +485,7 @@ class _DashboardScreenState extends State<DashboardScreen>
           borderRadius: BorderRadius.circular(20),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.05),
+              color: Colors.black.withValues(alpha: 0.05),
               blurRadius: 20,
               offset: const Offset(0, 8),
             ),
@@ -561,9 +561,9 @@ class _DashboardScreenState extends State<DashboardScreen>
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.05),
+        color: color.withValues(alpha: 0.05),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: color.withOpacity(0.2)),
+        border: Border.all(color: color.withValues(alpha: 0.2)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -573,7 +573,7 @@ class _DashboardScreenState extends State<DashboardScreen>
               Container(
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
-                  color: color.withOpacity(0.12),
+                  color: color.withValues(alpha: 0.12),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Icon(icon, color: color, size: 20),
@@ -611,10 +611,10 @@ class _DashboardScreenState extends State<DashboardScreen>
                         decoration: BoxDecoration(
                           color: Colors.white,
                           borderRadius: BorderRadius.circular(20),
-                          border: Border.all(color: color.withOpacity(0.35)),
+                          border: Border.all(color: color.withValues(alpha: 0.35)),
                           boxShadow: [
                             BoxShadow(
-                              color: Colors.black.withOpacity(0.03),
+                              color: Colors.black.withValues(alpha: 0.03),
                               blurRadius: 6,
                               offset: const Offset(0, 2),
                             ),
@@ -645,7 +645,7 @@ class _DashboardScreenState extends State<DashboardScreen>
               child: Text(
                 '+${cattle.length - 12} more',
                 style: TextStyle(
-                  color: color.withOpacity(0.8),
+                  color: color.withValues(alpha: 0.8),
                   fontWeight: FontWeight.w600,
                   fontSize: 12,
                 ),
@@ -774,7 +774,7 @@ class _DashboardScreenState extends State<DashboardScreen>
           borderRadius: BorderRadius.circular(20),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.05),
+              color: Colors.black.withValues(alpha: 0.05),
               blurRadius: 20,
               offset: const Offset(0, 8),
             ),
@@ -799,7 +799,7 @@ class _DashboardScreenState extends State<DashboardScreen>
             ),
             const SizedBox(height: 20),
             if (deliveries.isNotEmpty)
-              ...deliveries.map((d) => _buildExpectedDeliveryRow(d)).toList()
+              ...deliveries.map((d) => _buildExpectedDeliveryRow(d))
             else
               Container(
                 padding: const EdgeInsets.all(20),
@@ -856,16 +856,16 @@ class _DashboardScreenState extends State<DashboardScreen>
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: chipColor.withOpacity(0.06),
+        color: chipColor.withValues(alpha: 0.06),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: chipColor.withOpacity(0.25)),
+        border: Border.all(color: chipColor.withValues(alpha: 0.25)),
       ),
       child: Row(
         children: [
           Container(
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
-              color: chipColor.withOpacity(0.12),
+              color: chipColor.withValues(alpha: 0.12),
               borderRadius: BorderRadius.circular(8),
             ),
             child: Icon(Icons.pregnant_woman, color: chipColor, size: 20),
@@ -897,7 +897,7 @@ class _DashboardScreenState extends State<DashboardScreen>
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
               decoration: BoxDecoration(
-                color: chipColor.withOpacity(0.12),
+                color: chipColor.withValues(alpha: 0.12),
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Text(
@@ -954,7 +954,7 @@ class _DashboardScreenState extends State<DashboardScreen>
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: color.withOpacity(0.1),
+            color: color.withValues(alpha: 0.1),
             blurRadius: 20,
             offset: const Offset(0, 8),
           ),
@@ -969,7 +969,7 @@ class _DashboardScreenState extends State<DashboardScreen>
               Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: color.withOpacity(0.1),
+                  color: color.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Icon(icon, color: color, size: 24),
@@ -1004,7 +1004,7 @@ class _DashboardScreenState extends State<DashboardScreen>
               subtitle,
               style: TextStyle(
                 fontSize: 14,
-                color: AppColors.textSecondary.withOpacity(0.8),
+                color: AppColors.textSecondary.withValues(alpha: 0.8),
                 fontWeight: FontWeight.w500,
               ),
             ),
@@ -1044,7 +1044,7 @@ class _DashboardScreenState extends State<DashboardScreen>
           borderRadius: BorderRadius.circular(20),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.05),
+              color: Colors.black.withValues(alpha: 0.05),
               blurRadius: 20,
               offset: const Offset(0, 8),
             ),
@@ -1084,9 +1084,9 @@ class _DashboardScreenState extends State<DashboardScreen>
                  return Container(
                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                    decoration: BoxDecoration(
-                     color: color.withOpacity(0.05),
+                     color: color.withValues(alpha: 0.05),
                      borderRadius: BorderRadius.circular(12),
-                     border: Border.all(color: color.withOpacity(0.2)),
+                     border: Border.all(color: color.withValues(alpha: 0.2)),
                    ),
                                      child: Column(
                      mainAxisAlignment: MainAxisAlignment.center,
@@ -1158,7 +1158,7 @@ class _DashboardScreenState extends State<DashboardScreen>
           borderRadius: BorderRadius.circular(20),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.05),
+              color: Colors.black.withValues(alpha: 0.05),
               blurRadius: 20,
               offset: const Offset(0, 8),
             ),
@@ -1225,14 +1225,14 @@ class _DashboardScreenState extends State<DashboardScreen>
       decoration: BoxDecoration(
         color: Colors.transparent,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: color.withOpacity(0.2)),
+        border: Border.all(color: color.withValues(alpha: 0.2)),
       ),
       child: Row(
         children: [
           Container(
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
-              color: color.withOpacity(0.1),
+              color: color.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(8),
             ),
             child: Icon(
@@ -1295,7 +1295,7 @@ class _DashboardScreenState extends State<DashboardScreen>
           borderRadius: BorderRadius.circular(20),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.05),
+              color: Colors.black.withValues(alpha: 0.05),
               blurRadius: 20,
               offset: const Offset(0, 8),
             ),
@@ -1336,9 +1336,9 @@ class _DashboardScreenState extends State<DashboardScreen>
                   return Container(
                     padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                     decoration: BoxDecoration(
-                      color: color.withOpacity(0.1),
+                      color: color.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(16),
-                      border: Border.all(color: color.withOpacity(0.3)),
+                      border: Border.all(color: color.withValues(alpha: 0.3)),
                     ),
                     child: Text(
                       '${entry.key}: ${entry.value}',
@@ -1414,7 +1414,7 @@ class _DashboardScreenState extends State<DashboardScreen>
           borderRadius: BorderRadius.circular(20),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.05),
+              color: Colors.black.withValues(alpha: 0.05),
               blurRadius: 20,
               offset: const Offset(0, 8),
             ),
@@ -1468,7 +1468,7 @@ class _DashboardScreenState extends State<DashboardScreen>
                                       '${percentage.toStringAsFixed(1)}% of herd',
                                       style: TextStyle(
                                         fontSize: 12,
-                                        color: AppColors.textSecondary.withOpacity(0.8),
+                                        color: AppColors.textSecondary.withValues(alpha: 0.8),
                                       ),
                                     ),
                                   ],
@@ -1478,9 +1478,9 @@ class _DashboardScreenState extends State<DashboardScreen>
                             Container(
                               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                               decoration: BoxDecoration(
-                                color: color.withOpacity(0.1),
+                                color: color.withValues(alpha: 0.1),
                                 borderRadius: BorderRadius.circular(12),
-                                border: Border.all(color: color.withOpacity(0.3)),
+                                border: Border.all(color: color.withValues(alpha: 0.3)),
                               ),
                               child: Text(
                                 '${entry.value}',
@@ -1507,7 +1507,7 @@ class _DashboardScreenState extends State<DashboardScreen>
                               decoration: BoxDecoration(
                                 gradient: LinearGradient(
                                   colors: [
-                                    color.withOpacity(0.8),
+                                    color.withValues(alpha: 0.8),
                                     color,
                                   ],
                                 ),
@@ -1712,7 +1712,7 @@ class _DashboardScreenState extends State<DashboardScreen>
           borderRadius: BorderRadius.circular(20),
           boxShadow: [
             BoxShadow(
-              color: AppColors.darkGreen.withOpacity(0.1),
+              color: AppColors.darkGreen.withValues(alpha: 0.1),
               blurRadius: 20,
               offset: const Offset(0, 8),
             ),
@@ -1766,7 +1766,7 @@ class _DashboardScreenState extends State<DashboardScreen>
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: AppColors.darkGreen.withOpacity(0.1),
+            color: AppColors.darkGreen.withValues(alpha: 0.1),
             blurRadius: 20,
             offset: const Offset(0, 8),
           ),
@@ -1792,7 +1792,7 @@ class _DashboardScreenState extends State<DashboardScreen>
                   PieChartSectionData(
                     color: AppColors.darkGreen,
                     value: calfMales.toDouble(),
-                    title: '${malePercentage}%',
+                    title: '$malePercentage%',
                     radius: 25,
                     titleStyle: const TextStyle(
                       fontSize: 12,
@@ -1803,7 +1803,7 @@ class _DashboardScreenState extends State<DashboardScreen>
                   PieChartSectionData(
                     color: AppColors.gold,
                     value: calfFemales.toDouble(),
-                    title: '${femalePercentage}%',
+                    title: '$femalePercentage%',
                     radius: 25,
                     titleStyle: const TextStyle(
                       fontSize: 12,
@@ -1845,7 +1845,7 @@ class _DashboardScreenState extends State<DashboardScreen>
           borderRadius: BorderRadius.circular(20),
           boxShadow: [
             BoxShadow(
-              color: AppColors.darkGreen.withOpacity(0.1),
+              color: AppColors.darkGreen.withValues(alpha: 0.1),
               blurRadius: 20,
               offset: const Offset(0, 8),
             ),
@@ -1899,7 +1899,7 @@ class _DashboardScreenState extends State<DashboardScreen>
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: AppColors.darkGreen.withOpacity(0.1),
+            color: AppColors.darkGreen.withValues(alpha: 0.1),
             blurRadius: 20,
             offset: const Offset(0, 8),
           ),
@@ -1925,7 +1925,7 @@ class _DashboardScreenState extends State<DashboardScreen>
                   PieChartSectionData(
                     color: AppColors.darkGreen,
                     value: growerMales.toDouble(),
-                    title: '${malePercentage}%',
+                    title: '$malePercentage%',
                     radius: 25,
                     titleStyle: const TextStyle(
                       fontSize: 12,
@@ -1936,7 +1936,7 @@ class _DashboardScreenState extends State<DashboardScreen>
                   PieChartSectionData(
                     color: AppColors.gold,
                     value: growerFemales.toDouble(),
-                    title: '${femalePercentage}%',
+                    title: '$femalePercentage%',
                     radius: 25,
                     titleStyle: const TextStyle(
                       fontSize: 12,
@@ -1987,3 +1987,4 @@ class _DashboardScreenState extends State<DashboardScreen>
     );
   }
 }
+

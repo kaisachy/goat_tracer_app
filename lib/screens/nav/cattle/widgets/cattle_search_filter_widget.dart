@@ -137,7 +137,7 @@ class _CattleSearchFilterWidgetState extends State<CattleSearchFilterWidget> {
                 Container(
                   padding: const EdgeInsets.all(20),
                   decoration: BoxDecoration(
-                    color: AppColors.primary.withOpacity(0.1),
+                    color: AppColors.primary.withValues(alpha: 0.1),
                     borderRadius: const BorderRadius.only(
                       topLeft: Radius.circular(16),
                       topRight: Radius.circular(16),
@@ -300,7 +300,7 @@ class _CattleSearchFilterWidgetState extends State<CattleSearchFilterWidget> {
                 Container(
                   padding: const EdgeInsets.all(20),
                   decoration: BoxDecoration(
-                    color: AppColors.primary.withOpacity(0.1),
+                    color: AppColors.primary.withValues(alpha: 0.1),
                     borderRadius: const BorderRadius.only(
                       topLeft: Radius.circular(16),
                       topRight: Radius.circular(16),
@@ -452,7 +452,7 @@ class _CattleSearchFilterWidgetState extends State<CattleSearchFilterWidget> {
                 Container(
                   padding: const EdgeInsets.all(20),
                   decoration: BoxDecoration(
-                    color: AppColors.primary.withOpacity(0.1),
+                    color: AppColors.primary.withValues(alpha: 0.1),
                     borderRadius: const BorderRadius.only(
                       topLeft: Radius.circular(16),
                       topRight: Radius.circular(16),
@@ -602,7 +602,7 @@ class _CattleSearchFilterWidgetState extends State<CattleSearchFilterWidget> {
                 Container(
                   padding: const EdgeInsets.all(20),
                   decoration: BoxDecoration(
-                    color: AppColors.primary.withOpacity(0.1),
+                    color: AppColors.primary.withValues(alpha: 0.1),
                     borderRadius: const BorderRadius.only(
                       topLeft: Radius.circular(16),
                       topRight: Radius.circular(16),
@@ -751,7 +751,7 @@ class _CattleSearchFilterWidgetState extends State<CattleSearchFilterWidget> {
                 Container(
                   padding: const EdgeInsets.all(20),
                   decoration: BoxDecoration(
-                    color: AppColors.primary.withOpacity(0.1),
+                    color: AppColors.primary.withValues(alpha: 0.1),
                     borderRadius: const BorderRadius.only(
                       topLeft: Radius.circular(16),
                       topRight: Radius.circular(16),
@@ -899,7 +899,7 @@ class _CattleSearchFilterWidgetState extends State<CattleSearchFilterWidget> {
                 Container(
                   padding: const EdgeInsets.all(20),
                   decoration: BoxDecoration(
-                    color: AppColors.primary.withOpacity(0.1),
+                    color: AppColors.primary.withValues(alpha: 0.1),
                     borderRadius: const BorderRadius.only(
                       topLeft: Radius.circular(16),
                       topRight: Radius.circular(16),
@@ -948,7 +948,7 @@ class _CattleSearchFilterWidgetState extends State<CattleSearchFilterWidget> {
                                 Container(
                                   padding: const EdgeInsets.all(8),
                                   decoration: BoxDecoration(
-                                    color: AppColors.primary.withOpacity(0.1),
+                                    color: AppColors.primary.withValues(alpha: 0.1),
                                     borderRadius: BorderRadius.circular(8),
                                   ),
                                   child: Icon(Icons.male,
@@ -1010,7 +1010,7 @@ class _CattleSearchFilterWidgetState extends State<CattleSearchFilterWidget> {
                                 Container(
                                   padding: const EdgeInsets.all(8),
                                   decoration: BoxDecoration(
-                                    color: AppColors.accent.withOpacity(0.1),
+                                    color: AppColors.accent.withValues(alpha: 0.1),
                                     borderRadius: BorderRadius.circular(8),
                                   ),
                                   child: Icon(Icons.category,
@@ -1074,7 +1074,7 @@ class _CattleSearchFilterWidgetState extends State<CattleSearchFilterWidget> {
                                 Container(
                                   padding: const EdgeInsets.all(8),
                                   decoration: BoxDecoration(
-                                    color: Colors.orange.withOpacity(0.1),
+                                    color: Colors.orange.withValues(alpha: 0.1),
                                     borderRadius: BorderRadius.circular(8),
                                   ),
                                   child: Icon(Icons.monitor_heart,
@@ -1136,7 +1136,7 @@ class _CattleSearchFilterWidgetState extends State<CattleSearchFilterWidget> {
                                 Container(
                                   padding: const EdgeInsets.all(8),
                                   decoration: BoxDecoration(
-                                    color: Colors.purple.withOpacity(0.1),
+                                    color: Colors.purple.withValues(alpha: 0.1),
                                     borderRadius: BorderRadius.circular(8),
                                   ),
                                   child: Icon(FontAwesomeIcons.cow,
@@ -1198,7 +1198,7 @@ class _CattleSearchFilterWidgetState extends State<CattleSearchFilterWidget> {
                                 Container(
                                   padding: const EdgeInsets.all(8),
                                   decoration: BoxDecoration(
-                                    color: Colors.teal.withOpacity(0.1),
+                                    color: Colors.teal.withValues(alpha: 0.1),
                                     borderRadius: BorderRadius.circular(8),
                                   ),
                                   child: Icon(Icons.group,
@@ -1323,10 +1323,10 @@ class _CattleSearchFilterWidgetState extends State<CattleSearchFilterWidget> {
                 color: AppColors.cardBackground,
                 borderRadius: BorderRadius.circular(16),
                 border:
-                Border.all(color: AppColors.lightGreen.withOpacity(0.3)),
+                Border.all(color: AppColors.lightGreen.withValues(alpha: 0.3)),
                 boxShadow: [
                   BoxShadow(
-                    color: AppColors.primary.withOpacity(0.1),
+                    color: AppColors.primary.withValues(alpha: 0.1),
                     blurRadius: 8,
                     offset: const Offset(0, 2),
                   ),
@@ -1359,10 +1359,10 @@ class _CattleSearchFilterWidgetState extends State<CattleSearchFilterWidget> {
               border: Border.all(
                   color: hasActiveFilters
                       ? AppColors.primary
-                      : AppColors.lightGreen.withOpacity(0.3)),
+                      : AppColors.lightGreen.withValues(alpha: 0.3)),
               boxShadow: [
                 BoxShadow(
-                  color: AppColors.primary.withOpacity(0.1),
+                  color: AppColors.primary.withValues(alpha: 0.1),
                   blurRadius: 8,
                   offset: const Offset(0, 2),
                 ),
@@ -1424,10 +1424,10 @@ class _CattleSearchFilterWidgetState extends State<CattleSearchFilterWidget> {
               decoration: BoxDecoration(
                 color: AppColors.cardBackground,
                 borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: AppColors.gold.withOpacity(0.3)),
+                border: Border.all(color: AppColors.gold.withValues(alpha: 0.3)),
                 boxShadow: [
                   BoxShadow(
-                    color: AppColors.gold.withOpacity(0.1),
+                    color: AppColors.gold.withValues(alpha: 0.1),
                     blurRadius: 8,
                     offset: const Offset(0, 2),
                   ),

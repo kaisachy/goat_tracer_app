@@ -314,7 +314,7 @@ class _MilkScreenState extends State<MilkScreen> with TickerProviderStateMixin {
 
     // Check if this should be displayed as "Whole Farm Milk"
     final isWholeFarmMilk = (record.cattleTag == null || record.cattleTag == 'N/A' || record.cattleTag == 'Unknown');
-    final displayTitle = isWholeFarmMilk ? 'Whole Farm Milk' : '${record.cattleTag ?? 'N/A'}';
+    final displayTitle = isWholeFarmMilk ? 'Whole Farm Milk' : (record.cattleTag ?? 'N/A');
 
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
@@ -333,7 +333,7 @@ class _MilkScreenState extends State<MilkScreen> with TickerProviderStateMixin {
                   Container(
                     padding: const EdgeInsets.all(8),
                     decoration: BoxDecoration(
-                      color: Colors.blue.withOpacity(0.1),
+                      color: Colors.blue.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: FaIcon(
@@ -450,9 +450,9 @@ class _MilkScreenState extends State<MilkScreen> with TickerProviderStateMixin {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
+        color: color.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: color.withOpacity(0.3)),
+        border: Border.all(color: color.withValues(alpha: 0.3)),
       ),
       child: Text(
         'Grade $quality',
@@ -495,7 +495,7 @@ class _MilkScreenState extends State<MilkScreen> with TickerProviderStateMixin {
   void _showMilkRecordDetails(MilkProduction record, Cattle cattle) {
     // Check if this should be displayed as "Whole Farm Milk"
     final isWholeFarmMilk = (record.cattleTag == null || record.cattleTag == 'N/A' || record.cattleTag == 'Unknown');
-    final displayTitle = isWholeFarmMilk ? 'Whole Farm Milk' : '${record.cattleTag ?? 'N/A'}';
+    final displayTitle = isWholeFarmMilk ? 'Whole Farm Milk' : (record.cattleTag ?? 'N/A');
 
     showDialog(
       context: context,
@@ -522,7 +522,7 @@ class _MilkScreenState extends State<MilkScreen> with TickerProviderStateMixin {
                   gradient: LinearGradient(
                     colors: [
                       AppColors.primary,
-                      AppColors.primary.withOpacity(0.8),
+                      AppColors.primary.withValues(alpha: 0.8),
                     ],
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
@@ -537,7 +537,7 @@ class _MilkScreenState extends State<MilkScreen> with TickerProviderStateMixin {
                     Container(
                       padding: const EdgeInsets.all(12),
                       decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.2),
+                        color: Colors.white.withValues(alpha: 0.2),
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: FaIcon(
@@ -564,7 +564,7 @@ class _MilkScreenState extends State<MilkScreen> with TickerProviderStateMixin {
                           Text(
                             'Record Details',
                             style: TextStyle(
-                              color: Colors.white.withOpacity(0.9),
+                              color: Colors.white.withValues(alpha: 0.9),
                               fontSize: 14,
                             ),
                           ),
@@ -574,10 +574,10 @@ class _MilkScreenState extends State<MilkScreen> with TickerProviderStateMixin {
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                       decoration: BoxDecoration(
-                        color: _getQualityColor(record.milkQuality ?? 'N/A').withOpacity(0.2),
+                        color: _getQualityColor(record.milkQuality ?? 'N/A').withValues(alpha: 0.2),
                         borderRadius: BorderRadius.circular(12),
                         border: Border.all(
-                          color: _getQualityColor(record.milkQuality ?? 'N/A').withOpacity(0.5),
+                          color: _getQualityColor(record.milkQuality ?? 'N/A').withValues(alpha: 0.5),
                         ),
                       ),
                       child: Text(
@@ -634,15 +634,15 @@ class _MilkScreenState extends State<MilkScreen> with TickerProviderStateMixin {
                         decoration: BoxDecoration(
                           gradient: LinearGradient(
                             colors: [
-                              AppColors.primary.withOpacity(0.05),
-                              AppColors.primary.withOpacity(0.1),
+                              AppColors.primary.withValues(alpha: 0.05),
+                              AppColors.primary.withValues(alpha: 0.1),
                             ],
                             begin: Alignment.topLeft,
                             end: Alignment.bottomRight,
                           ),
                           borderRadius: BorderRadius.circular(16),
                           border: Border.all(
-                            color: AppColors.primary.withOpacity(0.2),
+                            color: AppColors.primary.withValues(alpha: 0.2),
                           ),
                         ),
                         child: Column(
@@ -679,13 +679,13 @@ class _MilkScreenState extends State<MilkScreen> with TickerProviderStateMixin {
                                 gradient: LinearGradient(
                                   colors: [
                                     AppColors.primary,
-                                    AppColors.primary.withOpacity(0.8),
+                                    AppColors.primary.withValues(alpha: 0.8),
                                   ],
                                 ),
                                 borderRadius: BorderRadius.circular(12),
                                 boxShadow: [
                                   BoxShadow(
-                                    color: AppColors.primary.withOpacity(0.3),
+                                    color: AppColors.primary.withValues(alpha: 0.3),
                                     blurRadius: 8,
                                     offset: const Offset(0, 4),
                                   ),
@@ -733,10 +733,10 @@ class _MilkScreenState extends State<MilkScreen> with TickerProviderStateMixin {
                           width: double.infinity,
                           padding: const EdgeInsets.all(16),
                           decoration: BoxDecoration(
-                            color: Colors.amber.withOpacity(0.1),
+                            color: Colors.amber.withValues(alpha: 0.1),
                             borderRadius: BorderRadius.circular(12),
                             border: Border.all(
-                              color: Colors.amber.withOpacity(0.3),
+                              color: Colors.amber.withValues(alpha: 0.3),
                             ),
                           ),
                           child: Column(
@@ -745,7 +745,7 @@ class _MilkScreenState extends State<MilkScreen> with TickerProviderStateMixin {
                               Row(
                                 children: [
                                   const FaIcon(
-                                    FontAwesomeIcons.stickyNote,
+                                    FontAwesomeIcons.noteSticky,
                                     color: Colors.amber,
                                     size: 16,
                                   ),
@@ -796,7 +796,7 @@ class _MilkScreenState extends State<MilkScreen> with TickerProviderStateMixin {
                           Navigator.pop(context);
                           _navigateToEditMilkRecord(record);
                         },
-                        icon: const FaIcon(FontAwesomeIcons.edit, size: 16),
+                        icon: const FaIcon(FontAwesomeIcons.penToSquare, size: 16),
                         label: const Text('Edit'),
                         style: ElevatedButton.styleFrom(
                           backgroundColor: AppColors.primary,
@@ -814,7 +814,7 @@ class _MilkScreenState extends State<MilkScreen> with TickerProviderStateMixin {
                         borderRadius: BorderRadius.circular(8),
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.red.withOpacity(0.3),
+                            color: Colors.red.withValues(alpha: 0.3),
                             blurRadius: 4,
                             offset: const Offset(0, 2),
                           ),
@@ -859,7 +859,7 @@ class _MilkScreenState extends State<MilkScreen> with TickerProviderStateMixin {
         Container(
           padding: const EdgeInsets.all(8),
           decoration: BoxDecoration(
-            color: color.withOpacity(0.1),
+            color: color.withValues(alpha: 0.1),
             borderRadius: BorderRadius.circular(8),
           ),
           child: FaIcon(icon, color: color, size: 16),
@@ -899,10 +899,10 @@ class _MilkScreenState extends State<MilkScreen> with TickerProviderStateMixin {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: color.withOpacity(0.2)),
+        border: Border.all(color: color.withValues(alpha: 0.2)),
         boxShadow: [
           BoxShadow(
-            color: color.withOpacity(0.1),
+            color: color.withValues(alpha: 0.1),
             blurRadius: 4,
             offset: const Offset(0, 2),
           ),
@@ -913,7 +913,7 @@ class _MilkScreenState extends State<MilkScreen> with TickerProviderStateMixin {
           Container(
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
-              color: color.withOpacity(0.1),
+              color: color.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(8),
             ),
             child: FaIcon(icon, color: color, size: 16),

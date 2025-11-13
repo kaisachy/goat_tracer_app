@@ -18,12 +18,12 @@ class CattleManagementCard extends StatelessWidget {
         color: AppColors.cardBackground,
         borderRadius: BorderRadius.circular(20),
         border: Border.all(
-          color: AppColors.lightGreen.withOpacity(0.1),
+          color: AppColors.lightGreen.withValues(alpha: 0.1),
           width: 1,
         ),
         boxShadow: [
           BoxShadow(
-            color: AppColors.lightGreen.withOpacity(0.08),
+            color: AppColors.lightGreen.withValues(alpha: 0.08),
             blurRadius: 16,
             offset: const Offset(0, 4),
             spreadRadius: 0,
@@ -67,3 +67,4 @@ class CattleManagementCard extends StatelessWidget {
     );
   }
 }
+

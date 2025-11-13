@@ -1,6 +1,5 @@
 import 'package:cattle_tracer_app/screens/nav/cattle/widgets/cattle_search_filter_widget.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/foundation.dart';
 import 'package:cattle_tracer_app/models/cattle.dart';
 import 'package:cattle_tracer_app/services/cattle/cattle_service.dart';
 import 'package:cattle_tracer_app/services/cattle/cattle_export_service.dart';
@@ -140,11 +139,11 @@ class _CattleScreenState extends State<CattleScreen>
         final Color color = item['color'] as Color;
         return Card(
           elevation: 3,
-          shadowColor: color.withOpacity(0.25),
+          shadowColor: color.withValues(alpha: 0.25),
           color: AppColors.cardBackground,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(16),
-            side: BorderSide(color: color.withOpacity(0.25), width: 1),
+            side: BorderSide(color: color.withValues(alpha: 0.25), width: 1),
           ),
           child: InkWell(
             borderRadius: BorderRadius.circular(16),
@@ -413,7 +412,7 @@ class _CattleScreenState extends State<CattleScreen>
     return PopupMenuButton<String>(
       icon: Icon(
         Icons.more_vert,
-        color: AppColors.textSecondary.withOpacity(0.8),
+        color: AppColors.textSecondary.withValues(alpha: 0.8),
         size: 20,
       ),
       shape: RoundedRectangleBorder(
@@ -433,9 +432,9 @@ class _CattleScreenState extends State<CattleScreen>
                 width: 24,
                 height: 24,
                 decoration: BoxDecoration(
-                  color: AppColors.vibrantGreen.withOpacity(0.12),
+                  color: AppColors.vibrantGreen.withValues(alpha: 0.12),
                   borderRadius: BorderRadius.circular(6),
-                  border: Border.all(color: AppColors.vibrantGreen.withOpacity(0.2)),
+                  border: Border.all(color: AppColors.vibrantGreen.withValues(alpha: 0.2)),
                 ),
                 child: const Icon(Icons.edit_outlined, color: AppColors.vibrantGreen, size: 14),
               ),
@@ -455,9 +454,9 @@ class _CattleScreenState extends State<CattleScreen>
                 width: 24,
                 height: 24,
                 decoration: BoxDecoration(
-                  color: AppColors.darkGreen.withOpacity(0.12),
+                  color: AppColors.darkGreen.withValues(alpha: 0.12),
                   borderRadius: BorderRadius.circular(6),
-                  border: Border.all(color: AppColors.darkGreen.withOpacity(0.2)),
+                  border: Border.all(color: AppColors.darkGreen.withValues(alpha: 0.2)),
                 ),
                 child: const Icon(Icons.event_note_outlined, color: AppColors.darkGreen, size: 14),
               ),
@@ -478,9 +477,9 @@ class _CattleScreenState extends State<CattleScreen>
                 width: 24,
                 height: 24,
                 decoration: BoxDecoration(
-                  color: AppColors.lightGreen.withOpacity(0.12),
+                  color: AppColors.lightGreen.withValues(alpha: 0.12),
                   borderRadius: BorderRadius.circular(6),
-                  border: Border.all(color: AppColors.lightGreen.withOpacity(0.2)),
+                  border: Border.all(color: AppColors.lightGreen.withValues(alpha: 0.2)),
                 ),
                 child: const Icon(Icons.arrow_upward_outlined, color: AppColors.lightGreen, size: 14),
               ),
@@ -500,9 +499,9 @@ class _CattleScreenState extends State<CattleScreen>
                 width: 24,
                 height: 24,
                 decoration: BoxDecoration(
-                  color: AppColors.vibrantGreen.withOpacity(0.12),
+                  color: AppColors.vibrantGreen.withValues(alpha: 0.12),
                   borderRadius: BorderRadius.circular(6),
-                  border: Border.all(color: AppColors.vibrantGreen.withOpacity(0.2)),
+                  border: Border.all(color: AppColors.vibrantGreen.withValues(alpha: 0.2)),
                 ),
                 child: const Icon(Icons.swap_horiz, color: AppColors.vibrantGreen, size: 14),
               ),
@@ -523,9 +522,9 @@ class _CattleScreenState extends State<CattleScreen>
                 width: 24,
                 height: 24,
                 decoration: BoxDecoration(
-                  color: Colors.green.withOpacity(0.12),
+                  color: Colors.green.withValues(alpha: 0.12),
                   borderRadius: BorderRadius.circular(6),
-                  border: Border.all(color: Colors.green.withOpacity(0.2)),
+                  border: Border.all(color: Colors.green.withValues(alpha: 0.2)),
                 ),
                 alignment: Alignment.center,
                 child: const FaIcon(FontAwesomeIcons.fileExcel, color: Colors.green, size: 14),
@@ -546,9 +545,9 @@ class _CattleScreenState extends State<CattleScreen>
                 width: 24,
                 height: 24,
                 decoration: BoxDecoration(
-                  color: Colors.red.withOpacity(0.12),
+                  color: Colors.red.withValues(alpha: 0.12),
                   borderRadius: BorderRadius.circular(6),
-                  border: Border.all(color: Colors.red.withOpacity(0.2)),
+                  border: Border.all(color: Colors.red.withValues(alpha: 0.2)),
                 ),
                 child: const Icon(Icons.picture_as_pdf_rounded, color: Colors.red, size: 14),
               ),
@@ -569,9 +568,9 @@ class _CattleScreenState extends State<CattleScreen>
                 width: 24,
                 height: 24,
                 decoration: BoxDecoration(
-                  color: AppColors.gold.withOpacity(0.12),
+                  color: AppColors.gold.withValues(alpha: 0.12),
                   borderRadius: BorderRadius.circular(6),
-                  border: Border.all(color: AppColors.gold.withOpacity(0.2)),
+                  border: Border.all(color: AppColors.gold.withValues(alpha: 0.2)),
                 ),
                 child: const Icon(Icons.archive_outlined, color: AppColors.gold, size: 14),
               ),
@@ -591,9 +590,9 @@ class _CattleScreenState extends State<CattleScreen>
                 width: 24,
                 height: 24,
                 decoration: BoxDecoration(
-                  color: Colors.red.shade600.withOpacity(0.12),
+                  color: Colors.red.shade600.withValues(alpha: 0.12),
                   borderRadius: BorderRadius.circular(6),
-                  border: Border.all(color: Colors.red.shade600.withOpacity(0.2)),
+                  border: Border.all(color: Colors.red.shade600.withValues(alpha: 0.2)),
                 ),
                 child: Icon(Icons.delete_forever_outlined, color: Colors.red.shade600, size: 14),
               ),
@@ -616,13 +615,15 @@ class _CattleScreenState extends State<CattleScreen>
               context: context,
               builder: (context) => const CattleSelectionModal(),
             );
-            if (selectedTag != null && context.mounted) {
+            if (selectedTag != null) {
+              if (!mounted) break;
               await Navigator.push(
                 context,
                 MaterialPageRoute(
                   builder: (context) => CattleHistoryFormScreen(cattleTag: selectedTag),
                 ),
               );
+              if (!mounted) break;
               _fetchCattle();
             }
             break;
@@ -633,37 +634,38 @@ class _CattleScreenState extends State<CattleScreen>
               context: context,
               builder: (context) => const CattleSelectionModal(),
             );
-            if (selectedTag != null && context.mounted) {
+            if (selectedTag != null) {
+              if (!mounted) break;
               final selectedCattle = _cattleList.firstWhere(
                 (c) => c.tagNo == selectedTag,
                 orElse: () => cattle,
               );
               if (value == 'export_excel') {
-                ScaffoldMessenger.of(context).hideCurrentSnackBar();
+                final messenger = ScaffoldMessenger.of(context);
+                messenger.hideCurrentSnackBar();
                 final okX = await CattleExportService.downloadCattleExcel(selectedCattle.id.toString());
-                if (context.mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text(okX ? 'Excel report ready! Choose where to open/save.' : 'Failed to download Excel report.'),
-                      backgroundColor: okX ? Colors.green.shade600 : Colors.red.shade700,
-                      behavior: SnackBarBehavior.floating,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                    ),
-                  );
-                }
+                if (!mounted) break;
+                messenger.showSnackBar(
+                  SnackBar(
+                    content: Text(okX ? 'Excel report ready! Choose where to open/save.' : 'Failed to download Excel report.'),
+                    backgroundColor: okX ? Colors.green.shade600 : Colors.red.shade700,
+                    behavior: SnackBarBehavior.floating,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  ),
+                );
               } else if (value == 'export_pdf') {
-                ScaffoldMessenger.of(context).hideCurrentSnackBar();
+                final messenger = ScaffoldMessenger.of(context);
+                messenger.hideCurrentSnackBar();
                 final okP = await CattleExportService.downloadCattlePdf(selectedCattle.id.toString());
-                if (context.mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text(okP ? 'PDF report ready! Choose where to open/save.' : 'Failed to generate PDF report.'),
-                      backgroundColor: okP ? Colors.green.shade600 : Colors.red.shade700,
-                      behavior: SnackBarBehavior.floating,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                    ),
-                  );
-                }
+                if (!mounted) break;
+                messenger.showSnackBar(
+                  SnackBar(
+                    content: Text(okP ? 'PDF report ready! Choose where to open/save.' : 'Failed to generate PDF report.'),
+                    backgroundColor: okP ? Colors.green.shade600 : Colors.red.shade700,
+                    behavior: SnackBarBehavior.floating,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  ),
+                );
               }
             }
             break;
@@ -703,12 +705,12 @@ class _CattleScreenState extends State<CattleScreen>
           margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
           child: Card(
             elevation: 3,
-            shadowColor: AppColors.primary.withOpacity(0.2),
+            shadowColor: AppColors.primary.withValues(alpha: 0.2),
             color: AppColors.cardBackground,
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(16),
               side: BorderSide(
-                color: AppColors.lightGreen.withOpacity(0.3),
+                color: AppColors.lightGreen.withValues(alpha: 0.3),
                 width: 1,
               ),
             ),
@@ -734,7 +736,7 @@ class _CattleScreenState extends State<CattleScreen>
                               return Container(
                                 width: 50,
                                 height: 50,
-                                color: AppColors.lightGreen.withOpacity(0.5),
+                                color: AppColors.lightGreen.withValues(alpha: 0.5),
                                 child: Icon(Icons.error_outline, color: Colors.red.shade400),
                               );
                             },
@@ -743,7 +745,7 @@ class _CattleScreenState extends State<CattleScreen>
                             width: 50,
                             height: 50,
                             decoration: BoxDecoration(
-                              color: AppColors.primary.withOpacity(0.15),
+                              color: AppColors.primary.withValues(alpha: 0.15),
                             ),
                             child: Icon(
                               FontAwesomeIcons.cow,
@@ -888,7 +890,7 @@ class _CattleScreenState extends State<CattleScreen>
             width: 120,
             height: 120,
             decoration: BoxDecoration(
-              color: AppColors.lightGreen.withOpacity(0.2),
+              color: AppColors.lightGreen.withValues(alpha: 0.2),
               borderRadius: BorderRadius.circular(60),
             ),
             child: Icon(
@@ -929,7 +931,7 @@ class _CattleScreenState extends State<CattleScreen>
     return DefaultTabController(
       length: 2,
       child: Scaffold(
-      backgroundColor: AppColors.pageBackground.withOpacity(0.1),
+      backgroundColor: AppColors.pageBackground.withValues(alpha: 0.1),
         body: Column(
           children: [
             Container(
@@ -1035,10 +1037,12 @@ class _CattleScreenState extends State<CattleScreen>
                       tooltip: 'Export Excel',
                       icon: const FaIcon(FontAwesomeIcons.fileExcel, color: Colors.white, size: 20),
                       onPressed: () async {
-                        ScaffoldMessenger.of(context).hideCurrentSnackBar();
+                        final messenger = ScaffoldMessenger.of(context);
+                        messenger.hideCurrentSnackBar();
                         final rt = _mapReportTypeToParam(_selectedReportType);
                         final ok = await CattleExportService.downloadCattleListExcel(reportType: rt);
-                        ScaffoldMessenger.of(context).showSnackBar(
+                        if (!mounted) return;
+                        messenger.showSnackBar(
                           SnackBar(
                             content: Text(ok ? 'Excel report ready! Choose where to open/save.' : 'Failed to download Excel report.'),
                             backgroundColor: ok ? Colors.green.shade600 : Colors.red.shade700,
@@ -1059,10 +1063,12 @@ class _CattleScreenState extends State<CattleScreen>
                       tooltip: 'Export PDF',
                       icon: const Icon(Icons.picture_as_pdf_rounded, color: Colors.white, size: 20),
                       onPressed: () async {
-                        ScaffoldMessenger.of(context).hideCurrentSnackBar();
+                        final messenger = ScaffoldMessenger.of(context);
+                        messenger.hideCurrentSnackBar();
                         final rt = _mapReportTypeToParam(_selectedReportType);
                         final ok = await CattleExportService.downloadCattleListPdf(reportType: rt);
-                        ScaffoldMessenger.of(context).showSnackBar(
+                        if (!mounted) return;
+                        messenger.showSnackBar(
                           SnackBar(
                             content: Text(ok ? 'PDF report ready! Choose where to open/save.' : 'Failed to generate PDF report.'),
                             backgroundColor: ok ? Colors.green.shade600 : Colors.red.shade700,
@@ -1102,3 +1108,4 @@ class _CattleScreenState extends State<CattleScreen>
     );
   }
 }
+

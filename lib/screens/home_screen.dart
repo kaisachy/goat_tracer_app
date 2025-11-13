@@ -89,7 +89,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
         _redirectToLogin();
       }
     } catch (e) {
-      print('Authentication check failed: $e');
+      debugPrint('Authentication check failed: $e');
       // On error, assume authentication is compromised
       await AuthService.logout();
       _redirectToLogin();
@@ -119,7 +119,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
       
       // Snackbar removed - auto-update runs silently in background
     } catch (e) {
-      print('Error checking cattle status updates: $e');
+      debugPrint('Error checking cattle status updates: $e');
     }
   }
 
@@ -152,14 +152,14 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
         
         // Debug log to check if profile_picture is present
         if (profileData != null) {
-          print('Profile loaded - profile_picture present: ${profileData['profile_picture'] != null && profileData['profile_picture'].toString().isNotEmpty}');
+          debugPrint('Profile loaded - profile_picture present: ${profileData['profile_picture'] != null && profileData['profile_picture'].toString().isNotEmpty}');
           if (profileData['profile_picture'] != null) {
-            print('Profile picture length: ${profileData['profile_picture'].toString().length}');
+            debugPrint('Profile picture length: ${profileData['profile_picture'].toString().length}');
           }
         }
       }
     } catch (e) {
-      print('Error loading profile data: $e');
+      debugPrint('Error loading profile data: $e');
 
       // Check if error is authentication related
       if (e.toString().contains('401') ||
@@ -214,14 +214,17 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
 
       // Perform comprehensive refresh for all data
       final refreshResults = await RefreshService.refreshAllData();
+      if (!mounted) return;
       
       // Refresh profile data to ensure drawer shows latest profile picture
       await _loadProfileData();
+      if (!mounted) return;
       
       // Also auto-update cattle classifications
       final _ = await CattleService.autoUpdateCattleClassifications();
       
       // Dismiss loading indicator
+      if (!mounted) return;
       ScaffoldMessenger.of(context).hideCurrentSnackBar();
       
       // Show appropriate success message
@@ -248,6 +251,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
       });
 
     } catch (e) {
+      if (!mounted) return;
       // Dismiss loading indicator
       ScaffoldMessenger.of(context).hideCurrentSnackBar();
       
@@ -288,7 +292,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
             Container(
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
-                color: Colors.red.withOpacity(0.1),
+                color: Colors.red.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(8),
               ),
               child: const Icon(
@@ -369,6 +373,8 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
       ),
     );
 
+    if (!mounted) return;
+
     if (shouldLogout == true) {
       Navigator.of(context).pop(); // Close drawer
 
@@ -389,7 +395,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                 Container(
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
-                    color: Colors.blue.withOpacity(0.1),
+                    color: Colors.blue.withValues(alpha: 0.1),
                     shape: BoxShape.circle,
                   ),
                   child: const CircularProgressIndicator(
@@ -450,7 +456,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                   Container(
                     padding: const EdgeInsets.all(8),
                     decoration: BoxDecoration(
-                      color: Colors.red.withOpacity(0.1),
+                      color: Colors.red.withValues(alpha: 0.1),
                       shape: BoxShape.circle,
                     ),
                     child: const Icon(
@@ -706,20 +712,20 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
             backgroundImage: MemoryImage(imageBytes),
             onBackgroundImageError: (exception, stackTrace) {
               // Handle image loading error
-              print('Error loading profile image: $exception');
-              print('Stack trace: $stackTrace');
+              debugPrint('Error loading profile image: $exception');
+              debugPrint('Stack trace: $stackTrace');
             },
           );
         } else {
-          print('Decoded image bytes are empty');
+          debugPrint('Decoded image bytes are empty');
         }
       } catch (e) {
-        print('Error decoding profile image: $e');
-        print('Profile picture value (first 50 chars): ${profilePicture.substring(0, profilePicture.length > 50 ? 50 : profilePicture.length)}');
+        debugPrint('Error decoding profile image: $e');
+        debugPrint('Profile picture value (first 50 chars): ${profilePicture.substring(0, profilePicture.length > 50 ? 50 : profilePicture.length)}');
         // Fall through to default avatar
       }
     } else {
-      print('Profile picture is null or empty. Profile data: ${_profile?.keys.toList()}');
+      debugPrint('Profile picture is null or empty. Profile data: ${_profile?.keys.toList()}');
     }
 
     // Default avatar when no profile picture is available
@@ -755,7 +761,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
       ),
       onTap: onTap,
       selected: isSelected,
-      selectedTileColor: AppColors.accent.withOpacity(0.15),
+      selectedTileColor: AppColors.accent.withValues(alpha: 0.15),
     );
   }
 }

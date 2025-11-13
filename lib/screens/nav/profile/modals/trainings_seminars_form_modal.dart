@@ -91,7 +91,7 @@ class _TrainingsSeminarsFormModalState extends State<TrainingsSeminarsFormModal>
                       Container(
                         padding: const EdgeInsets.all(12),
                         decoration: BoxDecoration(
-                          color: AppColors.lightGreen.withOpacity(0.2),
+                          color: AppColors.lightGreen.withValues(alpha: 0.2),
                           borderRadius: BorderRadius.circular(12),
                         ),
                         child: const Icon(
@@ -136,9 +136,9 @@ class _TrainingsSeminarsFormModalState extends State<TrainingsSeminarsFormModal>
                   decoration: BoxDecoration(
                     gradient: LinearGradient(
                       colors: [
-                        AppColors.lightGreen.withOpacity(0.3),
-                        AppColors.vibrantGreen.withOpacity(0.3),
-                        AppColors.lightGreen.withOpacity(0.3),
+                        AppColors.lightGreen.withValues(alpha: 0.3),
+                        AppColors.vibrantGreen.withValues(alpha: 0.3),
+                        AppColors.lightGreen.withValues(alpha: 0.3),
                       ],
                     ),
                   ),
@@ -222,7 +222,7 @@ class _TrainingsSeminarsFormModalState extends State<TrainingsSeminarsFormModal>
                     color: AppColors.pageBackground,
                     borderRadius: BorderRadius.circular(12),
                     border: Border.all(
-                      color: AppColors.textSecondary.withOpacity(0.1),
+                      color: AppColors.textSecondary.withValues(alpha: 0.1),
                     ),
                   ),
                   child: Row(
@@ -231,8 +231,8 @@ class _TrainingsSeminarsFormModalState extends State<TrainingsSeminarsFormModal>
                         padding: const EdgeInsets.all(8),
                         decoration: BoxDecoration(
                           color: certificateIssued
-                              ? AppColors.gold.withOpacity(0.2)
-                              : AppColors.textSecondary.withOpacity(0.1),
+                              ? AppColors.gold.withValues(alpha: 0.2)
+                              : AppColors.textSecondary.withValues(alpha: 0.1),
                           borderRadius: BorderRadius.circular(8),
                         ),
                         child: Icon(
@@ -296,7 +296,7 @@ class _TrainingsSeminarsFormModalState extends State<TrainingsSeminarsFormModal>
                         onPressed: isLoading ? null : () => Navigator.pop(context),
                         style: OutlinedButton.styleFrom(
                           foregroundColor: AppColors.textSecondary,
-                          side: BorderSide(color: AppColors.textSecondary.withOpacity(0.3)),
+                          side: BorderSide(color: AppColors.textSecondary.withValues(alpha: 0.3)),
                           padding: const EdgeInsets.symmetric(vertical: 16),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(12),
@@ -324,7 +324,7 @@ class _TrainingsSeminarsFormModalState extends State<TrainingsSeminarsFormModal>
                             borderRadius: BorderRadius.circular(12),
                           ),
                           elevation: 2,
-                          shadowColor: AppColors.primary.withOpacity(0.2),
+                          shadowColor: AppColors.primary.withValues(alpha: 0.2),
                         ),
                         child: isLoading
                             ? const SizedBox(
@@ -400,7 +400,7 @@ class _TrainingsSeminarsFormModalState extends State<TrainingsSeminarsFormModal>
           decoration: InputDecoration(
             hintText: hint,
             hintStyle: TextStyle(
-              color: AppColors.textSecondary.withOpacity(0.6),
+              color: AppColors.textSecondary.withValues(alpha: 0.6),
               fontSize: 15,
             ),
             prefixIcon: Icon(
@@ -413,13 +413,13 @@ class _TrainingsSeminarsFormModalState extends State<TrainingsSeminarsFormModal>
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
               borderSide: BorderSide(
-                color: AppColors.textSecondary.withOpacity(0.1),
+                color: AppColors.textSecondary.withValues(alpha: 0.1),
               ),
             ),
             enabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
               borderSide: BorderSide(
-                color: AppColors.textSecondary.withOpacity(0.1),
+                color: AppColors.textSecondary.withValues(alpha: 0.1),
               ),
             ),
             focusedBorder: OutlineInputBorder(
@@ -468,7 +468,7 @@ class _TrainingsSeminarsFormModalState extends State<TrainingsSeminarsFormModal>
           color: AppColors.pageBackground,
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
-            color: AppColors.textSecondary.withOpacity(0.1),
+            color: AppColors.textSecondary.withValues(alpha: 0.1),
           ),
         ),
         child: Column(
@@ -500,7 +500,7 @@ class _TrainingsSeminarsFormModalState extends State<TrainingsSeminarsFormModal>
               style: TextStyle(
                 fontSize: 16,
                 color: date == null
-                    ? AppColors.textSecondary.withOpacity(0.6)
+                    ? AppColors.textSecondary.withValues(alpha: 0.6)
                     : AppColors.textPrimary,
                 fontWeight: date == null ? FontWeight.w400 : FontWeight.w500,
               ),
@@ -572,40 +572,39 @@ class _TrainingsSeminarsFormModalState extends State<TrainingsSeminarsFormModal>
         success = await TrainingsSeminarsService.storeTrainingsAndSeminars(data);
       }
 
-      if (context.mounted) {
-        setState(() => isLoading = false);
-        Navigator.pop(context);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Row(
-              children: [
-                Icon(
-                  success ? Icons.check_circle : Icons.error,
-                  color: Colors.white,
-                  size: 20,
+      if (!mounted) return;
+      setState(() => isLoading = false);
+      Navigator.pop(context);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Row(
+            children: [
+              Icon(
+                success ? Icons.check_circle : Icons.error,
+                color: Colors.white,
+                size: 20,
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  success
+                      ? 'Training saved successfully!'
+                      : 'Failed to save training.',
+                  style: const TextStyle(fontSize: 16),
                 ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Text(
-                    success
-                        ? 'Training saved successfully!'
-                        : 'Failed to save training.',
-                    style: const TextStyle(fontSize: 16),
-                  ),
-                ),
-              ],
-            ),
-            backgroundColor: success ? AppColors.vibrantGreen : Colors.red.shade600,
-            behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(8),
-            ),
-            margin: const EdgeInsets.all(16),
+              ),
+            ],
           ),
-        );
-        if (success) {
-          widget.onSaveSuccess();
-        }
+          backgroundColor: success ? AppColors.vibrantGreen : Colors.red.shade600,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(8),
+          ),
+          margin: const EdgeInsets.all(16),
+        ),
+      );
+      if (success) {
+        widget.onSaveSuccess();
       }
     }
   }

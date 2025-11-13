@@ -17,12 +17,12 @@ class CattleNotesSection extends StatelessWidget {
         color: AppColors.cardBackground,
         borderRadius: BorderRadius.circular(20),
         border: Border.all(
-          color: AppColors.accent.withOpacity(0.1),
+          color: AppColors.accent.withValues(alpha: 0.1),
           width: 1,
         ),
         boxShadow: [
           BoxShadow(
-            color: AppColors.accent.withOpacity(0.08),
+            color: AppColors.accent.withValues(alpha: 0.08),
             blurRadius: 16,
             offset: const Offset(0, 4),
             spreadRadius: 0,
@@ -42,10 +42,10 @@ class CattleNotesSection extends StatelessWidget {
             width: double.infinity,
             padding: const EdgeInsets.all(20),
             decoration: BoxDecoration(
-              color: AppColors.accent.withOpacity(0.05),
+              color: AppColors.accent.withValues(alpha: 0.05),
               borderRadius: BorderRadius.circular(16),
               border: Border.all(
-                color: AppColors.accent.withOpacity(0.15),
+                color: AppColors.accent.withValues(alpha: 0.15),
                 width: 1,
               ),
             ),
@@ -68,3 +68,4 @@ class CattleNotesSection extends StatelessWidget {
     );
   }
 }
+

@@ -113,12 +113,12 @@ class _HistoryContentState extends State<HistoryContent> {
         await CattleHistoryService.deleteCattleHistory(duplicate['id']);
         deletedCount++;
       } catch (e) {
-        print('Failed to delete duplicate event: $e');
+        debugPrint('Failed to delete duplicate event: $e');
       }
     }
 
     if (deletedCount > 0) {
-      print('Deleted $deletedCount duplicate history');
+      debugPrint('Deleted $deletedCount duplicate history');
     }
 
     return uniqueEvents;
@@ -171,18 +171,19 @@ class _HistoryContentState extends State<HistoryContent> {
     // First show the cattle selection modal
     final selectedCattleTag = await showDialog<String>(
       context: context,
-      builder: (context) => const CattleSelectionModal(),
+      builder: (dialogContext) => const CattleSelectionModal(),
     );
 
-    // If a cattle was selected, open the event form with the selected cattle
-    if (selectedCattleTag != null && mounted) {
-      Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (context) => CattleHistoryFormScreen(cattleTag: selectedCattleTag),
-        ),
-      ).then((_) => _loadAllCattleHistoryRecords());
-    }
+    if (selectedCattleTag == null || !mounted) return;
+
+    await Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (routeContext) => CattleHistoryFormScreen(cattleTag: selectedCattleTag),
+      ),
+    );
+
+    if (!mounted) return;
+    await _loadAllCattleHistoryRecords();
   }
 
   @override
@@ -250,7 +251,7 @@ class _HistoryContentState extends State<HistoryContent> {
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withValues(alpha: 0.05),
             blurRadius: 8,
             offset: const Offset(0, 2),
           ),
@@ -429,12 +430,12 @@ class _HistoryContentState extends State<HistoryContent> {
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: eventColor.withOpacity(0.1),
+            color: eventColor.withValues(alpha: 0.1),
             blurRadius: 12,
             offset: const Offset(0, 4),
           ),
         ],
-        border: Border.all(color: eventColor.withOpacity(0.2)),
+        border: Border.all(color: eventColor.withValues(alpha: 0.2)),
       ),
       child: Column(
         children: [
@@ -461,9 +462,9 @@ class _HistoryContentState extends State<HistoryContent> {
                   Container(
                     padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
-                      color: eventColor.withOpacity(0.15),
+                      color: eventColor.withValues(alpha: 0.15),
                       borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: eventColor.withOpacity(0.3)),
+                      border: Border.all(color: eventColor.withValues(alpha: 0.3)),
                     ),
                     child: Icon(HistoryTypeUtils.getHistoryIcon(eventType), color: eventColor, size: 24),
                   ),
@@ -485,9 +486,9 @@ class _HistoryContentState extends State<HistoryContent> {
                         Container(
                           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                           decoration: BoxDecoration(
-                            color: AppColors.primary.withOpacity(0.1),
+                            color: AppColors.primary.withValues(alpha: 0.1),
                             borderRadius: BorderRadius.circular(12),
-                            border: Border.all(color: AppColors.primary.withOpacity(0.3)),
+                            border: Border.all(color: AppColors.primary.withValues(alpha: 0.3)),
                           ),
                           child: Text(
                             cattleTag,
@@ -640,12 +641,12 @@ class _HistoryContentState extends State<HistoryContent> {
   void _duplicateEvent(Map<String, dynamic> event) {
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
+      builder: (dialogContext) => AlertDialog(
         title: const Text('Duplicate History Record'),
         content: const Text('This feature is not yet implemented.'),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context),
+            onPressed: () => Navigator.pop(dialogContext),
             child: const Text('OK'),
           ),
         ],
@@ -657,22 +658,25 @@ class _HistoryContentState extends State<HistoryContent> {
   void _deleteEvent(Map<String, dynamic> event) {
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
+      builder: (dialogContext) => AlertDialog(
         title: const Text('Delete History Record'),
         content: Text(
           'Are you sure you want to delete this ${event['history_type']} history record for cattle ${event['cattle_tag']}?',
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context),
+            onPressed: () => Navigator.pop(dialogContext),
             child: const Text('Cancel'),
           ),
           TextButton(
             onPressed: () async {
               try {
                 await CattleHistoryService.deleteCattleHistory(event['id']);
-                Navigator.pop(context);
-                _loadAllCattleHistoryRecords();
+                if (!dialogContext.mounted) return;
+                Navigator.pop(dialogContext);
+                if (!mounted) return;
+                await _loadAllCattleHistoryRecords();
+                if (!mounted) return;
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(
                     content: Text('History record deleted successfully'),
@@ -680,7 +684,9 @@ class _HistoryContentState extends State<HistoryContent> {
                   ),
                 );
               } catch (e) {
-                Navigator.pop(context);
+                if (!dialogContext.mounted) return;
+                Navigator.pop(dialogContext);
+                if (!mounted) return;
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
                     content: Text('Failed to delete history record: $e'),
@@ -832,3 +838,4 @@ class _HistoryContentState extends State<HistoryContent> {
     });
   }
 }
+

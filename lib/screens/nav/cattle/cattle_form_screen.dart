@@ -76,7 +76,7 @@ class _CattleFormScreenState extends State<CattleFormScreen> {
   // NEW: For tag generation
   bool _isGeneratingTag = false;
   List<String> _existingTags = [];
-  List<String> _recentlyGeneratedTags = []; // Track tags generated in current session
+  final List<String> _recentlyGeneratedTags = []; // Track tags generated in current session
 
   // NEW: Dynamic options from user preferences
   List<String> _breedOptions = [];
@@ -132,7 +132,7 @@ class _CattleFormScreenState extends State<CattleFormScreen> {
         _existingTags = allCattle.map((cattle) => cattle.tagNo.toLowerCase()).toList();
       });
     } catch (e) {
-      print('Error loading existing tags: $e');
+      debugPrint('Error loading existing tags: $e');
     }
   }
 
@@ -159,7 +159,7 @@ class _CattleFormScreenState extends State<CattleFormScreen> {
       });
 
     } catch (e) {
-      print('Error generating tag: $e');
+      debugPrint('Error generating tag: $e');
       setState(() => _isGeneratingTag = false);
       _showErrorSnackBar('Failed to generate tag number');
     }
@@ -235,7 +235,7 @@ class _CattleFormScreenState extends State<CattleFormScreen> {
     final userId = await _currentUserId;
     if (userId == null) {
       // Handle case where user is not logged in
-      print('Warning: User not logged in, cannot load preferences');
+      debugPrint('Warning: User not logged in, cannot load preferences');
       setState(() {
         _breedOptions = [];
         // _groupNameOptions = []; // Commented out: Group Name options removed
@@ -702,7 +702,7 @@ class _CattleFormScreenState extends State<CattleFormScreen> {
       });
 
     } catch (e) {
-      print('Error generating tag: $e');
+      debugPrint('Error generating tag: $e');
       setState(() => _isGeneratingTag = false);
       _showErrorSnackBar('Failed to generate tag number');
     }
@@ -829,15 +829,17 @@ class _CattleFormScreenState extends State<CattleFormScreen> {
     if (!_formKey.currentState!.validate()) return;
 
     final tagToCheck = _tagNoController.text.trim();
-    print('Checking tag: $tagToCheck');
+    debugPrint('Checking tag: $tagToCheck');
 
     // Check if tag already exists (only for new cattle or when tag is changed)
     bool shouldCheckTag = !_isEditing || widget.cattle!.tagNo != tagToCheck;
 
-    print('Should check tag: $shouldCheckTag');
+    debugPrint('Should check tag: $shouldCheckTag');
 
     if (shouldCheckTag) {
       // Show loading indicator for tag checking
+      final navigator = Navigator.of(context);
+      final messenger = ScaffoldMessenger.of(context);
       showDialog(
         context: context,
         barrierDismissible: false,
@@ -852,19 +854,26 @@ class _CattleFormScreenState extends State<CattleFormScreen> {
         cattle.tagNo.toLowerCase() == tagToCheck.toLowerCase() &&
             (!_isEditing || cattle.id != widget.cattle!.id));
 
-        if (mounted) Navigator.pop(context);
+        if (!mounted) return;
+        navigator.pop();
 
         if (duplicateExists) {
-          _showErrorSnackBar('Cattle tag already exists. Please use a different unique tag.');
+          messenger.showSnackBar(
+            const SnackBar(content: Text('Cattle tag already exists. Please use a different unique tag.')),
+          );
           return;
         }
       } catch (e) {
-        if (mounted) Navigator.pop(context);
-        _showErrorSnackBar('Error validating tag. Please try again.');
+        if (!mounted) return;
+        navigator.pop();
+        messenger.showSnackBar(
+          const SnackBar(content: Text('Error validating tag. Please try again.')),
+        );
         return;
       }
     }
 
+    final navigator = Navigator.of(context);
     showDialog(
       context: context,
       barrierDismissible: false,
@@ -929,56 +938,54 @@ class _CattleFormScreenState extends State<CattleFormScreen> {
         success = await CattleService.storeCattleInformation(data);
       }
     } catch (e) {
-      if (mounted) {
-        Navigator.pop(context); // Close loading dialog
+      if (!mounted) return;
+      navigator.pop(); // Close loading dialog
 
-        print('Error submitting form: $e');
+      debugPrint('Error submitting form: $e');
 
-        // Parse different types of errors
-        String errorMessage = 'Failed to save cattle information';
+      // Parse different types of errors
+      String errorMessage = 'Failed to save cattle information';
 
-        if (e.toString().contains('Duplicate entry') ||
-            e.toString().contains('tag_no') ||
-            e.toString().contains('already exists') ||
-            e.toString().contains('1062')) {
-          errorMessage = 'Cattle tag already exists. Please use a different unique tag.';
-        } else if (e.toString().contains('foreign key constraint') ||
-            e.toString().contains('Cannot delete or update a parent row')) {
-          errorMessage = 'Unable to update. This cattle has offspring that reference it.';
-        } else if (e.toString().contains('connection') ||
-            e.toString().contains('network') ||
-            e.toString().contains('timeout')) {
-          errorMessage = 'Network error. Please check your connection and try again.';
-        }
-
-        _showErrorSnackBar(errorMessage);
+      if (e.toString().contains('Duplicate entry') ||
+          e.toString().contains('tag_no') ||
+          e.toString().contains('already exists') ||
+          e.toString().contains('1062')) {
+        errorMessage = 'Cattle tag already exists. Please use a different unique tag.';
+      } else if (e.toString().contains('foreign key constraint') ||
+          e.toString().contains('Cannot delete or update a parent row')) {
+        errorMessage = 'Unable to update. This cattle has offspring that reference it.';
+      } else if (e.toString().contains('connection') ||
+          e.toString().contains('network') ||
+          e.toString().contains('timeout')) {
+        errorMessage = 'Network error. Please check your connection and try again.';
       }
+
+      _showErrorSnackBar(errorMessage);
       return;
     }
 
-    if (mounted) {
-      Navigator.pop(context); // Close loading dialog
+    if (!mounted) return;
+    navigator.pop(); // Close loading dialog
 
-      if (success) {
-        if (widget.cattle == null) {
-          // Show "Add Another" dialog for new cattle
-          _showAddAnotherDialog();
-        } else {
-          // For updates, just show success message and close
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: const Text('Cattle updated successfully!'),
-              backgroundColor: AppColors.vibrantGreen,
-              behavior: SnackBarBehavior.floating,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-            ),
-          );
-          Navigator.pop(context, true);
-        }
+    if (success) {
+      if (widget.cattle == null) {
+        // Show "Add Another" dialog for new cattle
+        _showAddAnotherDialog();
       } else {
-        // If success is false but no exception was thrown, show generic error
-        _showErrorSnackBar('Failed to save cattle information. Please try again.');
+        // For updates, just show success message and close
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Text('Cattle updated successfully!'),
+            backgroundColor: AppColors.vibrantGreen,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+          ),
+        );
+        navigator.pop(true);
       }
+    } else {
+      // If success is false but no exception was thrown, show generic error
+      _showErrorSnackBar('Failed to save cattle information. Please try again.');
     }
   }
 
@@ -999,7 +1006,7 @@ class _CattleFormScreenState extends State<CattleFormScreen> {
                 width: double.infinity,
                 padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
                 decoration: BoxDecoration(
-                  color: AppColors.vibrantGreen.withOpacity(0.12),
+                  color: AppColors.vibrantGreen.withValues(alpha: 0.12),
                   borderRadius: BorderRadius.circular(10),
                 ),
                 child: Text(
@@ -1268,7 +1275,7 @@ class _CattleFormScreenState extends State<CattleFormScreen> {
           Container(
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
-              color: AppColors.primary.withOpacity(0.1),
+              color: AppColors.primary.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(8),
             ),
             child: Icon(icon, color: AppColors.primary, size: 20),
@@ -1292,11 +1299,11 @@ class _CattleFormScreenState extends State<CattleFormScreen> {
   Widget _buildCard({required Widget child}) {
     return Card(
       elevation: 3,
-      shadowColor: AppColors.primary.withOpacity(0.2),
+      shadowColor: AppColors.primary.withValues(alpha: 0.2),
       color: AppColors.cardBackground,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
-        side: BorderSide(color: AppColors.lightGreen.withOpacity(0.3), width: 1),
+        side: BorderSide(color: AppColors.lightGreen.withValues(alpha: 0.3), width: 1),
       ),
       child: Padding(padding: const EdgeInsets.all(20), child: child),
     );
@@ -1778,7 +1785,7 @@ class _CattleFormScreenState extends State<CattleFormScreen> {
                         onChanged: (val) => _sourceDetails = val.trim().isEmpty ? null : val.trim(),
                         maxLines: 3,
                         decoration: InputDecoration(
-                          labelText: (_source == 'Purchased' ? 'Purchase Source' : 'Acquisition Details') + ' (Optional)',
+                          labelText: '${_source == 'Purchased' ? 'Purchase Source' : 'Acquisition Details'} (Optional)',
                           hintText: _source == 'Purchased'
                               ? 'e.g., John Smith Farm, Market XYZ, Auction House ABC'
                               : 'e.g., Gift from neighbor, Inheritance, Trade, etc.',
@@ -1874,3 +1881,4 @@ class _CattleFormScreenState extends State<CattleFormScreen> {
     super.dispose();
   }
 }
+

@@ -1,3 +1,5 @@
+import 'package:flutter/foundation.dart';
+
 class Schedule {
   final int? id;
   final int userId;
@@ -92,7 +94,7 @@ class Schedule {
           return DateTime.parse(value);
         }
       } catch (e) {
-        print('Error parsing datetime: $value, error: $e');
+        debugPrint('Error parsing datetime: $value, error: $e');
         return null;
       }
     }

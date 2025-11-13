@@ -139,14 +139,14 @@ class HistoryTypeDropdownState extends State<HistoryTypeDropdown> {
           '${picked.day.toString().padLeft(2, '0')}';
       controller.text = formattedDate;
 
-      print('Date selected in dropdown: $formattedDate'); // Debug print
+      debugPrint('Date selected in dropdown: $formattedDate'); // Debug print
 
       // FIXED: Trigger the callback to notify parent widget about date selection
       if (widget.onHistoryDateSelected != null) {
-        print('Calling onHistoryDateSelected callback with date: $picked'); // Debug print
+        debugPrint('Calling onHistoryDateSelected callback with date: $picked'); // Debug print
         widget.onHistoryDateSelected!(picked);
       } else {
-        print('onHistoryDateSelected callback is null!'); // Debug print
+        debugPrint('onHistoryDateSelected callback is null!'); // Debug print
       }
 
       // Force a rebuild to ensure UI updates
@@ -211,7 +211,7 @@ class HistoryTypeDropdownState extends State<HistoryTypeDropdown> {
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: AppColors.darkGreen.withOpacity(0.08),
+            color: AppColors.darkGreen.withValues(alpha: 0.08),
             blurRadius: 15,
             offset: const Offset(0, 5),
           ),
@@ -225,7 +225,7 @@ class HistoryTypeDropdownState extends State<HistoryTypeDropdown> {
               Container(
                 padding: const EdgeInsets.all(10),
                 decoration: BoxDecoration(
-                  color: AppColors.primary.withOpacity(0.15),
+                  color: AppColors.primary.withValues(alpha: 0.15),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Row(
@@ -273,7 +273,7 @@ class HistoryTypeDropdownState extends State<HistoryTypeDropdown> {
                   style: TextStyle(
                     color: isLoading
                         ? Colors.grey
-                        : AppColors.textSecondary.withOpacity(0.7),
+                        : AppColors.textSecondary.withValues(alpha: 0.7),
                     fontStyle: FontStyle.italic,
                   ),
                 )
@@ -283,7 +283,7 @@ class HistoryTypeDropdownState extends State<HistoryTypeDropdown> {
                       width: 32,
                       height: 32,
                       decoration: BoxDecoration(
-                        color: HistoryTypeUtils.getHistoryColor(type).withOpacity(0.1),
+                        color: HistoryTypeUtils.getHistoryColor(type).withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(8),
                       ),
                       child: Icon(
@@ -315,7 +315,7 @@ class HistoryTypeDropdownState extends State<HistoryTypeDropdown> {
                     maxLines: 1,
                     softWrap: false,
                     style: TextStyle(
-                      color: AppColors.textSecondary.withOpacity(0.7),
+                      color: AppColors.textSecondary.withValues(alpha: 0.7),
                       fontSize: 15,
                       fontStyle: FontStyle.italic,
                     ),
@@ -363,7 +363,7 @@ class HistoryTypeDropdownState extends State<HistoryTypeDropdown> {
                 padding: const EdgeInsets.all(5),
                 child: Container(
                   decoration: BoxDecoration(
-                    color: HistoryTypeUtils.getHistoryColor(widget.selectedHistoryType).withOpacity(0.1),
+                    color: HistoryTypeUtils.getHistoryColor(widget.selectedHistoryType).withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(6),
                   ),
                   child: Icon(
@@ -383,7 +383,7 @@ class HistoryTypeDropdownState extends State<HistoryTypeDropdown> {
                 fontWeight: FontWeight.w500,
               ),
               filled: true,
-              fillColor: widget.locked ? Colors.grey.shade100 : AppColors.lightGreen.withOpacity(0.05),
+              fillColor: widget.locked ? Colors.grey.shade100 : AppColors.lightGreen.withValues(alpha: 0.05),
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(15),
                 borderSide: BorderSide.none,
@@ -391,7 +391,7 @@ class HistoryTypeDropdownState extends State<HistoryTypeDropdown> {
               enabledBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(15),
                 borderSide: BorderSide(
-                  color: widget.locked ? Colors.grey.shade300 : AppColors.lightGreen.withOpacity(0.2),
+                  color: widget.locked ? Colors.grey.shade300 : AppColors.lightGreen.withValues(alpha: 0.2),
                   width: 1,
                 ),
               ),

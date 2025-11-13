@@ -37,7 +37,7 @@ class FarmDetailsWidget extends StatelessWidget {
                     width: 48,
                     height: 48,
                     decoration: BoxDecoration(
-                      color: AppColors.lightGreen.withOpacity(0.2),
+                      color: AppColors.lightGreen.withValues(alpha: 0.2),
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: const Icon(FontAwesomeIcons.seedling, color: AppColors.primary, size: 24),
@@ -89,3 +89,4 @@ class FarmDetailsWidget extends StatelessWidget {
       ),
     );
   }}
+

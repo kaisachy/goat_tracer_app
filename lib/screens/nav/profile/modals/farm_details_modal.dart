@@ -163,7 +163,7 @@ class _FarmDetailsModalState extends State<FarmDetailsModal> {
   Future<void> _loadRegions() async {
     setState(() => _isLoadingRegions = true);
     try {
-      print('Loading regions...');
+      debugPrint('Loading regions...');
       final regions = await AddressService.getRegions();
       setState(() {
         _regions = regions;
@@ -189,7 +189,7 @@ class _FarmDetailsModalState extends State<FarmDetailsModal> {
         await _loadProvincesForRegion(initialRegion['code']);
       }
     } catch (e) {
-      print('Error loading regions: $e');
+      debugPrint('Error loading regions: $e');
       setState(() => _isLoadingRegions = false);
       _showMessage('Failed to load regions. Please try again.', Colors.red);
     }
@@ -208,9 +208,9 @@ class _FarmDetailsModalState extends State<FarmDetailsModal> {
         _selectedBarangay = null;
         _isLoadingProvinces = false;
       });
-      print('Loaded ${provinces.length} provinces for region $regionCode');
+      debugPrint('Loaded ${provinces.length} provinces for region $regionCode');
     } catch (e) {
-      print('Error loading provinces for region: $e');
+      debugPrint('Error loading provinces for region: $e');
       setState(() => _isLoadingProvinces = false);
       _showMessage('Failed to load provinces for selected region.', Colors.red);
     }
@@ -284,7 +284,7 @@ class _FarmDetailsModalState extends State<FarmDetailsModal> {
         Container(
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
-            color: AppColors.lightGreen.withOpacity(0.2),
+            color: AppColors.lightGreen.withValues(alpha: 0.2),
             borderRadius: BorderRadius.circular(12),
           ),
           child: const Icon(
@@ -333,7 +333,7 @@ class _FarmDetailsModalState extends State<FarmDetailsModal> {
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         elevation: 2,
-        shadowColor: AppColors.primary.withOpacity(0.2),
+        shadowColor: AppColors.primary.withValues(alpha: 0.2),
       ),
       icon: _isLoading
           ? const SizedBox(
@@ -395,7 +395,7 @@ class _FarmDetailsModalState extends State<FarmDetailsModal> {
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withValues(alpha: 0.05),
             blurRadius: 10,
             offset: const Offset(0, 2),
           ),
@@ -429,7 +429,7 @@ class _FarmDetailsModalState extends State<FarmDetailsModal> {
             margin: const EdgeInsets.all(12),
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
-              color: AppColors.lightGreen.withOpacity(0.2),
+              color: AppColors.lightGreen.withValues(alpha: 0.2),
               borderRadius: BorderRadius.circular(8),
             ),
             child: const FaIcon(
@@ -472,7 +472,7 @@ class _FarmDetailsModalState extends State<FarmDetailsModal> {
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withValues(alpha: 0.05),
             blurRadius: 10,
             offset: const Offset(0, 2),
           ),
@@ -506,7 +506,7 @@ class _FarmDetailsModalState extends State<FarmDetailsModal> {
             margin: const EdgeInsets.all(12),
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
-              color: AppColors.lightGreen.withOpacity(0.2),
+              color: AppColors.lightGreen.withValues(alpha: 0.2),
               borderRadius: BorderRadius.circular(8),
             ),
             child: const FaIcon(
@@ -549,7 +549,7 @@ class _FarmDetailsModalState extends State<FarmDetailsModal> {
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withValues(alpha: 0.05),
             blurRadius: 10,
             offset: const Offset(0, 2),
           ),
@@ -583,7 +583,7 @@ class _FarmDetailsModalState extends State<FarmDetailsModal> {
             margin: const EdgeInsets.all(12),
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
-              color: AppColors.lightGreen.withOpacity(0.2),
+              color: AppColors.lightGreen.withValues(alpha: 0.2),
               borderRadius: BorderRadius.circular(8),
             ),
             child: const FaIcon(
@@ -632,7 +632,7 @@ class _FarmDetailsModalState extends State<FarmDetailsModal> {
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withValues(alpha: 0.05),
             blurRadius: 10,
             offset: const Offset(0, 2),
           ),
@@ -658,7 +658,7 @@ class _FarmDetailsModalState extends State<FarmDetailsModal> {
             margin: const EdgeInsets.all(12),
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
-              color: AppColors.lightGreen.withOpacity(0.2),
+              color: AppColors.lightGreen.withValues(alpha: 0.2),
               borderRadius: BorderRadius.circular(8),
             ),
             child: FaIcon(
@@ -726,10 +726,10 @@ class _FarmDetailsModalState extends State<FarmDetailsModal> {
       });
       // Only trigger geocoding if a barangay is already selected (for edit mode)
       if (_selectedBarangay != null && _selectedBarangay!['name'] != null && _selectedBarangay!['name'].isNotEmpty) {
-        print('Barangays loaded, existing barangay selected: ${_selectedBarangay!['name']}, triggering geocoding...');
+        debugPrint('Barangays loaded, existing barangay selected: ${_selectedBarangay!['name']}, triggering geocoding...');
         _debounceFarmGeocode();
       } else {
-        print('Barangays loaded, no barangay selected yet - waiting for user selection');
+        debugPrint('Barangays loaded, no barangay selected yet - waiting for user selection');
       }
     } catch (e) {
       setState(() => _isLoadingBarangays = false);
@@ -899,7 +899,7 @@ class _FarmDetailsModalState extends State<FarmDetailsModal> {
         }
       }
     } catch (e) {
-      print('Failed to initialize address from structured data: $e');
+      debugPrint('Failed to initialize address from structured data: $e');
     }
   }
 
@@ -911,7 +911,7 @@ class _FarmDetailsModalState extends State<FarmDetailsModal> {
             borderRadius: BorderRadius.circular(16),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.05),
+                color: Colors.black.withValues(alpha: 0.05),
                 blurRadius: 10,
                 offset: const Offset(0, 2),
               ),
@@ -930,7 +930,7 @@ class _FarmDetailsModalState extends State<FarmDetailsModal> {
                 margin: const EdgeInsets.all(12),
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
-                  color: AppColors.lightGreen.withOpacity(0.2),
+                  color: AppColors.lightGreen.withValues(alpha: 0.2),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: const FaIcon(
@@ -988,7 +988,7 @@ class _FarmDetailsModalState extends State<FarmDetailsModal> {
                         _farmLongitude = null;
                       });
                       if (selectedProvince.isNotEmpty) {
-                        print('📍 Province selected: ${selectedProvince['name']}, loading municipalities...');
+                        debugPrint('📍 Province selected: ${selectedProvince['name']}, loading municipalities...');
                         _loadMunicipalities(selectedProvince['code']);
                       }
                     } else {
@@ -1019,7 +1019,7 @@ class _FarmDetailsModalState extends State<FarmDetailsModal> {
           Positioned.fill(
             child: Container(
               decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.7),
+                color: Colors.white.withValues(alpha: 0.7),
                 borderRadius: BorderRadius.circular(16),
               ),
               child: const Center(
@@ -1037,7 +1037,7 @@ class _FarmDetailsModalState extends State<FarmDetailsModal> {
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withValues(alpha: 0.05),
             blurRadius: 10,
             offset: const Offset(0, 2),
           ),
@@ -1056,7 +1056,7 @@ class _FarmDetailsModalState extends State<FarmDetailsModal> {
             margin: const EdgeInsets.all(12),
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
-              color: AppColors.lightGreen.withOpacity(0.2),
+              color: AppColors.lightGreen.withValues(alpha: 0.2),
               borderRadius: BorderRadius.circular(8),
             ),
             child: const FaIcon(
@@ -1115,7 +1115,7 @@ class _FarmDetailsModalState extends State<FarmDetailsModal> {
               _farmLongitude = null;
             });
             if (selectedMunicipality.isNotEmpty) {
-              print('🏙️ Municipality selected: ${selectedMunicipality['name']}, loading barangays...');
+              debugPrint('🏙️ Municipality selected: ${selectedMunicipality['name']}, loading barangays...');
               _loadBarangays(selectedMunicipality['code']);
               // Note: Geocoding will only happen when barangay is selected
             }
@@ -1151,7 +1151,7 @@ class _FarmDetailsModalState extends State<FarmDetailsModal> {
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withValues(alpha: 0.05),
             blurRadius: 10,
             offset: const Offset(0, 2),
           ),
@@ -1170,11 +1170,11 @@ class _FarmDetailsModalState extends State<FarmDetailsModal> {
             margin: const EdgeInsets.all(12),
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
-              color: AppColors.lightGreen.withOpacity(0.2),
+              color: AppColors.lightGreen.withValues(alpha: 0.2),
               borderRadius: BorderRadius.circular(8),
             ),
             child: const FaIcon(
-              FontAwesomeIcons.home,
+              FontAwesomeIcons.house,
               size: 18,
               color: AppColors.primary,
             ),
@@ -1225,7 +1225,7 @@ class _FarmDetailsModalState extends State<FarmDetailsModal> {
                   
                   // Trigger debounced geocoding when barangay is selected (coordinates will be updated)
                   if (selectedBarangay.isNotEmpty) {
-                    print('🎯 Barangay selected: ${selectedBarangay['name']}, starting fresh geocoding...');
+                    debugPrint('🎯 Barangay selected: ${selectedBarangay['name']}, starting fresh geocoding...');
                     // Clear previous coordinates immediately
                     setState(() {
                       _farmLatitude = null;
@@ -1234,7 +1234,7 @@ class _FarmDetailsModalState extends State<FarmDetailsModal> {
                     _debounceFarmGeocode();
                   } else {
                     // Only clear coordinates when barangay is cleared/empty
-                    print('Barangay cleared, clearing farm coordinates');
+                    debugPrint('Barangay cleared, clearing farm coordinates');
                     setState(() {
                       _farmLatitude = null;
                       _farmLongitude = null;
@@ -1270,10 +1270,10 @@ class _FarmDetailsModalState extends State<FarmDetailsModal> {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.lightGreen.withOpacity(0.3), width: 1.5),
+        border: Border.all(color: AppColors.lightGreen.withValues(alpha: 0.3), width: 1.5),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withValues(alpha: 0.05),
             blurRadius: 10,
             offset: const Offset(0, 2),
           ),
@@ -1288,7 +1288,7 @@ class _FarmDetailsModalState extends State<FarmDetailsModal> {
               Container(
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
-                  color: AppColors.lightGreen.withOpacity(0.2),
+                  color: AppColors.lightGreen.withValues(alpha: 0.2),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: const FaIcon(
@@ -1335,7 +1335,7 @@ class _FarmDetailsModalState extends State<FarmDetailsModal> {
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withValues(alpha: 0.05),
             blurRadius: 10,
             offset: const Offset(0, 2),
           ),
@@ -1354,7 +1354,7 @@ class _FarmDetailsModalState extends State<FarmDetailsModal> {
             margin: const EdgeInsets.all(12),
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
-              color: AppColors.lightGreen.withOpacity(0.2),
+              color: AppColors.lightGreen.withValues(alpha: 0.2),
               borderRadius: BorderRadius.circular(8),
             ),
             child: const FaIcon(
@@ -1500,7 +1500,7 @@ class _FarmDetailsModalState extends State<FarmDetailsModal> {
         border: Border.all(color: Colors.grey[200]!, width: 1.5),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withValues(alpha: 0.05),
             blurRadius: 10,
             offset: const Offset(0, 2),
           ),
@@ -1511,7 +1511,7 @@ class _FarmDetailsModalState extends State<FarmDetailsModal> {
           Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: AppColors.lightGreen.withOpacity(0.2),
+              color: AppColors.lightGreen.withValues(alpha: 0.2),
               borderRadius: BorderRadius.circular(12),
             ),
             child: FaIcon(
@@ -1577,7 +1577,7 @@ class _FarmDetailsModalState extends State<FarmDetailsModal> {
         updateData['farm_longitude'] = _farmLongitude!.toStringAsFixed(7);
       }
       
-      print('Farm details update data: $updateData');
+      debugPrint('Farm details update data: $updateData');
 
       bool success = false;
       try {
@@ -1590,44 +1590,44 @@ class _FarmDetailsModalState extends State<FarmDetailsModal> {
         success = false;
       }
 
+      if (!mounted) return;
       setState(() => _isLoading = false);
 
-      if (context.mounted) {
-        Navigator.pop(context);
+      if (!mounted) return;
+      Navigator.pop(context);
 
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Row(
-              children: [
-                FaIcon(
-                  success ? FontAwesomeIcons.circleCheck : FontAwesomeIcons.circleXmark,
-                  color: Colors.white,
-                  size: 20,
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Row(
+            children: [
+              FaIcon(
+                success ? FontAwesomeIcons.circleCheck : FontAwesomeIcons.circleXmark,
+                color: Colors.white,
+                size: 20,
+              ),
+              const SizedBox(width: 12),
+              Text(
+                success
+                    ? 'Farm details saved successfully!'
+                    : 'Save failed. Please try again.',
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w500,
                 ),
-                const SizedBox(width: 12),
-                Text(
-                  success
-                      ? 'Farm details saved successfully!'
-                      : 'Save failed. Please try again.',
-                  style: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-              ],
-            ),
-            backgroundColor: success ? AppColors.vibrantGreen : Colors.red[600],
-            behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-            ),
-            margin: const EdgeInsets.all(16),
-            duration: const Duration(seconds: 3),
+              ),
+            ],
           ),
-        );
+          backgroundColor: success ? AppColors.vibrantGreen : Colors.red[600],
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+          margin: const EdgeInsets.all(16),
+          duration: const Duration(seconds: 3),
+        ),
+      );
 
-        if (success) widget.onSaveSuccess();
-      }
+      if (success) widget.onSaveSuccess();
     }
   }
 }

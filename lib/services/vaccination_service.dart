@@ -1,3 +1,4 @@
+import 'dart:developer';
 import 'package:cattle_tracer_app/models/cattle.dart';
 import 'package:cattle_tracer_app/models/vaccination_schedule.dart';
 
@@ -11,7 +12,7 @@ class VaccinationService {
     required List<Cattle> allCattle,
     required List<Map<String, dynamic>> allEvents,
   }) async {
-    print('🚀 VACCINATION SERVICE: Generating schedules for ${allCattle.length} cattle');
+    log('🚀 VACCINATION SERVICE: Generating schedules for ${allCattle.length} cattle');
     
     final List<VaccinationSchedule> schedules = [];
     
@@ -21,7 +22,7 @@ class VaccinationService {
       final pregnancyInfo = _getPregnancyInfo(cattle.tagNo, allEvents);
       final classification = _normalizeClassification(cattle.classification);
       
-      print('🐄 Processing ${cattle.tagNo}: Age=$ageInMonths months, Classification=$classification, Dairy=$isDairy, Pregnant=${pregnancyInfo != null}');
+      log('🐄 Processing ${cattle.tagNo}: Age=$ageInMonths months, Classification=$classification, Dairy=$isDairy, Pregnant=${pregnancyInfo != null}');
       
       final cattleSchedules = await _generateCattleVaccinationSchedules(
         cattle: cattle,
@@ -35,7 +36,7 @@ class VaccinationService {
       schedules.addAll(cattleSchedules);
     }
     
-    print('✅ Generated ${schedules.length} vaccination schedules');
+    log('✅ Generated ${schedules.length} vaccination schedules');
     return schedules;
   }
 
@@ -49,7 +50,7 @@ class VaccinationService {
           return ageValue;
         }
       } catch (e) {
-        print('⚠️ Error parsing backend age for ${cattle.tagNo}: $e');
+        log('⚠️ Error parsing backend age for ${cattle.tagNo}: $e');
       }
     }
     
@@ -62,7 +63,7 @@ class VaccinationService {
         final ageInMonths = (difference.inDays / 30.44).round();
         return ageInMonths > 0 ? ageInMonths : 0;
       } catch (e) {
-        print('⚠️ Error parsing date of birth for ${cattle.tagNo}: $e');
+        log('⚠️ Error parsing date of birth for ${cattle.tagNo}: $e');
       }
     }
     
@@ -196,7 +197,7 @@ class VaccinationService {
       isPregnant: pregnancyInfo != null,
     );
     
-    print('  📋 Applicable vaccines for ${cattle.tagNo}: ${applicableVaccines.map((v) => v.name).join(', ')}');
+    log('  📋 Applicable vaccines for ${cattle.tagNo}: ${applicableVaccines.map((v) => v.name).join(', ')}');
     
     // Get vaccination history for this cattle
     final vaccinationHistory = _getVaccinationHistory(cattle.tagNo, allEvents);
@@ -213,7 +214,7 @@ class VaccinationService {
       
       if (schedule != null) {
         schedules.add(schedule);
-        print('  ✅ Created schedule: ${vaccine.name} - ${schedule.recommendedDate}');
+        log('  ✅ Created schedule: ${vaccine.name} - ${schedule.recommendedDate}');
       }
     }
     
@@ -232,7 +233,7 @@ class VaccinationService {
     // For pre-calving vaccines, check if already vaccinated during current pregnancy
     if (_isPreCalvingVaccine(vaccine) && pregnancyInfo != null) {
       if (_isAlreadyVaccinatedForCurrentPregnancy(cattle.tagNo, vaccine.name, vaccinationHistory, pregnancyInfo)) {
-        print('  ⏭️ Skipping ${vaccine.name} - already vaccinated for current pregnancy');
+        log('  ⏭️ Skipping ${vaccine.name} - already vaccinated for current pregnancy');
         return null; // Already vaccinated for this pregnancy
       }
     }
@@ -251,7 +252,7 @@ class VaccinationService {
         
         // Only create schedule if booster is due
         if (nextDate.isAfter(DateTime.now())) {
-          print('  ⏭️ Skipping ${vaccine.name} - booster not due yet');
+          log('  ⏭️ Skipping ${vaccine.name} - booster not due yet');
           return null;
         }
         
@@ -274,7 +275,7 @@ class VaccinationService {
         );
         
         if (nextDate.isAfter(DateTime.now())) {
-          print('  ⏭️ Skipping ${vaccine.name} - annual vaccination not due yet');
+          log('  ⏭️ Skipping ${vaccine.name} - annual vaccination not due yet');
           return null;
         }
         
@@ -289,7 +290,7 @@ class VaccinationService {
       }
       
       // Vaccine already given and no repeat needed
-      print('  ⏭️ Skipping ${vaccine.name} - already vaccinated and no repeat needed');
+      log('  ⏭️ Skipping ${vaccine.name} - already vaccinated and no repeat needed');
       return null;
     }
     
@@ -302,7 +303,7 @@ class VaccinationService {
     
     // Skip pre-calving vaccines if not pregnant
     if (_isPreCalvingVaccine(vaccine) && pregnancyInfo == null) {
-      print('  ⏭️ Skipping ${vaccine.name} - not pregnant');
+      log('  ⏭️ Skipping ${vaccine.name} - not pregnant');
       return null;
     }
     
@@ -508,9 +509,13 @@ class VaccinationService {
       
       // Priority 3: Urgent pregnancy vaccinations (within 21 days)
       if (pregnancyInfoA != null && pregnancyInfoA['isUrgentVaccination'] == true && 
-          pregnancyInfoB == null) return -1;
+          pregnancyInfoB == null) {
+        return -1;
+      }
       if (pregnancyInfoB != null && pregnancyInfoB['isUrgentVaccination'] == true && 
-          pregnancyInfoA == null) return 1;
+          pregnancyInfoA == null) {
+        return 1;
+      }
       
       // Priority 4: Days until due
       return scheduleA.daysUntilDue.compareTo(scheduleB.daysUntilDue);
@@ -606,7 +611,7 @@ class VaccinationService {
       
       return result;
     } catch (e) {
-      print('⚠️ Error parsing pregnancy dates for $cattleTag: $e');
+      log('⚠️ Error parsing pregnancy dates for $cattleTag: $e');
       return null;
     }
   }
@@ -699,3 +704,4 @@ class VaccinationService {
     return relevantVaccinations.isNotEmpty;
   }
 }
+

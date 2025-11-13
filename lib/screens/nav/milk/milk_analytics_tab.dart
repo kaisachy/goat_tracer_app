@@ -109,7 +109,7 @@ class _MilkAnalyticsTabState extends State<MilkAnalyticsTab> with TickerProvider
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.grey.withOpacity(0.1),
+            color: Colors.grey.withValues(alpha: 0.1),
             blurRadius: 8,
             offset: const Offset(0, 4),
           ),
@@ -199,7 +199,7 @@ class _MilkAnalyticsTabState extends State<MilkAnalyticsTab> with TickerProvider
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.grey.withOpacity(0.1),
+            color: Colors.grey.withValues(alpha: 0.1),
             blurRadius: 8,
             offset: const Offset(0, 4),
           ),
@@ -244,7 +244,7 @@ class _MilkAnalyticsTabState extends State<MilkAnalyticsTab> with TickerProvider
           Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: AppColors.primary.withOpacity(0.1),
+              color: AppColors.primary.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(8),
             ),
             child: Row(
@@ -274,7 +274,7 @@ class _MilkAnalyticsTabState extends State<MilkAnalyticsTab> with TickerProvider
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
+        color: color.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(8),
       ),
       child: Column(
@@ -385,7 +385,7 @@ class LineChartPainter extends CustomPainter {
       ..strokeCap = StrokeCap.round;
 
     final fillPaint = Paint()
-      ..color = lineColor.withOpacity(0.1)
+      ..color = lineColor.withValues(alpha: 0.1)
       ..style = PaintingStyle.fill;
 
     final gridPaint = Paint()
@@ -411,9 +411,9 @@ class LineChartPainter extends CustomPainter {
       );
 
       // Y-axis labels
-      final value = (range * i / 5).toStringAsFixed(0);
+      final labelValue = (range * i / 5).toStringAsFixed(0);
       textPainter.text = TextSpan(
-        text: '${value}L',
+        text: '${labelValue}L',
         style: TextStyle(color: Colors.grey.shade600, fontSize: 10),
       );
       textPainter.layout();
@@ -482,7 +482,7 @@ class PieChartPainter extends CustomPainter {
 
     double startAngle = -math.pi / 2;
 
-    data.entries.forEach((entry) {
+    for (final entry in data.entries) {
       final sweepAngle = (entry.value / total) * 2 * math.pi;
       final paint = Paint()
         ..color = _getQualityColorForPie(entry.key)
@@ -505,7 +505,7 @@ class PieChartPainter extends CustomPainter {
 
       final textPainter = TextPainter(
         text: TextSpan(
-          text: '${percentage}%',
+          text: '$percentage%',
           style: const TextStyle(
             color: Colors.white,
             fontSize: 10,
@@ -519,7 +519,7 @@ class PieChartPainter extends CustomPainter {
       textPainter.paint(canvas, Offset(textX - textPainter.width / 2, textY - textPainter.height / 2));
 
       startAngle += sweepAngle;
-    });
+    }
 
     // Draw center circle
     canvas.drawCircle(
@@ -543,3 +543,4 @@ class PieChartPainter extends CustomPainter {
   @override
   bool shouldRepaint(CustomPainter oldDelegate) => true;
 }
+

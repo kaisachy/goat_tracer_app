@@ -86,10 +86,10 @@ class _CattleSchedulesSectionState extends State<CattleSchedulesSection> {
           width: double.infinity,
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: AppColors.accent.withOpacity(0.05),
+            color: AppColors.accent.withValues(alpha: 0.05),
             borderRadius: BorderRadius.circular(16),
             border: Border.all(
-              color: AppColors.accent.withOpacity(0.15),
+              color: AppColors.accent.withValues(alpha: 0.15),
               width: 1,
             ),
           ),
@@ -115,14 +115,14 @@ class _CattleSchedulesSectionState extends State<CattleSchedulesSection> {
         children: [
           Icon(
             Icons.error_outline,
-            color: AppColors.textSecondary.withOpacity(0.6),
+            color: AppColors.textSecondary.withValues(alpha: 0.6),
             size: 24,
           ),
           const SizedBox(height: 8),
           Text(
             'Failed to load schedules',
             style: TextStyle(
-              color: AppColors.textSecondary.withOpacity(0.8),
+              color: AppColors.textSecondary.withValues(alpha: 0.8),
               fontSize: 14,
               fontWeight: FontWeight.w500,
             ),
@@ -131,7 +131,7 @@ class _CattleSchedulesSectionState extends State<CattleSchedulesSection> {
           Text(
             scheduleError!,
             style: TextStyle(
-              color: AppColors.textSecondary.withOpacity(0.6),
+              color: AppColors.textSecondary.withValues(alpha: 0.6),
               fontSize: 12,
             ),
             textAlign: TextAlign.center,
@@ -154,7 +154,7 @@ class _CattleSchedulesSectionState extends State<CattleSchedulesSection> {
         children: [
           Icon(
             Icons.event_busy,
-            color: AppColors.textSecondary.withOpacity(0.6),
+            color: AppColors.textSecondary.withValues(alpha: 0.6),
             size: 24,
           ),
           const SizedBox(height: 8),
@@ -163,7 +163,7 @@ class _CattleSchedulesSectionState extends State<CattleSchedulesSection> {
                 ? 'Cattle tag is required to load schedules'
                 : 'No schedules assigned to ${widget.cattle.tagNo}',
             style: TextStyle(
-              color: AppColors.textSecondary.withOpacity(0.8),
+              color: AppColors.textSecondary.withValues(alpha: 0.8),
               fontSize: 14,
               fontStyle: FontStyle.italic,
             ),
@@ -232,10 +232,10 @@ class _CattleSchedulesSectionState extends State<CattleSchedulesSection> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
+        color: color.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(8),
         border: Border.all(
-          color: color.withOpacity(0.3),
+          color: color.withValues(alpha: 0.3),
           width: 1,
         ),
       ),
@@ -281,7 +281,7 @@ class _CattleSchedulesSectionState extends State<CattleSchedulesSection> {
         color: AppColors.cardBackground,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
-          color: statusColor.withOpacity(0.2),
+          color: statusColor.withValues(alpha: 0.2),
           width: 1,
         ),
       ),
@@ -293,7 +293,7 @@ class _CattleSchedulesSectionState extends State<CattleSchedulesSection> {
               Container(
                 padding: const EdgeInsets.all(6),
                 decoration: BoxDecoration(
-                  color: statusColor.withOpacity(0.1),
+                  color: statusColor.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(6),
                 ),
                 child: Icon(
@@ -324,7 +324,7 @@ class _CattleSchedulesSectionState extends State<CattleSchedulesSection> {
                   Icon(
                     Icons.calendar_today,
                     size: 12,
-                    color: AppColors.textSecondary.withOpacity(0.8),
+                    color: AppColors.textSecondary.withValues(alpha: 0.8),
                   ),
                   const SizedBox(width: 4),
                   Flexible(
@@ -332,7 +332,7 @@ class _CattleSchedulesSectionState extends State<CattleSchedulesSection> {
                       _formatScheduleDate(schedule.scheduleDateTime),
                       style: TextStyle(
                         fontSize: 12,
-                        color: AppColors.textSecondary.withOpacity(0.8),
+                        color: AppColors.textSecondary.withValues(alpha: 0.8),
                       ),
                       overflow: TextOverflow.ellipsis,
                     ),
@@ -345,14 +345,14 @@ class _CattleSchedulesSectionState extends State<CattleSchedulesSection> {
                   Icon(
                     Icons.category,
                     size: 12,
-                    color: AppColors.textSecondary.withOpacity(0.8),
+                    color: AppColors.textSecondary.withValues(alpha: 0.8),
                   ),
                   const SizedBox(width: 4),
                   Text(
                     schedule.type,
                     style: TextStyle(
                       fontSize: 12,
-                      color: AppColors.textSecondary.withOpacity(0.8),
+                      color: AppColors.textSecondary.withValues(alpha: 0.8),
                     ),
                   ),
                   const Spacer(),
@@ -360,7 +360,7 @@ class _CattleSchedulesSectionState extends State<CattleSchedulesSection> {
                     padding:
                     const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                     decoration: BoxDecoration(
-                      color: statusColor.withOpacity(0.1),
+                      color: statusColor.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(6),
                     ),
                     child: Text(
@@ -430,7 +430,7 @@ class _CattleSchedulesSectionState extends State<CattleSchedulesSection> {
                         'for ${widget.cattle.tagNo}',
                         style: TextStyle(
                           fontSize: 14,
-                          color: AppColors.textSecondary.withOpacity(0.8),
+                          color: AppColors.textSecondary.withValues(alpha: 0.8),
                         ),
                       ),
                     ],

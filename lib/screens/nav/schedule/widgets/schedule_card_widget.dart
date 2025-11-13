@@ -31,7 +31,7 @@ class ScheduleCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.04),
+            color: Colors.black.withValues(alpha: 0.04),
             blurRadius: 10,
             offset: const Offset(0, 2),
           ),
@@ -73,7 +73,7 @@ class ScheduleCard extends StatelessWidget {
         Container(
           padding: const EdgeInsets.all(10),
           decoration: BoxDecoration(
-            color: schedule.statusColor.withOpacity(0.1),
+            color: schedule.statusColor.withValues(alpha: 0.1),
             borderRadius: BorderRadius.circular(10),
           ),
           child: ScheduleTypeIcon(
@@ -116,10 +116,10 @@ class ScheduleCard extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
         decoration: BoxDecoration(
-          color: AppColors.primary.withOpacity(0.1),
+          color: AppColors.primary.withValues(alpha: 0.1),
           borderRadius: BorderRadius.circular(8),
           border: Border.all(
-            color: AppColors.primary.withOpacity(0.2),
+            color: AppColors.primary.withValues(alpha: 0.2),
             width: 1,
           ),
         ),
@@ -264,7 +264,7 @@ class ScheduleCard extends StatelessWidget {
           ElevatedButton(
             onPressed: () => onMenuAction('complete', schedule),
             style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.success.withOpacity(0.8), // Lighter green
+              backgroundColor: AppColors.success.withValues(alpha: 0.8), // Lighter green
               foregroundColor: Colors.white,
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
               shape: RoundedRectangleBorder(
@@ -312,9 +312,9 @@ class ScheduleCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
-        color: Colors.blue.withOpacity(0.1),
+        color: Colors.blue.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.blue.withOpacity(0.3)),
+        border: Border.all(color: Colors.blue.withValues(alpha: 0.3)),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,

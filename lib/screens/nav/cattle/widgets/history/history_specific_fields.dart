@@ -246,7 +246,7 @@ class HistorySpecificFieldsState extends State<HistorySpecificFields> {
             borderRadius: BorderRadius.circular(20),
             boxShadow: [
               BoxShadow(
-                color: AppColors.darkGreen.withOpacity(0.08),
+                color: AppColors.darkGreen.withValues(alpha: 0.08),
                 blurRadius: 15,
                 offset: const Offset(0, 5),
               ),
@@ -261,7 +261,7 @@ class HistorySpecificFieldsState extends State<HistorySpecificFields> {
                   Container(
                     padding: const EdgeInsets.all(8),
                     decoration: BoxDecoration(
-                      color: HistoryTypeUtils.getHistoryColor(widget.selectedEventType).withOpacity(0.15),
+                      color: HistoryTypeUtils.getHistoryColor(widget.selectedEventType).withValues(alpha: 0.15),
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Icon(

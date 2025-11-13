@@ -148,7 +148,7 @@ class _MilkRecordFormScreenState extends State<MilkRecordFormScreen> {
                 color: Colors.white,
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.grey.withOpacity(0.2),
+                    color: Colors.grey.withValues(alpha: 0.2),
                     blurRadius: 10,
                     offset: const Offset(0, -5),
                   ),
@@ -235,7 +235,7 @@ class _MilkRecordFormScreenState extends State<MilkRecordFormScreen> {
         Container(
           padding: const EdgeInsets.all(8),
           decoration: BoxDecoration(
-            color: AppColors.primary.withOpacity(0.1),
+            color: AppColors.primary.withValues(alpha: 0.1),
             borderRadius: BorderRadius.circular(8),
           ),
           child: FaIcon(
@@ -338,7 +338,7 @@ class _MilkRecordFormScreenState extends State<MilkRecordFormScreen> {
                 ),
               ),
               const SizedBox(width: 8),
-              Text('${cattle.tagNo}'),
+              Text(cattle.tagNo),
             ],
           ),
         )).toList(),
@@ -430,7 +430,7 @@ class _MilkRecordFormScreenState extends State<MilkRecordFormScreen> {
         Container(
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: AppColors.primary.withOpacity(0.1),
+            color: AppColors.primary.withValues(alpha: 0.1),
             borderRadius: BorderRadius.circular(12),
           ),
           child: Row(

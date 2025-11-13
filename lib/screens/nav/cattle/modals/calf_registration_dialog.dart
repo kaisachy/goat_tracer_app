@@ -64,9 +64,9 @@ class _CalfRegistrationDialogState extends State<CalfRegistrationDialog> {
         _tagController.text = _safeParseString(calfData['tag_no']) ?? '';
         _selectedSex = _safeParseString(calfData['sex']) ?? 'Female';
 
-        print('Edit mode initialized with calf ID: $_existingCalfId, tag: ${_tagController.text}');
+        debugPrint('Edit mode initialized with calf ID: $_existingCalfId, tag: ${_tagController.text}');
       } catch (e) {
-        print('Error initializing edit mode: $e');
+        debugPrint('Error initializing edit mode: $e');
         // Set defaults on error
         _tagController.text = '';
         _selectedSex = 'Female';
@@ -114,7 +114,7 @@ class _CalfRegistrationDialogState extends State<CalfRegistrationDialog> {
         }
       });
     } catch (e) {
-      print('Error loading existing tags: $e');
+      debugPrint('Error loading existing tags: $e');
     }
   }
 
@@ -184,9 +184,9 @@ class _CalfRegistrationDialogState extends State<CalfRegistrationDialog> {
         _tagController.text = newTag;
       });
 
-      print('Generated new calf tag: $newTag');
+      debugPrint('Generated new calf tag: $newTag');
     } catch (e) {
-      print('Error generating new tag: $e');
+      debugPrint('Error generating new tag: $e');
       _showError('Error generating tag number');
     } finally {
       setState(() => _isGeneratingTag = false);
@@ -203,7 +203,7 @@ class _CalfRegistrationDialogState extends State<CalfRegistrationDialog> {
       }
       return _safeParseString(data['tag_no']);
     } catch (e) {
-      print('Error getting current tag: $e');
+      debugPrint('Error getting current tag: $e');
       return null;
     }
   }
@@ -272,7 +272,7 @@ class _CalfRegistrationDialogState extends State<CalfRegistrationDialog> {
           baseData['group_name'] = _safeParseString(existingData['group_name']);
         }
       } catch (e) {
-        print('Error preserving existing data: $e');
+        debugPrint('Error preserving existing data: $e');
         // Use defaults if error occurs
         baseData['date_of_birth'] = todayString;
       }
@@ -289,10 +289,10 @@ class _CalfRegistrationDialogState extends State<CalfRegistrationDialog> {
     // Add ID for updates - ensure it's properly typed
     if (widget.isEditMode && _existingCalfId != null) {
       baseData['id'] = _existingCalfId; // This should be an int
-      print('Adding calf ID to update data: $_existingCalfId (${_existingCalfId.runtimeType})');
+      debugPrint('Adding calf ID to update data: $_existingCalfId (${_existingCalfId.runtimeType})');
     }
 
-    print('Prepared calf data: ${baseData.keys.join(', ')}');
+        debugPrint('Prepared calf data: ${baseData.keys.join(', ')}');
     return baseData;
   }
 
@@ -309,7 +309,7 @@ class _CalfRegistrationDialogState extends State<CalfRegistrationDialog> {
 
     try {
       final calfData = _prepareCalfData();
-      print('Calf data prepared for ${widget.isEditMode ? 'update' : 'registration'}: $calfData');
+      debugPrint('Calf data prepared for ${widget.isEditMode ? 'update' : 'registration'}: $calfData');
 
       // Prepare result data with safe type conversion - DO NOT register yet
       Map<String, dynamic> resultData = {
@@ -334,8 +334,8 @@ class _CalfRegistrationDialogState extends State<CalfRegistrationDialog> {
       }
 
     } catch (e) {
-      print('Error preparing calf data: $e');
-      print('Stack trace: ${StackTrace.current}');
+      debugPrint('Error preparing calf data: $e');
+      debugPrint('Stack trace: ${StackTrace.current}');
       _showError('Error preparing calf data: $e');
     } finally {
       if (mounted) {
@@ -381,7 +381,7 @@ class _CalfRegistrationDialogState extends State<CalfRegistrationDialog> {
           borderRadius: BorderRadius.circular(20),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.1),
+              color: Colors.black.withValues(alpha: 0.1),
               blurRadius: 20,
               offset: const Offset(0, 10),
             ),
@@ -412,7 +412,7 @@ class _CalfRegistrationDialogState extends State<CalfRegistrationDialog> {
                   Container(
                     padding: const EdgeInsets.all(10),
                     decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.2),
+                      color: Colors.white.withValues(alpha: 0.2),
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: const Icon(
@@ -465,10 +465,10 @@ class _CalfRegistrationDialogState extends State<CalfRegistrationDialog> {
                       Container(
                         padding: const EdgeInsets.all(16),
                         decoration: BoxDecoration(
-                          color: AppColors.lightGreen.withOpacity(0.1),
+                          color: AppColors.lightGreen.withValues(alpha: 0.1),
                           borderRadius: BorderRadius.circular(12),
                           border: Border.all(
-                            color: AppColors.lightGreen.withOpacity(0.3),
+                            color: AppColors.lightGreen.withValues(alpha: 0.3),
                           ),
                         ),
                         child: Column(

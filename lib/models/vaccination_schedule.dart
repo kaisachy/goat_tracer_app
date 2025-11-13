@@ -95,9 +95,9 @@ class VaccinationSchedule {
       final overdueDays = daysUntilDue.abs();
       return 'Overdue by $overdueDays days';
     } else if (isDueSoon) {
-      return 'Due in ${daysUntilDue} days';
+      return 'Due in $daysUntilDue days';
     } else {
-      return 'Due in ${daysUntilDue} days';
+      return 'Due in $daysUntilDue days';
     }
   }
 

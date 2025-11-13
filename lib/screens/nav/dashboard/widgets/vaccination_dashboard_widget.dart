@@ -93,7 +93,7 @@ class _VaccinationDashboardWidgetState extends State<VaccinationDashboardWidget>
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withValues(alpha: 0.05),
             blurRadius: 20,
             offset: const Offset(0, 8),
           ),
@@ -120,7 +120,7 @@ class _VaccinationDashboardWidgetState extends State<VaccinationDashboardWidget>
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withValues(alpha: 0.05),
             blurRadius: 20,
             offset: const Offset(0, 8),
           ),
@@ -138,7 +138,7 @@ class _VaccinationDashboardWidgetState extends State<VaccinationDashboardWidget>
         Container(
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
-            color: AppColors.vibrantGreen.withOpacity(0.1),
+            color: AppColors.vibrantGreen.withValues(alpha: 0.1),
             borderRadius: BorderRadius.circular(12),
           ),
           child: const Icon(
@@ -193,9 +193,9 @@ class _VaccinationDashboardWidgetState extends State<VaccinationDashboardWidget>
     return Container(
       padding: const EdgeInsets.all(10),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.05),
+        color: color.withValues(alpha: 0.05),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: color.withOpacity(0.2)),
+        border: Border.all(color: color.withValues(alpha: 0.2)),
       ),
       child: Column(
         children: [
@@ -304,7 +304,7 @@ class _VaccinationDashboardWidgetState extends State<VaccinationDashboardWidget>
             width: double.infinity,
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
             decoration: BoxDecoration(
-              color: AppColors.vibrantGreen.withOpacity(0.06),
+              color: AppColors.vibrantGreen.withValues(alpha: 0.06),
               borderRadius: const BorderRadius.only(topLeft: Radius.circular(12), topRight: Radius.circular(12)),
             ),
             child: Row(
@@ -320,7 +320,7 @@ class _VaccinationDashboardWidgetState extends State<VaccinationDashboardWidget>
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                   decoration: BoxDecoration(
-                    color: AppColors.vibrantGreen.withOpacity(0.1),
+                    color: AppColors.vibrantGreen.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Text(
@@ -346,7 +346,7 @@ class _VaccinationDashboardWidgetState extends State<VaccinationDashboardWidget>
     final isOverdue = schedule.scheduleDateTime.isBefore(DateTime.now());
     final daysUntilDue = schedule.scheduleDateTime.difference(DateTime.now()).inDays;
 
-    void _openScheduleScreen() {
+    void openScheduleScreen() {
       Navigator.of(context).push(
         MaterialPageRoute(
           builder: (_) => const HomeScreen(initialSelectedIndex: 4),
@@ -355,7 +355,7 @@ class _VaccinationDashboardWidgetState extends State<VaccinationDashboardWidget>
     }
 
     return InkWell(
-      onTap: _openScheduleScreen,
+      onTap: openScheduleScreen,
       borderRadius: BorderRadius.circular(10),
       child: Container
       (
@@ -371,7 +371,7 @@ class _VaccinationDashboardWidgetState extends State<VaccinationDashboardWidget>
             Container(
               padding: const EdgeInsets.all(6),
               decoration: BoxDecoration(
-                color: isOverdue ? Colors.red[100]! : AppColors.vibrantGreen.withOpacity(0.15),
+                color: isOverdue ? Colors.red[100]! : AppColors.vibrantGreen.withValues(alpha: 0.15),
                 shape: BoxShape.circle,
               ),
               child: Icon(isOverdue ? Icons.warning : Icons.schedule, size: 16, color: isOverdue ? Colors.red[600]! : AppColors.vibrantGreen),

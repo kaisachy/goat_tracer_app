@@ -41,7 +41,7 @@ class SoldEventFieldsState extends BaseEventFieldsState<SoldEventFields> {
                 fontWeight: FontWeight.w500,
               ),
               hintStyle: TextStyle(
-                color: Colors.grey.withOpacity(0.6),
+                color: Colors.grey.withValues(alpha: 0.6),
                 fontSize: 14,
               ),
               border: OutlineInputBorder(
@@ -138,3 +138,4 @@ class _NumberInputFormatter extends TextInputFormatter {
     return result;
   }
 }
+
