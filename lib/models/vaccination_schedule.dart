@@ -1,8 +1,8 @@
-class VaccinationSchedule {
+﻿class VaccinationSchedule {
   final int? id;
-  final String cattleTag;
+  final String goatTag;
   final String vaccineType;
-  final String cattleStage;
+  final String goatStage;
   final DateTime recommendedDate;
   final DateTime? actualDate;
   final String status;
@@ -13,9 +13,9 @@ class VaccinationSchedule {
 
   VaccinationSchedule({
     this.id,
-    required this.cattleTag,
+    required this.goatTag,
     required this.vaccineType,
-    required this.cattleStage,
+    required this.goatStage,
     required this.recommendedDate,
     this.actualDate,
     this.status = 'Pending',
@@ -28,9 +28,9 @@ class VaccinationSchedule {
   factory VaccinationSchedule.fromJson(Map<String, dynamic> json) {
     return VaccinationSchedule(
       id: json['id'],
-      cattleTag: json['cattle_tag'] ?? '',
+      goatTag: json['goat_tag'] ?? '',
       vaccineType: json['vaccine_type'] ?? '',
-      cattleStage: json['cattle_stage'] ?? '',
+      goatStage: json['goat_stage'] ?? '',
       recommendedDate: DateTime.parse(json['recommended_date']),
       actualDate: json['actual_date'] != null 
           ? DateTime.parse(json['actual_date']) 
@@ -50,9 +50,9 @@ class VaccinationSchedule {
   Map<String, dynamic> toJson() {
     return {
       if (id != null) 'id': id,
-      'cattle_tag': cattleTag,
+      'goat_tag': goatTag,
       'vaccine_type': vaccineType,
-      'cattle_stage': cattleStage,
+      'goat_stage': goatStage,
       'recommended_date': recommendedDate.toIso8601String(),
       if (actualDate != null) 'actual_date': actualDate!.toIso8601String(),
       'status': status,
@@ -117,9 +117,9 @@ class VaccinationSchedule {
 
   VaccinationSchedule copyWith({
     int? id,
-    String? cattleTag,
+    String? goatTag,
     String? vaccineType,
-    String? cattleStage,
+    String? goatStage,
     DateTime? recommendedDate,
     DateTime? actualDate,
     String? status,
@@ -130,9 +130,9 @@ class VaccinationSchedule {
   }) {
     return VaccinationSchedule(
       id: id ?? this.id,
-      cattleTag: cattleTag ?? this.cattleTag,
+      goatTag: goatTag ?? this.goatTag,
       vaccineType: vaccineType ?? this.vaccineType,
-      cattleStage: cattleStage ?? this.cattleStage,
+      goatStage: goatStage ?? this.goatStage,
       recommendedDate: recommendedDate ?? this.recommendedDate,
       actualDate: actualDate ?? this.actualDate,
       status: status ?? this.status,
@@ -168,13 +168,13 @@ class VaccineType {
 
 class VaccinationProtocol {
   static const List<VaccineType> vaccineTypes = [
-    // Newborn Calf
+    // Newborn Kid
     VaccineType(
-      name: 'Scour Vaccine (Newborn Calf)',
+      name: 'Scour Vaccine (Newborn Kid)',
       protectsAgainst: 'Rotavirus, Coronavirus, E. coli',
       recommendedTiming: 'Within 24 hours of birth',
-      purpose: 'Provides passive immunity to prevent calf scours',
-      applicableStages: ['Newborn Calf'],
+      purpose: 'Provides passive immunity to prevent Kid scours',
+      applicableStages: ['Newborn Kid'],
       ageInMonths: 0,
     ),
     
@@ -201,13 +201,13 @@ class VaccinationProtocol {
       boosterIntervalWeeks: 6,
     ),
     
-    // Weaned Calves / Growers / Steer
+    // Weaned Calves / Growers / Buckling
     VaccineType(
       name: 'Clostridial (7-way) Booster',
       protectsAgainst: 'Blackleg, Malignant Edema, etc.',
       recommendedTiming: 'At weaning (6–8 months)',
       purpose: 'Strengthens initial immunity during stress of weaning and new groups/feeds',
-      applicableStages: ['Weaned Calves / Growers / Steer'],
+      applicableStages: ['Weaned Calves / Growers / Buckling'],
       ageInMonths: 6,
     ),
     
@@ -216,7 +216,7 @@ class VaccinationProtocol {
       protectsAgainst: 'IBR, BVD, PI3, BRSV',
       recommendedTiming: 'At weaning (6–8 months)',
       purpose: 'Strengthens initial immunity during stress of weaning and new groups/feeds',
-      applicableStages: ['Weaned Calves / Growers / Steer'],
+      applicableStages: ['Weaned Calves / Growers / Buckling'],
       ageInMonths: 6,
     ),
     
@@ -225,36 +225,36 @@ class VaccinationProtocol {
       protectsAgainst: 'Leptospirosis',
       recommendedTiming: 'At weaning (6–8 months)',
       purpose: 'Strengthens overall protection at a critical transition; helps prevent Leptospirosis',
-      applicableStages: ['Weaned Calves / Growers / Steer'],
+      applicableStages: ['Weaned Calves / Growers / Buckling'],
       ageInMonths: 6,
     ),
     
-    // Replacement Heifers
+    // Replacement Doelings
     VaccineType(
       name: 'Brucellosis (Strain RB51)',
       protectsAgainst: 'Brucellosis',
       recommendedTiming: '4-12 months of age (once)',
       purpose: 'Prevents Brucellosis causing abortion',
-      applicableStages: ['Replacement Heifers'],
+      applicableStages: ['Replacement Doelings'],
       ageInMonths: 8,
     ),
     
     VaccineType(
-      name: 'Reproductive (IBR, BVD, Lepto, Vibriosis) - Heifers',
+      name: 'Reproductive (IBR, BVD, Lepto, Vibriosis) - Doelings',
       protectsAgainst: 'IBR, BVD, Leptospirosis, Vibriosis',
       recommendedTiming: 'Pre-breeding',
       purpose: 'Ensures reproductive health before breeding',
-      applicableStages: ['Replacement Heifers'],
+      applicableStages: ['Replacement Doelings'],
       ageInMonths: 12,
     ),
     
-    // Breeding Cows & Bulls
+    // Breeding Does & Bucks
     VaccineType(
       name: 'Reproductive (IBR, BVD, Lepto, Vibriosis) - Breeding',
       protectsAgainst: 'IBR, BVD, Leptospirosis, Vibriosis',
       recommendedTiming: 'Annually, 30-60 days pre-breeding',
       purpose: 'Protects herd from reproductive diseases',
-      applicableStages: ['Breeding Cows & Bulls'],
+      applicableStages: ['Breeding Does & Bucks'],
       ageInMonths: 18,
     ),
     
@@ -263,17 +263,17 @@ class VaccinationProtocol {
       protectsAgainst: 'Blackleg, Malignant Edema, etc.',
       recommendedTiming: 'Annually',
       purpose: 'Annual booster to maintain protection',
-      applicableStages: ['Breeding Cows & Bulls'],
+      applicableStages: ['Breeding Does & Bucks'],
       ageInMonths: 18,
     ),
     
-    // Pregnant Heifer & Cow
+    // Pregnant Doeling & Doe
     VaccineType(
       name: 'Mastitis Vaccines',
       protectsAgainst: 'E. coli, Mycoplasma, Staph',
       recommendedTiming: 'Pre-calving and during lactation',
       purpose: 'Reduces severity of mastitis infections',
-      applicableStages: ['Pregnant Heifer & Cow'],
+      applicableStages: ['Pregnant Doeling & Doe'],
       ageInMonths: 24,
     ),
     
@@ -282,14 +282,14 @@ class VaccinationProtocol {
       protectsAgainst: 'Rotavirus, Coronavirus, E. coli',
       recommendedTiming: '3-4 weeks pre-calving',
       purpose: 'Boosts antibodies in colostrum for newborn',
-      applicableStages: ['Pregnant Heifer & Cow'],
+      applicableStages: ['Pregnant Doeling & Doe'],
       ageInMonths: 24,
     ),
     
 
   ];
 
-  /// Get applicable vaccines for a cattle based on age, classification, and pregnancy status
+  /// Get applicable vaccines for a goat based on age, classification, and pregnancy status
   static List<VaccineType> getApplicableVaccines({
     required int ageInMonths,
     required int ageInDays,
@@ -337,7 +337,7 @@ class VaccinationProtocol {
     // Check if this is a pre-calving vaccine
     final isPreCalvingVaccine = _isPreCalvingVaccine(vaccine);
     
-    // For pre-calving vaccines, only apply to pregnant cattle
+    // For pre-calving vaccines, only apply to pregnant goat
     if (isPreCalvingVaccine) {
       return isPregnant && _matchesPreCalvingStage(vaccine, classification, sex, isDairy, status);
     }
@@ -354,25 +354,25 @@ class VaccinationProtocol {
 
   static bool _matchesStage(String stage, String classification, String sex, bool isDairy, String status, int ageInMonths, int ageInDays) {
     switch (stage) {
-      case 'Newborn Calf':
+      case 'Newborn Kid':
         // Only apply to 1 day old calves
-        return classification == 'Calf' && ageInDays <= 1;
+        return classification == 'Kid' && ageInDays <= 1;
       case 'Pre-weaning Calves':
-        return classification == 'Calf';
+        return classification == 'Kid';
       
-      case 'Weaned Calves / Growers / Steer':
-        return classification == 'Growers' || classification == 'Steer';
+      case 'Weaned Calves / Growers / Buckling':
+        return classification == 'Growers' || classification == 'Buckling';
       
-      case 'Replacement Heifers':
-        return classification == 'Heifer' && sex == 'Female';
+      case 'Replacement Doelings':
+        return classification == 'Doeling' && sex == 'Female';
       
-      case 'Breeding Cows & Bulls':
-        return (classification == 'Cow' && sex == 'Female') || 
-               (classification == 'Bull' && sex == 'Male');
+      case 'Breeding Does & Bucks':
+        return (classification == 'Doe' && sex == 'Female') || 
+               (classification == 'Buck' && sex == 'Male');
       
-      case 'Pregnant Heifer & Cow':
-        return ((classification == 'Cow' && sex == 'Female') || 
-                (classification == 'Heifer' && sex == 'Female')) &&
+      case 'Pregnant Doeling & Doe':
+        return ((classification == 'Doe' && sex == 'Female') || 
+                (classification == 'Doeling' && sex == 'Female')) &&
                (status.toLowerCase() == 'pregnant' || 
                 status.toLowerCase() == 'lactating & pregnant');
       
@@ -414,10 +414,10 @@ class VaccinationProtocol {
            vaccine.recommendedTiming.toLowerCase().contains('pre-calving');
   }
 
-  /// Check if cattle matches stage requirements for pre-calving vaccines
+  /// Check if goat matches stage requirements for pre-calving vaccines
   static bool _matchesPreCalvingStage(VaccineType vaccine, String classification, String sex, bool isDairy, String status) {
-    // Pre-calving vaccines are for pregnant cows and heifers (both dairy and beef)
-    return (classification == 'Cow' || classification == 'Heifer') &&
+    // Pre-calving vaccines are for pregnant Does and Doelings (both dairy and beef)
+    return (classification == 'Doe' || classification == 'Doeling') &&
            sex == 'Female' &&
            (status.toLowerCase() == 'pregnant' || 
             status.toLowerCase() == 'lactating & pregnant');

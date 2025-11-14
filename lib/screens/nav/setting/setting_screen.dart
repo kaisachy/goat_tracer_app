@@ -1,9 +1,9 @@
-import 'package:flutter/material.dart';
-import 'package:cattle_tracer_app/services/user_service.dart';
-import 'package:cattle_tracer_app/services/auth_service.dart';
-import 'package:cattle_tracer_app/services/address_service.dart';
-import 'package:cattle_tracer_app/models/user.dart';
-import 'package:cattle_tracer_app/constants/app_colors.dart';
+﻿import 'package:flutter/material.dart';
+import 'package:goat_tracer_app/services/user_service.dart';
+import 'package:goat_tracer_app/services/auth_service.dart';
+import 'package:goat_tracer_app/services/address_service.dart';
+import 'package:goat_tracer_app/models/user.dart';
+import 'package:goat_tracer_app/constants/app_colors.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 
 class SettingScreen extends StatefulWidget {

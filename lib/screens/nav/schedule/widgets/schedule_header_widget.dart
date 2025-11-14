@@ -1,9 +1,9 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import '../../../../../constants/app_colors.dart';
 import '../../vaccination/vaccination_schedule_screen.dart';
 import '../../../../../services/vaccination_service.dart';
-import '../../../../../services/cattle/cattle_service.dart';
-import '../../../../../services/cattle/cattle_history_service.dart';
+import '../../../../../services/goat/goat_service.dart';
+import '../../../../../services/goat/goat_history_service.dart';
 
 class ScheduleHeader extends StatefulWidget {
   final TextEditingController searchController;
@@ -37,23 +37,23 @@ class _ScheduleHeaderState extends State<ScheduleHeader> {
 
   Future<void> _checkVaccinationStatus() async {
     try {
-      final cattleData = await CattleService.getAllCattle();
-      final eventsData = await CattleHistoryService.getCattleHistory();
+      final goatData = await GoatService.getAllGoats();
+      final eventsData = await GoatHistoryService.getgoatHistory();
       
       final vaccinationService = VaccinationService();
       final schedules = await vaccinationService.generateVaccinationSchedules(
-        allCattle: cattleData,
+        allgoat: goatData,
         allEvents: eventsData,
       );
       
-      final cattleNeeding = vaccinationService.getCattleNeedingVaccination(
+      final goatNeeding = vaccinationService.getgoatNeedingVaccination(
         schedules: schedules,
-        allCattle: cattleData,
+        allgoat: goatData,
       );
 
       if (mounted) {
         setState(() {
-          _hasPendingVaccinations = cattleNeeding.isNotEmpty;
+          _hasPendingVaccinations = goatNeeding.isNotEmpty;
           _isLoadingVaccinationStatus = false;
         });
       }
@@ -131,7 +131,7 @@ class _ScheduleHeaderState extends State<ScheduleHeader> {
                       padding: EdgeInsets.all(isNarrow ? 6 : 8),
                     )
                         : null,
-                    hintText: isNarrow ? 'Search schedules...' : 'Search schedules, cattle, scheduled by...',
+                    hintText: isNarrow ? 'Search schedules...' : 'Search schedules, goat, scheduled by...',
                     hintStyle: TextStyle(
                       color: Colors.grey.shade500,
                       fontSize: isNarrow ? 12 : 13,

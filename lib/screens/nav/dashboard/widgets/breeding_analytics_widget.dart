@@ -1,7 +1,7 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
-import 'package:cattle_tracer_app/constants/app_colors.dart';
-import 'package:cattle_tracer_app/services/breeding_analysis_service.dart';
+import 'package:goat_tracer_app/constants/app_colors.dart';
+import 'package:goat_tracer_app/services/breeding_analysis_service.dart';
 
 class BreedingAnalyticsWidget extends StatefulWidget {
   const BreedingAnalyticsWidget({super.key});
@@ -17,13 +17,13 @@ class _BreedingAnalyticsWidgetState extends State<BreedingAnalyticsWidget>
   Map<String, dynamic>? _analysisData;
 
   // Filter controllers
-  String? _selectedCow;
-  String? _selectedBull;
+  String? _selectedDoe;
+  String? _selectedBuck;
   DateTimeRange? _selectedDateRange;
 
   // Available options for filters
-  List<String> _availableCows = [];
-  List<String> _availableBulls = [];
+  List<String> _availableDoes = [];
+  List<String> _availableBucks = [];
 
   // Animation controllers
   late AnimationController _fadeController;
@@ -63,13 +63,13 @@ class _BreedingAnalyticsWidgetState extends State<BreedingAnalyticsWidget>
       setState(() => _isLoading = true);
 
       // Load available options for filters
-      final cows = await BreedingAnalysisService.getAvailableCows();
-      final bulls = await BreedingAnalysisService.getAvailableBulls();
+      final Does = await BreedingAnalysisService.getAvailableDoes();
+      final Bucks = await BreedingAnalysisService.getAvailableBucks();
 
       if (mounted) {
         setState(() {
-          _availableCows = cows;
-          _availableBulls = bulls;
+          _availableDoes = Does;
+          _availableBucks = Bucks;
         });
       }
 
@@ -89,8 +89,8 @@ class _BreedingAnalyticsWidgetState extends State<BreedingAnalyticsWidget>
   Future<void> _performAnalysis() async {
     try {
       final result = await BreedingAnalysisService.getBreedingSuccessAnalysis(
-        selectedCowTag: _selectedCow,
-        selectedBullTag: _selectedBull,
+        selectedDoeTag: _selectedDoe,
+        selectedBuckTag: _selectedBuck,
         dateRange: _selectedDateRange,
       );
 
@@ -130,8 +130,8 @@ class _BreedingAnalyticsWidgetState extends State<BreedingAnalyticsWidget>
 
   void _clearAllFilters() {
     setState(() {
-      _selectedCow = null;
-      _selectedBull = null;
+      _selectedDoe = null;
+      _selectedBuck = null;
       _selectedDateRange = null;
     });
     _onFilterChanged();
@@ -300,8 +300,8 @@ class _BreedingAnalyticsWidgetState extends State<BreedingAnalyticsWidget>
   }
 
   Widget _buildFiltersSection() {
-    final hasActiveFilters = _selectedCow != null ||
-        _selectedBull != null ||
+    final hasActiveFilters = _selectedDoe != null ||
+        _selectedBuck != null ||
         _selectedDateRange != null;
 
     return Container(
@@ -370,27 +370,27 @@ class _BreedingAnalyticsWidgetState extends State<BreedingAnalyticsWidget>
             children: [
               Expanded(
                 child: _buildFilterDropdown(
-                  label: 'Cow/Heifer',
-                  value: _selectedCow,
-                  items: ['All Cows', ..._availableCows],
+                  label: 'Doe/Doeling',
+                  value: _selectedDoe,
+                  items: ['All Does', ..._availableDoes],
                   onChanged: (value) {
                     setState(() {
-                      _selectedCow = value == 'All Cows' ? null : value;
+                      _selectedDoe = value == 'All Does' ? null : value;
                     });
                     _onFilterChanged();
                   },
-                  icon: FontAwesomeIcons.cow,
+                  icon: FontAwesomeIcons.Doe,
                 ),
               ),
               const SizedBox(width: 8),
               Expanded(
                 child: _buildFilterDropdown(
-                  label: 'Bull',
-                  value: _selectedBull,
-                  items: ['All Bulls', ..._availableBulls],
+                  label: 'Buck',
+                  value: _selectedBuck,
+                  items: ['All Bucks', ..._availableBucks],
                   onChanged: (value) {
                     setState(() {
-                      _selectedBull = value == 'All Bulls' ? null : value;
+                      _selectedBuck = value == 'All Bucks' ? null : value;
                     });
                     _onFilterChanged();
                   },

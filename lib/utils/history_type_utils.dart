@@ -1,4 +1,4 @@
-// lib/screens/nav/cattle/utils/history_type_utils.dart
+﻿// lib/screens/nav/goat/utils/history_type_utils.dart
 
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
@@ -9,7 +9,7 @@ class HistoryTypeUtils {
     final baseTypes = ['Select type of history record'];
 
     if (classification == null) {
-      return [...baseTypes, 'Loading cattle information...'];
+      return [...baseTypes, 'Loading goat information...'];
     }
 
     final classificationLower = classification.toLowerCase().trim();
@@ -22,7 +22,7 @@ class HistoryTypeUtils {
     List<String> historyTypes = [];
 
     switch (classificationLower) {
-      case 'calf':
+      case 'Kid':
       case 'calves':
         historyTypes = [
           'Sick',
@@ -37,10 +37,10 @@ class HistoryTypeUtils {
           'Lost',
           'Other',
         ];
-        debugPrint('DEBUG: Using Calf history types');
+        debugPrint('DEBUG: Using Kid history types');
         break;
-      case 'heifer':
-      case 'heifers':
+      case 'Doeling':
+      case 'Doelings':
         historyTypes = [
           'Vaccinated',
           'Sick',
@@ -57,10 +57,10 @@ class HistoryTypeUtils {
           'Lost',
           'Other',
         ];
-        debugPrint('DEBUG: Using Heifer history types');
+        debugPrint('DEBUG: Using Doeling history types');
         break;
-      case 'cow':
-      case 'cows':
+      case 'Doe':
+      case 'Does':
         historyTypes = [
           'Vaccinated',
           'Sick',
@@ -78,10 +78,10 @@ class HistoryTypeUtils {
           'Lost',
           'Other',
         ];
-        debugPrint('DEBUG: Using Cow history types');
+        debugPrint('DEBUG: Using Doe history types');
         break;
-      case 'bull':
-      case 'bulls':
+      case 'Buck':
+      case 'Bucks':
         historyTypes = [
           'Vaccinated',
           'Sick',
@@ -94,10 +94,10 @@ class HistoryTypeUtils {
           'Lost',
           'Other',
         ];
-        debugPrint('DEBUG: Using Bull history types');
+        debugPrint('DEBUG: Using Buck history types');
         break;
-      case 'steer':
-      case 'steers':
+      case 'Buckling':
+      case 'Bucklings':
         historyTypes = [
           'Vaccinated',
           'Sick',
@@ -110,7 +110,7 @@ class HistoryTypeUtils {
           'Lost',
           'Other',
         ];
-        debugPrint('DEBUG: Using Steer history types');
+        debugPrint('DEBUG: Using Buckling history types');
         break;
       case 'growers':
       case 'grower':
@@ -181,7 +181,7 @@ class HistoryTypeUtils {
         return FontAwesomeIcons.magnifyingGlass;
       case 'other':
         return FontAwesomeIcons.ellipsis;
-      case 'loading cattle information...':
+      case 'loading goat information...':
         return FontAwesomeIcons.spinner;
       default:
         return FontAwesomeIcons.fileLines;
@@ -206,7 +206,7 @@ class HistoryTypeUtils {
       case 'mortality': return Colors.grey.shade700;
       case 'lost': return Colors.amber.shade600;
       case 'other': return Colors.blueGrey.shade400;
-      case 'loading cattle information...': return Colors.grey.shade400;
+      case 'loading goat information...': return Colors.grey.shade400;
       default: return AppColors.lightGreen;
     }
   }

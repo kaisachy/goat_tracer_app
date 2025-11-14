@@ -1,4 +1,4 @@
-import 'dart:convert';
+﻿import 'dart:convert';
 import 'package:http/http.dart' as http;
 import '../../config.dart';
 import '../../models/schedule.dart';
@@ -17,7 +17,7 @@ class SchedulerService {
       }
 
       final response = await http.get(
-        Uri.parse('$_baseUrl/cattles/schedule'),
+        Uri.parse('$_baseUrl/goats/schedule'),
         headers: {
           'Authorization': 'Bearer $token',
           'Content-Type': 'application/json',
@@ -67,7 +67,7 @@ class SchedulerService {
       final endDateStr = endDate.toIso8601String().split('T')[0];
 
       final response = await http.get(
-        Uri.parse('$_baseUrl/cattles/schedule?start_date=$startDateStr&end_date=$endDateStr'),
+        Uri.parse('$_baseUrl/goats/schedule?start_date=$startDateStr&end_date=$endDateStr'),
         headers: {
           'Authorization': 'Bearer $token',
           'Content-Type': 'application/json',
@@ -101,7 +101,7 @@ class SchedulerService {
       }
 
       final response = await http.get(
-        Uri.parse('$_baseUrl/cattles/schedule?upcoming=$days'),
+        Uri.parse('$_baseUrl/goats/schedule?upcoming=$days'),
         headers: {
           'Authorization': 'Bearer $token',
           'Content-Type': 'application/json',
@@ -147,7 +147,7 @@ class SchedulerService {
       }
 
       final response = await http.get(
-        Uri.parse('$_baseUrl/cattles/schedule?status=$status'),
+        Uri.parse('$_baseUrl/goats/schedule?status=$status'),
         headers: {
           'Authorization': 'Bearer $token',
           'Content-Type': 'application/json',
@@ -181,7 +181,7 @@ class SchedulerService {
       }
 
       final response = await http.get(
-        Uri.parse('$_baseUrl/cattles/schedule?overdue=1'),
+        Uri.parse('$_baseUrl/goats/schedule?overdue=1'),
         headers: {
           'Authorization': 'Bearer $token',
           'Content-Type': 'application/json',

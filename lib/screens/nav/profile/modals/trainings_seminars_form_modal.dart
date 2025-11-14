@@ -1,6 +1,6 @@
-// lib/screens/nav/profile/modals/trainings_seminars_form_modal.dart
+﻿// lib/screens/nav/profile/modals/trainings_seminars_form_modal.dart
 import 'package:flutter/material.dart';
-import 'package:cattle_tracer_app/services/profile/trainings_seminars_service.dart';
+import 'package:goat_tracer_app/services/profile/trainings_seminars_service.dart';
 import '../../../../constants/app_colors.dart';
 
 class TrainingsSeminarsFormModal extends StatefulWidget {

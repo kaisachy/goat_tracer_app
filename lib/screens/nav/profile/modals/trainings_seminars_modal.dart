@@ -1,6 +1,6 @@
-// lib/screens/nav/profile/modals/trainings_seminars_modal.dart
+﻿// lib/screens/nav/profile/modals/trainings_seminars_modal.dart
 import 'package:flutter/material.dart';
-import 'package:cattle_tracer_app/services/profile/trainings_seminars_service.dart';
+import 'package:goat_tracer_app/services/profile/trainings_seminars_service.dart';
 // Removed free-form form modal import since we now use fixed checkboxes
 
 import '../../../../constants/app_colors.dart';
@@ -22,13 +22,13 @@ class TrainingsSeminarsModal extends StatefulWidget {
 class _TrainingsSeminarsModalState extends State<TrainingsSeminarsModal> {
   late Future<List<Map<String, dynamic>>> trainingFuture;
   final List<String> _options = const [
-    'Beef Cattle Raising',
-    'Dairy Cattle Raising',
+    'Beef goat Raising',
+    'Dairy goat Raising',
     'Feedlot Fattening',
     'Silage Making',
     'Slaughtering & Cutting',
     'Meat Processing',
-    'Cattle Enterprise Development',
+    'goat Enterprise Development',
     'Forage Production',
     'Health Management',
   ];

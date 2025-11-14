@@ -1,19 +1,19 @@
-// milk_analytics_tab.dart
+﻿// milk_analytics_tab.dart
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'dart:math' as math;
 import '../../../models/milk.dart';
-import '../../../models/cattle.dart';
+import '../../../models/goat.dart';
 import '../../../constants/app_colors.dart';
 
 class MilkAnalyticsTab extends StatefulWidget {
   final List<MilkProduction> milkRecords;
-  final List<Cattle> allCattle;
+  final List<goat> allgoat;
 
   const MilkAnalyticsTab({
     super.key,
     required this.milkRecords,
-    required this.allCattle,
+    required this.allgoat,
   });
 
   @override

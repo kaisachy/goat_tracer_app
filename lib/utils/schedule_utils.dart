@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:intl/intl.dart';
 import '../../../constants/app_colors.dart';
@@ -65,7 +65,7 @@ class ScheduleUtils {
   // Validate schedule data
   static String? validateScheduleData({
     required String title,
-    String? cattleTag,
+    String? goatTag,
     String? scheduledBy,
     String? details,
   }) {
@@ -75,8 +75,8 @@ class ScheduleUtils {
     if (title.length > 150) {
       return 'Title cannot exceed 150 characters';
     }
-    if (cattleTag != null && cattleTag.length > 20) {
-      return 'Cattle tag cannot exceed 20 characters';
+    if (goatTag != null && goatTag.length > 20) {
+      return 'Goat Tag cannot exceed 20 characters';
     }
     if (scheduledBy != null && scheduledBy.length > 100) {
       return 'Scheduled by cannot exceed 100 characters';
@@ -108,7 +108,7 @@ class ScheduleConstants {
   static const Duration urgentDuration = Duration(hours: 24);
 
   static const int maxTitleLength = 150;
-  static const int maxCattleTagLength = 20;
+  static const int maxgoatTagLength = 20;
   static const int maxScheduledByLength = 100;
   static const int maxDetailsLength = 500;
 }
@@ -240,9 +240,9 @@ class ScheduleNotifications {
   static String getNotificationBody(Schedule schedule) {
     final timeInfo = schedule.formattedDateTime;
     final typeInfo = schedule.type;
-    final cattleInfo = schedule.cattleTag != null ? ' for ${schedule.cattleTag}' : '';
+    final goatInfo = schedule.goatTag != null ? ' for ${schedule.goatTag}' : '';
 
-    return '$typeInfo$cattleInfo scheduled for $timeInfo';
+    return '$typeInfo$goatInfo scheduled for $timeInfo';
   }
 }
 

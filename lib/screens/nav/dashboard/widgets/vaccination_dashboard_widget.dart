@@ -1,19 +1,19 @@
-import 'package:flutter/material.dart';
-import 'package:cattle_tracer_app/models/cattle.dart';
-import 'package:cattle_tracer_app/models/vaccination_schedule.dart';
-import 'package:cattle_tracer_app/models/schedule.dart';
-import 'package:cattle_tracer_app/services/vaccination_service.dart';
-import 'package:cattle_tracer_app/services/schedule/schedule_service.dart';
-import 'package:cattle_tracer_app/constants/app_colors.dart';
-import 'package:cattle_tracer_app/screens/home_screen.dart';
+﻿import 'package:flutter/material.dart';
+import 'package:goat_tracer_app/models/goat.dart';
+import 'package:goat_tracer_app/models/vaccination_schedule.dart';
+import 'package:goat_tracer_app/models/schedule.dart';
+import 'package:goat_tracer_app/services/vaccination_service.dart';
+import 'package:goat_tracer_app/services/schedule/schedule_service.dart';
+import 'package:goat_tracer_app/constants/app_colors.dart';
+import 'package:goat_tracer_app/screens/home_screen.dart';
 
 class VaccinationDashboardWidget extends StatefulWidget {
-  final List<Cattle> allCattle;
+  final List<goat> allgoat;
   final List<Map<String, dynamic>> allEvents;
 
   const VaccinationDashboardWidget({
     super.key,
-    required this.allCattle,
+    required this.allgoat,
     required this.allEvents,
   });
 
@@ -23,7 +23,7 @@ class VaccinationDashboardWidget extends StatefulWidget {
 
 class _VaccinationDashboardWidgetState extends State<VaccinationDashboardWidget> {
   List<VaccinationSchedule> vaccinationSchedules = [];
-  List<Map<String, dynamic>> cattleNeedingVaccination = [];
+  List<Map<String, dynamic>> goatNeedingVaccination = [];
   Map<String, dynamic> vaccinationStats = {};
   List<Schedule> scheduledVaccinations = [];
   bool isLoading = true;
@@ -38,22 +38,22 @@ class _VaccinationDashboardWidgetState extends State<VaccinationDashboardWidget>
     try {
       setState(() => isLoading = true);
 
-      // Generate recommended vaccination schedules (for stats and cattle-needing section)
+      // Generate recommended vaccination schedules (for stats and goat-needing section)
       final schedules = await VaccinationService().generateVaccinationSchedules(
-        allCattle: widget.allCattle,
+        allgoat: widget.allgoat,
         allEvents: widget.allEvents,
       );
 
-      // Get cattle needing vaccination
-      final cattleNeeding = VaccinationService().getCattleNeedingVaccination(
+      // Get goat needing vaccination
+      final goatNeeding = VaccinationService().getgoatNeedingVaccination(
         schedules: schedules,
-        allCattle: widget.allCattle,
+        allgoat: widget.allgoat,
       );
 
       // Get vaccination statistics
       final stats = VaccinationService().getVaccinationStatistics(
         schedules: schedules,
-        allCattle: widget.allCattle,
+        allgoat: widget.allgoat,
       );
 
       // Fetch actual scheduled vaccinations from backend schedule system
@@ -65,7 +65,7 @@ class _VaccinationDashboardWidgetState extends State<VaccinationDashboardWidget>
       if (mounted) {
         setState(() {
           vaccinationSchedules = schedules;
-          cattleNeedingVaccination = cattleNeeding;
+          goatNeedingVaccination = goatNeeding;
           vaccinationStats = stats;
           scheduledVaccinations = scheduled;
           isLoading = false;

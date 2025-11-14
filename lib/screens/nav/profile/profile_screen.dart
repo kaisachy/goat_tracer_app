@@ -1,4 +1,4 @@
-// lib/screens/nav/profile/profile_screen.dart
+﻿// lib/screens/nav/profile/profile_screen.dart
 import 'dart:developer';
 import 'dart:async';
 import 'dart:convert';
@@ -6,15 +6,15 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:cattle_tracer_app/services/profile/personal_information_service.dart';
-import 'package:cattle_tracer_app/services/profile/farm_details_service.dart';
-import 'package:cattle_tracer_app/constants/app_colors.dart';
-import 'package:cattle_tracer_app/screens/nav/profile/widgets/personal_information_widget.dart';
-import 'package:cattle_tracer_app/screens/nav/profile/widgets/farm_details_widget.dart';
-import 'package:cattle_tracer_app/screens/nav/profile/widgets/educational_background_widget.dart';
-import 'package:cattle_tracer_app/screens/nav/profile/widgets/trainings_seminars_widget.dart';
-import 'package:cattle_tracer_app/services/auth_service.dart';
-import 'package:cattle_tracer_app/services/profile/profile_export_service.dart';
+import 'package:goat_tracer_app/services/profile/personal_information_service.dart';
+import 'package:goat_tracer_app/services/profile/farm_details_service.dart';
+import 'package:goat_tracer_app/constants/app_colors.dart';
+import 'package:goat_tracer_app/screens/nav/profile/widgets/personal_information_widget.dart';
+import 'package:goat_tracer_app/screens/nav/profile/widgets/farm_details_widget.dart';
+import 'package:goat_tracer_app/screens/nav/profile/widgets/educational_background_widget.dart';
+import 'package:goat_tracer_app/screens/nav/profile/widgets/trainings_seminars_widget.dart';
+import 'package:goat_tracer_app/services/auth_service.dart';
+import 'package:goat_tracer_app/services/profile/profile_export_service.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 
 class ProfileScreen extends StatefulWidget {

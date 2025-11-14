@@ -1,10 +1,10 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:intl/intl.dart'; // Import the intl package
 import '../../../../constants/app_colors.dart';
 import '../../../../models/schedule.dart';
 import '../../../../utils/schedule_utils.dart';
-import '../modals/cattle_list_modal.dart';
+import '../modals/goat_list_modal.dart';
 
 class ScheduleCard extends StatelessWidget {
   final Schedule schedule;
@@ -20,7 +20,7 @@ class ScheduleCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final cattleTags = schedule.cattleTag?.split(', ') ?? [];
+    final goatTags = schedule.goatTag?.split(', ') ?? [];
     final bool showActionButtons =
         schedule.isScheduled || schedule.isCancelled || schedule.isCompleted;
 
@@ -48,7 +48,7 @@ class ScheduleCard extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                _buildCardHeader(context, cattleTags),
+                _buildCardHeader(context, goatTags),
                 const SizedBox(height: 16),
                 _buildCardFooter(),
                 if (schedule.scheduledBy != null || schedule.details != null || schedule.duration != null || schedule.reminder != null) ...[
@@ -67,7 +67,7 @@ class ScheduleCard extends StatelessWidget {
     );
   }
 
-  Widget _buildCardHeader(BuildContext context, List<String> cattleTags) {
+  Widget _buildCardHeader(BuildContext context, List<String> goatTags) {
     return Row(
       children: [
         Container(
@@ -97,9 +97,9 @@ class ScheduleCard extends StatelessWidget {
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
               ),
-              if (cattleTags.isNotEmpty) ...[
+              if (goatTags.isNotEmpty) ...[
                 const SizedBox(height: 6),
-                _buildCattleClickableIcon(context, cattleTags),
+                _buildgoatClickableIcon(context, goatTags),
               ],
             ],
           ),
@@ -109,10 +109,10 @@ class ScheduleCard extends StatelessWidget {
     );
   }
 
-  Widget _buildCattleClickableIcon(
-      BuildContext context, List<String> cattleTags) {
+  Widget _buildgoatClickableIcon(
+      BuildContext context, List<String> goatTags) {
     return GestureDetector(
-      onTap: () => CattleListModal.show(context, schedule),
+      onTap: () => goatListModal.show(context, schedule),
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
         decoration: BoxDecoration(
@@ -127,13 +127,13 @@ class ScheduleCard extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             FaIcon(
-              FontAwesomeIcons.cow,
+              FontAwesomeIcons.Doe,
               size: 14,
               color: AppColors.primary,
             ),
             const SizedBox(width: 6),
             Text(
-              '${cattleTags.length} cattle',
+              '${goatTags.length} goat',
               style: const TextStyle(
                 fontSize: 12,
                 color: AppColors.primary,

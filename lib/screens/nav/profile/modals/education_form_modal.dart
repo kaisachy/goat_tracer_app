@@ -1,6 +1,6 @@
-// lib/screens/nav/profile/modals/education_form_modal.dart
+﻿// lib/screens/nav/profile/modals/education_form_modal.dart
 import 'package:flutter/material.dart';
-import 'package:cattle_tracer_app/services/profile/educational_background_service.dart';
+import 'package:goat_tracer_app/services/profile/educational_background_service.dart';
 import '../../../../constants/app_colors.dart';
 
 class EducationFormModal extends StatefulWidget {

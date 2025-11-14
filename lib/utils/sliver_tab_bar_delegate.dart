@@ -1,5 +1,5 @@
-import 'package:flutter/material.dart';
-import 'package:cattle_tracer_app/constants/app_colors.dart';
+﻿import 'package:flutter/material.dart';
+import 'package:goat_tracer_app/constants/app_colors.dart';
 
 class SliverTabBarDelegate extends SliverPersistentHeaderDelegate {
   final TabBar tabBar;

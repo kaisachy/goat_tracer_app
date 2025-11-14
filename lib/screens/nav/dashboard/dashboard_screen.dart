@@ -1,12 +1,12 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
-import 'package:cattle_tracer_app/models/cattle.dart';
-import 'package:cattle_tracer_app/constants/app_colors.dart';
-import 'package:cattle_tracer_app/services/cattle/cattle_service.dart';
-import 'package:cattle_tracer_app/services/cattle/cattle_history_service.dart';
+import 'package:goat_tracer_app/models/goat.dart';
+import 'package:goat_tracer_app/constants/app_colors.dart';
+import 'package:goat_tracer_app/services/goat/goat_service.dart';
+import 'package:goat_tracer_app/services/goat/goat_history_service.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'widgets/breeding_analytics_widget.dart';
-import 'package:cattle_tracer_app/screens/nav/cattle/cattle_detail_screen.dart';
+import 'package:goat_tracer_app/screens/nav/goat/goat_detail_screen.dart';
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
@@ -17,13 +17,13 @@ class DashboardScreen extends StatefulWidget {
 
 class _DashboardScreenState extends State<DashboardScreen>
     with TickerProviderStateMixin {
-  List<Cattle> allCattle = [];
+  List<goat> allgoat = [];
   List<Map<String, dynamic>> allEvents = [];
   bool isLoading = true;
   String? error;
 
   // Weight analysis state
-  String? _selectedWeightCattleTag; // Selected cattle for weight analysis
+  String? _selectedWeightgoatTag; // Selected goat for weight analysis
   String _weightTagSearch = '';
 
   late AnimationController _animationController;
@@ -67,25 +67,25 @@ class _DashboardScreenState extends State<DashboardScreen>
     try {
       setState(() => isLoading = true);
 
-      final cattleData = await CattleService.getAllCattle();
-      final eventsData = await CattleHistoryService.getCattleHistory();
+      final goatData = await GoatService.getAllGoats();
+      final eventsData = await GoatHistoryService.getgoatHistory();
 
       if (mounted) {
         setState(() {
-          allCattle = cattleData;
+          allgoat = goatData;
           allEvents = eventsData;
           isLoading = false;
           error = null;
-          // Initialize default selected cattle for weight analysis if not set
-          if (_selectedWeightCattleTag == null) {
+          // Initialize default selected goat for weight analysis if not set
+          if (_selectedWeightgoatTag == null) {
             final tagsWithWeighed = allEvents
                 .where((e) => (e['history_type']?.toString().toLowerCase() ?? '') == 'weighed')
-                .map((e) => e['cattle_tag']?.toString() ?? '')
+                .map((e) => e['goat_tag']?.toString() ?? '')
                 .where((t) => t.isNotEmpty)
                 .toSet()
                 .toList();
             if (tagsWithWeighed.isNotEmpty) {
-              _selectedWeightCattleTag = tagsWithWeighed.first;
+              _selectedWeightgoatTag = tagsWithWeighed.first;
             }
           }
         });
@@ -215,7 +215,7 @@ class _DashboardScreenState extends State<DashboardScreen>
 
   Widget _buildDashboardContent() {
     // Check if there's any data to display
-    if (allCattle.isEmpty && allEvents.isEmpty) {
+    if (allgoat.isEmpty && allEvents.isEmpty) {
       return Center(
         child: Padding(
           padding: const EdgeInsets.all(32),
@@ -230,7 +230,7 @@ class _DashboardScreenState extends State<DashboardScreen>
                   border: Border.all(color: AppColors.vibrantGreen.withValues(alpha: 0.3)),
                 ),
                 child: Icon(
-                  FontAwesomeIcons.cow,
+                  FontAwesomeIcons.Doe,
                   size: 64,
                   color: AppColors.vibrantGreen,
                 ),
@@ -246,7 +246,7 @@ class _DashboardScreenState extends State<DashboardScreen>
               ),
               const SizedBox(height: 12),
               Text(
-                'Start by adding cattle to your herd to see analytics and insights.',
+                'Start by adding goat to your herd to see analytics and insights.',
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   fontSize: 16,
@@ -271,7 +271,7 @@ class _DashboardScreenState extends State<DashboardScreen>
               const SizedBox(height: 20),
               _buildClassificationDistribution(),
               const SizedBox(height: 20),
-              _buildCalfGrowerSexCharts(),
+              _buildKidGrowerSexCharts(),
               const SizedBox(height: 20),
               _buildStatusBreakdown(),
               const SizedBox(height: 20),
@@ -295,8 +295,8 @@ class _DashboardScreenState extends State<DashboardScreen>
   }
 
   Widget _buildWeightAnalysis() {
-    // Available tags from all cattle (not only those with weighed history)
-    final allTags = allCattle
+    // Available tags from all goat (not only those with weighed history)
+    final allTags = allgoat
         .map((c) => c.tagNo)
         .where((t) => t.isNotEmpty)
         .toSet() // ensure unique to avoid duplicate value assertion
@@ -309,19 +309,19 @@ class _DashboardScreenState extends State<DashboardScreen>
       ..sort();
 
     // Resolve selected tag safely against the current list
-    final String? selectedTag = (availableTags.contains(_selectedWeightCattleTag))
-        ? _selectedWeightCattleTag
+    final String? selectedTag = (availableTags.contains(_selectedWeightgoatTag))
+        ? _selectedWeightgoatTag
         : (availableTags.isNotEmpty ? availableTags.first : null);
 
     // Ensure a selection exists if possible
     // (Do not call setState here; use selectedTag locally and update on user change)
 
-    // Filter weighed history by selected cattle tag
+    // Filter weighed history by selected Goat Tag
     final weighedEvents = allEvents.where((e) =>
       (e['history_type']?.toString().toLowerCase() ?? '') == 'weighed' &&
       (e['weighed_result'] != null && e['weighed_result'].toString().isNotEmpty) &&
       (e['history_date'] != null && e['history_date'].toString().isNotEmpty) &&
-      (selectedTag != null && e['cattle_tag']?.toString() == selectedTag)
+      (selectedTag != null && e['goat_tag']?.toString() == selectedTag)
     ).toList()
       ..sort((a, b) {
         final ad = DateTime.tryParse(a['history_date']?.toString() ?? '') ?? DateTime(1900);
@@ -368,7 +368,7 @@ class _DashboardScreenState extends State<DashboardScreen>
                 // Search by tag no
                 _buildWeightTagSearchField(),
                 const SizedBox(width: 8),
-                if (availableTags.isNotEmpty) _buildWeightCattleSelector(availableTags, selectedTag),
+                if (availableTags.isNotEmpty) _buildWeightgoatSelector(availableTags, selectedTag),
               ],
             ),
             const SizedBox(height: 20),
@@ -470,11 +470,11 @@ class _DashboardScreenState extends State<DashboardScreen>
   }
 
   Widget _buildKeepAnEyeOn() {
-    // Identify cattle that need attention
-    final List<Cattle> sickCattle = allCattle.where((c) => c.status.toLowerCase() == 'sick').toList();
-    final List<Cattle> lostCattle = allCattle.where((c) => c.status.toLowerCase() == 'lost').toList();
+    // Identify goat that need attention
+    final List<goat> sickgoat = allgoat.where((c) => c.status.toLowerCase() == 'sick').toList();
+    final List<goat> lostgoat = allgoat.where((c) => c.status.toLowerCase() == 'lost').toList();
 
-    final bool hasItems = sickCattle.isNotEmpty || lostCattle.isNotEmpty;
+    final bool hasItems = sickgoat.isNotEmpty || lostgoat.isNotEmpty;
 
     return _buildAnimatedCard(
       delay: 700,
@@ -532,17 +532,17 @@ class _DashboardScreenState extends State<DashboardScreen>
                 ),
               )
             else ...[
-              if (sickCattle.isNotEmpty) _buildAttentionSection(
+              if (sickgoat.isNotEmpty) _buildAttentionSection(
                 label: 'Sick',
                 color: Colors.red.shade500,
                 icon: Icons.sick_rounded,
-                cattle: sickCattle,
+                goat: sickgoat,
               ),
-              if (lostCattle.isNotEmpty) _buildAttentionSection(
+              if (lostgoat.isNotEmpty) _buildAttentionSection(
                 label: 'Lost',
                 color: Colors.amber.shade700,
                 icon: Icons.search_rounded,
-                cattle: lostCattle,
+                goat: lostgoat,
               ),
             ],
           ],
@@ -555,7 +555,7 @@ class _DashboardScreenState extends State<DashboardScreen>
     required String label,
     required Color color,
     required IconData icon,
-    required List<Cattle> cattle,
+    required List<goat> goat,
   }) {
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
@@ -581,7 +581,7 @@ class _DashboardScreenState extends State<DashboardScreen>
               const SizedBox(width: 12),
               Expanded(
                 child: Text(
-                  '$label (${cattle.length})',
+                  '$label (${goat.length})',
                   style: TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.bold,
@@ -595,14 +595,14 @@ class _DashboardScreenState extends State<DashboardScreen>
           Wrap(
             spacing: 8,
             runSpacing: 8,
-            children: cattle
+            children: goat
                 .take(12)
                 .map((c) => GestureDetector(
                       onTap: () {
                         Navigator.push(
                           context,
                           MaterialPageRoute(
-                            builder: (_) => CattleDetailScreen(cattle: c),
+                            builder: (_) => goatDetailScreen(goat: c),
                           ),
                         );
                       },
@@ -639,11 +639,11 @@ class _DashboardScreenState extends State<DashboardScreen>
                     ))
                 .toList(),
           ),
-          if (cattle.length > 12)
+          if (goat.length > 12)
             Padding(
               padding: const EdgeInsets.only(top: 8),
               child: Text(
-                '+${cattle.length - 12} more',
+                '+${goat.length - 12} more',
                 style: TextStyle(
                   color: color.withValues(alpha: 0.8),
                   fontWeight: FontWeight.w600,
@@ -656,7 +656,7 @@ class _DashboardScreenState extends State<DashboardScreen>
     );
   }
 
-  Widget _buildWeightCattleSelector(List<String> availableTags, String? selectedTag) {
+  Widget _buildWeightgoatSelector(List<String> availableTags, String? selectedTag) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
       decoration: BoxDecoration(
@@ -675,7 +675,7 @@ class _DashboardScreenState extends State<DashboardScreen>
                     child: Text('#$tag', style: const TextStyle(fontSize: 12)),
                   ))
               .toList(),
-          onChanged: (v) => setState(() => _selectedWeightCattleTag = v),
+          onChanged: (v) => setState(() => _selectedWeightgoatTag = v),
         ),
       ),
     );
@@ -749,7 +749,7 @@ class _DashboardScreenState extends State<DashboardScreen>
             (e['expected_delivery_date'] != null &&
                 e['expected_delivery_date'].toString().isNotEmpty))
         .map((e) => {
-              'cattle_tag': e['cattle_tag'],
+              'goat_tag': e['goat_tag'],
               'expected_delivery_date': e['expected_delivery_date'],
             })
         .toList();
@@ -829,7 +829,7 @@ class _DashboardScreenState extends State<DashboardScreen>
   }
 
   Widget _buildExpectedDeliveryRow(Map<String, dynamic> delivery) {
-    final tag = delivery['cattle_tag']?.toString() ?? 'N/A';
+    final tag = delivery['goat_tag']?.toString() ?? 'N/A';
     final dateStr = delivery['expected_delivery_date']?.toString();
 
     DateTime? date;
@@ -923,18 +923,18 @@ class _DashboardScreenState extends State<DashboardScreen>
   }
 
   Widget _buildOverviewCards() {
-    final totalCattle = allCattle.length;
-    final activeCattle = allCattle.where((c) => 
+    final totalgoat = allgoat.length;
+    final activegoat = allgoat.where((c) => 
       c.status.toLowerCase() != 'sold' && c.status.toLowerCase() != 'mortality').length;
 
     return _buildAnimatedCard(
       delay: 0,
       child: _buildOverviewCard(
-        title: 'Total Cattle',
-        value: totalCattle.toString(),
-        icon: FontAwesomeIcons.cow,
+        title: 'Total goat',
+        value: totalgoat.toString(),
+        icon: FontAwesomeIcons.Doe,
         color: AppColors.vibrantGreen,
-        subtitle: '$activeCattle active',
+        subtitle: '$activegoat active',
       ),
     );
   }
@@ -1029,9 +1029,9 @@ class _DashboardScreenState extends State<DashboardScreen>
       statusCount[status] = 0;
     }
     
-    // Count actual cattle statuses
-    for (var cattle in allCattle) {
-      final status = cattle.status.isNotEmpty ? cattle.status : 'Unknown';
+    // Count actual goat statuses
+    for (var goat in allgoat) {
+      final status = goat.status.isNotEmpty ? goat.status : 'Unknown';
       statusCount[status] = (statusCount[status] ?? 0) + 1;
     }
 
@@ -1214,7 +1214,7 @@ class _DashboardScreenState extends State<DashboardScreen>
 
   Widget _buildEventTile(Map<String, dynamic> event) {
     final eventType = event['history_type'] ?? 'Unknown';
-    final cattleTag = event['cattle_tag'] ?? 'N/A';
+    final goatTag = event['goat_tag'] ?? 'N/A';
     final eventDate = event['history_date'];
     // Restore per-event color usage but remove main card background color
     final color = _getEventTypeColor(eventType);
@@ -1255,7 +1255,7 @@ class _DashboardScreenState extends State<DashboardScreen>
                   ),
                 ),
                 Text(
-                  '$cattleTag',
+                  '$goatTag',
                   style: const TextStyle(
                     fontSize: 13,
                     color: AppColors.textSecondary,
@@ -1279,8 +1279,8 @@ class _DashboardScreenState extends State<DashboardScreen>
 
   Widget _buildBreedDistribution() {
     final breedCount = <String, int>{};
-    for (var cattle in allCattle) {
-      final breed = cattle.breed ?? 'Unknown';
+    for (var goat in allgoat) {
+      final breed = goat.breed ?? 'Unknown';
       if (breed.isNotEmpty) {
         breedCount[breed] = (breedCount[breed] ?? 0) + 1;
       }
@@ -1362,13 +1362,13 @@ class _DashboardScreenState extends State<DashboardScreen>
     );
   }
 
-  Widget _buildCalfGrowerSexCharts() {
+  Widget _buildKidGrowerSexCharts() {
     return Row(
       children: [
         Expanded(
           child: _buildAnimatedCard(
             delay: 100,
-            child: _buildCalfChart(),
+            child: _buildKidChart(),
           ),
         ),
         const SizedBox(width: 16),
@@ -1384,7 +1384,7 @@ class _DashboardScreenState extends State<DashboardScreen>
 
   Widget _buildClassificationDistribution() {
     // Define all 6 classifications
-    final allClassifications = ['Calf', 'Grower', 'Heifer', 'Steer', 'Cow', 'Bull'];
+    final allClassifications = ['Kid', 'Grower', 'Doeling', 'Buckling', 'Doe', 'Buck'];
     
     final classificationCount = <String, int>{};
     
@@ -1393,15 +1393,15 @@ class _DashboardScreenState extends State<DashboardScreen>
       classificationCount[classification] = 0;
     }
     
-    // Count actual cattle classifications
-    for (var cattle in allCattle) {
-      final classification = cattle.classification.isNotEmpty
-          ? cattle.classification
+    // Count actual goat classifications
+    for (var goat in allgoat) {
+      final classification = goat.classification.isNotEmpty
+          ? goat.classification
           : 'Unclassified';
       classificationCount[classification] = (classificationCount[classification] ?? 0) + 1;
     }
 
-    final total = allCattle.length;
+    final total = allgoat.length;
     final sortedClassifications = classificationCount.entries.toList()
       ..sort((a, b) => b.value.compareTo(a.value));
 
@@ -1697,12 +1697,12 @@ class _DashboardScreenState extends State<DashboardScreen>
     );
   }
 
-  Widget _buildCalfChart() {
-    final calfMales = allCattle.where((c) => 
-      c.classification.toLowerCase() == 'calf' && c.sex.toLowerCase() == 'male').length;
-    final calfFemales = allCattle.where((c) => 
-      c.classification.toLowerCase() == 'calf' && c.sex.toLowerCase() == 'female').length;
-    final totalCalves = calfMales + calfFemales;
+  Widget _buildKidChart() {
+    final KidMales = allgoat.where((c) => 
+      c.classification.toLowerCase() == 'Kid' && c.sex.toLowerCase() == 'male').length;
+    final KidFemales = allgoat.where((c) => 
+      c.classification.toLowerCase() == 'Kid' && c.sex.toLowerCase() == 'female').length;
+    final totalCalves = KidMales + KidFemales;
 
     if (totalCalves == 0) {
       return Container(
@@ -1722,7 +1722,7 @@ class _DashboardScreenState extends State<DashboardScreen>
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const Text(
-              'Calf Sex',
+              'Kid Sex',
               style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.w600,
@@ -1756,8 +1756,8 @@ class _DashboardScreenState extends State<DashboardScreen>
       );
     }
 
-    final malePercentage = ((calfMales / totalCalves) * 100).toStringAsFixed(0);
-    final femalePercentage = ((calfFemales / totalCalves) * 100).toStringAsFixed(0);
+    final malePercentage = ((KidMales / totalCalves) * 100).toStringAsFixed(0);
+    final femalePercentage = ((KidFemales / totalCalves) * 100).toStringAsFixed(0);
 
     return Container(
       padding: const EdgeInsets.all(20),
@@ -1776,7 +1776,7 @@ class _DashboardScreenState extends State<DashboardScreen>
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const Text(
-            'Calf Sex',
+            'Kid Sex',
             style: TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.w600,
@@ -1791,7 +1791,7 @@ class _DashboardScreenState extends State<DashboardScreen>
                 sections: [
                   PieChartSectionData(
                     color: AppColors.darkGreen,
-                    value: calfMales.toDouble(),
+                    value: KidMales.toDouble(),
                     title: '$malePercentage%',
                     radius: 25,
                     titleStyle: const TextStyle(
@@ -1802,7 +1802,7 @@ class _DashboardScreenState extends State<DashboardScreen>
                   ),
                   PieChartSectionData(
                     color: AppColors.gold,
-                    value: calfFemales.toDouble(),
+                    value: KidFemales.toDouble(),
                     title: '$femalePercentage%',
                     radius: 25,
                     titleStyle: const TextStyle(
@@ -1821,8 +1821,8 @@ class _DashboardScreenState extends State<DashboardScreen>
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
             children: [
-              _buildLegendItem('M', calfMales, AppColors.darkGreen),
-              _buildLegendItem('F', calfFemales, AppColors.gold),
+              _buildLegendItem('M', KidMales, AppColors.darkGreen),
+              _buildLegendItem('F', KidFemales, AppColors.gold),
             ],
           ),
         ],
@@ -1831,9 +1831,9 @@ class _DashboardScreenState extends State<DashboardScreen>
   }
 
   Widget _buildGrowerChart() {
-    final growerMales = allCattle.where((c) => 
+    final growerMales = allgoat.where((c) => 
       c.classification.toLowerCase() == 'grower' && c.sex.toLowerCase() == 'male').length;
-    final growerFemales = allCattle.where((c) => 
+    final growerFemales = allgoat.where((c) => 
       c.classification.toLowerCase() == 'grower' && c.sex.toLowerCase() == 'female').length;
     final totalGrowers = growerMales + growerFemales;
 

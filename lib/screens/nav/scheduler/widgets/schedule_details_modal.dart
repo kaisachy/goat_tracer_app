@@ -1,6 +1,6 @@
-import 'package:flutter/material.dart';
-import 'package:cattle_tracer_app/constants/app_colors.dart';
-import 'package:cattle_tracer_app/models/schedule.dart';
+﻿import 'package:flutter/material.dart';
+import 'package:goat_tracer_app/constants/app_colors.dart';
+import 'package:goat_tracer_app/models/schedule.dart';
 
 class ScheduleDetailsModal extends StatelessWidget {
   final Schedule schedule;
@@ -99,12 +99,12 @@ class ScheduleDetailsModal extends StatelessWidget {
                         value: schedule.reminder!,
                       ),
                     ],
-                    if (schedule.cattleTag != null && schedule.cattleTag!.isNotEmpty) ...[
+                    if (schedule.goatTag != null && schedule.goatTag!.isNotEmpty) ...[
                       const SizedBox(height: 12),
                       _buildDetailRow(
                         icon: Icons.pets,
-                        label: 'Cattle Tag',
-                        value: schedule.cattleTag!,
+                        label: 'Goat Tag',
+                        value: schedule.goatTag!,
                       ),
                     ],
                     if (schedule.creatorName != null && schedule.creatorName!.isNotEmpty) ...[

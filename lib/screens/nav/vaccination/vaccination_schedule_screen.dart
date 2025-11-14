@@ -1,13 +1,13 @@
-import 'package:flutter/material.dart';
-import 'package:cattle_tracer_app/models/cattle.dart';
-import 'package:cattle_tracer_app/models/vaccination_schedule.dart';
-import 'package:cattle_tracer_app/services/vaccination_service.dart';
-import 'package:cattle_tracer_app/services/cattle/cattle_service.dart';
-import 'package:cattle_tracer_app/services/cattle/cattle_history_service.dart';
-import 'package:cattle_tracer_app/constants/app_colors.dart';
-import 'package:cattle_tracer_app/screens/nav/schedule/schedule_form.dart';
-import 'package:cattle_tracer_app/models/schedule.dart';
-import 'package:cattle_tracer_app/services/schedule/schedule_service.dart';
+﻿import 'package:flutter/material.dart';
+import 'package:goat_tracer_app/models/goat.dart';
+import 'package:goat_tracer_app/models/vaccination_schedule.dart';
+import 'package:goat_tracer_app/services/vaccination_service.dart';
+import 'package:goat_tracer_app/services/goat/goat_service.dart';
+import 'package:goat_tracer_app/services/goat/goat_history_service.dart';
+import 'package:goat_tracer_app/constants/app_colors.dart';
+import 'package:goat_tracer_app/screens/nav/schedule/schedule_form.dart';
+import 'package:goat_tracer_app/models/schedule.dart';
+import 'package:goat_tracer_app/services/schedule/schedule_service.dart';
 
 
 class VaccinationScheduleScreen extends StatefulWidget {
@@ -20,13 +20,13 @@ class VaccinationScheduleScreen extends StatefulWidget {
 
 class _VaccinationScheduleScreenState extends State<VaccinationScheduleScreen>
     with TickerProviderStateMixin {
-  List<Cattle> allCattle = [];
+  List<goat> allGoats = [];
   List<Map<String, dynamic>> allEvents = [];
   List<VaccinationSchedule> vaccinationSchedules = [];
-  List<Map<String, dynamic>> cattleNeedingVaccination = [];
+  List<Map<String, dynamic>> goatNeedingVaccination = [];
   Map<String, List<VaccineType>> vaccinesByStage = {};
   // key: TAG|vaccineType(lower)
-  final Map<String, Schedule> _scheduledByCattleVaccine = {};
+  final Map<String, Schedule> _scheduledBygoatVaccine = {};
   
   bool isLoading = true;
   String? error;
@@ -68,8 +68,8 @@ class _VaccinationScheduleScreenState extends State<VaccinationScheduleScreen>
     try {
       setState(() => isLoading = true);
 
-      final cattleData = await CattleService.getAllCattle();
-      final eventsData = await CattleHistoryService.getCattleHistory();
+      final goatData = await GoatService.getAllGoats();
+      final eventsData = await GoatHistoryService.getgoatHistory();
       // Load existing scheduled vaccination schedules from backend
       final existingVaccinationSchedules = await ScheduleService.getSchedules(
         type: ScheduleType.vaccination,
@@ -77,42 +77,42 @@ class _VaccinationScheduleScreenState extends State<VaccinationScheduleScreen>
       );
 
       final schedules = await VaccinationService().generateVaccinationSchedules(
-        allCattle: cattleData,
+        allGoats: goatData,
         allEvents: eventsData,
       );
 
-      final cattleNeeding = VaccinationService().getCattleNeedingVaccination(
+      final goatNeeding = VaccinationService().getgoatNeedingVaccination(
         schedules: schedules,
-        allCattle: cattleData,
+        allGoats: goatData,
       );
 
       final vaccinesByStageData = VaccinationService().getVaccinesByStage();
 
-      // Build lookup map for quick checks per cattle+vaccine
-      _scheduledByCattleVaccine.clear();
+      // Build lookup map for quick checks per goat+vaccine
+      _scheduledBygoatVaccine.clear();
       for (final sched in existingVaccinationSchedules) {
         if (sched.vaccineType == null || sched.vaccineType!.isEmpty) continue;
         final vaccineKeyName = sched.vaccineType!.toLowerCase();
-        for (final tag in sched.cattleTagsList) {
+        for (final tag in sched.goatTagsList) {
           final key = _scheduledKey(tag, vaccineKeyName);
           // Keep the earliest upcoming schedule if multiple
-          if (_scheduledByCattleVaccine.containsKey(key)) {
-            final current = _scheduledByCattleVaccine[key]!;
+          if (_scheduledBygoatVaccine.containsKey(key)) {
+            final current = _scheduledBygoatVaccine[key]!;
             if (sched.scheduleDateTime.isBefore(current.scheduleDateTime)) {
-              _scheduledByCattleVaccine[key] = sched;
+              _scheduledBygoatVaccine[key] = sched;
             }
           } else {
-            _scheduledByCattleVaccine[key] = sched;
+            _scheduledBygoatVaccine[key] = sched;
           }
         }
       }
 
       if (mounted) {
         setState(() {
-          allCattle = cattleData;
+          allGoats = goatData;
           allEvents = eventsData;
           vaccinationSchedules = schedules;
-          cattleNeedingVaccination = cattleNeeding;
+          goatNeedingVaccination = goatNeeding;
           vaccinesByStage = vaccinesByStageData;
           isLoading = false;
           error = null;
@@ -128,13 +128,13 @@ class _VaccinationScheduleScreenState extends State<VaccinationScheduleScreen>
     }
   }
 
-  String _scheduledKey(String cattleTag, String vaccineTypeLower) {
-    return '${cattleTag.trim().toUpperCase()}|$vaccineTypeLower';
+  String _scheduledKey(String goatTag, String vaccineTypeLower) {
+    return '${goatTag.trim().toUpperCase()}|$vaccineTypeLower';
   }
 
-  Schedule? _getScheduledFor(String cattleTag, String vaccineType) {
-    final key = _scheduledKey(cattleTag, vaccineType.toLowerCase());
-    return _scheduledByCattleVaccine[key];
+  Schedule? _getScheduledFor(String goatTag, String vaccineType) {
+    final key = _scheduledKey(goatTag, vaccineType.toLowerCase());
+    return _scheduledBygoatVaccine[key];
   }
 
   @override
@@ -290,12 +290,12 @@ class _VaccinationScheduleScreenState extends State<VaccinationScheduleScreen>
 
     // Sort stages by priority
     final stagePriority = {
-      'Newborn Calf': 0,
+      'Newborn Kid': 0,
       'Pre-weaning Calves': 1,
-      'Weaned Calves / Growers / Steer': 2,
-      'Replacement Heifers': 3,
-      'Breeding Cows & Bulls': 4,
-      'Pregnant Heifer & Cow': 5,
+      'Weaned Calves / Growers / Buckling': 2,
+      'Replacement Doelings': 3,
+      'Breeding Does & Bucks': 4,
+      'Pregnant Doeling & Doe': 5,
       'Other': 999,
     };
 
@@ -331,7 +331,7 @@ class _VaccinationScheduleScreenState extends State<VaccinationScheduleScreen>
             ),
             ...vaccineTypes.map((vaccineType) {
               final allForType = groupedSchedules[vaccineType] ?? [];
-              final forThisStage = allForType.where((s) => s.cattleStage == stage).toList();
+              final forThisStage = allForType.where((s) => s.goatStage == stage).toList();
               return _buildVaccineTypeCard(vaccineType, forThisStage);
             }),
             const SizedBox(height: 16),
@@ -492,7 +492,7 @@ class _VaccinationScheduleScreenState extends State<VaccinationScheduleScreen>
                             Text(
                               hasSchedules 
                                   ? '${pendingOrOverdue.length} pending'
-                                  : 'No cattle',
+                                  : 'No goat',
                               style: const TextStyle(
                                 color: Colors.white,
                                 fontSize: 10,
@@ -515,7 +515,7 @@ class _VaccinationScheduleScreenState extends State<VaccinationScheduleScreen>
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 const Text(
-                  'Cattle Needing Vaccination:',
+                  'goat Needing Vaccination:',
                   style: TextStyle(
                     fontSize: 13,
                     fontWeight: FontWeight.w600,
@@ -524,7 +524,7 @@ class _VaccinationScheduleScreenState extends State<VaccinationScheduleScreen>
                 ),
                 const SizedBox(height: 12),
                 if (pendingOrOverdue.isNotEmpty)
-                  ...pendingOrOverdue.map((schedule) => _buildCattleVaccinationRow(schedule))
+                  ...pendingOrOverdue.map((schedule) => _buildgoatVaccinationRow(schedule))
                 else
                   Container(
                     width: double.infinity,
@@ -544,8 +544,8 @@ class _VaccinationScheduleScreenState extends State<VaccinationScheduleScreen>
                         const SizedBox(height: 10),
                         Text(
                           hasSchedules 
-                              ? 'No cattle currently need this vaccine'
-                              : 'No cattle in your herd require this vaccine',
+                              ? 'No goat currently need this vaccine'
+                              : 'No goat in your herd require this vaccine',
                           style: TextStyle(
                             fontSize: 13,
                             color: Colors.grey.shade600,
@@ -565,12 +565,12 @@ class _VaccinationScheduleScreenState extends State<VaccinationScheduleScreen>
     );
   }
 
-  Widget _buildCattleVaccinationRow(VaccinationSchedule schedule) {
-    final cattle = allCattle.firstWhere(
-      (c) => c.tagNo == schedule.cattleTag,
-      orElse: () => Cattle(
+  Widget _buildgoatVaccinationRow(VaccinationSchedule schedule) {
+    final goat = allGoats.firstWhere(
+      (c) => c.tagNo == schedule.goatTag,
+      orElse: () => goat(
         id: 0,
-        tagNo: schedule.cattleTag,
+        tagNo: schedule.goatTag,
         sex: '',
         classification: '',
         status: '',
@@ -578,10 +578,10 @@ class _VaccinationScheduleScreenState extends State<VaccinationScheduleScreen>
       ),
     );
 
-    final ageInMonths = _getAccurateAgeInMonths(cattle);
-    final ageDisplay = _getAgeDisplay(cattle, ageInMonths);
-    final classification = _normalizeClassification(cattle.classification);
-    final scheduled = _getScheduledFor(cattle.tagNo, schedule.vaccineType);
+    final ageInMonths = _getAccurateAgeInMonths(goat);
+    final ageDisplay = _getAgeDisplay(goat, ageInMonths);
+    final classification = _normalizeClassification(goat.classification);
+    final scheduled = _getScheduledFor(goat.tagNo, schedule.vaccineType);
 
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
@@ -601,7 +601,7 @@ class _VaccinationScheduleScreenState extends State<VaccinationScheduleScreen>
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Tag: ${cattle.tagNo}',
+                  'Tag: ${goat.tagNo}',
                   style: const TextStyle(
                     fontSize: 13,
                     fontWeight: FontWeight.w600,
@@ -649,49 +649,49 @@ class _VaccinationScheduleScreenState extends State<VaccinationScheduleScreen>
     );
   }
 
-  int _getAccurateAgeInMonths(Cattle cattle) {
-    if (cattle.age != null && cattle.age!.isNotEmpty) {
+  int _getAccurateAgeInMonths(goat goat) {
+    if (goat.age != null && goat.age!.isNotEmpty) {
       try {
-        final ageValue = int.tryParse(cattle.age!);
+        final ageValue = int.tryParse(goat.age!);
         if (ageValue != null && ageValue >= 0) {
           return ageValue;
         }
       } catch (_) {}
     }
-    if (cattle.dateOfBirth != null && cattle.dateOfBirth!.isNotEmpty) {
+    if (goat.dateOfBirth != null && goat.dateOfBirth!.isNotEmpty) {
       try {
-        final birthDate = DateTime.parse(cattle.dateOfBirth!);
+        final birthDate = DateTime.parse(goat.dateOfBirth!);
         final now = DateTime.now();
         final difference = now.difference(birthDate);
         final ageInMonths = (difference.inDays / 30.44).round();
         return ageInMonths > 0 ? ageInMonths : 0;
       } catch (_) {}
     }
-    return _getDefaultAgeByClassification(cattle.classification);
+    return _getDefaultAgeByClassification(goat.classification);
   }
 
   int _getDefaultAgeByClassification(String classification) {
     switch (classification.toLowerCase()) {
-      case 'calf':
+      case 'Kid':
         return 3;
       case 'grower':
       case 'growers':
         return 8;
-      case 'heifer':
-      case 'heifers':
+      case 'Doeling':
+      case 'Doelings':
         return 15;
-      case 'cow':
-      case 'cows':
+      case 'Doe':
+      case 'Does':
         return 36;
-      case 'bull':
-      case 'bulls':
+      case 'Buck':
+      case 'Bucks':
         return 36;
       default:
         return 12;
     }
   }
 
-  String _getAgeDisplay(Cattle cattle, int ageInMonths) {
+  String _getAgeDisplay(goat goat, int ageInMonths) {
     if (ageInMonths < 12) {
       return '$ageInMonths months';
     } else {
@@ -708,21 +708,21 @@ class _VaccinationScheduleScreenState extends State<VaccinationScheduleScreen>
   String _normalizeClassification(String classification) {
     final normalized = classification.trim().toLowerCase();
     switch (normalized) {
-      case 'calf':
+      case 'Kid':
       case 'calves':
-        return 'Calf';
+        return 'Kid';
       case 'grower':
       case 'growers':
         return 'Growers';
-      case 'heifer':
-      case 'heifers':
-        return 'Heifer';
-      case 'cow':
-      case 'cows':
-        return 'Cow';
-      case 'bull':
-      case 'bulls':
-        return 'Bull';
+      case 'Doeling':
+      case 'Doelings':
+        return 'Doeling';
+      case 'Doe':
+      case 'Does':
+        return 'Doe';
+      case 'Buck':
+      case 'Bucks':
+        return 'Buck';
       default:
         return classification;
     }

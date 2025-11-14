@@ -1,10 +1,10 @@
-import 'package:flutter/foundation.dart';
+﻿import 'package:flutter/foundation.dart';
 
 class Schedule {
   final int? id;
   final int userId;
   final String title;
-  final String? cattleTag;
+  final String? goatTag;
   final String type;
   final DateTime scheduleDateTime;
   final String? duration;
@@ -22,7 +22,7 @@ class Schedule {
     this.id,
     required this.userId,
     required this.title,
-    this.cattleTag,
+    this.goatTag,
     required this.type,
     required this.scheduleDateTime,
     this.duration,
@@ -43,7 +43,7 @@ class Schedule {
         id: _parseId(json['id']),
         userId: _parseInt(json['user_id']) ?? 0,
         title: json['title']?.toString() ?? '',
-        cattleTag: _normalizeCattleTag(json['cattle_tag']?.toString()),
+        goatTag: _normalizegoatTag(json['goat_tag']?.toString()),
         type: json['type']?.toString() ?? 'Other',
         scheduleDateTime: _parseDateTime(json['schedule_datetime']) ?? DateTime.now(),
         duration: json['duration']?.toString(),
@@ -101,14 +101,14 @@ class Schedule {
     return null;
   }
 
-  // Normalize cattle tag to ensure consistent format
-  static String? _normalizeCattleTag(String? cattleTag) {
-    if (cattleTag == null || cattleTag.isEmpty) {
+  // Normalize Goat Tag to ensure consistent format
+  static String? _normalizegoatTag(String? goatTag) {
+    if (goatTag == null || goatTag.isEmpty) {
       return null;
     }
 
     // Split by comma, trim whitespace, convert to uppercase, and rejoin
-    final tags = cattleTag
+    final tags = goatTag
         .split(',')
         .map((tag) => tag.trim().toUpperCase())
         .where((tag) => tag.isNotEmpty)
@@ -138,7 +138,7 @@ class Schedule {
       if (id != null) 'id': id,
       'user_id': userId,
       'title': title,
-      'cattle_tag': cattleTag,
+      'goat_tag': goatTag,
       'type': type,
       'schedule_datetime': scheduleDateTime.toIso8601String(),
       'duration': duration,
@@ -159,7 +159,7 @@ class Schedule {
       if (id != null) 'id': id,
       'user_id': userId,
       'title': title,
-      'cattle_tag': cattleTag,
+      'goat_tag': goatTag,
       'type': type,
       'schedule_datetime': _formatDateTime(scheduleDateTime),
       'duration': duration,
@@ -186,7 +186,7 @@ class Schedule {
     int? id,
     int? userId,
     String? title,
-    String? cattleTag,
+    String? goatTag,
     String? type,
     DateTime? scheduleDateTime,
     String? duration,
@@ -204,7 +204,7 @@ class Schedule {
       id: id ?? this.id,
       userId: userId ?? this.userId,
       title: title ?? this.title,
-      cattleTag: cattleTag ?? this.cattleTag,
+      goatTag: goatTag ?? this.goatTag,
       type: type ?? this.type,
       scheduleDateTime: scheduleDateTime ?? this.scheduleDateTime,
       duration: duration ?? this.duration,
@@ -241,36 +241,36 @@ class Schedule {
     return scheduleDateTime.isAfter(now) && scheduleDateTime.isBefore(deadline);
   }
 
-  // Helper methods for cattle tag handling
-  List<String> get cattleTagsList {
-    if (cattleTag == null || cattleTag!.isEmpty) {
+  // Helper methods for Goat Tag handling
+  List<String> get goatTagsList {
+    if (goatTag == null || goatTag!.isEmpty) {
       return [];
     }
-    return cattleTag!
+    return goatTag!
         .split(',')
         .map((tag) => tag.trim().toUpperCase())
         .where((tag) => tag.isNotEmpty)
         .toList();
   }
 
-  bool containsCattleTag(String tag) {
+  bool containsgoatTag(String tag) {
     final normalizedTag = tag.trim().toUpperCase();
-    return cattleTagsList.contains(normalizedTag);
+    return goatTagsList.contains(normalizedTag);
   }
 
-  // Check if this schedule is assigned to multiple cattle
-  bool get isMultipleCattleSchedule => cattleTagsList.length > 1;
+  // Check if this schedule is assigned to multiple goat
+  bool get isMultiplegoatSchedule => goatTagsList.length > 1;
 
-  // Get the primary cattle tag (first one in the list)
-  String? get primaryCattleTag => cattleTagsList.isNotEmpty ? cattleTagsList.first : null;
+  // Get the primary Goat Tag (first one in the list)
+  String? get primarygoatTag => goatTagsList.isNotEmpty ? goatTagsList.first : null;
 
-  // Get additional cattle tags (excluding the first one)
-  List<String> get additionalCattleTags =>
-      cattleTagsList.length > 1 ? cattleTagsList.skip(1).toList() : [];
+  // Get additional Goat Tags (excluding the first one)
+  List<String> get additionalgoatTags =>
+      goatTagsList.length > 1 ? goatTagsList.skip(1).toList() : [];
 
   @override
   String toString() {
-    return 'Schedule{id: $id, title: $title, type: $type, scheduleDateTime: $scheduleDateTime, status: $status, cattleTag: $cattleTag}';
+    return 'Schedule{id: $id, title: $title, type: $type, scheduleDateTime: $scheduleDateTime, status: $status, goatTag: $goatTag}';
   }
 
   @override
@@ -281,7 +281,7 @@ class Schedule {
               id == other.id &&
               userId == other.userId &&
               title == other.title &&
-              cattleTag == other.cattleTag &&
+              goatTag == other.goatTag &&
               type == other.type &&
               scheduleDateTime == other.scheduleDateTime &&
               duration == other.duration &&
@@ -298,7 +298,7 @@ class Schedule {
       id.hashCode ^
       userId.hashCode ^
       title.hashCode ^
-      cattleTag.hashCode ^
+      goatTag.hashCode ^
       type.hashCode ^
       scheduleDateTime.hashCode ^
       duration.hashCode ^

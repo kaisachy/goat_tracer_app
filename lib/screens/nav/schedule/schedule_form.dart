@@ -1,14 +1,14 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import '../../../constants/app_colors.dart';
 import '../../../services/schedule/schedule_service.dart';
-import '../../../services/cattle/cattle_service.dart';
-import '../../../services/cattle/cattle_history_service.dart';
+import '../../../services/goat/goat_service.dart';
+import '../../../services/goat/goat_history_service.dart';
 import '../../../services/auth_service.dart';
 import '../../../models/schedule.dart';
-import '../../../models/cattle.dart';
+import '../../../models/goat.dart';
 import '../../../models/vaccination_schedule.dart';
 import '../../../services/vaccination_service.dart';
-import 'widgets/cattle_tag_multi_select_field_widget.dart';
+import 'widgets/goat_tag_multi_select_field_widget.dart';
 
 
 class ScheduleForm extends StatefulWidget {
@@ -38,10 +38,10 @@ class _ScheduleFormState extends State<ScheduleForm> {
   String _selectedType = ScheduleType.vaccination;
   DateTime _selectedDate = DateTime.now();
   TimeOfDay _selectedTime = TimeOfDay.now();
-  List<String> _selectedCattleTags = [];
+  List<String> _selectedgoatTags = [];
 
-  List<Cattle> _cattleList = [];
-  bool _isLoadingCattle = false;
+  List<goat> _goatList = [];
+  bool _isLoadinggoat = false;
   bool _isLoading = false;
   bool get _isEditing => widget.scheduleToEdit != null;
 
@@ -62,7 +62,7 @@ class _ScheduleFormState extends State<ScheduleForm> {
     if (widget.preSelectedVaccineType != null) {
       _selectedVaccineName = widget.preSelectedVaccineType;
     }
-    _loadCattleList();
+    _loadgoatList();
     _loadEvents();
     // Note: _populateFieldsForEditing() will be called after data is loaded
   }
@@ -76,42 +76,42 @@ class _ScheduleFormState extends State<ScheduleForm> {
     super.dispose();
   }
 
-  Future<void> _loadCattleList() async {
+  Future<void> _loadgoatList() async {
     if (mounted) {
-      setState(() => _isLoadingCattle = true);
+      setState(() => _isLoadinggoat = true);
     }
 
     try {
-      final cattle = await CattleService.getAllCattle();
+      final goat = await GoatService.getAllGoats();
       if (mounted) {
         setState(() {
-          _cattleList = cattle;
-          _isLoadingCattle = false;
+          _goatList = goat;
+          _isLoadinggoat = false;
         });
       }
       
-      // Populate fields for editing after cattle list is loaded
+      // Populate fields for editing after goat list is loaded
       if (_isEditing) {
         _populateFieldsForEditing();
       }
       
-      // If we have a pre-selected vaccine type, populate cattle needing that vaccine
+      // If we have a pre-selected vaccine type, populate goat needing that vaccine
       if (widget.preSelectedVaccineType != null && !_isEditing) {
-        _populateCattleNeedingSelectedVaccine();
+        _populategoatNeedingSelectedVaccine();
       }
     } catch (e) {
-      // print('Error loading cattle list: $e');
-      if (mounted) setState(() => _isLoadingCattle = false);
+      // print('Error loading goat list: $e');
+      if (mounted) setState(() => _isLoadinggoat = false);
 
       if (mounted) {
-        _showError('Failed to load cattle list: ${e.toString()}');
+        _showError('Failed to load goat list: ${e.toString()}');
       }
     }
   }
 
   Future<void> _loadEvents() async {
     try {
-      final events = await CattleHistoryService.getCattleHistory();
+      final events = await GoatHistoryService.getgoatHistory();
       if (mounted) {
         setState(() {
           _allEvents = events;
@@ -128,8 +128,8 @@ class _ScheduleFormState extends State<ScheduleForm> {
     // Set vaccine type from schedule
     _selectedVaccineName = schedule.vaccineType;
 
-    if (schedule.cattleTag != null && schedule.cattleTag!.isNotEmpty) {
-      _selectedCattleTags = schedule.cattleTag!
+    if (schedule.goatTag != null && schedule.goatTag!.isNotEmpty) {
+      _selectedgoatTags = schedule.goatTag!
           .split(',')
           .map((tag) => tag.trim())
           .where((tag) => tag.isNotEmpty)
@@ -163,18 +163,18 @@ class _ScheduleFormState extends State<ScheduleForm> {
             children: [
               _buildVaccineDropdown(),
               const SizedBox(height: 16),
-              CattleTagMultiSelectField(
-                selectedCattleTags: _selectedCattleTags,
-                cattleList: _filteredCattleForSelectedVaccine(),
-                isLoadingCattle: _isLoadingCattle,
-                onCattleTagsChanged: (tags) {
+              goatTagMultiSelectField(
+                selectedgoatTags: _selectedgoatTags,
+                goatList: _filteredgoatForSelectedVaccine(),
+                isLoadinggoat: _isLoadinggoat,
+                ongoatTagsChanged: (tags) {
                   if (mounted) {
                     setState(() {
-                      _selectedCattleTags = tags;
+                      _selectedgoatTags = tags;
                     });
                   }
                 },
-                onRefreshCattle: _loadCattleList,
+                onRefreshgoat: _loadgoatList,
                 scheduledTagsForVaccine: _scheduledTagsForSelectedVaccine,
               ),
               const SizedBox(height: 16),
@@ -376,12 +376,12 @@ class _ScheduleFormState extends State<ScheduleForm> {
     // Final validation: prevent duplicates on selected tags for this vaccine
     try {
       await _loadExistingScheduledForSelectedVaccine();
-      final conflicted = _selectedCattleTags
+      final conflicted = _selectedgoatTags
           .map((t) => t.trim().toUpperCase())
           .where((t) => _scheduledTagsForSelectedVaccine.contains(t))
           .toList();
       if (conflicted.isNotEmpty) {
-        _showError('Some cattle already have a scheduled "${_selectedVaccineName!}": ${conflicted.join(', ')}');
+        _showError('Some goat already have a scheduled "${_selectedVaccineName!}": ${conflicted.join(', ')}');
         return;
       }
     } catch (_) {}
@@ -407,10 +407,10 @@ class _ScheduleFormState extends State<ScheduleForm> {
         // print('Error getting user ID: $e');
       }
 
-      String? cattleTagsString;
-      if (_selectedCattleTags.isNotEmpty) {
-        // If multiple cattle selected, we'll create one schedule per cattle below
-        cattleTagsString = _selectedCattleTags.length == 1 ? _selectedCattleTags.first : null;
+      String? goatTagsString;
+      if (_selectedgoatTags.isNotEmpty) {
+        // If multiple goat selected, we'll create one schedule per goat below
+        goatTagsString = _selectedgoatTags.length == 1 ? _selectedgoatTags.first : null;
       }
 
 
@@ -420,7 +420,7 @@ class _ScheduleFormState extends State<ScheduleForm> {
 
         final updatedSchedule = widget.scheduleToEdit!.copyWith(
           title: computedTitleEdit,
-          cattleTag: cattleTagsString,
+          goatTag: goatTagsString,
           type: ScheduleType.vaccination,
           scheduleDateTime: scheduleDateTime,
           duration: _durationController.text.trim().isEmpty
@@ -446,13 +446,13 @@ class _ScheduleFormState extends State<ScheduleForm> {
             ? 'Vaccination: ${_selectedVaccineName!}'
             : 'Vaccination';
 
-        if (_selectedCattleTags.length > 1) {
+        if (_selectedgoatTags.length > 1) {
           int successCount = 0;
-          for (final tag in _selectedCattleTags) {
+          for (final tag in _selectedgoatTags) {
             final perTagSchedule = Schedule(
               userId: userId,
               title: computedTitleCreate,
-              cattleTag: tag,
+              goatTag: tag,
               type: ScheduleType.vaccination,
               scheduleDateTime: scheduleDateTime,
               duration: _durationController.text.trim().isEmpty
@@ -483,7 +483,7 @@ class _ScheduleFormState extends State<ScheduleForm> {
           final newSchedule = Schedule(
             userId: userId,
             title: computedTitleCreate,
-            cattleTag: cattleTagsString,
+            goatTag: goatTagsString,
             type: ScheduleType.vaccination,
             scheduleDateTime: scheduleDateTime,
             duration: _durationController.text.trim().isEmpty
@@ -553,10 +553,10 @@ class _ScheduleFormState extends State<ScheduleForm> {
     }
   }
 
-  void _setSelectedCattleTags(List<String> tags) {
+  void _setSelectedgoatTags(List<String> tags) {
     if (mounted) {
       setState(() {
-        _selectedCattleTags = tags;
+        _selectedgoatTags = tags;
       });
     }
   }
@@ -566,7 +566,7 @@ class _ScheduleFormState extends State<ScheduleForm> {
       setState(() {
         _selectedVaccineName = value;
       });
-      _populateCattleNeedingSelectedVaccine();
+      _populategoatNeedingSelectedVaccine();
     }
   }
 }
@@ -584,12 +584,12 @@ extension _VaccinationUI on _ScheduleFormState {
     }
     // Sort stages in a sensible order
     final stageOrder = {
-      'Newborn Calf': 0,
+      'Newborn Kid': 0,
       'Pre-weaning Calves': 1,
-      'Weaned Calves / Growers / Steer': 2,
-      'Replacement Heifers': 3,
-      'Breeding Cows & Bulls': 4,
-      'Pregnant Heifer & Cow': 5,
+      'Weaned Calves / Growers / Buckling': 2,
+      'Replacement Doelings': 3,
+      'Breeding Does & Bucks': 4,
+      'Pregnant Doeling & Doe': 5,
       'Other': 99,
     };
     final sortedStages = vaccinesByStage.keys.toList()
@@ -663,11 +663,11 @@ extension _VaccinationUI on _ScheduleFormState {
             padding: EdgeInsets.only(top: 8),
             child: LinearProgressIndicator(minHeight: 2),
           ),
-        if (_selectedVaccineName != null && _selectedCattleTags.isNotEmpty)
+        if (_selectedVaccineName != null && _selectedgoatTags.isNotEmpty)
           Padding(
             padding: const EdgeInsets.only(top: 8),
             child: Text(
-              'Auto-selected ${_selectedCattleTags.length} cattle needing "${_selectedVaccineName!}"',
+              'Auto-selected ${_selectedgoatTags.length} goat needing "${_selectedVaccineName!}"',
               style: TextStyle(color: Colors.grey[700], fontSize: 12),
             ),
           ),
@@ -675,14 +675,14 @@ extension _VaccinationUI on _ScheduleFormState {
     );
   }
 
-  List<Cattle> _filteredCattleForSelectedVaccine() {
-    if (_selectedVaccineName == null) return _cattleList;
-    if (_selectedCattleTags.isEmpty) return _cattleList;
-    final tagSet = _selectedCattleTags.toSet();
-    return _cattleList.where((c) => tagSet.contains(c.tagNo)).toList();
+  List<goat> _filteredgoatForSelectedVaccine() {
+    if (_selectedVaccineName == null) return _goatList;
+    if (_selectedgoatTags.isEmpty) return _goatList;
+    final tagSet = _selectedgoatTags.toSet();
+    return _goatList.where((c) => tagSet.contains(c.tagNo)).toList();
   }
 
-  Future<void> _populateCattleNeedingSelectedVaccine() async {
+  Future<void> _populategoatNeedingSelectedVaccine() async {
     if (_selectedVaccineName == null || !mounted) return;
     
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -694,9 +694,9 @@ extension _VaccinationUI on _ScheduleFormState {
     try {
       // Refresh existing scheduled cache for this vaccine
       await _loadExistingScheduledForSelectedVaccine();
-      // Generate vaccination schedules for all cattle
+      // Generate vaccination schedules for all goat
       final schedules = await VaccinationService().generateVaccinationSchedules(
-        allCattle: _cattleList,
+        allgoat: _goatList,
         allEvents: _allEvents,
       );
 
@@ -706,16 +706,16 @@ extension _VaccinationUI on _ScheduleFormState {
       final needing = schedules.where((s) =>
           s.vaccineType == _selectedVaccineName && (s.isPending || s.isOverdue));
 
-      // Exclude cattle that already have a Scheduled vaccination of this type
+      // Exclude goat that already have a Scheduled vaccination of this type
       final tags = needing
-          .map((s) => s.cattleTag)
+          .map((s) => s.goatTag)
           .where((tag) => !_scheduledTagsForSelectedVaccine.contains(tag.toUpperCase()))
           .toSet()
           .toList();
       
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted) {
-          _setSelectedCattleTags(tags);
+          _setSelectedgoatTags(tags);
         }
       });
     } catch (e) {
@@ -741,7 +741,7 @@ extension _VaccinationUI on _ScheduleFormState {
       );
       for (final s in existing) {
         if ((s.vaccineType ?? '').toLowerCase() == _selectedVaccineName!.toLowerCase()) {
-          for (final tag in s.cattleTagsList) {
+          for (final tag in s.goatTagsList) {
             _scheduledTagsForSelectedVaccine.add(tag.toUpperCase());
           }
         }

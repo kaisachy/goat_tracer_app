@@ -1,7 +1,7 @@
-import 'dart:developer';
-import 'cattle/cattle_status_service.dart';
+﻿import 'dart:developer';
+import 'goat/goat_status_service.dart';
 import 'profile/personal_information_service.dart';
-import 'cattle/cattle_service.dart';
+import 'goat/goat_service.dart';
 import 'milk/milk_production_service.dart';
 import 'schedule/schedule_service.dart';
 
@@ -9,23 +9,23 @@ class RefreshService {
   /// Comprehensive refresh for all app data
   static Future<Map<String, dynamic>> refreshAllData() async {
     Map<String, dynamic> results = {
-      'cattleStatusUpdates': [],
+      'goatStatusUpdates': [],
       'profileRefreshed': false,
-      'cattleDataRefreshed': false,
+      'goatDataRefreshed': false,
       'milkDataRefreshed': false,
       'scheduleDataRefreshed': false,
       'errors': [],
     };
 
     try {
-      // 1. Check and update cattle breeding status
+      // 1. Check and update goat breeding status
       try {
-        final updatedCattle = await CattleStatusService.checkAndUpdateBreedingStatus();
-        results['cattleStatusUpdates'] = updatedCattle;
-        log('RefreshService: Cattle status updates completed');
+        final updatedgoat = await GoatStatusService.checkAndUpdateBreedingStatus();
+        results['goatStatusUpdates'] = updatedgoat;
+        log('RefreshService: goat status updates completed');
       } catch (e) {
-        results['errors'].add('Cattle status update failed: $e');
-        log('RefreshService: Error updating cattle status: $e');
+        results['errors'].add('goat status update failed: $e');
+        log('RefreshService: Error updating goat status: $e');
       }
 
       // 2. Refresh profile data
@@ -38,14 +38,14 @@ class RefreshService {
         log('RefreshService: Error refreshing profile: $e');
       }
 
-      // 3. Refresh cattle data
+      // 3. Refresh goat data
       try {
-        await CattleService.getCattleInformation();
-        results['cattleDataRefreshed'] = true;
-        log('RefreshService: Cattle data refreshed');
+        await GoatService.getGoatInformation();
+        results['goatDataRefreshed'] = true;
+        log('RefreshService: goat data refreshed');
       } catch (e) {
-        results['errors'].add('Cattle data refresh failed: $e');
-        log('RefreshService: Error refreshing cattle data: $e');
+        results['errors'].add('goat data refresh failed: $e');
+        log('RefreshService: Error refreshing goat data: $e');
       }
 
       // 4. Refresh milk data
@@ -97,22 +97,22 @@ class RefreshService {
           }
           break;
           
-        case 1: // Production Record (Cattle)
+        case 1: // Production Record (goat)
           try {
-            await CattleService.getCattleInformation();
-            final updatedCattle = await CattleStatusService.checkAndUpdateBreedingStatus();
+            await GoatService.getGoatInformation();
+            final updatedgoat = await GoatStatusService.checkAndUpdateBreedingStatus();
             results['success'] = true;
-            results['message'] = 'Cattle data refreshed';
-            results['data'] = updatedCattle;
+            results['message'] = 'goat data refreshed';
+            results['data'] = updatedgoat;
           } catch (e) {
-            results['errors'].add('Cattle refresh failed: $e');
+            results['errors'].add('goat refresh failed: $e');
           }
           break;
           
         case 2: // Dashboard
-          // Refresh dashboard data (cattle, milk, schedule summaries)
+          // Refresh dashboard data (goat, milk, schedule summaries)
           try {
-            await CattleService.getCattleInformation();
+            await GoatService.getGoatInformation();
             await MilkProductionService.getMilkProductions();
             await ScheduleService.getSchedules();
             results['success'] = true;
@@ -124,9 +124,9 @@ class RefreshService {
           
         case 3: // Events
           try {
-            // Events don't have a specific service refresh, but we can refresh cattle data
-            // since history are related to cattle
-            await CattleService.getCattleInformation();
+            // Events don't have a specific service refresh, but we can refresh goat data
+            // since history are related to goat
+            await GoatService.getGoatInformation();
             results['success'] = true;
             results['message'] = 'Events data refreshed';
           } catch (e) {
@@ -175,8 +175,8 @@ class RefreshService {
       return 'Refresh completed with some errors';
     }
     
-    if (results['cattleStatusUpdates'].isNotEmpty) {
-      return 'Data refreshed! ${results['cattleStatusUpdates'].length} cow(s) status updated';
+    if (results['goatStatusUpdates'].isNotEmpty) {
+      return 'Data refreshed! ${results['goatStatusUpdates'].length} Doe(s) status updated';
     }
     
     return 'Data refreshed successfully!';

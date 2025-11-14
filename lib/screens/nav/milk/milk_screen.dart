@@ -1,11 +1,11 @@
-// Fixed milk_screen.dart
+﻿// Fixed milk_screen.dart
 
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import '../../../constants/app_colors.dart';
 import '../../../models/milk.dart';
-import '../../../services/cattle/cattle_service.dart';
-import '../../../models/cattle.dart';
+import '../../../services/goat/goat_service.dart';
+import '../../../models/goat.dart';
 import '../../../services/milk/milk_production_service.dart';
 import 'milk_record_form.dart';
 import 'milk_analytics_tab.dart';
@@ -22,13 +22,13 @@ class _MilkScreenState extends State<MilkScreen> with TickerProviderStateMixin {
   late TabController _tabController;
   String _selectedPeriod = 'Daily';
   List<MilkProduction> _milkRecords = [];
-  List<Cattle> _allCattle = [];
+  List<goat> _allgoat = [];
   bool _isLoading = true;
 
   // Statistics variables
   double _todaysTotal = 0.0;
   double _weeklyAverage = 0.0;
-  int _activeCows = 0;
+  int _activeDoes = 0;
 
   @override
   void initState() {
@@ -47,15 +47,15 @@ class _MilkScreenState extends State<MilkScreen> with TickerProviderStateMixin {
     setState(() => _isLoading = true);
 
     try {
-      // Load all cattle first, then filter for cows only
-      final allCattle = await CattleService.getAllCattle();
-      final cows = allCattle.where((cattle) =>
-      cattle.classification.toLowerCase() == 'cow').toList();
+      // Load all goat first, then filter for Does only
+      final allgoat = await GoatService.getAllGoats();
+      final Does = allgoat.where((goat) =>
+      goat.classification.toLowerCase() == 'Doe').toList();
 
       final milkRecords = await MilkProductionService.getMilkProductions();
 
       setState(() {
-        _allCattle = cows; // Only store cows
+        _allgoat = Does; // Only store Does
         _milkRecords = milkRecords;
         _calculateStatistics();
         _isLoading = false;
@@ -90,15 +90,15 @@ class _MilkScreenState extends State<MilkScreen> with TickerProviderStateMixin {
       _weeklyAverage = 0.0;
     }
 
-    // Count active cows (cows that have milk records in the last 30 days)
+    // Count active Does (Does that have milk records in the last 30 days)
     final monthAgo = today.subtract(Duration(days: 30));
     final activeTags = _milkRecords
         .where((record) => record.recordDate.isAfter(monthAgo))
-        .map((record) => record.cattleTag)
+        .map((record) => record.goatTag)
         .where((tag) => tag != null)
         .toSet();
 
-    _activeCows = activeTags.length;
+    _activeDoes = activeTags.length;
   }
 
   @override
@@ -148,8 +148,8 @@ class _MilkScreenState extends State<MilkScreen> with TickerProviderStateMixin {
               Icons.trending_up, Colors.green)),
           const SizedBox(width: 12),
           Expanded(child: _buildStatCard(
-              'Milking Cows', '$_activeCows',
-              FontAwesomeIcons.cow, Colors.orange)),
+              'Milking Does', '$_activeDoes',
+              FontAwesomeIcons.Doe, Colors.orange)),
         ],
       ),
     );
@@ -249,7 +249,7 @@ class _MilkScreenState extends State<MilkScreen> with TickerProviderStateMixin {
             ),
             const SizedBox(height: 8),
             Text(
-              'Tap the + button to record milk from your cows',
+              'Tap the + button to record milk from your Does',
               style: TextStyle(
                 fontSize: 14,
                 color: Colors.grey.shade500,
@@ -299,12 +299,12 @@ class _MilkScreenState extends State<MilkScreen> with TickerProviderStateMixin {
   }
 
   Widget _buildMilkRecordCard(MilkProduction record) {
-    // Find cattle name from tag
-    final cattle = _allCattle.firstWhere(
-          (c) => c.tagNo == record.cattleTag,
-      orElse: () => Cattle(
+    // Find goat name from tag
+    final goat = _allgoat.firstWhere(
+          (c) => c.tagNo == record.goatTag,
+      orElse: () => goat(
         id: 0,
-        tagNo: record.cattleTag ?? 'Unknown',
+        tagNo: record.goatTag ?? 'Unknown',
         sex: 'Unknown',
         classification: 'Unknown',
         status: 'Unknown',
@@ -313,15 +313,15 @@ class _MilkScreenState extends State<MilkScreen> with TickerProviderStateMixin {
     );
 
     // Check if this should be displayed as "Whole Farm Milk"
-    final isWholeFarmMilk = (record.cattleTag == null || record.cattleTag == 'N/A' || record.cattleTag == 'Unknown');
-    final displayTitle = isWholeFarmMilk ? 'Whole Farm Milk' : (record.cattleTag ?? 'N/A');
+    final isWholeFarmMilk = (record.goatTag == null || record.goatTag == 'N/A' || record.goatTag == 'Unknown');
+    final displayTitle = isWholeFarmMilk ? 'Whole Farm Milk' : (record.goatTag ?? 'N/A');
 
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
       elevation: 2,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       child: InkWell(
-        onTap: () => _showMilkRecordDetails(record, cattle),
+        onTap: () => _showMilkRecordDetails(record, goat),
         borderRadius: BorderRadius.circular(12),
         child: Padding(
           padding: const EdgeInsets.all(16),
@@ -337,7 +337,7 @@ class _MilkScreenState extends State<MilkScreen> with TickerProviderStateMixin {
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: FaIcon(
-                        isWholeFarmMilk ? FontAwesomeIcons.warehouse : FontAwesomeIcons.cow,
+                        isWholeFarmMilk ? FontAwesomeIcons.warehouse : FontAwesomeIcons.Doe,
                         color: Colors.blue,
                         size: 20
                     ),
@@ -468,7 +468,7 @@ class _MilkScreenState extends State<MilkScreen> with TickerProviderStateMixin {
   Widget _buildAnalyticsTab() {
     return MilkAnalyticsTab(
       milkRecords: _milkRecords,
-      allCattle: _allCattle,
+      allgoat: _allgoat,
     );
   }
 
@@ -492,10 +492,10 @@ class _MilkScreenState extends State<MilkScreen> with TickerProviderStateMixin {
     }
   }
 
-  void _showMilkRecordDetails(MilkProduction record, Cattle cattle) {
+  void _showMilkRecordDetails(MilkProduction record, goat goat) {
     // Check if this should be displayed as "Whole Farm Milk"
-    final isWholeFarmMilk = (record.cattleTag == null || record.cattleTag == 'N/A' || record.cattleTag == 'Unknown');
-    final displayTitle = isWholeFarmMilk ? 'Whole Farm Milk' : (record.cattleTag ?? 'N/A');
+    final isWholeFarmMilk = (record.goatTag == null || record.goatTag == 'N/A' || record.goatTag == 'Unknown');
+    final displayTitle = isWholeFarmMilk ? 'Whole Farm Milk' : (record.goatTag ?? 'N/A');
 
     showDialog(
       context: context,
@@ -543,7 +543,7 @@ class _MilkScreenState extends State<MilkScreen> with TickerProviderStateMixin {
                       child: FaIcon(
                         isWholeFarmMilk
                             ? FontAwesomeIcons.warehouse
-                            : FontAwesomeIcons.cow,
+                            : FontAwesomeIcons.Doe,
                         color: Colors.white,
                         size: 24,
                       ),
@@ -620,8 +620,8 @@ class _MilkScreenState extends State<MilkScreen> with TickerProviderStateMixin {
                       if (!isWholeFarmMilk) ...[
                         _buildDetailRow(
                           icon: FontAwesomeIcons.tag,
-                          label: 'Cattle Tag',
-                          value: record.cattleTag ?? 'N/A',
+                          label: 'Goat Tag',
+                          value: record.goatTag ?? 'N/A',
                           color: Colors.orange,
                         ),
                         const SizedBox(height: 16),
@@ -955,7 +955,7 @@ class _MilkScreenState extends State<MilkScreen> with TickerProviderStateMixin {
       context,
       MaterialPageRoute(
         builder: (context) => MilkRecordFormScreen(
-          allCattle: _allCattle,
+          allgoat: _allgoat,
           isEditing: false,
         ),
       ),
@@ -980,7 +980,7 @@ class _MilkScreenState extends State<MilkScreen> with TickerProviderStateMixin {
       MaterialPageRoute(
         builder: (context) => MilkRecordFormScreen(
           record: record,
-          allCattle: _allCattle,
+          allgoat: _allgoat,
           isEditing: true,
         ),
       ),
@@ -1001,7 +1001,7 @@ class _MilkScreenState extends State<MilkScreen> with TickerProviderStateMixin {
 
   Future<void> _handleFormResult(Map<String, dynamic> result) async {
     final milkType = result['milkType'] as String;
-    final cattleTag = result['cattleTag'] as String?;
+    final goatTag = result['goatTag'] as String?;
     final recordDate = result['recordDate'] as DateTime;
     final morningYield = result['morningYield'] as double?;
     final eveningYield = result['eveningYield'] as double?;
@@ -1011,15 +1011,15 @@ class _MilkScreenState extends State<MilkScreen> with TickerProviderStateMixin {
     final recordId = result['recordId'] as int?;
 
     if (isEditing && recordId != null) {
-      await _updateMilkRecord(recordId, milkType, cattleTag, recordDate, morningYield, eveningYield, quality, notes);
+      await _updateMilkRecord(recordId, milkType, goatTag, recordDate, morningYield, eveningYield, quality, notes);
     } else {
-      await _addMilkRecord(milkType, cattleTag, recordDate, morningYield, eveningYield, quality, notes);
+      await _addMilkRecord(milkType, goatTag, recordDate, morningYield, eveningYield, quality, notes);
     }
   }
 
   Future<void> _addMilkRecord(
       String milkType,
-      String? cattleTag,
+      String? goatTag,
       DateTime recordDate,
       double? morningYield,
       double? eveningYield,
@@ -1027,13 +1027,13 @@ class _MilkScreenState extends State<MilkScreen> with TickerProviderStateMixin {
       String notes,
       ) async {
     // Validation based on milk type
-    if (milkType == 'Individual Cow Milk' && cattleTag == null) {
-      _showErrorSnackBar('Please select a cow for individual cow milk');
+    if (milkType == 'Individual Doe Milk' && goatTag == null) {
+      _showErrorSnackBar('Please select a Doe for individual Doe milk');
       return;
     }
 
-    if (milkType == 'Individual Cow Milk' && _allCattle.isEmpty) {
-      _showErrorSnackBar('No cows available for milk recording');
+    if (milkType == 'Individual Doe Milk' && _allgoat.isEmpty) {
+      _showErrorSnackBar('No Does available for milk recording');
       return;
     }
 
@@ -1042,7 +1042,7 @@ class _MilkScreenState extends State<MilkScreen> with TickerProviderStateMixin {
 
     final data = {
       'milk_type': milkType,
-      'cattle_tag': milkType == 'Individual Cow Milk' ? cattleTag : null,
+      'goat_tag': milkType == 'Individual Doe Milk' ? goatTag : null,
       'record_date': recordDate.toIso8601String().split('T')[0], // YYYY-MM-DD format
       'morning_yield': morningYield,
       'evening_yield': eveningYield,
@@ -1068,7 +1068,7 @@ class _MilkScreenState extends State<MilkScreen> with TickerProviderStateMixin {
   Future<void> _updateMilkRecord(
       int id,
       String milkType,
-      String? cattleTag,
+      String? goatTag,
       DateTime recordDate,
       double? morningYield,
       double? eveningYield,
@@ -1076,8 +1076,8 @@ class _MilkScreenState extends State<MilkScreen> with TickerProviderStateMixin {
       String notes,
       ) async {
     // Validation based on milk type
-    if (milkType == 'Individual Cow Milk' && cattleTag == null) {
-      _showErrorSnackBar('Please select a cow for individual cow milk');
+    if (milkType == 'Individual Doe Milk' && goatTag == null) {
+      _showErrorSnackBar('Please select a Doe for individual Doe milk');
       return;
     }
 
@@ -1087,7 +1087,7 @@ class _MilkScreenState extends State<MilkScreen> with TickerProviderStateMixin {
     final data = {
       'id': id,
       'milk_type': milkType,
-      'cattle_tag': milkType == 'Individual Cow Milk' ? cattleTag : null,
+      'goat_tag': milkType == 'Individual Doe Milk' ? goatTag : null,
       'record_date': recordDate.toIso8601String().split('T')[0], // YYYY-MM-DD format
       'morning_yield': morningYield,
       'evening_yield': eveningYield,

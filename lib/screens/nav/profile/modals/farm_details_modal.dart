@@ -1,13 +1,13 @@
-// lib/screens/nav/profile/modals/farm_details_modal.dart
+﻿// lib/screens/nav/profile/modals/farm_details_modal.dart
 import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:http/http.dart' as http;
-import 'package:cattle_tracer_app/constants/app_colors.dart';
-import 'package:cattle_tracer_app/services/profile/farm_details_service.dart';
-import 'package:cattle_tracer_app/services/address_service.dart';
-import 'package:cattle_tracer_app/config.dart';
+import 'package:goat_tracer_app/constants/app_colors.dart';
+import 'package:goat_tracer_app/services/profile/farm_details_service.dart';
+import 'package:goat_tracer_app/services/address_service.dart';
+import 'package:goat_tracer_app/config.dart';
 
 class FarmDetailsModal extends StatefulWidget {
   final Map<String, dynamic>? farmDetails;
@@ -34,7 +34,7 @@ class _FarmDetailsModalState extends State<FarmDetailsModal> {
   late TextEditingController coopController;
   // farmLocationController removed - using structured address fields instead
   bool _isLoading = false;
-  final List<String> _farmTypeOptions = const ['Beef Cattle', 'Dairy Cattle'];
+  final List<String> _farmTypeOptions = const ['Beef goat', 'Dairy goat'];
   String? _selectedFarmType;
   
   final List<String> _farmLandAreaOptions = const [
@@ -49,8 +49,8 @@ class _FarmDetailsModalState extends State<FarmDetailsModal> {
   String? _selectedFarmLandArea;
   
   final List<String> _farmClassificationOptions = const [
-    'Backyard - 1-15 cows',
-    'Commercial - 16 and above cows'
+    'Backyard - 1-15 Does',
+    'Commercial - 16 and above Does'
   ];
   String? _selectedFarmClassification;
   

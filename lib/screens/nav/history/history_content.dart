@@ -1,13 +1,13 @@
-// lib/screens/nav/history/history_content.dart
+﻿// lib/screens/nav/history/history_content.dart
 import 'package:flutter/material.dart';
-import 'package:cattle_tracer_app/constants/app_colors.dart';
-import 'package:cattle_tracer_app/services/cattle/cattle_history_service.dart';
-import 'package:cattle_tracer_app/screens/nav/cattle/widgets/history/history_search_filter_bar.dart';
-import 'package:cattle_tracer_app/screens/nav/cattle/cattle_history_form_screen.dart';
+import 'package:goat_tracer_app/constants/app_colors.dart';
+import 'package:goat_tracer_app/services/goat/goat_history_service.dart';
+import 'package:goat_tracer_app/screens/nav/goat/widgets/history/history_search_filter_bar.dart';
+import 'package:goat_tracer_app/screens/nav/goat/goat_history_form_screen.dart';
 
-import 'package:cattle_tracer_app/utils/history_type_utils.dart';
-import '../../../models/cattle.dart';
-import 'cattle_selection_modal.dart';
+import 'package:goat_tracer_app/utils/history_type_utils.dart';
+import '../../../models/goat.dart';
+import 'goat_selection_modal.dart';
 
 
 class HistoryContent extends StatefulWidget {
@@ -50,13 +50,13 @@ class _HistoryContentState extends State<HistoryContent> {
   @override
   void initState() {
     super.initState();
-    _loadAllCattleHistoryRecords();
+    _loadAllGoatHistoryRecords();
   }
 
-  Future<void> _loadAllCattleHistoryRecords() async {
+  Future<void> _loadAllGoatHistoryRecords() async {
     try {
       setState(() => isLoading = true);
-      final events = await CattleHistoryService.getCattleHistory();
+      final events = await GoatHistoryService.getgoatHistory();
 
       // Remove duplicates and delete them from database
       final uniqueEvents = await _removeDuplicateEventsFromDB(events);
@@ -110,7 +110,7 @@ class _HistoryContentState extends State<HistoryContent> {
     // Delete duplicates from database
     for (final duplicate in duplicatesToDelete) {
       try {
-        await CattleHistoryService.deleteCattleHistory(duplicate['id']);
+        await GoatHistoryService.deletegoatHistory(duplicate['id']);
         deletedCount++;
       } catch (e) {
         debugPrint('Failed to delete duplicate event: $e');
@@ -125,7 +125,7 @@ class _HistoryContentState extends State<HistoryContent> {
   }
 
   bool _areEventsIdentical(Map<String, dynamic> event1, Map<String, dynamic> event2) {
-    return event1['cattle_tag'] == event2['cattle_tag'] &&
+    return event1['goat_tag'] == event2['goat_tag'] &&
         event1['history_type'] == event2['history_type'] &&
         event1['history_date'] == event2['history_date'] &&
         event1['notes'] == event2['notes'];
@@ -134,7 +134,7 @@ class _HistoryContentState extends State<HistoryContent> {
   List<Map<String, dynamic>> get _filteredEvents {
     return allEvents.where((event) {
       final matchesSearch = searchQuery.isEmpty ||
-          event['cattle_tag']?.toString().toLowerCase().contains(searchQuery.toLowerCase()) == true ||
+          event['goat_tag']?.toString().toLowerCase().contains(searchQuery.toLowerCase()) == true ||
           event['notes']?.toString().toLowerCase().contains(searchQuery.toLowerCase()) == true;
 
       final matchesFilter = selectedEventType == 'All' ||
@@ -164,26 +164,26 @@ class _HistoryContentState extends State<HistoryContent> {
   }
 
   Future<void> _refreshEvents() async {
-    await _loadAllCattleHistoryRecords();
+    await _loadAllGoatHistoryRecords();
   }
 
   void _onAddEvent() async {
-    // First show the cattle selection modal
-    final selectedCattleTag = await showDialog<String>(
+    // First show the goat selection modal
+    final selectedgoatTag = await showDialog<String>(
       context: context,
-      builder: (dialogContext) => const CattleSelectionModal(),
+      builder: (dialogContext) => const goatSelectionModal(),
     );
 
-    if (selectedCattleTag == null || !mounted) return;
+    if (selectedgoatTag == null || !mounted) return;
 
     await Navigator.of(context).push(
       MaterialPageRoute(
-        builder: (routeContext) => CattleHistoryFormScreen(cattleTag: selectedCattleTag),
+        builder: (routeContext) => goatHistoryFormScreen(goatTag: selectedgoatTag),
       ),
     );
 
     if (!mounted) return;
-    await _loadAllCattleHistoryRecords();
+    await _loadAllGoatHistoryRecords();
   }
 
   @override
@@ -238,9 +238,9 @@ class _HistoryContentState extends State<HistoryContent> {
         .isAfter(DateTime.parse(b['history_date'] ?? '1900-01-01')) ? a : b)
         : null;
 
-    // Get unique cattle count
+    // Get unique goat count
     final _ = allEvents
-        .map((event) => event['cattle_tag']?.toString() ?? '')
+        .map((event) => event['goat_tag']?.toString() ?? '')
         .where((tag) => tag.isNotEmpty)
         .toSet();
 
@@ -359,7 +359,7 @@ class _HistoryContentState extends State<HistoryContent> {
           ),
           const SizedBox(height: 16),
           ElevatedButton.icon(
-            onPressed: _loadAllCattleHistoryRecords,
+            onPressed: _loadAllGoatHistoryRecords,
             icon: const Icon(Icons.refresh_rounded),
             label: const Text('Retry'),
             style: ElevatedButton.styleFrom(
@@ -393,7 +393,7 @@ class _HistoryContentState extends State<HistoryContent> {
           ),
           const SizedBox(height: 8),
           Text(
-            'Start by adding your first cattle event',
+            'Start by adding your first goat event',
             style: TextStyle(
               fontSize: 14,
               color: Colors.grey[500],
@@ -418,7 +418,7 @@ class _HistoryContentState extends State<HistoryContent> {
   Widget _buildEventAccordion(Map<String, dynamic> event, int index) {
     final eventType = event['history_type'] ?? 'Unknown';
     final eventDate = event['history_date'];
-    final cattleTag = event['cattle_tag']?.toString() ?? 'Unknown';
+    final goatTag = event['goat_tag']?.toString() ?? 'Unknown';
     final eventColor = HistoryTypeUtils.getHistoryColor(eventType);
     final details = _getEventDetails(event);
     final isExpanded = expandedCards.contains(index);
@@ -491,7 +491,7 @@ class _HistoryContentState extends State<HistoryContent> {
                             border: Border.all(color: AppColors.primary.withValues(alpha: 0.3)),
                           ),
                           child: Text(
-                            cattleTag,
+                            goatTag,
                             style: TextStyle(
                               fontSize: 12,
                               fontWeight: FontWeight.w600,
@@ -625,17 +625,17 @@ class _HistoryContentState extends State<HistoryContent> {
 
 
   void _editEvent(Map<String, dynamic> event) {
-    // Convert the map to a CattleHistoryRecord object
-    final cattleEvent = CattleHistoryRecord.fromJson(event);
+    // Convert the map to a GoatHistoryRecord object
+    final goatEvent = GoatHistoryRecord.fromJson(event);
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => CattleHistoryFormScreen(
-          historyRecord: cattleEvent,
-          cattleTag: event['cattle_tag']?.toString(),
+        builder: (context) => goatHistoryFormScreen(
+          historyRecord: goatEvent,
+          goatTag: event['goat_tag']?.toString(),
         ),
       ),
-    ).then((_) => _loadAllCattleHistoryRecords());
+    ).then((_) => _loadAllGoatHistoryRecords());
   }
 
   void _duplicateEvent(Map<String, dynamic> event) {
@@ -661,7 +661,7 @@ class _HistoryContentState extends State<HistoryContent> {
       builder: (dialogContext) => AlertDialog(
         title: const Text('Delete History Record'),
         content: Text(
-          'Are you sure you want to delete this ${event['history_type']} history record for cattle ${event['cattle_tag']}?',
+          'Are you sure you want to delete this ${event['history_type']} history record for goat ${event['goat_tag']}?',
         ),
         actions: [
           TextButton(
@@ -671,11 +671,11 @@ class _HistoryContentState extends State<HistoryContent> {
           TextButton(
             onPressed: () async {
               try {
-                await CattleHistoryService.deleteCattleHistory(event['id']);
+                await GoatHistoryService.deletegoatHistory(event['id']);
                 if (!dialogContext.mounted) return;
                 Navigator.pop(dialogContext);
                 if (!mounted) return;
-                await _loadAllCattleHistoryRecords();
+                await _loadAllGoatHistoryRecords();
                 if (!mounted) return;
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(
@@ -715,7 +715,7 @@ class _HistoryContentState extends State<HistoryContent> {
         }
         break;
       case 'breeding':
-        if (event['bull_tag'] != null) details.add({'label': 'Bull Tag', 'value': event['bull_tag']});
+        if (event['Buck_tag'] != null) details.add({'label': 'Buck Tag', 'value': event['Buck_tag']});
         if (event['semen_used'] != null) details.add({'label': 'Semen Used', 'value': event['semen_used']});
         if (event['estimated_return_date'] != null) details.add({'label': 'Return to Heat', 'value': _formatDate(event['estimated_return_date'])});
         break;
@@ -729,23 +729,23 @@ class _HistoryContentState extends State<HistoryContent> {
         if (event['weighed_result'] != null) details.add({'label': 'Weight', 'value': '${event['weighed_result']} kg'});
         break;
       case 'gives birth':
-        if (event['bull_tag'] != null) details.add({'label': 'Bull Tag (Father)', 'value': event['bull_tag']});
+        if (event['Buck_tag'] != null) details.add({'label': 'Buck Tag (Father)', 'value': event['Buck_tag']});
         
-        // Handle calf tags and calculate litter size
-        final calfTagValue = event['calf_tag']?.toString();
-        if (calfTagValue != null && calfTagValue.isNotEmpty && calfTagValue != 'N/A') {
-          if (calfTagValue.contains(',')) {
+        // Handle Kid tags and calculate litter size
+        final KidTagValue = event['Kid_tag']?.toString();
+        if (KidTagValue != null && KidTagValue.isNotEmpty && KidTagValue != 'N/A') {
+          if (KidTagValue.contains(',')) {
             // Multiple calves - split by comma and count
-            final calfTags = calfTagValue.split(',').map((tag) => tag.trim()).where((tag) => tag.isNotEmpty).toList();
-            details.add({'label': 'Calf Tags', 'value': calfTags.join(', ')});
-            details.add({'label': 'Litter Size', 'value': '${calfTags.length}'});
+            final KidTags = KidTagValue.split(',').map((tag) => tag.trim()).where((tag) => tag.isNotEmpty).toList();
+            details.add({'label': 'Kid Tags', 'value': KidTags.join(', ')});
+            details.add({'label': 'Litter Size', 'value': '${KidTags.length}'});
           } else {
-            // Single calf
-            details.add({'label': 'Calf Tag', 'value': calfTagValue});
+            // Single Kid
+            details.add({'label': 'Kid Tag', 'value': KidTagValue});
             details.add({'label': 'Litter Size', 'value': '1'});
           }
         } else {
-          // No calf tags found - show 0 litter size
+          // No Kid tags found - show 0 litter size
           details.add({'label': 'Litter Size', 'value': '0'});
         }
         break;
@@ -756,7 +756,7 @@ class _HistoryContentState extends State<HistoryContent> {
       case 'pregnant':
         if (event['breeding_date'] != null) details.add({'label': 'Breeding Date', 'value': _formatDate(event['breeding_date'])});
         if (event['expected_delivery_date'] != null) details.add({'label': 'Due Date', 'value': _formatDate(event['expected_delivery_date'])});
-        if (event['bull_tag'] != null) details.add({'label': 'Bull Tag', 'value': event['bull_tag']});
+        if (event['Buck_tag'] != null) details.add({'label': 'Buck Tag', 'value': event['Buck_tag']});
         break;
       case 'deworming':
         if (event['medicine_given'] != null) details.add({'label': 'Medicine', 'value': event['medicine_given']});

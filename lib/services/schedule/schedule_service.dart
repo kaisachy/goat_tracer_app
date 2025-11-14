@@ -1,4 +1,4 @@
-// enhanced_schedule_service.dart
+﻿// enhanced_schedule_service.dart
 import 'dart:convert';
 import 'dart:developer';
 import 'package:http/http.dart' as http;
@@ -32,7 +32,7 @@ class ScheduleService {
   static Future<List<Schedule>> getSchedules({
     String? status,
     String? type,
-    String? cattleTag,
+    String? goatTag,
     int? upcomingDays,
     bool overdue = false,
     DateTime? startDate,
@@ -46,16 +46,16 @@ class ScheduleService {
         throw Exception('Authentication required');
       }
 
-      String endpoint = '$_baseUrl/cattles/schedule';
+      String endpoint = '$_baseUrl/goats/schedule';
       List<String> queryParams = [];
 
       // Add query parameters
       if (status != null) queryParams.add('status=${Uri.encodeComponent(status)}');
       if (type != null) queryParams.add('type=${Uri.encodeComponent(type)}');
-      if (cattleTag != null) {
-        // Normalize the cattle tag before sending
-        final normalizedTag = cattleTag.trim().toUpperCase();
-        queryParams.add('cattle_tag=${Uri.encodeComponent(normalizedTag)}');
+      if (goatTag != null) {
+        // Normalize the Goat Tag before sending
+        final normalizedTag = goatTag.trim().toUpperCase();
+        queryParams.add('goat_tag=${Uri.encodeComponent(normalizedTag)}');
       }
       if (upcomingDays != null) queryParams.add('upcoming=$upcomingDays');
       if (overdue) queryParams.add('overdue=1');
@@ -122,25 +122,25 @@ class ScheduleService {
     }, 'getSchedules');
   }
 
-  // Get schedules for specific cattle - IMPROVED VERSION
-  static Future<List<Schedule>> getSchedulesForCattle(String cattleTag) async {
+  // Get schedules for specific goat - IMPROVED VERSION
+  static Future<List<Schedule>> getSchedulesForgoat(String goatTag) async {
     return _handleRequest(() async {
       final token = await AuthService.getToken();
       if (token == null) {
         throw Exception('Authentication required');
       }
 
-      // Normalize the cattle tag to match database format (uppercase, trimmed)
-      final normalizedTag = cattleTag.trim().toUpperCase();
+      // Normalize the Goat Tag to match database format (uppercase, trimmed)
+      final normalizedTag = goatTag.trim().toUpperCase();
 
       if (normalizedTag.isEmpty) {
-        log('Empty cattle tag provided, returning empty list');
+        log('Empty Goat Tag provided, returning empty list');
         return [];
       }
 
-      String endpoint = '$_baseUrl/cattles/schedule?cattle_tag=${Uri.encodeComponent(normalizedTag)}';
+      String endpoint = '$_baseUrl/goats/schedule?goat_tag=${Uri.encodeComponent(normalizedTag)}';
 
-      log('Fetching schedules for cattle tag: "$normalizedTag"');
+      log('Fetching schedules for Goat Tag: "$normalizedTag"');
       log('Request URL: $endpoint');
 
       final response = await http.get(
@@ -183,14 +183,14 @@ class ScheduleService {
 
           // Additional client-side filtering to ensure accuracy
           final filteredSchedules = schedules.where((schedule) {
-            return scheduleContainsCattleTag(schedule, normalizedTag);
+            return scheduleContainsgoatTag(schedule, normalizedTag);
           }).toList();
 
           log('After client-side filtering: ${filteredSchedules.length} schedules');
 
           // Additional logging for debugging
           for (var schedule in filteredSchedules) {
-            log('Found schedule: ${schedule.title}, CattleTags: "${schedule.cattleTag}", ID: ${schedule.id}');
+            log('Found schedule: ${schedule.title}, goatTags: "${schedule.goatTag}", ID: ${schedule.id}');
           }
 
           return filteredSchedules;
@@ -208,29 +208,29 @@ class ScheduleService {
         final errorBody = response.body.isNotEmpty ? response.body : 'No error details';
         throw Exception('Failed to load schedules: ${response.statusCode} - $errorBody');
       }
-    }, 'getSchedulesForCattle');
+    }, 'getSchedulesForgoat');
   }
 
-  // IMPROVED: Client-side method to check if a schedule contains a specific cattle tag
-  static bool scheduleContainsCattleTag(Schedule schedule, String cattleTag) {
-    if (schedule.cattleTag == null || schedule.cattleTag!.isEmpty) {
+  // IMPROVED: Client-side method to check if a schedule contains a specific Goat Tag
+  static bool scheduleContainsgoatTag(Schedule schedule, String goatTag) {
+    if (schedule.goatTag == null || schedule.goatTag!.isEmpty) {
       return false;
     }
 
     // Normalize both the schedule tags and the search tag
-    final normalizedSearchTag = cattleTag.trim().toUpperCase();
+    final normalizedSearchTag = goatTag.trim().toUpperCase();
 
     // Split comma-separated tags and normalize each one
-    final scheduleCattleTags = schedule.cattleTag!
+    final schedulegoatTags = schedule.goatTag!
         .split(',')
         .map((tag) => tag.trim().toUpperCase())
         .where((tag) => tag.isNotEmpty)
         .toList();
 
-    log('Checking if "$normalizedSearchTag" is in [${scheduleCattleTags.join(', ')}]');
+    log('Checking if "$normalizedSearchTag" is in [${schedulegoatTags.join(', ')}]');
 
     // Check for exact match
-    final found = scheduleCattleTags.any((tag) => tag == normalizedSearchTag);
+    final found = schedulegoatTags.any((tag) => tag == normalizedSearchTag);
 
     if (found) {
       log('Match found!');
@@ -239,22 +239,22 @@ class ScheduleService {
     return found;
   }
 
-  // IMPROVED: Method to get all cattle tags from a schedule
-  static List<String> getCattleTagsFromSchedule(Schedule schedule) {
-    if (schedule.cattleTag == null || schedule.cattleTag!.isEmpty) {
+  // IMPROVED: Method to get all Goat Tags from a schedule
+  static List<String> getgoatTagsFromSchedule(Schedule schedule) {
+    if (schedule.goatTag == null || schedule.goatTag!.isEmpty) {
       return [];
     }
 
-    return schedule.cattleTag!
+    return schedule.goatTag!
         .split(',')
         .map((tag) => tag.trim().toUpperCase())
         .where((tag) => tag.isNotEmpty)
         .toList();
   }
 
-  // Get schedules for multiple cattle tags
-  static Future<List<Schedule>> getSchedulesForMultipleCattle(List<String> cattleTags) async {
-    if (cattleTags.isEmpty) return [];
+  // Get schedules for multiple Goat Tags
+  static Future<List<Schedule>> getSchedulesForMultiplegoat(List<String> goatTags) async {
+    if (goatTags.isEmpty) return [];
 
     return _handleRequest(() async {
       final token = await AuthService.getToken();
@@ -262,8 +262,8 @@ class ScheduleService {
         throw Exception('Authentication required');
       }
 
-      // Normalize all cattle tags
-      final normalizedTags = cattleTags
+      // Normalize all Goat Tags
+      final normalizedTags = goatTags
           .map((tag) => tag.trim().toUpperCase())
           .where((tag) => tag.isNotEmpty)
           .toList();
@@ -277,14 +277,14 @@ class ScheduleService {
       final allSchedules = await getSchedules();
 
       final filteredSchedules = allSchedules.where((schedule) {
-        // Check if any of the requested cattle tags match any in the schedule
+        // Check if any of the requested Goat Tags match any in the schedule
         return normalizedTags.any((requestedTag) =>
-            scheduleContainsCattleTag(schedule, requestedTag));
+            scheduleContainsgoatTag(schedule, requestedTag));
       }).toList();
 
-      log('Found ${filteredSchedules.length} schedules for cattle tags: ${normalizedTags.join(', ')}');
+      log('Found ${filteredSchedules.length} schedules for Goat Tags: ${normalizedTags.join(', ')}');
       return filteredSchedules;
-    }, 'getSchedulesForMultipleCattle');
+    }, 'getSchedulesForMultiplegoat');
   }
 
   // Create schedule with validation - IMPROVED
@@ -300,18 +300,18 @@ class ScheduleService {
         throw Exception('Title is required');
       }
 
-      // Normalize cattle tag before sending
+      // Normalize Goat Tag before sending
       Schedule normalizedSchedule = schedule;
-      if (schedule.cattleTag != null && schedule.cattleTag!.isNotEmpty) {
-        final tags = schedule.cattleTag!
+      if (schedule.goatTag != null && schedule.goatTag!.isNotEmpty) {
+        final tags = schedule.goatTag!
             .split(',')
             .map((tag) => tag.trim().toUpperCase())
             .where((tag) => tag.isNotEmpty)
             .toList();
-        normalizedSchedule = schedule.copyWith(cattleTag: tags.join(','));
+        normalizedSchedule = schedule.copyWith(goatTag: tags.join(','));
       }
 
-      final uri = Uri.parse('$_baseUrl/cattles/schedule');
+      final uri = Uri.parse('$_baseUrl/goats/schedule');
       final requestBody = normalizedSchedule.toApiJson();
 
       log('Creating schedule with URL: $uri');
@@ -384,7 +384,7 @@ class ScheduleService {
       }
 
       final response = await http.get(
-        Uri.parse('$_baseUrl/cattles/schedule/$id'),
+        Uri.parse('$_baseUrl/goats/schedule/$id'),
         headers: {
           'Content-Type': 'application/json',
           'Authorization': 'Bearer $token',
@@ -422,18 +422,18 @@ class ScheduleService {
         throw Exception('Title is required');
       }
 
-      // Normalize cattle tag before sending
+      // Normalize Goat Tag before sending
       Schedule normalizedSchedule = schedule;
-      if (schedule.cattleTag != null && schedule.cattleTag!.isNotEmpty) {
-        final tags = schedule.cattleTag!
+      if (schedule.goatTag != null && schedule.goatTag!.isNotEmpty) {
+        final tags = schedule.goatTag!
             .split(',')
             .map((tag) => tag.trim().toUpperCase())
             .where((tag) => tag.isNotEmpty)
             .toList();
-        normalizedSchedule = schedule.copyWith(cattleTag: tags.join(','));
+        normalizedSchedule = schedule.copyWith(goatTag: tags.join(','));
       }
 
-      final uri = Uri.parse('$_baseUrl/cattles/schedule/${schedule.id}');
+      final uri = Uri.parse('$_baseUrl/goats/schedule/${schedule.id}');
       final requestBody = normalizedSchedule.toApiJson();
 
       log('Updating schedule with URL: $uri');
@@ -522,7 +522,7 @@ class ScheduleService {
         throw Exception('Invalid status value');
       }
 
-      final uri = Uri.parse('$_baseUrl/cattles/schedule/$id/status');
+      final uri = Uri.parse('$_baseUrl/goats/schedule/$id/status');
       log('Updating schedule status: id=$id, status=$status');
 
       final response = await http.patch(
@@ -579,7 +579,7 @@ class ScheduleService {
         throw Exception('Authentication required');
       }
 
-      final uri = Uri.parse('$_baseUrl/cattles/schedule/$id');
+      final uri = Uri.parse('$_baseUrl/goats/schedule/$id');
       log('Deleting schedule: id=$id');
 
       final response = await http.delete(
@@ -647,7 +647,7 @@ class ScheduleService {
         final searchQuery = query.toLowerCase();
         return schedule.title.toLowerCase().contains(searchQuery) ||
             schedule.type.toLowerCase().contains(searchQuery) ||
-            (schedule.cattleTag?.toLowerCase().contains(searchQuery) ?? false) ||
+            (schedule.goatTag?.toLowerCase().contains(searchQuery) ?? false) ||
             (schedule.scheduledBy?.toLowerCase().contains(searchQuery) ?? false) ||
             (schedule.details?.toLowerCase().contains(searchQuery) ?? false);
       }).toList();

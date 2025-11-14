@@ -1,8 +1,8 @@
-// lib/screens/nav/profile/modals/personal_information_modal.dart
+﻿// lib/screens/nav/profile/modals/personal_information_modal.dart
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:cattle_tracer_app/constants/app_colors.dart';
-import 'package:cattle_tracer_app/services/profile/personal_information_service.dart';
+import 'package:goat_tracer_app/constants/app_colors.dart';
+import 'package:goat_tracer_app/services/profile/personal_information_service.dart';
 
 class PersonalInformationModal extends StatefulWidget {
   final bool isEditingMode;

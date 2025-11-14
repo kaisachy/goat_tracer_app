@@ -1,7 +1,7 @@
-import 'package:flutter/material.dart';
-import 'package:cattle_tracer_app/constants/app_colors.dart';
-import 'package:cattle_tracer_app/models/schedule.dart';
-import 'package:cattle_tracer_app/services/scheduler/scheduler_service.dart';
+﻿import 'package:flutter/material.dart';
+import 'package:goat_tracer_app/constants/app_colors.dart';
+import 'package:goat_tracer_app/models/schedule.dart';
+import 'package:goat_tracer_app/services/scheduler/scheduler_service.dart';
 import 'widgets/web_scheduler_widget.dart';
 
 class FarmerSchedulerContentWidget extends StatefulWidget {

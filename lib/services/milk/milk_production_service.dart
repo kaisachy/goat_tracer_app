@@ -1,4 +1,4 @@
-import 'dart:convert';
+﻿import 'dart:convert';
 import 'dart:developer';
 import 'package:http/http.dart' as http;
 import '../../config.dart';
@@ -14,7 +14,7 @@ class MilkProductionService {
 
     try {
       final response = await http.get(
-        Uri.parse('$_baseUrl/cattles/milk'),
+        Uri.parse('$_baseUrl/goats/milk'),
         headers: {
           'Content-Type': 'application/json',
           'Authorization': 'Bearer $token',
@@ -45,7 +45,7 @@ class MilkProductionService {
 
     try {
       final response = await http.post(
-        Uri.parse('$_baseUrl/cattles/milk'),
+        Uri.parse('$_baseUrl/goats/milk'),
         headers: {
           'Content-Type': 'application/json; charset=UTF-8',
           'Authorization': 'Bearer $token',
@@ -75,7 +75,7 @@ class MilkProductionService {
 
     try {
       final response = await http.put(
-        Uri.parse('$_baseUrl/cattles/milk'),
+        Uri.parse('$_baseUrl/goats/milk'),
         headers: {
           'Content-Type': 'application/json; charset=UTF-8',
           'Authorization': 'Bearer $token',
@@ -105,7 +105,7 @@ class MilkProductionService {
 
     try {
       final response = await http.delete(
-        Uri.parse('$_baseUrl/cattles/milk'),
+        Uri.parse('$_baseUrl/goats/milk'),
         headers: {
           'Content-Type': 'application/json; charset=UTF-8',
           'Authorization': 'Bearer $token',

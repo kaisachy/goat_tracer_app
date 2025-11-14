@@ -1,4 +1,4 @@
-// screens/home_screen.dart - Enhanced with Authentication
+﻿// screens/home_screen.dart - Enhanced with Authentication
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
@@ -7,16 +7,16 @@ import '../constants/app_colors.dart';
 import '../services/profile/personal_information_service.dart';
 import '../services/auth_service.dart';
 import 'login_screen.dart';
-import 'nav/cattle/cattle_screen.dart';
+import 'nav/goat/goat_screen.dart';
 import 'nav/dashboard/dashboard_screen.dart';
 import 'nav/profile/profile_screen.dart';
 import 'nav/milk/milk_screen.dart';
 import 'nav/history/history_screen.dart';
 import 'nav/scheduler/farmer_scheduler_screen.dart';
 import 'nav/setting/setting_screen.dart';
-import 'package:cattle_tracer_app/services/cattle/cattle_status_service.dart';
-import 'package:cattle_tracer_app/services/cattle/cattle_service.dart';
-import 'package:cattle_tracer_app/services/refresh_service.dart';
+import 'package:goat_tracer_app/services/goat/goat_status_service.dart';
+import 'package:goat_tracer_app/services/goat/goat_service.dart';
+import 'package:goat_tracer_app/services/refresh_service.dart';
 
 class HomeScreen extends StatefulWidget {
   final String? userEmail;
@@ -57,7 +57,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     // Check authentication when app comes back to foreground
     if (state == AppLifecycleState.resumed) {
       _checkAuthenticationStatus();
-      _checkCattleStatusUpdates();
+      _checkgoatStatusUpdates();
       // Refresh profile data when app resumes
       _loadProfileData();
     }
@@ -66,7 +66,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   void _initializePages() {
     _pages = [
       AuthGuard(child: ProfileScreen(userEmail: widget.userEmail ?? '')),
-      const AuthGuard(child: CattleScreen()),
+      const AuthGuard(child: goatScreen()),
       AuthGuard(child: DashboardScreen()),
       const AuthGuard(child: HistoryScreen()),
       const AuthGuard(child: FarmerSchedulerScreen()),
@@ -96,16 +96,16 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     }
   }
 
-  Future<void> _checkCattleStatusUpdates() async {
+  Future<void> _checkgoatStatusUpdates() async {
     try {
-      // Check for cattle that need status updates (Breeding -> Healthy)
-      final updatedCattle = await CattleStatusService.checkAndUpdateBreedingStatus();
+      // Check for goat that need status updates (Breeding -> Healthy)
+      final updatedgoat = await GoatStatusService.checkAndUpdateBreedingStatus();
       
-      if (updatedCattle.isNotEmpty && mounted) {
+      if (updatedgoat.isNotEmpty && mounted) {
         // Show a notification to the user about the status updates
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('${updatedCattle.length} cow(s) status automatically updated to Healthy'),
+            content: Text('${updatedgoat.length} Doe(s) status automatically updated to Healthy'),
             backgroundColor: Colors.green[600],
             behavior: SnackBarBehavior.floating,
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
@@ -114,12 +114,12 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
         );
       }
 
-      // Auto-update cattle classifications based on age
-      final _ = await CattleService.autoUpdateCattleClassifications();
+      // Auto-update goat classifications based on age
+      final _ = await GoatService.autoUpdategoatClassifications();
       
       // Snackbar removed - auto-update runs silently in background
     } catch (e) {
-      debugPrint('Error checking cattle status updates: $e');
+      debugPrint('Error checking goat status updates: $e');
     }
   }
 
@@ -220,8 +220,8 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
       await _loadProfileData();
       if (!mounted) return;
       
-      // Also auto-update cattle classifications
-      final _ = await CattleService.autoUpdateCattleClassifications();
+      // Also auto-update goat classifications
+      final _ = await GoatService.autoUpdategoatClassifications();
       
       // Dismiss loading indicator
       if (!mounted) return;
@@ -230,7 +230,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
       // Show appropriate success message
       final message = RefreshService.getRefreshMessage(refreshResults);
       final hasErrors = refreshResults['errors'].isNotEmpty;
-      final hasCattleUpdates = refreshResults['cattleStatusUpdates'].isNotEmpty;
+      final hasgoatUpdates = refreshResults['goatStatusUpdates'].isNotEmpty;
       
       // Classification update info removed from snackbar message
       
@@ -238,7 +238,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
         SnackBar(
           content: Text(message),
           backgroundColor: hasErrors ? Colors.orange[600] : 
-                          hasCattleUpdates ? Colors.green[600] : AppColors.lightGreen,
+                          hasgoatUpdates ? Colors.green[600] : AppColors.lightGreen,
           behavior: SnackBarBehavior.floating,
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
           duration: const Duration(seconds: 4),
@@ -568,7 +568,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
       case 2:
         return 'Dashboard';
       case 3:
-        return 'Cattle History';
+        return 'Goat History';
       case 4:
         return 'Scheduled Activities';
       case 5:
@@ -602,14 +602,14 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                   onTap: () => _onNavItemTapped(0),
                 ),
                 _buildDrawerItem(
-                  icon: FontAwesomeIcons.cow,
+                  icon: FontAwesomeIcons.Doe,
                   text: 'Production Record',
                   index: 1,
                   onTap: () => _onNavItemTapped(1),
                 ),
                 _buildDrawerItem(
                   icon: Icons.history_rounded,
-                  text: 'Cattle History',
+                  text: 'Goat History',
                   index: 3,
                   onTap: () => _onNavItemTapped(3),
                 ),

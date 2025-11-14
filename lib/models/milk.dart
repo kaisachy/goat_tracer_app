@@ -1,6 +1,6 @@
-class MilkProduction {
+﻿class MilkProduction {
   final int id;
-  final String? cattleTag;
+  final String? goatTag;
   final DateTime recordDate;
   final String? milkType;
   final double? morningYield;
@@ -12,7 +12,7 @@ class MilkProduction {
 
   MilkProduction({
     required this.id,
-    this.cattleTag,
+    this.goatTag,
     required this.recordDate,
     required this.milkType,
     this.morningYield,
@@ -26,7 +26,7 @@ class MilkProduction {
   factory MilkProduction.fromJson(Map<String, dynamic> json) {
     return MilkProduction(
       id: json['id'] ?? 0,
-      cattleTag: json['cattle_tag'],
+      goatTag: json['goat_tag'],
       recordDate: DateTime.parse(json['record_date']),
       milkType: json['milk_type'],
       morningYield: json['morning_yield'] != null
@@ -49,7 +49,7 @@ class MilkProduction {
   Map<String, dynamic> toJson() {
     return {
       'id': id,
-      'cattle_tag': cattleTag,
+      'goat_tag': goatTag,
       'record_date': recordDate.toIso8601String(),
       'milk_type': milkType,
       'morning_yield': morningYield,

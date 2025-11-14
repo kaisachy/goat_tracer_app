@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import '../../../../constants/app_colors.dart';
 import '../../../../models/schedule.dart';
 import '../../../../utils/schedule_utils.dart';
@@ -102,7 +102,7 @@ class ScheduleDetailsDialog extends StatelessWidget {
   }
 
   Widget _buildDialogContent() {
-    final cattleTags = schedule.cattleTag?.split(', ') ?? [];
+    final goatTags = schedule.goatTag?.split(', ') ?? [];
 
     return Flexible(
       child: SingleChildScrollView(
@@ -137,9 +137,9 @@ class ScheduleDetailsDialog extends StatelessWidget {
             // Date and Time
             _buildDetailSection('Date & Time', schedule.formattedDetailDateTime, Icons.access_time_outlined),
 
-            // Cattle Tags
-            if (cattleTags.isNotEmpty)
-              _buildCattleTagsSection(cattleTags),
+            // Goat Tags
+            if (goatTags.isNotEmpty)
+              _buildgoatTagsSection(goatTags),
 
             // Reminder
             if (schedule.reminder != null)
@@ -235,7 +235,7 @@ class ScheduleDetailsDialog extends StatelessWidget {
     );
   }
 
-  Widget _buildCattleTagsSection(List<String> cattleTags) {
+  Widget _buildgoatTagsSection(List<String> goatTags) {
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
       child: Row(
@@ -255,7 +255,7 @@ class ScheduleDetailsDialog extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  cattleTags.length == 1 ? 'Cattle Tag' : 'Cattle Tags (${cattleTags.length})',
+                  goatTags.length == 1 ? 'Goat Tag' : 'Goat Tags (${goatTags.length})',
                   style: const TextStyle(
                     fontSize: 12,
                     color: AppColors.textSecondary,
@@ -263,7 +263,7 @@ class ScheduleDetailsDialog extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 8),
-                if (cattleTags.length == 1)
+                if (goatTags.length == 1)
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                     decoration: BoxDecoration(
@@ -271,7 +271,7 @@ class ScheduleDetailsDialog extends StatelessWidget {
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: Text(
-                      cattleTags.first,
+                      goatTags.first,
                       style: const TextStyle(
                         fontSize: 14,
                         color: AppColors.primary,
@@ -283,7 +283,7 @@ class ScheduleDetailsDialog extends StatelessWidget {
                   Wrap(
                     spacing: 8,
                     runSpacing: 8,
-                    children: cattleTags.map((tag) => Container(
+                    children: goatTags.map((tag) => Container(
                       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                       decoration: BoxDecoration(
                         color: AppColors.primary.withValues(alpha: 0.1),

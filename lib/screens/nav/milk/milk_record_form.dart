@@ -1,19 +1,19 @@
-//milk_record_form.dart
+﻿//milk_record_form.dart
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import '../../../models/milk.dart';
-import '../../../models/cattle.dart';
+import '../../../models/goat.dart';
 import '../../../constants/app_colors.dart';
 
 class MilkRecordFormScreen extends StatefulWidget {
   final MilkProduction? record;
-  final List<Cattle> allCattle;
+  final List<goat> allgoat;
   final bool isEditing;
 
   const MilkRecordFormScreen({
     super.key,
     this.record,
-    required this.allCattle,
+    required this.allgoat,
     this.isEditing = false,
   });
 
@@ -27,9 +27,9 @@ class _MilkRecordFormScreenState extends State<MilkRecordFormScreen> {
   late TextEditingController notesController;
   final _formKey = GlobalKey<FormState>();
 
-  String? selectedCattleTag;
+  String? selectedgoatTag;
   String selectedQuality = 'A';
-  String selectedMilkType = 'Individual Cow Milk';
+  String selectedMilkType = 'Individual Doe Milk';
   late DateTime selectedDate;
 
   bool _isLoading = false;
@@ -47,9 +47,9 @@ class _MilkRecordFormScreenState extends State<MilkRecordFormScreen> {
       text: widget.record?.notes ?? '',
     );
 
-    selectedCattleTag = widget.record?.cattleTag;
+    selectedgoatTag = widget.record?.goatTag;
     selectedQuality = widget.record?.milkQuality ?? 'A';
-    selectedMilkType = widget.record?.milkType ?? 'Individual Cow Milk';
+    selectedMilkType = widget.record?.milkType ?? 'Individual Doe Milk';
     selectedDate = widget.record?.recordDate ?? DateTime.now();
   }
 
@@ -105,11 +105,11 @@ class _MilkRecordFormScreenState extends State<MilkRecordFormScreen> {
                     _buildMilkTypeSelector(),
                     const SizedBox(height: 24),
 
-                    // Cattle Selection (only for individual cow milk)
-                    if (selectedMilkType == 'Individual Cow Milk') ...[
-                      _buildSectionTitle('Select Cow', FontAwesomeIcons.cow),
+                    // goat Selection (only for individual Doe milk)
+                    if (selectedMilkType == 'Individual Doe Milk') ...[
+                      _buildSectionTitle('Select Doe', FontAwesomeIcons.Doe),
                       const SizedBox(height: 12),
-                      _buildCattleSelector(),
+                      _buildgoatSelector(),
                       const SizedBox(height: 24),
                     ],
 
@@ -258,7 +258,7 @@ class _MilkRecordFormScreenState extends State<MilkRecordFormScreen> {
   }
 
   Widget _buildMilkTypeSelector() {
-    final milkTypes = ['Individual Cow Milk', 'Whole Farm Milk'];
+    final milkTypes = ['Individual Doe Milk', 'Whole Farm Milk'];
 
     return Container(
       padding: const EdgeInsets.all(4),
@@ -274,7 +274,7 @@ class _MilkRecordFormScreenState extends State<MilkRecordFormScreen> {
               onTap: () => setState(() {
                 selectedMilkType = type;
                 if (selectedMilkType == 'Whole Farm Milk') {
-                  selectedCattleTag = null;
+                  selectedgoatTag = null;
                 }
               }),
               child: Container(
@@ -300,7 +300,7 @@ class _MilkRecordFormScreenState extends State<MilkRecordFormScreen> {
     );
   }
 
-  Widget _buildCattleSelector() {
+  Widget _buildgoatSelector() {
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
@@ -308,25 +308,25 @@ class _MilkRecordFormScreenState extends State<MilkRecordFormScreen> {
         border: Border.all(color: Colors.grey.shade300),
       ),
       child: DropdownButtonFormField<String>(
-        value: selectedCattleTag,
+        value: selectedgoatTag,
         decoration: InputDecoration(
-          labelText: 'Select Cow',
+          labelText: 'Select Doe',
           labelStyle: TextStyle(color: Colors.grey.shade600),
           border: InputBorder.none,
           contentPadding: const EdgeInsets.all(16),
           prefixIcon: Icon(
-            FontAwesomeIcons.cow,
+            FontAwesomeIcons.Doe,
             color: AppColors.primary,
             size: 20,
           ),
         ),
-        items: widget.allCattle.isEmpty
+        items: widget.allgoat.isEmpty
             ? [const DropdownMenuItem(
           value: null,
-          child: Text('No cows available'),
+          child: Text('No Does available'),
         )]
-            : widget.allCattle.map((cattle) => DropdownMenuItem(
-          value: cattle.tagNo,
+            : widget.allgoat.map((goat) => DropdownMenuItem(
+          value: goat.tagNo,
           child: Row(
             children: [
               Container(
@@ -338,16 +338,16 @@ class _MilkRecordFormScreenState extends State<MilkRecordFormScreen> {
                 ),
               ),
               const SizedBox(width: 8),
-              Text(cattle.tagNo),
+              Text(goat.tagNo),
             ],
           ),
         )).toList(),
-        onChanged: widget.allCattle.isEmpty
+        onChanged: widget.allgoat.isEmpty
             ? null
-            : (value) => setState(() => selectedCattleTag = value),
+            : (value) => setState(() => selectedgoatTag = value),
         validator: (value) {
-          if (selectedMilkType == 'Individual Cow Milk' && value == null) {
-            return 'Please select a cow';
+          if (selectedMilkType == 'Individual Doe Milk' && value == null) {
+            return 'Please select a Doe';
           }
           return null;
         },
@@ -601,10 +601,10 @@ class _MilkRecordFormScreenState extends State<MilkRecordFormScreen> {
     }
 
     // Additional validation
-    if (selectedMilkType == 'Individual Cow Milk' && selectedCattleTag == null) {
+    if (selectedMilkType == 'Individual Doe Milk' && selectedgoatTag == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Please select a cow for individual cow milk'),
+          content: Text('Please select a Doe for individual Doe milk'),
           backgroundColor: Colors.red,
         ),
       );
@@ -629,7 +629,7 @@ class _MilkRecordFormScreenState extends State<MilkRecordFormScreen> {
     // Return the form data
     final result = {
       'milkType': selectedMilkType,
-      'cattleTag': selectedCattleTag,
+      'goatTag': selectedgoatTag,
       'recordDate': selectedDate,
       'morningYield': morning > 0 ? morning : null,
       'eveningYield': evening > 0 ? evening : null,

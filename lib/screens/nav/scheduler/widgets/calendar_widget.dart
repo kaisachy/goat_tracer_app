@@ -1,6 +1,6 @@
-import 'package:flutter/material.dart';
-import 'package:cattle_tracer_app/constants/app_colors.dart';
-import 'package:cattle_tracer_app/models/schedule.dart';
+﻿import 'package:flutter/material.dart';
+import 'package:goat_tracer_app/constants/app_colors.dart';
+import 'package:goat_tracer_app/models/schedule.dart';
 
 class CalendarWidget extends StatelessWidget {
   final List<Schedule> schedules;

@@ -1,7 +1,7 @@
-// lib/screens/nav/profile/widgets/trainings_seminars_widget.dart
+﻿// lib/screens/nav/profile/widgets/trainings_seminars_widget.dart
 import 'package:flutter/material.dart';
-import 'package:cattle_tracer_app/services/profile/trainings_seminars_service.dart';
-import 'package:cattle_tracer_app/screens/nav/profile/modals/trainings_seminars_modal.dart';
+import 'package:goat_tracer_app/services/profile/trainings_seminars_service.dart';
+import 'package:goat_tracer_app/screens/nav/profile/modals/trainings_seminars_modal.dart';
 
 import '../../../../constants/app_colors.dart';
 

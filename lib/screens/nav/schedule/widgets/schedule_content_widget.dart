@@ -1,7 +1,7 @@
-
-import 'package:cattle_tracer_app/screens/nav/schedule/widgets/schedule_card_widget.dart';
-import 'package:cattle_tracer_app/screens/nav/schedule/widgets/schedule_empty_states_widget.dart';
-import 'package:cattle_tracer_app/screens/nav/schedule/widgets/today_schedule_header_widget.dart';
+﻿
+import 'package:goat_tracer_app/screens/nav/schedule/widgets/schedule_card_widget.dart';
+import 'package:goat_tracer_app/screens/nav/schedule/widgets/schedule_empty_states_widget.dart';
+import 'package:goat_tracer_app/screens/nav/schedule/widgets/today_schedule_header_widget.dart';
 import 'package:flutter/material.dart';
 import '../../../../../models/schedule.dart';
 import '../../../../../utils/schedule_utils.dart';

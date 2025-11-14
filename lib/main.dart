@@ -1,12 +1,12 @@
-// main.dart
+﻿// main.dart
 import 'package:flutter/material.dart';
 import 'auth_guard.dart';
 import 'screens/login_screen.dart';
 import 'services/secure_storage_service.dart';
 import 'screens/home_screen.dart';
-import 'screens/nav/cattle/cattle_detail_screen.dart';
-import 'services/cattle/cattle_service.dart';
-import 'models/cattle.dart';
+import 'screens/nav/goat/goat_detail_screen.dart';
+import 'services/goat/goat_service.dart';
+import 'models/goat.dart';
 import 'services/auth_service.dart';
 
 void main() {
@@ -26,17 +26,17 @@ class MyApp extends StatelessWidget {
       routes: {
         '/login': (context) => const LoginScreen(),
         '/home': (context) => const AuthGuard(child: HomeScreen(userEmail: '')),
-        '/cattle-detail': (context) {
+        '/goat-detail': (context) {
           final args = ModalRoute.of(context)!.settings.arguments as Map<String, dynamic>?;
           final tag = args?['tag'] as String?;
 
           if (tag != null) {
-            return AuthGuard(child: CattleDetailLoader(tag: tag));
+            return AuthGuard(child: goatDetailLoader(tag: tag));
           } else {
             return const AuthGuard(
               child: Scaffold(
                 body: Center(
-                  child: Text('Invalid cattle tag'),
+                  child: Text('Invalid Goat Tag'),
                 ),
               ),
             );
@@ -90,16 +90,16 @@ class AuthWrapper extends StatelessWidget {
   }
 }
 
-/// Enhanced Cattle Detail Loader with authentication
-class CattleDetailLoader extends StatelessWidget {
+/// Enhanced goat Detail Loader with authentication
+class goatDetailLoader extends StatelessWidget {
   final String tag;
 
-  const CattleDetailLoader({super.key, required this.tag});
+  const goatDetailLoader({super.key, required this.tag});
 
   @override
   Widget build(BuildContext context) {
-    return FutureBuilder<Cattle?>(
-      future: _fetchCattleByTag(tag),
+    return FutureBuilder<goat?>(
+      future: _fetchgoatByTag(tag),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const Scaffold(
@@ -109,7 +109,7 @@ class CattleDetailLoader extends StatelessWidget {
                 children: [
                   CircularProgressIndicator(),
                   SizedBox(height: 16),
-                  Text('Loading cattle details...'),
+                  Text('Loading goat details...'),
                 ],
               ),
             ),
@@ -131,7 +131,7 @@ class CattleDetailLoader extends StatelessWidget {
                 children: [
                   const Icon(Icons.error, size: 64, color: Colors.red),
                   const SizedBox(height: 16),
-                  Text('Error loading cattle: ${snapshot.error}'),
+                  Text('Error loading goat: ${snapshot.error}'),
                   const SizedBox(height: 16),
                   ElevatedButton(
                     onPressed: () => Navigator.pop(context),
@@ -142,7 +142,7 @@ class CattleDetailLoader extends StatelessWidget {
             ),
           );
         } else if (snapshot.hasData && snapshot.data != null) {
-          return CattleDetailScreen(cattle: snapshot.data!);
+          return goatDetailScreen(goat: snapshot.data!);
         } else {
           return Scaffold(
             appBar: AppBar(title: const Text('Not Found')),
@@ -152,7 +152,7 @@ class CattleDetailLoader extends StatelessWidget {
                 children: [
                   const Icon(Icons.search_off, size: 64, color: Colors.grey),
                   const SizedBox(height: 16),
-                  Text('Cattle with tag "$tag" not found'),
+                  Text('goat with tag "$tag" not found'),
                   const SizedBox(height: 16),
                   ElevatedButton(
                     onPressed: () => Navigator.pop(context),
@@ -167,7 +167,7 @@ class CattleDetailLoader extends StatelessWidget {
     );
   }
 
-  Future<Cattle?> _fetchCattleByTag(String tag) async {
+  Future<goat?> _fetchgoatByTag(String tag) async {
     try {
       // Check authentication before making API call
       final token = await AuthService.getToken();
@@ -175,9 +175,9 @@ class CattleDetailLoader extends StatelessWidget {
         throw Exception('Not authenticated');
       }
 
-      return await CattleService.getCattleByTag(tag);
+      return await GoatService.getGoatByTag(tag);
     } catch (e) {
-      throw Exception('Failed to fetch cattle: $e');
+      throw Exception('Failed to fetch goat: $e');
     }
   }
 

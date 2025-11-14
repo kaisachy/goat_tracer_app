@@ -1,15 +1,15 @@
-import 'package:cattle_tracer_app/screens/nav/schedule/widgets/schedule_header_widget.dart';
-import 'package:cattle_tracer_app/screens/nav/schedule/widgets/schedule_stats_row_widget.dart';
-import 'package:cattle_tracer_app/screens/nav/schedule/widgets/schedule_tab_bar_widget.dart';
-import 'package:cattle_tracer_app/screens/nav/schedule/widgets/schedule_card_widget.dart';
-import 'package:cattle_tracer_app/screens/nav/schedule/widgets/schedule_empty_states_widget.dart';
-import 'package:cattle_tracer_app/screens/nav/schedule/widgets/today_schedule_header_widget.dart';
+﻿import 'package:goat_tracer_app/screens/nav/schedule/widgets/schedule_header_widget.dart';
+import 'package:goat_tracer_app/screens/nav/schedule/widgets/schedule_stats_row_widget.dart';
+import 'package:goat_tracer_app/screens/nav/schedule/widgets/schedule_tab_bar_widget.dart';
+import 'package:goat_tracer_app/screens/nav/schedule/widgets/schedule_card_widget.dart';
+import 'package:goat_tracer_app/screens/nav/schedule/widgets/schedule_empty_states_widget.dart';
+import 'package:goat_tracer_app/screens/nav/schedule/widgets/today_schedule_header_widget.dart';
 import 'package:flutter/material.dart';
 import '../../../constants/app_colors.dart';
 import '../../../models/schedule.dart';
 import '../../../services/schedule/schedule_service.dart';
 import '../../../utils/schedule_utils.dart';
-import '../../../services/cattle/cattle_history_service.dart';
+import '../../../services/goat/goat_history_service.dart';
 import 'schedule_form.dart';
 
 
@@ -179,7 +179,7 @@ class _ScheduleContentWidgetState extends State<ScheduleContentWidget> with Tick
         final query = _searchQuery.toLowerCase();
         return schedule.title.toLowerCase().contains(query) ||
             (schedule.details?.toLowerCase().contains(query) ?? false) ||
-            (schedule.cattleTag?.toLowerCase().contains(query) ?? false);
+            (schedule.goatTag?.toLowerCase().contains(query) ?? false);
       }).toList();
     }
 
@@ -412,11 +412,11 @@ class _ScheduleContentWidgetState extends State<ScheduleContentWidget> with Tick
       return; // No matching event for this type
     }
 
-    final tags = _extractCattleTags(schedule.cattleTag);
+    final tags = _extractgoatTags(schedule.goatTag);
     int successCount = 0;
     for (final tag in tags) {
       final data = <String, dynamic>{
-        'cattle_tag': tag,
+        'goat_tag': tag,
         'history_type': mappedEventType,
         'history_date': _formatDateForApi(schedule.scheduleDateTime),
         'notes': schedule.details,
@@ -431,7 +431,7 @@ class _ScheduleContentWidgetState extends State<ScheduleContentWidget> with Tick
         }
       }
       try {
-        final ok = await CattleHistoryService.storeCattleHistory(data);
+        final ok = await GoatHistoryService.storegoatHistory(data);
         if (ok) successCount++;
       } catch (_) {}
     }
@@ -444,29 +444,29 @@ class _ScheduleContentWidgetState extends State<ScheduleContentWidget> with Tick
     final mappedEventType = _mapScheduleTypeToEventType(schedule.type);
     if (mappedEventType == null) return;
 
-    final tags = _extractCattleTags(schedule.cattleTag);
-    final allEvents = await CattleHistoryService.getCattleHistory();
+    final tags = _extractgoatTags(schedule.goatTag);
+    final allEvents = await GoatHistoryService.getgoatHistory();
     final scheduleDate = _formatDateForApi(schedule.scheduleDateTime);
 
     for (final tag in tags) {
-      // Find matching history by cattle_tag, history_type, and history_date
+      // Find matching history by goat_tag, history_type, and history_date
       final matches = allEvents.where((e) =>
-        (e['cattle_tag']?.toString() ?? '').trim().toUpperCase() == tag.trim().toUpperCase() &&
+        (e['goat_tag']?.toString() ?? '').trim().toUpperCase() == tag.trim().toUpperCase() &&
         (e['history_type']?.toString().toLowerCase() ?? '') == mappedEventType.toLowerCase() &&
         (e['history_date']?.toString() ?? '') == scheduleDate
       );
       for (final evt in matches) {
         final id = int.tryParse('${evt['id']}');
         if (id != null) {
-          await CattleHistoryService.deleteCattleHistory(id);
+          await GoatHistoryService.deletegoatHistory(id);
         }
       }
     }
   }
 
-  List<String> _extractCattleTags(String? cattleTag) {
-    if (cattleTag == null || cattleTag.trim().isEmpty) return [];
-    return cattleTag
+  List<String> _extractgoatTags(String? goatTag) {
+    if (goatTag == null || goatTag.trim().isEmpty) return [];
+    return goatTag
         .split(',')
         .map((t) => t.trim())
         .where((t) => t.isNotEmpty)
@@ -504,7 +504,7 @@ class _ScheduleContentWidgetState extends State<ScheduleContentWidget> with Tick
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Cattle: ${schedule.cattleTag ?? 'No cattle assigned'}'),
+            Text('goat: ${schedule.goatTag ?? 'No goat assigned'}'),
             Text('Type: ${schedule.type}'),
             Text('Status: ${schedule.status}'),
             if (schedule.details != null) Text('Details: ${schedule.details}'),

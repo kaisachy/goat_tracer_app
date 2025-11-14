@@ -1,7 +1,7 @@
-// lib/screens/nav/profile/widgets/farm_details_widget.dart
+﻿// lib/screens/nav/profile/widgets/farm_details_widget.dart
 import 'package:flutter/material.dart';
-import 'package:cattle_tracer_app/services/profile/farm_details_service.dart';
-import 'package:cattle_tracer_app/screens/nav/profile/modals/farm_details_modal.dart';
+import 'package:goat_tracer_app/services/profile/farm_details_service.dart';
+import 'package:goat_tracer_app/screens/nav/profile/modals/farm_details_modal.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 
 import '../../../../constants/app_colors.dart';

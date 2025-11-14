@@ -1,4 +1,4 @@
-import 'dart:io';
+﻿import 'dart:io';
 import 'dart:developer';
 import 'package:http/http.dart' as http;
 import 'package:path_provider/path_provider.dart';
@@ -68,7 +68,7 @@ class ProfileExportService {
         
         // Create filename with timestamp
         final timestamp = DateTime.now().toIso8601String().replaceAll(':', '-').split('.')[0];
-        final fileName = 'CattleTracer_Profile_$timestamp.xlsx';
+        final fileName = 'goatTracer_Profile_$timestamp.xlsx';
         final file = File('${directory.path}/$fileName');
         
         // Write file
@@ -168,7 +168,7 @@ class ProfileExportService {
         
         // Create filename with timestamp
         final timestamp = DateTime.now().toIso8601String().replaceAll(':', '-').split('.')[0];
-        final fileName = 'CattleTracer_Profile_$timestamp.pdf';
+        final fileName = 'goatTracer_Profile_$timestamp.pdf';
         final file = File('${directory.path}/$fileName');
         
         // Write file

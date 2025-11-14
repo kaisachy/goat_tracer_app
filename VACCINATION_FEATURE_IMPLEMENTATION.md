@@ -1,21 +1,21 @@
-# Vaccination Schedule Feature Implementation
+﻿# Vaccination Schedule Feature Implementation
 
 ## Overview
-This implementation provides an automatic vaccination scheduling system for cattle based on their age, classification, and stage. The system automatically generates vaccine recommendations according to industry-standard protocols.
+This implementation provides an automatic vaccination scheduling system for goat based on their age, classification, and stage. The system automatically generates vaccine recommendations according to industry-standard protocols.
 
 ## Features Implemented
 
 ### 1. Automatic Vaccine Type Generation
-The system automatically determines which vaccines each cattle needs based on:
+The system automatically determines which vaccines each goat needs based on:
 - **Age in months** (calculated from date of birth)
-- **Classification** (Calf, Grower, Heifer, Steer, Cow, Bull)
+- **Classification** (Kid, Grower, Doeling, Buckling, Doe, Buck)
 - **Gender** (Male/Female)
-- **Breed type** (Dairy vs Beef cattle)
+- **Breed type** (Dairy vs Beef goat)
 
 ### 2. Vaccination Protocol by Stage
 
 #### Newborn Calves (0 months)
-- **ScourGuard/Calf Guard**: Protects against Rotavirus, Coronavirus, E. coli
+- **ScourGuard/Kid Guard**: Protects against Rotavirus, Coronavirus, E. coli
 - **Timing**: First 24 hours of life
 - **Purpose**: Provides passive immunity against diarrhea (scours)
 
@@ -31,12 +31,12 @@ The system automatically determines which vaccines each cattle needs based on:
 - **Leptospirosis**: Protects against zoonotic bacterial disease
 - **Timing**: At weaning
 
-#### Replacement Heifers (8-12 months)
+#### Replacement Doelings (8-12 months)
 - **Brucellosis (Strain RB51)**: Prevents Brucellosis causing abortion
 - **Reproductive (IBR, BVD, Lepto)**: Ensures reproductive health before breeding
 - **Timing**: 4-12 months of age (once), Pre-breeding
 
-#### Breeding Cows & Bulls (18+ months)
+#### Breeding Does & Bucks (18+ months)
 - **Reproductive (IBR, BVD, Lepto, Vibriosis)**: Protects herd from reproductive diseases
 - **Clostridial (7-way) Annual**: Annual booster to maintain protection
 - **Timing**: Annually, 30-60 days pre-breeding
@@ -53,7 +53,7 @@ The system automatically determines which vaccines each cattle needs based on:
 ### 3. Dashboard Integration
 - **Vaccination Dashboard Widget**: Shows on main dashboard
 - **Statistics**: Pending, Overdue, Due Soon, Completed vaccinations
-- **Cattle Needing Vaccination**: Lists cattle with urgent vaccination needs
+- **goat Needing Vaccination**: Lists goat with urgent vaccination needs
 - **Real-time Updates**: Refreshes data automatically
 
 ### 4. Detailed Vaccination Screen
@@ -72,12 +72,12 @@ The system automatically determines which vaccines each cattle needs based on:
 ## How It Works
 
 ### 1. Data Collection
-- Reads cattle data (age, classification, gender, breed)
+- Reads goat data (age, classification, gender, breed)
 - Analyzes vaccination history from existing events
-- Determines dairy vs beef cattle based on breed
+- Determines dairy vs beef goat based on breed
 
 ### 2. Vaccine Matching
-- Matches cattle to applicable vaccine protocols
+- Matches goat to applicable vaccine protocols
 - Considers age requirements and stage applicability
 - Accounts for previous vaccinations and booster needs
 
@@ -88,7 +88,7 @@ The system automatically determines which vaccines each cattle needs based on:
 
 ### 4. Dashboard Display
 - Shows vaccination statistics and urgent cases
-- Provides quick access to cattle needing vaccination
+- Provides quick access to goat needing vaccination
 - Updates in real-time as data changes
 
 ## Usage for Farmers
@@ -96,19 +96,19 @@ The system automatically determines which vaccines each cattle needs based on:
 ### Dashboard View
 1. **Main Dashboard**: See vaccination overview at a glance
 2. **Statistics**: Monitor vaccination rates and pending items
-3. **Urgent Cases**: Quickly identify cattle needing immediate attention
+3. **Urgent Cases**: Quickly identify goat needing immediate attention
 
 ### Detailed Schedule
 1. **Filter Options**: View All, Overdue, Due Soon, Pending, or Completed
-2. **Cattle Information**: See tag number, name, classification, and gender
+2. **goat Information**: See tag number, name, classification, and gender
 3. **Vaccine Details**: View vaccine type, recommended date, and purpose
-4. **Protocol Reference**: Learn about vaccines for each cattle stage
+4. **Protocol Reference**: Learn about vaccines for each goat stage
 
 ### Benefits
 - **Automated Scheduling**: No manual calculation needed
 - **Industry Standards**: Based on veterinary best practices
 - **Age-appropriate**: Vaccines recommended at optimal times
-- **Comprehensive Coverage**: Covers all major cattle diseases
+- **Comprehensive Coverage**: Covers all major goat diseases
 - **Easy Monitoring**: Clear dashboard and filtering options
 
 ## Technical Implementation
@@ -121,7 +121,7 @@ The system automatically determines which vaccines each cattle needs based on:
 
 ### Integration Points
 - Integrated into main dashboard screen
-- Uses existing cattle and event data
+- Uses existing goat and event data
 - Compatible with current vaccination event system
 - Extends existing schedule functionality
 
@@ -133,4 +133,4 @@ The system automatically determines which vaccines each cattle needs based on:
 - Mobile notifications for field workers
 - Integration with government reporting requirements
 
-This implementation provides a comprehensive, automated vaccination scheduling system that helps farmers maintain optimal cattle health through proper vaccination protocols.
+This implementation provides a comprehensive, automated vaccination scheduling system that helps farmers maintain optimal goat health through proper vaccination protocols.

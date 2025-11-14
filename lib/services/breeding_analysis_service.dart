@@ -1,18 +1,18 @@
-import 'package:cattle_tracer_app/services/cattle/cattle_history_service.dart';
-import 'package:cattle_tracer_app/services/cattle/cattle_service.dart';
+﻿import 'package:goat_tracer_app/services/goat/goat_history_service.dart';
+import 'package:goat_tracer_app/services/goat/goat_service.dart';
 import 'package:flutter/material.dart';
 
 class BreedingAnalysisService {
   static Future<Map<String, dynamic>> getBreedingSuccessAnalysis({
-    String? selectedCowTag,
-    String? selectedBullTag,
+    String? selectedDoeTag,
+    String? selectedBuckTag,
     String? selectedBreedingType, String? successStatus, DateTimeRange<DateTime>? dateRange,
   }) async {
     try {
-      // Load cattle directory to mirror web JOINs (sex/classification by tag)
-      final allCattleModels = await CattleService.getAllCattle();
+      // Load goat directory to mirror web JOINs (sex/classification by tag)
+      final allgoatModels = await GoatService.getAllGoats();
       final Map<String, Map<String, String>> tagToProfile = {};
-      for (final c in allCattleModels) {
+      for (final c in allgoatModels) {
         final tag = c.tagNo.toString();
         if (tag.isEmpty) continue;
         tagToProfile[tag] = {
@@ -21,37 +21,37 @@ class BreedingAnalysisService {
         };
       }
       // Get all breeding events
-      final allEvents = await CattleHistoryService.getCattleHistory();
+      final allEvents = await GoatHistoryService.getgoatHistory();
       final breedingEvents = allEvents.where((event) {
         if (event['history_type']?.toString().toLowerCase() != 'breeding') return false;
-        final tag = event['cattle_tag']?.toString() ?? '';
+        final tag = event['goat_tag']?.toString() ?? '';
         final prof = tagToProfile[tag];
         if (prof == null) return false;
         final sex = prof['sex']?.toLowerCase();
         final cls = prof['classification']?.toLowerCase();
-        return sex == 'female' && (cls == 'cow' || cls == 'heifer');
+        return sex == 'female' && (cls == 'Doe' || cls == 'Doeling');
       }).toList();
 
-      // Get pregnancy events (female cow/heifer only, align with web)
+      // Get pregnancy events (female Doe/Doeling only, align with web)
       final pregnancyEvents = allEvents.where((event) {
         if (event['history_type']?.toString().toLowerCase() != 'pregnant') return false;
-        final tag = event['cattle_tag']?.toString() ?? '';
+        final tag = event['goat_tag']?.toString() ?? '';
         final prof = tagToProfile[tag];
         if (prof == null) return false;
         final sex = prof['sex']?.toLowerCase();
         final cls = prof['classification']?.toLowerCase();
-        return sex == 'female' && (cls == 'cow' || cls == 'heifer');
+        return sex == 'female' && (cls == 'Doe' || cls == 'Doeling');
       }).toList();
 
-      // Get birth events (female cow/heifer only, align with web)
+      // Get birth events (female Doe/Doeling only, align with web)
       final birthEvents = allEvents.where((event) {
         if (event['history_type']?.toString().toLowerCase() != 'gives birth') return false;
-        final tag = event['cattle_tag']?.toString() ?? '';
+        final tag = event['goat_tag']?.toString() ?? '';
         final prof = tagToProfile[tag];
         if (prof == null) return false;
         final sex = prof['sex']?.toLowerCase();
         final cls = prof['classification']?.toLowerCase();
-        return sex == 'female' && (cls == 'cow' || cls == 'heifer');
+        return sex == 'female' && (cls == 'Doe' || cls == 'Doeling');
       }).toList();
 
       // Filter by selected parameters
@@ -71,14 +71,14 @@ class BreedingAnalysisService {
           }
         }).toList();
       }
-      if (selectedCowTag != null && selectedCowTag.isNotEmpty) {
+      if (selectedDoeTag != null && selectedDoeTag.isNotEmpty) {
         filteredBreedingEvents = filteredBreedingEvents.where((event) =>
-            event['cattle_tag']?.toString() == selectedCowTag).toList();
+            event['goat_tag']?.toString() == selectedDoeTag).toList();
       }
-      if (selectedBullTag != null && selectedBullTag.isNotEmpty) {
+      if (selectedBuckTag != null && selectedBuckTag.isNotEmpty) {
         filteredBreedingEvents = filteredBreedingEvents.where((event) {
-          final eventBull = _getResponsibleBull(event);
-          return eventBull == selectedBullTag;
+          final eventBuck = _getResponsibleBuck(event);
+          return eventBuck == selectedBuckTag;
         }).toList();
       }
       if (selectedBreedingType != null && selectedBreedingType.isNotEmpty) {
@@ -101,7 +101,7 @@ class BreedingAnalysisService {
           if (eventType.isEmpty) {
             if (event['semen_used'] != null && event['semen_used'].toString().isNotEmpty) {
               eventType = 'artificial_insemination';
-            } else if (event['bull_tag'] != null && event['bull_tag'].toString().isNotEmpty) {
+            } else if (event['Buck_tag'] != null && event['Buck_tag'].toString().isNotEmpty) {
               eventType = 'natural_breeding';
             } else {
               eventType = 'unknown';
@@ -125,8 +125,8 @@ class BreedingAnalysisService {
         'data': analysis,
         'totalBreedingEvents': filteredBreedingEvents.length,
         'filteredBy': {
-          'cow': selectedCowTag,
-          'bull': selectedBullTag,
+          'Doe': selectedDoeTag,
+          'Buck': selectedBuckTag,
           'breedingType': selectedBreedingType,
         },
       };
@@ -144,68 +144,68 @@ class BreedingAnalysisService {
     List<Map<String, dynamic>> pregnancyEvents,
     List<Map<String, dynamic>> birthEvents,
   ) async {
-    final Map<String, List<Map<String, dynamic>>> cowBreedingHistory = {};
-    final Map<String, List<Map<String, dynamic>>> cowPregnancyHistory = {};
-    final Map<String, List<Map<String, dynamic>>> cowBirthHistory = {};
+    final Map<String, List<Map<String, dynamic>>> DoeBreedingHistory = {};
+    final Map<String, List<Map<String, dynamic>>> DoePregnancyHistory = {};
+    final Map<String, List<Map<String, dynamic>>> DoeBirthHistory = {};
 
-    // Group events by cow
+    // Group events by Doe
     for (final event in breedingEvents) {
-      final cowTag = event['cattle_tag']?.toString() ?? '';
-      if (cowTag.isNotEmpty) {
-        cowBreedingHistory.putIfAbsent(cowTag, () => []);
-        cowBreedingHistory[cowTag]!.add(event);
+      final DoeTag = event['goat_tag']?.toString() ?? '';
+      if (DoeTag.isNotEmpty) {
+        DoeBreedingHistory.putIfAbsent(DoeTag, () => []);
+        DoeBreedingHistory[DoeTag]!.add(event);
       }
     }
 
     for (final event in pregnancyEvents) {
-      final cowTag = event['cattle_tag']?.toString() ?? '';
-      if (cowTag.isNotEmpty) {
-        cowPregnancyHistory.putIfAbsent(cowTag, () => []);
-        cowPregnancyHistory[cowTag]!.add(event);
+      final DoeTag = event['goat_tag']?.toString() ?? '';
+      if (DoeTag.isNotEmpty) {
+        DoePregnancyHistory.putIfAbsent(DoeTag, () => []);
+        DoePregnancyHistory[DoeTag]!.add(event);
       }
     }
 
     for (final event in birthEvents) {
-      final cowTag = event['cattle_tag']?.toString() ?? '';
-      if (cowTag.isNotEmpty) {
-        cowBirthHistory.putIfAbsent(cowTag, () => []);
-        cowBirthHistory[cowTag]!.add(event);
+      final DoeTag = event['goat_tag']?.toString() ?? '';
+      if (DoeTag.isNotEmpty) {
+        DoeBirthHistory.putIfAbsent(DoeTag, () => []);
+        DoeBirthHistory[DoeTag]!.add(event);
       }
     }
 
-    // Analyze each cow's breeding success
-    final List<Map<String, dynamic>> cowAnalysis = [];
-    final Map<String, Map<String, dynamic>> bullPerformance = {};
+    // Analyze each Doe's breeding success
+    final List<Map<String, dynamic>> DoeAnalysis = [];
+    final Map<String, Map<String, dynamic>> BuckPerformance = {};
     final Map<String, Map<String, dynamic>> breedingTypePerformance = {};
 
-    for (final cowTag in cowBreedingHistory.keys) {
-      final cowBreedings = cowBreedingHistory[cowTag]!;
-      final cowPregnancies = cowPregnancyHistory[cowTag] ?? [];
+    for (final DoeTag in DoeBreedingHistory.keys) {
+      final DoeBreedings = DoeBreedingHistory[DoeTag]!;
+      final DoePregnancies = DoePregnancyHistory[DoeTag] ?? [];
 
       // Sort events by date
-      cowBreedings.sort((a, b) => DateTime.parse(a['history_date'] ?? '1900-01-01')
+      DoeBreedings.sort((a, b) => DateTime.parse(a['history_date'] ?? '1900-01-01')
           .compareTo(DateTime.parse(b['history_date'] ?? '1900-01-01')));
 
       final List<Map<String, dynamic>> successfulBreedings = [];
       final List<Map<String, dynamic>> failedBreedings = [];
       final List<Map<String, dynamic>> pendingBreedings = [];
 
-      for (int i = 0; i < cowBreedings.length; i++) {
-        final breeding = cowBreedings[i];
+      for (int i = 0; i < DoeBreedings.length; i++) {
+        final breeding = DoeBreedings[i];
         final breedingDate = DateTime.parse(breeding['history_date'] ?? '1900-01-01');
         final today = DateTime.now();
         final daysSinceBreeding = today.difference(breedingDate).inDays;
         
         // Look for pregnancy within 25-60 days after breeding
         bool foundPregnancy = false;
-        String? responsibleBull = _getResponsibleBull(breeding);
+        String? responsibleBuck = _getResponsibleBuck(breeding);
         String breedingType = breeding['breeding_type']?.toString() ?? '';
         // If breeding_type is empty, try to determine from other fields
         if (breedingType.isEmpty) {
           // Check if it's artificial insemination by looking for semen_used
           if (breeding['semen_used'] != null && breeding['semen_used'].toString().isNotEmpty) {
             breedingType = 'artificial_insemination';
-          } else if (breeding['bull_tag'] != null && breeding['bull_tag'].toString().isNotEmpty) {
+          } else if (breeding['Buck_tag'] != null && breeding['Buck_tag'].toString().isNotEmpty) {
             breedingType = 'natural_breeding';
           } else {
             breedingType = 'unknown';
@@ -222,8 +222,8 @@ class BreedingAnalysisService {
           }
         }
 
-        debugPrint('DEBUG: Analyzing breeding for cow $cowTag on ${breeding['history_date']} ($daysSinceBreeding days ago)');
-        debugPrint('DEBUG: Responsible bull: $responsibleBull');
+        debugPrint('DEBUG: Analyzing breeding for Doe $DoeTag on ${breeding['history_date']} ($daysSinceBreeding days ago)');
+        debugPrint('DEBUG: Responsible Buck: $responsibleBuck');
         debugPrint('DEBUG: Breeding type: $breedingType');
 
         // Check if breeding is too recent to determine success/failure
@@ -239,17 +239,17 @@ class BreedingAnalysisService {
         }
 
         // Check pregnancy events
-        for (final pregnancy in cowPregnancies) {
+        for (final pregnancy in DoePregnancies) {
           final pregnancyDate = DateTime.parse(pregnancy['history_date'] ?? '1900-01-01');
           final daysDifference = pregnancyDate.difference(breedingDate).inDays;
-          final pregnancyBull = _getResponsibleBull(pregnancy);
+          final pregnancyBuck = _getResponsibleBuck(pregnancy);
           
           debugPrint('DEBUG: Checking pregnancy on ${pregnancy['history_date']} ($daysDifference days later)');
-          debugPrint('DEBUG: Pregnancy bull: $pregnancyBull');
+          debugPrint('DEBUG: Pregnancy Buck: $pregnancyBuck');
           
           if (daysDifference >= 25 && daysDifference <= 60) {
-            // Check if the same bull is responsible
-            if (_isSameBull(responsibleBull, pregnancyBull)) {
+            // Check if the same Buck is responsible
+            if (_isSameBuck(responsibleBuck, pregnancyBuck)) {
               foundPregnancy = true;
               debugPrint('DEBUG: ✅ Pregnancy match found!');
               successfulBreedings.add({
@@ -286,23 +286,23 @@ class BreedingAnalysisService {
           }
         }
 
-        // Track bull performance
-        if (responsibleBull != null) {
-          bullPerformance.putIfAbsent(responsibleBull, () => {
-            'bull_tag': responsibleBull,
+        // Track Buck performance
+        if (responsibleBuck != null) {
+          BuckPerformance.putIfAbsent(responsibleBuck, () => {
+            'Buck_tag': responsibleBuck,
             'total_breedings': 0,
             'successful_breedings': 0,
             'success_rate': 0.0,
-            'cows_served': <String>{},
+            'Does_served': <String>{},
           });
           
-          bullPerformance[responsibleBull]!['total_breedings'] = 
-              (bullPerformance[responsibleBull]!['total_breedings'] as int) + 1;
-          (bullPerformance[responsibleBull]!['cows_served'] as Set<String>).add(cowTag);
+          BuckPerformance[responsibleBuck]!['total_breedings'] = 
+              (BuckPerformance[responsibleBuck]!['total_breedings'] as int) + 1;
+          (BuckPerformance[responsibleBuck]!['Does_served'] as Set<String>).add(DoeTag);
           
           if (foundPregnancy) {
-            bullPerformance[responsibleBull]!['successful_breedings'] = 
-                (bullPerformance[responsibleBull]!['successful_breedings'] as int) + 1;
+            BuckPerformance[responsibleBuck]!['successful_breedings'] = 
+                (BuckPerformance[responsibleBuck]!['successful_breedings'] as int) + 1;
           }
         }
 
@@ -323,15 +323,15 @@ class BreedingAnalysisService {
         }
       }
 
-      // Calculate success rate for this cow (only count resolved breedings)
-      final totalBreedings = cowBreedings.length;
+      // Calculate success rate for this Doe (only count resolved breedings)
+      final totalBreedings = DoeBreedings.length;
       final resolvedBreedings = successfulBreedings.length + failedBreedings.length;
       final successfulCount = successfulBreedings.length;
       final pendingCount = pendingBreedings.length;
       final successRate = resolvedBreedings > 0 ? (successfulCount / resolvedBreedings) * 100 : 0.0;
 
-      cowAnalysis.add({
-        'cow_tag': cowTag,
+      DoeAnalysis.add({
+        'Doe_tag': DoeTag,
         'total_breedings': totalBreedings,
         'successful_breedings': successfulCount,
         'failed_breedings': failedBreedings.length,
@@ -341,16 +341,16 @@ class BreedingAnalysisService {
         'successful_breedings_details': successfulBreedings,
         'failed_breedings_details': failedBreedings,
         'pending_breedings_details': pendingBreedings,
-        'last_breeding_date': cowBreedings.isNotEmpty ? cowBreedings.last['history_date'] : null,
+        'last_breeding_date': DoeBreedings.isNotEmpty ? DoeBreedings.last['history_date'] : null,
       });
     }
 
-    // Calculate final success rates for bulls and breeding types
-    for (final bull in bullPerformance.values) {
-      final total = bull['total_breedings'] as int;
-      final successful = bull['successful_breedings'] as int;
-      bull['success_rate'] = total > 0 ? (successful / total) * 100 : 0.0;
-      bull['cows_served'] = (bull['cows_served'] as Set<String>).length;
+    // Calculate final success rates for Bucks and breeding types
+    for (final Buck in BuckPerformance.values) {
+      final total = Buck['total_breedings'] as int;
+      final successful = Buck['successful_breedings'] as int;
+      Buck['success_rate'] = total > 0 ? (successful / total) * 100 : 0.0;
+      Buck['Does_served'] = (Buck['Does_served'] as Set<String>).length;
     }
 
     for (final type in breedingTypePerformance.values) {
@@ -361,9 +361,9 @@ class BreedingAnalysisService {
 
     // Calculate overall statistics
     final totalBreedings = breedingEvents.length;
-    final totalSuccessful = cowAnalysis.fold<int>(0, (sum, cow) => sum + (cow['successful_breedings'] as int));
-    final totalFailed = cowAnalysis.fold<int>(0, (sum, cow) => sum + (cow['failed_breedings'] as int));
-    final totalPending = cowAnalysis.fold<int>(0, (sum, cow) => sum + (cow['pending_breedings'] as int));
+    final totalSuccessful = DoeAnalysis.fold<int>(0, (sum, Doe) => sum + (Doe['successful_breedings'] as int));
+    final totalFailed = DoeAnalysis.fold<int>(0, (sum, Doe) => sum + (Doe['failed_breedings'] as int));
+    final totalPending = DoeAnalysis.fold<int>(0, (sum, Doe) => sum + (Doe['pending_breedings'] as int));
     final totalResolved = totalSuccessful + totalFailed;
     final overallSuccessRate = totalResolved > 0 ? (totalSuccessful / totalResolved) * 100 : 0.0;
 
@@ -376,19 +376,19 @@ class BreedingAnalysisService {
         'total_resolved': totalResolved,
         'overall_success_rate': overallSuccessRate,
       },
-      'cow_analysis': cowAnalysis,
-      'bull_performance': bullPerformance.values.toList(),
+      'Doe_analysis': DoeAnalysis,
+      'Buck_performance': BuckPerformance.values.toList(),
       'breeding_type_performance': breedingTypePerformance.values.toList(),
     };
   }
 
-  static String? _getResponsibleBull(Map<String, dynamic> event) {
-    // For natural breeding, use bull_tag
+  static String? _getResponsibleBuck(Map<String, dynamic> event) {
+    // For natural breeding, use Buck_tag
     if (event['breeding_type']?.toString() == 'natural_breeding') {
-      return event['bull_tag']?.toString();
+      return event['Buck_tag']?.toString();
     }
     
-    // For artificial insemination, extract bull from semen_used
+    // For artificial insemination, extract Buck from semen_used
     final semenUsed = event['semen_used']?.toString() ?? '';
     if (semenUsed.isNotEmpty) {
       if (semenUsed.contains(' Semen')) {
@@ -403,65 +403,65 @@ class BreedingAnalysisService {
       return semenUsed;
     }
     
-    // For pregnancy and birth events, use bull_tag
-    final bullTag = event['bull_tag']?.toString();
-    if (bullTag != null && bullTag.isNotEmpty) {
-      return bullTag;
+    // For pregnancy and birth events, use Buck_tag
+    final BuckTag = event['Buck_tag']?.toString();
+    if (BuckTag != null && BuckTag.isNotEmpty) {
+      return BuckTag;
     }
     
     return null;
   }
 
-  static bool _isSameBull(String? bull1, String? bull2) {
-    // If both are null, consider them the same (no bull specified)
-    if (bull1 == null && bull2 == null) return true;
+  static bool _isSameBuck(String? Buck1, String? Buck2) {
+    // If both are null, consider them the same (no Buck specified)
+    if (Buck1 == null && Buck2 == null) return true;
     
     // If one is null and the other isn't, they're different
-    if (bull1 == null || bull2 == null) return false;
+    if (Buck1 == null || Buck2 == null) return false;
     
-    // Compare the bull tags (case-insensitive)
-    return bull1.toLowerCase().trim() == bull2.toLowerCase().trim();
+    // Compare the Buck tags (case-insensitive)
+    return Buck1.toLowerCase().trim() == Buck2.toLowerCase().trim();
   }
 
-  // Get available cows for filtering (only actual cows, not bulls)
-  static Future<List<String>> getAvailableCows() async {
+  // Get available Does for filtering (only actual Does, not Bucks)
+  static Future<List<String>> getAvailableDoes() async {
     try {
-      // Get all cattle and filter only cows
-      final allCattle = await CattleService.getAllCattle();
-      final cows = allCattle.where((cattle) => 
-          cattle.classification.toString().toLowerCase() == 'cow').toList();
+      // Get all goat and filter only Does
+      final allgoat = await GoatService.getAllGoats();
+      final Does = allgoat.where((goat) => 
+          goat.classification.toString().toLowerCase() == 'Doe').toList();
       
-              final List<String> cowTags = [];
-        for (final cow in cows) {
-          final cowTag = cow.tagNo.toString();
-          if (cowTag.isNotEmpty) {
-            cowTags.add(cowTag);
+              final List<String> DoeTags = [];
+        for (final Doe in Does) {
+          final DoeTag = Doe.tagNo.toString();
+          if (DoeTag.isNotEmpty) {
+            DoeTags.add(DoeTag);
           }
         }
       
-      return cowTags..sort();
+      return DoeTags..sort();
     } catch (e) {
-      debugPrint('DEBUG: Error getting available cows: $e');
+      debugPrint('DEBUG: Error getting available Does: $e');
       return [];
     }
   }
 
-  // Get available bulls for filtering
-  static Future<List<String>> getAvailableBulls() async {
+  // Get available Bucks for filtering
+  static Future<List<String>> getAvailableBucks() async {
     try {
-      final allEvents = await CattleHistoryService.getCattleHistory();
+      final allEvents = await GoatHistoryService.getgoatHistory();
       final breedingEvents = allEvents.where((event) =>
           event['history_type']?.toString().toLowerCase() == 'breeding').toList();
       
-      final Set<String> bullTags = {};
+      final Set<String> BuckTags = {};
       for (final event in breedingEvents) {
-        final bull = _getResponsibleBull(event);
-        if (bull != null && bull.isNotEmpty) {
-          bullTags.add(bull);
+        final Buck = _getResponsibleBuck(event);
+        if (Buck != null && Buck.isNotEmpty) {
+          BuckTags.add(Buck);
         }
       }
       
-      return bullTags.toList()..sort();
+      return BuckTags.toList()..sort();
     } catch (e) {
       return [];
     }
@@ -470,7 +470,7 @@ class BreedingAnalysisService {
   // Get available breeding types for filtering
   static Future<List<Map<String, String>>> getAvailableBreedingTypes() async {
     try {
-      final allEvents = await CattleHistoryService.getCattleHistory();
+      final allEvents = await GoatHistoryService.getgoatHistory();
       final breedingEvents = allEvents.where((event) =>
           event['history_type']?.toString().toLowerCase() == 'breeding').toList();
       
@@ -482,7 +482,7 @@ class BreedingAnalysisService {
           // Check if it's artificial insemination by looking for semen_used
           if (event['semen_used'] != null && event['semen_used'].toString().isNotEmpty) {
             breedingType = 'artificial_insemination';
-          } else if (event['bull_tag'] != null && event['bull_tag'].toString().isNotEmpty) {
+          } else if (event['Buck_tag'] != null && event['Buck_tag'].toString().isNotEmpty) {
             breedingType = 'natural_breeding';
           } else {
             breedingType = 'unknown';
@@ -498,7 +498,7 @@ class BreedingAnalysisService {
       for (final event in breedingEvents) {
         debugPrint('DEBUG: Event breeding_type: ${event['breeding_type']}');
         debugPrint('DEBUG: Event semen_used: ${event['semen_used']}');
-        debugPrint('DEBUG: Event bull_tag: ${event['bull_tag']}');
+        debugPrint('DEBUG: Event Buck_tag: ${event['Buck_tag']}');
         debugPrint('DEBUG: ---');
       }
       

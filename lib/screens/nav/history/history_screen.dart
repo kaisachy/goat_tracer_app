@@ -1,13 +1,13 @@
-// lib/screens/nav/history/history_screen.dart
+﻿// lib/screens/nav/history/history_screen.dart
 import 'package:flutter/material.dart';
-import 'package:cattle_tracer_app/constants/app_colors.dart';
-import 'package:cattle_tracer_app/services/cattle/cattle_history_service.dart';
-import 'package:cattle_tracer_app/screens/nav/cattle/widgets/history/history_search_filter_bar.dart';
-import 'package:cattle_tracer_app/screens/nav/cattle/cattle_history_form_screen.dart';
-import 'package:cattle_tracer_app/screens/nav/cattle/modals/history_duplication_modal.dart';
-import 'package:cattle_tracer_app/utils/history_type_utils.dart';
-import '../../../models/cattle.dart';
-import 'cattle_selection_modal.dart';
+import 'package:goat_tracer_app/constants/app_colors.dart';
+import 'package:goat_tracer_app/services/goat/goat_history_service.dart';
+import 'package:goat_tracer_app/screens/nav/goat/widgets/history/history_search_filter_bar.dart';
+import 'package:goat_tracer_app/screens/nav/goat/goat_history_form_screen.dart';
+import 'package:goat_tracer_app/screens/nav/goat/modals/history_duplication_modal.dart';
+import 'package:goat_tracer_app/utils/history_type_utils.dart';
+import '../../../models/goat.dart';
+import 'goat_selection_modal.dart';
 
   class HistoryScreen extends StatefulWidget {
   const HistoryScreen({super.key});
@@ -27,9 +27,9 @@ class _HistoryScreenState extends State<HistoryScreen> {
 
   // All possible history types
   List<String> get historyTypes {
-    // Reference order for grid: use HistoryTypeUtils for 'cow' (most complete)
-    final cowTypes = HistoryTypeUtils.getHistoryTypesForSex(null, classification: 'cow');
-    return [...cowTypes];
+    // Reference order for grid: use HistoryTypeUtils for 'Doe' (most complete)
+    final DoeTypes = HistoryTypeUtils.getHistoryTypesForSex(null, classification: 'Doe');
+    return [...DoeTypes];
   }
 
   Widget _buildAddHistoryGrid() {
@@ -76,18 +76,18 @@ class _HistoryScreenState extends State<HistoryScreen> {
               child: InkWell(
                 borderRadius: BorderRadius.circular(16),
                 onTap: () async {
-                  final selectedCattleTag = await showDialog<String>(
+                  final selectedgoatTag = await showDialog<String>(
                     context: context,
                     barrierDismissible: false,
                     builder: (dialogContext) {
-                      return CattleSelectionModal(historyType: type);
+                      return goatSelectionModal(historyType: type);
                     },
                   );
-                  if (!mounted || selectedCattleTag == null) return;
+                  if (!mounted || selectedgoatTag == null) return;
                   await Navigator.of(context).push(
                     MaterialPageRoute(
-                      builder: (routeContext) => CattleHistoryFormScreen(
-                        cattleTag: selectedCattleTag,
+                      builder: (routeContext) => goatHistoryFormScreen(
+                        goatTag: selectedgoatTag,
                         initialHistoryType: type,
                       ),
                     ),
@@ -147,18 +147,18 @@ class _HistoryScreenState extends State<HistoryScreen> {
               child: InkWell(
                 borderRadius: BorderRadius.circular(16),
                 onTap: () async {
-                  final selectedCattleTag = await showDialog<String>(
+                  final selectedgoatTag = await showDialog<String>(
                     context: context,
                     barrierDismissible: false,
                     builder: (dialogContext) {
-                      return CattleSelectionModal(historyType: 'Other');
+                      return goatSelectionModal(historyType: 'Other');
                     },
                   );
-                  if (!mounted || selectedCattleTag == null) return;
+                  if (!mounted || selectedgoatTag == null) return;
                   await Navigator.of(context).push(
                     MaterialPageRoute(
-                      builder: (routeContext) => CattleHistoryFormScreen(
-                        cattleTag: selectedCattleTag,
+                      builder: (routeContext) => goatHistoryFormScreen(
+                        goatTag: selectedgoatTag,
                         initialHistoryType: 'Other',
                       ),
                     ),
@@ -219,14 +219,14 @@ class _HistoryScreenState extends State<HistoryScreen> {
   @override
   void initState() {
     super.initState();
-    _loadAllCattleHistory();
+    _loadAllgoatHistory();
   }
 
-  Future<void> _loadAllCattleHistory() async {
+  Future<void> _loadAllgoatHistory() async {
     try {
-      debugPrint('DEBUG: _loadAllCattleHistory started');
+      debugPrint('DEBUG: _loadAllgoatHistory started');
       setState(() => isLoading = true);
-      final historyRecords = await CattleHistoryService.getCattleHistory();
+      final historyRecords = await GoatHistoryService.getgoatHistory();
       debugPrint('DEBUG: Loaded ${historyRecords.length} history records from service');
 
       // Remove duplicates and delete them from database
@@ -239,7 +239,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
         return dateB.compareTo(dateA); // Descending order (latest first)
       });
 
-      // Calf tags are now stored directly in the database as comma-separated values
+      // Kid tags are now stored directly in the database as comma-separated values
       // No need for complex aggregation logic
 
       if (mounted) {
@@ -266,7 +266,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
 
   Future<void> _refreshHistory() async {
     debugPrint('DEBUG: _refreshHistory called');
-    await _loadAllCattleHistory();
+    await _loadAllgoatHistory();
     debugPrint('DEBUG: _refreshHistory completed');
   }
 
@@ -308,7 +308,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
         for (final duplicate in duplicatesToDelete) {
           final historyRecordId = duplicate['id'];
           if (historyRecordId != null) {
-            final success = await CattleHistoryService.deleteCattleHistory(historyRecordId);
+            final success = await GoatHistoryService.deletegoatHistory(historyRecordId);
             if (success) {
               deletedCount++;
             } else {
@@ -358,7 +358,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
 
     // Compare basic fields that are always relevant
     if (!_compareFieldValues(historyRecord1['history_date'], historyRecord2['history_date'])) return false;
-    if (!_compareFieldValues(historyRecord1['cattle_tag'], historyRecord2['cattle_tag'])) return false;
+    if (!_compareFieldValues(historyRecord1['goat_tag'], historyRecord2['goat_tag'])) return false;
     if (!_compareFieldValues(historyRecord1['notes'], historyRecord2['notes'])) return false;
 
     // Compare history-specific fields based on history type
@@ -384,8 +384,8 @@ class _HistoryScreenState extends State<HistoryScreen> {
         return _compareFieldValues(historyRecord1['weighed_result'], historyRecord2['weighed_result']);
 
       case 'gives birth':
-        return _compareFieldValues(historyRecord1['bull_tag'], historyRecord2['bull_tag']) &&
-            _compareFieldValues(historyRecord1['calf_tag'], historyRecord2['calf_tag']);
+        return _compareFieldValues(historyRecord1['Buck_tag'], historyRecord2['Buck_tag']) &&
+            _compareFieldValues(historyRecord1['Kid_tag'], historyRecord2['Kid_tag']);
 
       case 'vaccinated':
         return _compareFieldValues(historyRecord1['medicine_given'], historyRecord2['medicine_given']) &&
@@ -394,7 +394,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
       case 'pregnant':
         return _compareFieldValues(historyRecord1['breeding_date'], historyRecord2['breeding_date']) &&
             _compareFieldValues(historyRecord1['expected_delivery_date'], historyRecord2['expected_delivery_date']) &&
-            _compareFieldValues(historyRecord1['bull_tag'], historyRecord2['bull_tag']);
+            _compareFieldValues(historyRecord1['Buck_tag'], historyRecord2['Buck_tag']);
 
       case 'deworming':
         return _compareFieldValues(historyRecord1['medicine_given'], historyRecord2['medicine_given']);
@@ -418,8 +418,8 @@ class _HistoryScreenState extends State<HistoryScreen> {
       case 'other':
       default:
       // For 'other' history records, compare all potentially relevant fields
-        return _compareFieldValues(historyRecord1['bull_tag'], historyRecord2['bull_tag']) &&
-            _compareFieldValues(historyRecord1['calf_tag'], historyRecord2['calf_tag']) &&
+        return _compareFieldValues(historyRecord1['Buck_tag'], historyRecord2['Buck_tag']) &&
+            _compareFieldValues(historyRecord1['Kid_tag'], historyRecord2['Kid_tag']) &&
             _compareFieldValues(historyRecord1['technician'], historyRecord2['technician']) &&
             _compareFieldValues(historyRecord1['sickness_symptoms'], historyRecord2['sickness_symptoms']) &&
             _compareFieldValues(historyRecord1['diagnosis'], historyRecord2['diagnosis']) &&
@@ -458,13 +458,13 @@ class _HistoryScreenState extends State<HistoryScreen> {
       final type = (historyRecord['history_type'] ?? '').toString().toLowerCase();
       final notes = (historyRecord['notes'] ?? '').toString().toLowerCase();
       final diagnosis = (historyRecord['diagnosis'] ?? '').toString().toLowerCase();
-      final cattleTag = (historyRecord['cattle_tag'] ?? '').toString().toLowerCase();
+      final goatTag = (historyRecord['goat_tag'] ?? '').toString().toLowerCase();
       final query = searchQuery.toLowerCase();
 
       final matchesSearch = type.contains(query) ||
           notes.contains(query) ||
           diagnosis.contains(query) ||
-          cattleTag.contains(query);
+          goatTag.contains(query);
 
       final matchesFilter = selectedHistoryType == 'All' ||
           type == selectedHistoryType.toLowerCase();
@@ -587,13 +587,13 @@ class _HistoryScreenState extends State<HistoryScreen> {
 
   void _editHistory(Map<String, dynamic> historyRecord) async {
     try {
-      // Create a CattleHistoryRecord object from the history record data
-      final cattleHistoryRecord = CattleHistoryRecord(
+      // Create a GoatHistoryRecord object from the history record data
+      final GoatHistoryRecord = GoatHistoryRecord(
         id: historyRecord['id'] ?? 0,
         userId: historyRecord['user_id'] ?? 0,
-        cattleTag: historyRecord['cattle_tag']?.toString() ?? '',
-        bullTag: historyRecord['bull_tag']?.toString(),
-        calfTag: historyRecord['calf_tag']?.toString(),
+        goatTag: historyRecord['goat_tag']?.toString() ?? '',
+        BuckTag: historyRecord['Buck_tag']?.toString(),
+        KidTag: historyRecord['Kid_tag']?.toString(),
         historyType: historyRecord['history_type']?.toString() ?? '',
         historyDate: historyRecord['history_date']?.toString() ?? '',
         sicknessSymptoms: historyRecord['sickness_symptoms']?.toString(),
@@ -619,9 +619,9 @@ class _HistoryScreenState extends State<HistoryScreen> {
       final result = await Navigator.push(
         context,
         MaterialPageRoute(
-          builder: (context) => CattleHistoryFormScreen(
-            historyRecord: cattleHistoryRecord,
-            cattleTag: historyRecord['cattle_tag']?.toString() ?? '',
+          builder: (context) => goatHistoryFormScreen(
+            historyRecord: GoatHistoryRecord,
+            goatTag: historyRecord['goat_tag']?.toString() ?? '',
           ),
         ),
       );
@@ -682,7 +682,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      '${historyRecord['history_type']} - ${historyRecord['cattle_tag']}',
+                      '${historyRecord['history_type']} - ${historyRecord['goat_tag']}',
                       style: const TextStyle(fontWeight: FontWeight.bold),
                     ),
                     Text(
@@ -749,7 +749,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
         );
       }
 
-      final success = await CattleHistoryService.deleteCattleHistory(historyRecord['id']);
+      final success = await GoatHistoryService.deletegoatHistory(historyRecord['id']);
 
       if (mounted) {
         ScaffoldMessenger.of(context).clearSnackBars();
@@ -883,9 +883,9 @@ class _HistoryScreenState extends State<HistoryScreen> {
         .isAfter(DateTime.parse(b['history_date'] ?? '1900-01-01')) ? a : b)
         : null;
 
-    // Get unique cattle count
+    // Get unique goat count
     final _ = allHistoryRecords
-        .map((historyRecord) => historyRecord['cattle_tag']?.toString() ?? '')
+        .map((historyRecord) => historyRecord['goat_tag']?.toString() ?? '')
         .where((tag) => tag.isNotEmpty)
         .toSet();
 
@@ -970,7 +970,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
   Widget _buildHistoryAccordion(Map<String, dynamic> historyRecord, int index) {
     final historyType = historyRecord['history_type'] ?? 'Unknown';
     final historyDate = historyRecord['history_date'];
-    final cattleTag = historyRecord['cattle_tag']?.toString() ?? 'Unknown';
+    final goatTag = historyRecord['goat_tag']?.toString() ?? 'Unknown';
     final historyColor = HistoryTypeUtils.getHistoryColor(historyType);
     final details = _getHistoryDetails(historyRecord);
     final isExpanded = expandedCards.contains(index);
@@ -1043,7 +1043,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
                             border: Border.all(color: historyColor.withValues(alpha: 0.3)),
                           ),
                           child: Text(
-                            cattleTag,
+                            goatTag,
                             style: TextStyle(
                               fontSize: 12,
                               fontWeight: FontWeight.w600,
@@ -1192,25 +1192,25 @@ class _HistoryScreenState extends State<HistoryScreen> {
 
     // Special handling for Gives Birth history records (check both lowercase and original case)
     if (historyType == 'gives birth' || originalHistoryType?.toLowerCase() == 'gives birth') {
-      if (historyRecord['bull_tag'] != null && historyRecord['bull_tag'].toString().isNotEmpty && historyRecord['bull_tag'] != 'N/A') {
-        relevantDetails['Bull Tag (Father)'] = historyRecord['bull_tag'].toString();
+      if (historyRecord['Buck_tag'] != null && historyRecord['Buck_tag'].toString().isNotEmpty && historyRecord['Buck_tag'] != 'N/A') {
+        relevantDetails['Buck Tag (Father)'] = historyRecord['Buck_tag'].toString();
       }
       
-      // Handle calf tags - check if it's comma-separated (multiple calves)
-      final calfTagValue = historyRecord['calf_tag']?.toString();
-      if (calfTagValue != null && calfTagValue.isNotEmpty && calfTagValue != 'N/A') {
-        if (calfTagValue.contains(',')) {
+      // Handle Kid tags - check if it's comma-separated (multiple calves)
+      final KidTagValue = historyRecord['Kid_tag']?.toString();
+      if (KidTagValue != null && KidTagValue.isNotEmpty && KidTagValue != 'N/A') {
+        if (KidTagValue.contains(',')) {
           // Multiple calves - split by comma and count
-          final calfTags = calfTagValue.split(',').map((tag) => tag.trim()).where((tag) => tag.isNotEmpty).toList();
-          relevantDetails['Calf Tags'] = calfTags.join(', ');
-          relevantDetails['Litter Size'] = '${calfTags.length}';
+          final KidTags = KidTagValue.split(',').map((tag) => tag.trim()).where((tag) => tag.isNotEmpty).toList();
+          relevantDetails['Kid Tags'] = KidTags.join(', ');
+          relevantDetails['Litter Size'] = '${KidTags.length}';
         } else {
-          // Single calf
-          relevantDetails['Calf Tag'] = calfTagValue;
+          // Single Kid
+          relevantDetails['Kid Tag'] = KidTagValue;
           relevantDetails['Litter Size'] = '1';
         }
       } else {
-        // No calf tags found - show 0 litter size
+        // No Kid tags found - show 0 litter size
         relevantDetails['Litter Size'] = '0';
       }
     }
@@ -1277,8 +1277,8 @@ class _HistoryScreenState extends State<HistoryScreen> {
         if (historyRecord['expected_delivery_date'] != null && historyRecord['expected_delivery_date'].toString().isNotEmpty && historyRecord['expected_delivery_date'] != 'N/A') {
           relevantDetails['Expected Delivery'] = _formatDate(historyRecord['expected_delivery_date']);
         }
-        if (historyRecord['bull_tag'] != null && historyRecord['bull_tag'].toString().isNotEmpty && historyRecord['bull_tag'] != 'N/A') {
-          relevantDetails['Bull Tag (Father)'] = historyRecord['bull_tag'].toString();
+        if (historyRecord['Buck_tag'] != null && historyRecord['Buck_tag'].toString().isNotEmpty && historyRecord['Buck_tag'] != 'N/A') {
+          relevantDetails['Buck Tag (Father)'] = historyRecord['Buck_tag'].toString();
         }
         break;
 
@@ -1392,7 +1392,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
               Text(
                 isFiltering
                     ? 'Try adjusting your search or filter\nto find what you\'re looking for.'
-                    : 'No cattle history records have been recorded yet.\nTap "Add History Record" to get started.',
+                    : 'No Goat History records have been recorded yet.\nTap "Add History Record" to get started.',
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   fontSize: 16,

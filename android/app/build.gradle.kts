@@ -1,4 +1,4 @@
-plugins {
+﻿plugins {
     id("com.android.application")
     id("kotlin-android")
     // The Flutter Gradle Plugin must be applied after the Android and Kotlin Gradle plugins.
@@ -6,7 +6,7 @@ plugins {
 }
 
 android {
-    namespace = "com.example.cattle_tracer_app"
+    namespace = "com.example.goat_tracer_app"
     compileSdk = flutter.compileSdkVersion
     ndkVersion = "29.0.13846066"
 
@@ -21,7 +21,7 @@ android {
 
     defaultConfig {
         // TODO: Specify your own unique Application ID (https://developer.android.com/studio/build/application-id.html).
-        applicationId = "com.example.cattle_tracer_app"
+        applicationId = "com.example.goat_tracer_app"
         // You can update the following values to match your application needs.
         // For more information, see: https://flutter.dev/to/review-gradle-config.
         minSdk = flutter.minSdkVersion

@@ -1,31 +1,31 @@
-import 'dart:developer';
-import 'package:cattle_tracer_app/models/cattle.dart';
-import 'package:cattle_tracer_app/models/vaccination_schedule.dart';
+﻿import 'dart:developer';
+import 'package:goat_tracer_app/models/goat.dart';
+import 'package:goat_tracer_app/models/vaccination_schedule.dart';
 
 class VaccinationService {
   static final VaccinationService _instance = VaccinationService._internal();
   factory VaccinationService() => _instance;
   VaccinationService._internal();
 
-  /// Generate vaccination schedules for all cattle based on their age and stage
+  /// Generate vaccination schedules for all goat based on their age and stage
   Future<List<VaccinationSchedule>> generateVaccinationSchedules({
-    required List<Cattle> allCattle,
+    required List<goat> allGoats,
     required List<Map<String, dynamic>> allEvents,
   }) async {
-    log('🚀 VACCINATION SERVICE: Generating schedules for ${allCattle.length} cattle');
+    log('🚀 VACCINATION SERVICE: Generating schedules for ${allGoats.length} goat');
     
     final List<VaccinationSchedule> schedules = [];
     
-    for (final cattle in allCattle) {
-      final ageInMonths = _getAccurateAgeInMonths(cattle);
-      final isDairy = _isDairyCattle(cattle);
-      final pregnancyInfo = _getPregnancyInfo(cattle.tagNo, allEvents);
-      final classification = _normalizeClassification(cattle.classification);
+    for (final goat in allGoats) {
+      final ageInMonths = _getAccurateAgeInMonths(goat);
+      final isDairy = _isDairygoat(goat);
+      final pregnancyInfo = _getPregnancyInfo(goat.tagNo, allEvents);
+      final classification = _normalizeClassification(goat.classification);
       
-      log('🐄 Processing ${cattle.tagNo}: Age=$ageInMonths months, Classification=$classification, Dairy=$isDairy, Pregnant=${pregnancyInfo != null}');
+      log('🐄 Processing ${goat.tagNo}: Age=$ageInMonths months, Classification=$classification, Dairy=$isDairy, Pregnant=${pregnancyInfo != null}');
       
-      final cattleSchedules = await _generateCattleVaccinationSchedules(
-        cattle: cattle,
+      final goatSchedules = await _generategoatVaccinationSchedules(
+        goat: goat,
         allEvents: allEvents,
         ageInMonths: ageInMonths,
         isDairy: isDairy,
@@ -33,50 +33,50 @@ class VaccinationService {
         classification: classification,
       );
       
-      schedules.addAll(cattleSchedules);
+      schedules.addAll(goatSchedules);
     }
     
     log('✅ Generated ${schedules.length} vaccination schedules');
     return schedules;
   }
 
-  /// Get accurate age in months for cattle
-  int _getAccurateAgeInMonths(Cattle cattle) {
+  /// Get accurate age in months for goat
+  int _getAccurateAgeInMonths(goat goat) {
     // First try to use the backend-provided age
-    if (cattle.age != null && cattle.age!.isNotEmpty) {
+    if (goat.age != null && goat.age!.isNotEmpty) {
       try {
-        final ageValue = int.tryParse(cattle.age!);
+        final ageValue = int.tryParse(goat.age!);
         if (ageValue != null && ageValue >= 0) {
           return ageValue;
         }
       } catch (e) {
-        log('⚠️ Error parsing backend age for ${cattle.tagNo}: $e');
+        log('⚠️ Error parsing backend age for ${goat.tagNo}: $e');
       }
     }
     
     // Fall back to computed age from date of birth
-    if (cattle.dateOfBirth != null && cattle.dateOfBirth!.isNotEmpty) {
+    if (goat.dateOfBirth != null && goat.dateOfBirth!.isNotEmpty) {
       try {
-        final birthDate = DateTime.parse(cattle.dateOfBirth!);
+        final birthDate = DateTime.parse(goat.dateOfBirth!);
         final now = DateTime.now();
         final difference = now.difference(birthDate);
         final ageInMonths = (difference.inDays / 30.44).round();
         return ageInMonths > 0 ? ageInMonths : 0;
       } catch (e) {
-        log('⚠️ Error parsing date of birth for ${cattle.tagNo}: $e');
+        log('⚠️ Error parsing date of birth for ${goat.tagNo}: $e');
       }
     }
     
     // Default age based on classification if no date available
-    return _getDefaultAgeByClassification(cattle.classification);
+    return _getDefaultAgeByClassification(goat.classification);
   }
 
   /// Compute accurate age in days (for newborn logic)
-  int _getAccurateAgeInDays(Cattle cattle) {
+  int _getAccurateAgeInDays(goat goat) {
     // Prefer DOB when available
-    if (cattle.dateOfBirth != null && cattle.dateOfBirth!.isNotEmpty) {
+    if (goat.dateOfBirth != null && goat.dateOfBirth!.isNotEmpty) {
       try {
-        final birthDate = DateTime.parse(cattle.dateOfBirth!);
+        final birthDate = DateTime.parse(goat.dateOfBirth!);
         final now = DateTime.now();
         final days = now.difference(birthDate).inDays;
         return days >= 0 ? days : 0;
@@ -84,8 +84,8 @@ class VaccinationService {
     }
 
     // Fallback: derive from age in months if provided
-    if (cattle.age != null && cattle.age!.isNotEmpty) {
-      final months = int.tryParse(cattle.age!);
+    if (goat.age != null && goat.age!.isNotEmpty) {
+      final months = int.tryParse(goat.age!);
       if (months != null) {
         // Approximate days from months
         return (months * 30.44).round();
@@ -93,20 +93,20 @@ class VaccinationService {
     }
 
     // Last resort: classification defaults
-    switch (cattle.classification.toLowerCase()) {
-      case 'calf':
+    switch (goat.classification.toLowerCase()) {
+      case 'Kid':
       case 'calves':
         return 30; // assume ~1 month if unknown
       case 'grower':
       case 'growers':
         return 240; // ~8 months
-      case 'heifer':
-      case 'heifers':
+      case 'Doeling':
+      case 'Doelings':
         return 450; // ~15 months
-      case 'cow':
-      case 'cows':
-      case 'bull':
-      case 'bulls':
+      case 'Doe':
+      case 'Does':
+      case 'Buck':
+      case 'Bucks':
         return 1095; // ~3 years
       default:
         return 365; // default 1 year
@@ -116,20 +116,20 @@ class VaccinationService {
   /// Get default age based on classification when no date is available
   int _getDefaultAgeByClassification(String classification) {
     switch (classification.toLowerCase()) {
-      case 'calf':
+      case 'Kid':
         return 3; // Assume 3 months for calves
       case 'grower':
       case 'growers':
         return 8; // Assume 8 months for growers
-      case 'heifer':
-      case 'heifers':
-        return 15; // Assume 15 months for heifers
-      case 'cow':
-      case 'cows':
-        return 36; // Assume 3 years for cows
-      case 'bull':
-      case 'bulls':
-        return 36; // Assume 3 years for bulls
+      case 'Doeling':
+      case 'Doelings':
+        return 15; // Assume 15 months for Doelings
+      case 'Doe':
+      case 'Does':
+        return 36; // Assume 3 years for Does
+      case 'Buck':
+      case 'Bucks':
+        return 36; // Assume 3 years for Bucks
       default:
         return 12; // Default to 1 year
     }
@@ -140,39 +140,39 @@ class VaccinationService {
     final normalized = classification.trim().toLowerCase();
     
     switch (normalized) {
-      case 'calf':
+      case 'Kid':
       case 'calves':
-        return 'Calf';
+        return 'Kid';
       case 'grower':
       case 'growers':
         return 'Growers';
-      case 'steer':
-      case 'steers':
-        return 'Steer';
-      case 'heifer':
-      case 'heifers':
-        return 'Heifer';
-      case 'cow':
-      case 'cows':
-        return 'Cow';
-      case 'bull':
-      case 'bulls':
-        return 'Bull';
+      case 'Buckling':
+      case 'Bucklings':
+        return 'Buckling';
+      case 'Doeling':
+      case 'Doelings':
+        return 'Doeling';
+      case 'Doe':
+      case 'Does':
+        return 'Doe';
+      case 'Buck':
+      case 'Bucks':
+        return 'Buck';
       default:
         return classification; // Keep original if unknown
     }
   }
 
-  /// Detect if the cattle has a Weaned event
-  bool _hasWeanedEvent(String cattleTag, List<Map<String, dynamic>> allEvents) {
+  /// Detect if the goat has a Weaned event
+  bool _hasWeanedEvent(String goatTag, List<Map<String, dynamic>> allEvents) {
     return allEvents.any((event) =>
-        event['cattle_tag'] == cattleTag &&
+        event['goat_tag'] == goatTag &&
         (event['history_type']?.toString().toLowerCase() ?? '') == 'weaned');
   }
 
-  /// Generate vaccination schedules for a specific cattle
-  Future<List<VaccinationSchedule>> _generateCattleVaccinationSchedules({
-    required Cattle cattle,
+  /// Generate vaccination schedules for a specific goat
+  Future<List<VaccinationSchedule>> _generategoatVaccinationSchedules({
+    required goat goat,
     required List<Map<String, dynamic>> allEvents,
     required int ageInMonths,
     required bool isDairy,
@@ -181,30 +181,30 @@ class VaccinationService {
   }) async {
     final List<VaccinationSchedule> schedules = [];
     
-    // If a calf has a Weaned event, treat as Growers for vaccination purposes
-    final bool hasWeanedEvent = _hasWeanedEvent(cattle.tagNo, allEvents);
+    // If a Kid has a Weaned event, treat as Growers for vaccination purposes
+    final bool hasWeanedEvent = _hasWeanedEvent(goat.tagNo, allEvents);
     final String effectiveClassification =
-        (classification == 'Calf' && hasWeanedEvent) ? 'Growers' : classification;
+        (classification == 'Kid' && hasWeanedEvent) ? 'Growers' : classification;
     
-    // Get applicable vaccines for this cattle
+    // Get applicable vaccines for this goat
     final applicableVaccines = VaccinationProtocol.getApplicableVaccines(
       ageInMonths: ageInMonths,
-      ageInDays: _getAccurateAgeInDays(cattle),
+      ageInDays: _getAccurateAgeInDays(goat),
       classification: effectiveClassification,
-      sex: cattle.sex,
+      sex: goat.sex,
       isDairy: isDairy,
-      status: cattle.status,
+      status: goat.status,
       isPregnant: pregnancyInfo != null,
     );
     
-    log('  📋 Applicable vaccines for ${cattle.tagNo}: ${applicableVaccines.map((v) => v.name).join(', ')}');
+    log('  📋 Applicable vaccines for ${goat.tagNo}: ${applicableVaccines.map((v) => v.name).join(', ')}');
     
-    // Get vaccination history for this cattle
-    final vaccinationHistory = _getVaccinationHistory(cattle.tagNo, allEvents);
+    // Get vaccination history for this goat
+    final vaccinationHistory = _getVaccinationHistory(goat.tagNo, allEvents);
     
     for (final vaccine in applicableVaccines) {
       final schedule = await _createVaccinationSchedule(
-        cattle: cattle,
+        goat: goat,
         vaccine: vaccine,
         vaccinationHistory: vaccinationHistory,
         ageInMonths: ageInMonths,
@@ -223,7 +223,7 @@ class VaccinationService {
 
   /// Create a vaccination schedule for a specific vaccine
   Future<VaccinationSchedule?> _createVaccinationSchedule({
-    required Cattle cattle,
+    required goat goat,
     required VaccineType vaccine,
     required List<Map<String, dynamic>> vaccinationHistory,
     required int ageInMonths,
@@ -232,14 +232,14 @@ class VaccinationService {
   }) async {
     // For pre-calving vaccines, check if already vaccinated during current pregnancy
     if (_isPreCalvingVaccine(vaccine) && pregnancyInfo != null) {
-      if (_isAlreadyVaccinatedForCurrentPregnancy(cattle.tagNo, vaccine.name, vaccinationHistory, pregnancyInfo)) {
+      if (_isAlreadyVaccinatedForCurrentPregnancy(goat.tagNo, vaccine.name, vaccinationHistory, pregnancyInfo)) {
         log('  ⏭️ Skipping ${vaccine.name} - already vaccinated for current pregnancy');
         return null; // Already vaccinated for this pregnancy
       }
     }
     
     // Check if this vaccine was already given recently
-    final lastVaccination = _getLastVaccination(cattle.tagNo, vaccine.name, vaccinationHistory);
+    final lastVaccination = _getLastVaccination(goat.tagNo, vaccine.name, vaccinationHistory);
     
     if (lastVaccination != null) {
       // Check if booster is needed
@@ -257,9 +257,9 @@ class VaccinationService {
         }
         
         return VaccinationSchedule(
-          cattleTag: cattle.tagNo,
+          goatTag: goat.tagNo,
           vaccineType: vaccine.name,
-          cattleStage: _getCattleStage(cattle, classification),
+          goatStage: _getgoatStage(goat, classification),
           recommendedDate: nextDate,
           status: _calculateStatus(nextDate),
           notes: 'Booster shot for ${vaccine.name}',
@@ -280,9 +280,9 @@ class VaccinationService {
         }
         
         return VaccinationSchedule(
-          cattleTag: cattle.tagNo,
+          goatTag: goat.tagNo,
           vaccineType: vaccine.name,
-          cattleStage: _getCattleStage(cattle, classification),
+          goatStage: _getgoatStage(goat, classification),
           recommendedDate: nextDate,
           status: _calculateStatus(nextDate),
           notes: 'Annual vaccination for ${vaccine.name}',
@@ -308,16 +308,16 @@ class VaccinationService {
     }
     
     return VaccinationSchedule(
-      cattleTag: cattle.tagNo,
+      goatTag: goat.tagNo,
       vaccineType: vaccine.name,
-      cattleStage: _getCattleStage(cattle, classification),
+      goatStage: _getgoatStage(goat, classification),
       recommendedDate: recommendedDate,
       status: _calculateStatus(recommendedDate),
       notes: _getVaccinationNotes(vaccine, pregnancyInfo),
     );
   }
 
-  /// Calculate the first vaccination date for a vaccine based on cattle age and pregnancy
+  /// Calculate the first vaccination date for a vaccine based on goat age and pregnancy
   DateTime _calculateFirstVaccinationDate(
     VaccineType vaccine, 
     int ageInMonths, {
@@ -359,21 +359,21 @@ class VaccinationService {
     }
   }
 
-  /// Get vaccination history for a specific cattle
+  /// Get vaccination history for a specific goat
   List<Map<String, dynamic>> _getVaccinationHistory(
-    String cattleTag,
+    String goatTag,
     List<Map<String, dynamic>> allEvents,
   ) {
     return allEvents
         .where((event) =>
-            event['cattle_tag'] == cattleTag &&
+            event['goat_tag'] == goatTag &&
             event['history_type']?.toString().toLowerCase() == 'vaccinated')
         .toList();
   }
 
   /// Get the last vaccination for a specific vaccine type
   Map<String, dynamic>? _getLastVaccination(
-    String cattleTag,
+    String goatTag,
     String vaccineName,
     List<Map<String, dynamic>> vaccinationHistory,
   ) {
@@ -399,23 +399,23 @@ class VaccinationService {
     return relevantVaccinations.first;
   }
 
-  /// Determine if a cattle is dairy cattle with improved logic
-  bool _isDairyCattle(Cattle cattle) {
+  /// Determine if a goat is dairy goat with improved logic
+  bool _isDairygoat(goat goat) {
     // Enhanced dairy breed detection
     final dairyBreeds = [
       'holstein', 'friesian', 'jersey', 'guernsey', 'ayrshire', 'brown swiss',
       'milking shorthorn', 'dairy shorthorn', 'dairy', 'milk'
     ];
     
-    if (cattle.breed != null && cattle.breed!.isNotEmpty) {
-      final breedLower = cattle.breed!.toLowerCase();
+    if (goat.breed != null && goat.breed!.isNotEmpty) {
+      final breedLower = goat.breed!.toLowerCase();
       var isDairy = dairyBreeds.any((dairyBreed) => breedLower.contains(dairyBreed));
       
       // Additional check for dairy-related terms in classification or notes
       if (!isDairy) {
         final dairyTerms = ['dairy', 'milk', 'lactation'];
-        final classificationLower = cattle.classification.toLowerCase();
-        final notesLower = (cattle.notes ?? '').toLowerCase();
+        final classificationLower = goat.classification.toLowerCase();
+        final notesLower = (goat.notes ?? '').toLowerCase();
         
         isDairy = dairyTerms.any((term) => 
           classificationLower.contains(term) || notesLower.contains(term));
@@ -425,43 +425,43 @@ class VaccinationService {
     }
     
     // If no breed info, check classification for dairy indicators
-    final classificationLower = cattle.classification.toLowerCase();
+    final classificationLower = goat.classification.toLowerCase();
     return classificationLower.contains('dairy') || classificationLower.contains('milk');
   }
 
-  /// Get the current stage of the cattle for vaccination purposes
-  String _getCattleStage(Cattle cattle, String classification) {
-    final sex = cattle.sex;
+  /// Get the current stage of the goat for vaccination purposes
+  String _getgoatStage(goat goat, String classification) {
+    final sex = goat.sex;
     
-    if (classification == 'Calf') {
+    if (classification == 'Kid') {
       return 'Pre-weaning Calves';
-    } else if (classification == 'Growers' || classification == 'Steer') {
-      return 'Weaned Calves / Growers / Steer';
-    } else if (classification == 'Heifer' && sex == 'Female') {
-      return 'Replacement Heifers';
-    } else if (classification == 'Cow' && sex == 'Female') {
-      return 'Pregnant Heifer & Cow';
-    } else if (classification == 'Bull' && sex == 'Male') {
-      return 'Breeding Cows & Bulls';
+    } else if (classification == 'Growers' || classification == 'Buckling') {
+      return 'Weaned Calves / Growers / Buckling';
+    } else if (classification == 'Doeling' && sex == 'Female') {
+      return 'Replacement Doelings';
+    } else if (classification == 'Doe' && sex == 'Female') {
+      return 'Pregnant Doeling & Doe';
+    } else if (classification == 'Buck' && sex == 'Male') {
+      return 'Breeding Does & Bucks';
     }
     
     return 'Unknown';
   }
 
-  /// Get cattle that need vaccination (overdue or due soon)
-  List<Map<String, dynamic>> getCattleNeedingVaccination({
+  /// Get goat that need vaccination (overdue or due soon)
+  List<Map<String, dynamic>> getgoatNeedingVaccination({
     required List<VaccinationSchedule> schedules,
-    required List<Cattle> allCattle,
+    required List<goat> allGoats,
   }) {
-    final List<Map<String, dynamic>> cattleNeedingVaccination = [];
+    final List<Map<String, dynamic>> goatNeedingVaccination = [];
     
     for (final schedule in schedules) {
       if (schedule.isOverdue || schedule.isDueSoon) {
-        final cattle = allCattle.firstWhere(
-          (c) => c.tagNo == schedule.cattleTag,
-          orElse: () => Cattle(
+        final goat = allGoats.firstWhere(
+          (c) => c.tagNo == schedule.goatTag,
+          orElse: () => goat(
             id: 0,
-            tagNo: schedule.cattleTag,
+            tagNo: schedule.goatTag,
             sex: '',
             classification: '',
             status: '',
@@ -470,10 +470,10 @@ class VaccinationService {
         );
         
         // Get pregnancy info for better prioritization
-        final pregnancyInfo = _getPregnancyInfo(cattle.tagNo, []);
+        final pregnancyInfo = _getPregnancyInfo(goat.tagNo, []);
         
-        cattleNeedingVaccination.add({
-          'cattle': cattle,
+        goatNeedingVaccination.add({
+          'goat': goat,
           'schedule': schedule,
           'urgency': schedule.urgencyLevel,
           'daysUntilDue': schedule.daysUntilDue,
@@ -491,7 +491,7 @@ class VaccinationService {
     }
     
     // Enhanced sorting with pregnancy priority
-    cattleNeedingVaccination.sort((a, b) {
+    goatNeedingVaccination.sort((a, b) {
       final scheduleA = a['schedule'] as VaccinationSchedule;
       final scheduleB = b['schedule'] as VaccinationSchedule;
       final pregnancyInfoA = a['pregnancyInfo'] as Map<String, dynamic>?;
@@ -499,7 +499,7 @@ class VaccinationService {
       final isPreCalvingA = a['isPreCalvingVaccine'] as bool;
       final isPreCalvingB = b['isPreCalvingVaccine'] as bool;
       
-      // Priority 1: Pre-calving vaccines for pregnant cattle
+      // Priority 1: Pre-calving vaccines for pregnant goat
       if (isPreCalvingA && pregnancyInfoA != null && !isPreCalvingB) return -1;
       if (!isPreCalvingA && isPreCalvingB && pregnancyInfoB != null) return 1;
       
@@ -521,27 +521,27 @@ class VaccinationService {
       return scheduleA.daysUntilDue.compareTo(scheduleB.daysUntilDue);
     });
     
-    return cattleNeedingVaccination;
+    return goatNeedingVaccination;
   }
 
   /// Get vaccination statistics
   Map<String, dynamic> getVaccinationStatistics({
     required List<VaccinationSchedule> schedules,
-    required List<Cattle> allCattle,
+    required List<goat> allGoats,
   }) {
-    final totalCattle = allCattle.length;
+    final totalgoat = allGoats.length;
     final pendingVaccinations = schedules.where((s) => s.isPending).length;
     final overdueVaccinations = schedules.where((s) => s.isOverdue).length;
     final dueSoonVaccinations = schedules.where((s) => s.isDueSoon).length;
     final completedVaccinations = schedules.where((s) => s.isCompleted).length;
     
     return {
-      'totalCattle': totalCattle,
+      'totalgoat': totalgoat,
       'pendingVaccinations': pendingVaccinations,
       'overdueVaccinations': overdueVaccinations,
       'dueSoonVaccinations': dueSoonVaccinations,
       'completedVaccinations': completedVaccinations,
-      'vaccinationRate': totalCattle > 0 ? (completedVaccinations / totalCattle * 100).round() : 0,
+      'vaccinationRate': totalgoat > 0 ? (completedVaccinations / totalgoat * 100).round() : 0,
     };
   }
 
@@ -561,12 +561,12 @@ class VaccinationService {
     return vaccinesByStage;
   }
 
-  /// Get pregnancy information for a cattle with improved error handling
-  Map<String, dynamic>? _getPregnancyInfo(String cattleTag, List<Map<String, dynamic>> allEvents) {
-    // Find the most recent pregnant event for this cattle
+  /// Get pregnancy information for a goat with improved error handling
+  Map<String, dynamic>? _getPregnancyInfo(String goatTag, List<Map<String, dynamic>> allEvents) {
+    // Find the most recent pregnant event for this goat
     final pregnantEvents = allEvents
         .where((event) =>
-            event['cattle_tag'] == cattleTag &&
+            event['goat_tag'] == goatTag &&
             event['history_type']?.toString().toLowerCase() == 'pregnant' &&
             event['expected_delivery_date'] != null &&
             event['expected_delivery_date'].toString().isNotEmpty)
@@ -611,7 +611,7 @@ class VaccinationService {
       
       return result;
     } catch (e) {
-      log('⚠️ Error parsing pregnancy dates for $cattleTag: $e');
+      log('⚠️ Error parsing pregnancy dates for $goatTag: $e');
       return null;
     }
   }
@@ -678,9 +678,9 @@ class VaccinationService {
     return '${date.day.toString().padLeft(2, '0')} ${months[date.month - 1]} ${date.year}';
   }
 
-  /// Check if cattle has already been vaccinated for the current pregnancy
+  /// Check if goat has already been vaccinated for the current pregnancy
   bool _isAlreadyVaccinatedForCurrentPregnancy(
-    String cattleTag,
+    String goatTag,
     String vaccineName,
     List<Map<String, dynamic>> vaccinationHistory,
     Map<String, dynamic> pregnancyInfo,

@@ -1,7 +1,7 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
-import 'package:cattle_tracer_app/services/breeding_analysis_service.dart';
-import 'package:cattle_tracer_app/constants/app_colors.dart';
+import 'package:goat_tracer_app/services/breeding_analysis_service.dart';
+import 'package:goat_tracer_app/constants/app_colors.dart';
 
 class BreedingSuccessDashboard extends StatefulWidget {
   const BreedingSuccessDashboard({super.key});
@@ -17,15 +17,15 @@ class _BreedingSuccessDashboardState extends State<BreedingSuccessDashboard>
   Map<String, dynamic>? _analysisData;
 
   // Enhanced filter controllers
-  String? _selectedCow;
-  String? _selectedBull;
+  String? _selectedDoe;
+  String? _selectedBuck;
   String? _selectedBreedingType;
   DateTimeRange? _selectedDateRange;
   String? _selectedSuccessStatus; // 'all', 'successful', 'failed'
 
   // Available options for filters
-  List<String> _availableCows = [];
-  List<String> _availableBulls = [];
+  List<String> _availableDoes = [];
+  List<String> _availableBucks = [];
   List<Map<String, String>> _availableBreedingTypes = [];
 
   // Animation controllers
@@ -66,14 +66,14 @@ class _BreedingSuccessDashboardState extends State<BreedingSuccessDashboard>
       setState(() => _isLoading = true);
 
       // Load available options for filters
-      final cows = await BreedingAnalysisService.getAvailableCows();
-      final bulls = await BreedingAnalysisService.getAvailableBulls();
+      final Does = await BreedingAnalysisService.getAvailableDoes();
+      final Bucks = await BreedingAnalysisService.getAvailableBucks();
       final breedingTypes = await BreedingAnalysisService.getAvailableBreedingTypes();
 
       if (mounted) {
         setState(() {
-          _availableCows = cows;
-          _availableBulls = bulls;
+          _availableDoes = Does;
+          _availableBucks = Bucks;
           _availableBreedingTypes = breedingTypes;
         });
       }
@@ -94,8 +94,8 @@ class _BreedingSuccessDashboardState extends State<BreedingSuccessDashboard>
   Future<void> _performAnalysis() async {
     try {
       final result = await BreedingAnalysisService.getBreedingSuccessAnalysis(
-        selectedCowTag: _selectedCow,
-        selectedBullTag: _selectedBull,
+        selectedDoeTag: _selectedDoe,
+        selectedBuckTag: _selectedBuck,
         selectedBreedingType: _selectedBreedingType,
         dateRange: _selectedDateRange,
         successStatus: _selectedSuccessStatus,
@@ -137,8 +137,8 @@ class _BreedingSuccessDashboardState extends State<BreedingSuccessDashboard>
 
   void _clearAllFilters() {
     setState(() {
-      _selectedCow = null;
-      _selectedBull = null;
+      _selectedDoe = null;
+      _selectedBuck = null;
       _selectedBreedingType = null;
       _selectedDateRange = null;
       _selectedSuccessStatus = null;
@@ -241,8 +241,8 @@ class _BreedingSuccessDashboardState extends State<BreedingSuccessDashboard>
   }
 
   Widget _buildEnhancedFiltersSection() {
-    final hasActiveFilters = _selectedCow != null ||
-        _selectedBull != null ||
+    final hasActiveFilters = _selectedDoe != null ||
+        _selectedBuck != null ||
         _selectedBreedingType != null ||
         _selectedDateRange != null ||
         _selectedSuccessStatus != null;
@@ -319,27 +319,27 @@ class _BreedingSuccessDashboardState extends State<BreedingSuccessDashboard>
             children: [
               Expanded(
                 child: _buildFilterDropdown(
-                  label: 'Cow',
-                  value: _selectedCow,
-                  items: ['All Cows', ..._availableCows],
+                  label: 'Doe',
+                  value: _selectedDoe,
+                  items: ['All Does', ..._availableDoes],
                   onChanged: (value) {
                     setState(() {
-                      _selectedCow = value == 'All Cows' ? null : value;
+                      _selectedDoe = value == 'All Does' ? null : value;
                     });
                     _onFilterChanged();
                   },
-                  icon: FontAwesomeIcons.cow,
+                  icon: FontAwesomeIcons.Doe,
                 ),
               ),
               const SizedBox(width: 12),
               Expanded(
                 child: _buildFilterDropdown(
-                  label: 'Bull',
-                  value: _selectedBull,
-                  items: ['All Bulls', ..._availableBulls],
+                  label: 'Buck',
+                  value: _selectedBuck,
+                  items: ['All Bucks', ..._availableBucks],
                   onChanged: (value) {
                     setState(() {
-                      _selectedBull = value == 'All Bulls' ? null : value;
+                      _selectedBuck = value == 'All Bucks' ? null : value;
                     });
                     _onFilterChanged();
                   },

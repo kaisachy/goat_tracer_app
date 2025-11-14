@@ -1,6 +1,6 @@
-// lib/screens/nav/profile/widgets/personal_information_widget.dart
+﻿// lib/screens/nav/profile/widgets/personal_information_widget.dart
 import 'package:flutter/material.dart';
-import 'package:cattle_tracer_app/screens/nav/profile/modals/personal_information_modal.dart';
+import 'package:goat_tracer_app/screens/nav/profile/modals/personal_information_modal.dart';
 
 import '../../../../constants/app_colors.dart';
 

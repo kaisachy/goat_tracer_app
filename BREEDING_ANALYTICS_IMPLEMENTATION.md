@@ -1,4 +1,4 @@
-# Breeding Analytics Implementation
+﻿# Breeding Analytics Implementation
 
 This document describes the implementation of the new breeding analytics system that matches the functionality of the Flutter app dashboard.
 
@@ -7,10 +7,10 @@ This document describes the implementation of the new breeding analytics system 
 The breeding analytics system has been completely rewritten to provide the same sophisticated analysis logic as the Flutter app. The new system includes:
 
 - **Advanced breeding success analysis** with proper pregnancy tracking
-- **Comprehensive filtering** by cow, bull, breeding type, date range, and success status
+- **Comprehensive filtering** by Doe, Buck, breeding type, date range, and success status
 - **Real-time analytics** with detailed performance metrics
 - **Breeding type performance** analysis (Natural vs Artificial Insemination)
-- **Bull performance tracking** with success rates and cow counts
+- **Buck performance tracking** with success rates and Doe counts
 - **Pending breeding detection** for recent events
 
 ## Architecture
@@ -22,8 +22,8 @@ The breeding analytics system has been completely rewritten to provide the same 
 This is the core service that implements the breeding success analysis logic. It provides:
 
 - `getBreedingSuccessAnalysis($filters)` - Main analysis method
-- `getAvailableCows($municipality)` - Get available cows for filtering
-- `getAvailableBulls($municipality)` - Get available bulls for filtering
+- `getAvailableDoes($municipality)` - Get available Does for filtering
+- `getAvailableBucks($municipality)` - Get available Bucks for filtering
 - `getAvailableBreedingTypes()` - Get available breeding types
 
 ### 2. Controllers
@@ -34,8 +34,8 @@ This is the core service that implements the breeding success analysis logic. It
 
 Each controller provides API endpoints for:
 - `/breeding-analytics/analysis` - Get comprehensive breeding analysis
-- `/breeding-analytics/available-cows` - Get available cows
-- `/breeding-analytics/available-bulls` - Get available bulls
+- `/breeding-analytics/available-Does` - Get available Does
+- `/breeding-analytics/available-Bucks` - Get available Bucks
 - `/breeding-analytics/available-types` - Get breeding types
 - `/breeding-analytics/summary` - Get dashboard summary
 
@@ -69,7 +69,7 @@ The system uses the same logic as the Flutter app:
    - **Pending**: < 25 days since breeding
    - **Successful**: Pregnancy detected 25-60 days after breeding OR birth 280-300 days after breeding
    - **Failed**: > 60 days since breeding with no pregnancy/birth detected
-4. **Bull Matching**: Ensures the same bull is responsible for breeding and pregnancy/birth
+4. **Buck Matching**: Ensures the same Buck is responsible for breeding and pregnancy/birth
 5. **Breeding Type Detection**: Automatically determines breeding type from event data
 
 ### Data Structure
@@ -99,13 +99,13 @@ The analysis returns:
       "success_rate": 78.6
     }
   ],
-  "bull_performance": [
+  "Buck_performance": [
     {
-      "bull_tag": "BULL001",
+      "Buck_tag": "Buck001",
       "total_breedings": 45,
       "successful_breedings": 38,
       "success_rate": 84.4,
-      "cows_served": 35
+      "Does_served": 35
     }
   ]
 }
@@ -127,20 +127,20 @@ include 'resources/views/shared/breeding_analytics_dashboard.php';
 
 ```javascript
 // Get breeding analysis
-const response = await fetch('/admin/breeding-analytics/analysis?cow_tag=COW001');
+const response = await fetch('/admin/breeding-analytics/analysis?Doe_tag=Doe001');
 const data = await response.json();
 
 // Get available options
-const cows = await fetch('/admin/breeding-analytics/available-cows').then(r => r.json());
-const bulls = await fetch('/admin/breeding-analytics/available-bulls').then(r => r.json());
+const Does = await fetch('/admin/breeding-analytics/available-Does').then(r => r.json());
+const Bucks = await fetch('/admin/breeding-analytics/available-Bucks').then(r => r.json());
 ```
 
 ### 3. Filtering
 
 The system supports comprehensive filtering:
 
-- **Cow Tag**: Filter by specific cow
-- **Bull Tag**: Filter by specific bull
+- **Doe Tag**: Filter by specific Doe
+- **Buck Tag**: Filter by specific Buck
 - **Breeding Type**: Natural breeding, Artificial insemination, or All
 - **Success Status**: Successful, Failed, or All
 - **Date Range**: Start and end dates
@@ -151,7 +151,7 @@ The system supports comprehensive filtering:
 ### 1. Smart Breeding Type Detection
 
 The system automatically determines breeding type:
-- **Natural Breeding**: When `bull_tag` is present
+- **Natural Breeding**: When `Buck_tag` is present
 - **Artificial Insemination**: When `semen_used` is present
 - **Unknown**: When neither field is present
 
@@ -159,13 +159,13 @@ The system automatically determines breeding type:
 
 - Tracks pregnancy events 25-60 days after breeding
 - Tracks birth events 280-300 days after breeding
-- Ensures bull consistency between breeding and pregnancy/birth
+- Ensures Buck consistency between breeding and pregnancy/birth
 
 ### 3. Performance Metrics
 
 - **Success Rate**: Based on resolved breedings (successful + failed)
 - **Pending Breedings**: Recent breedings that need time to determine outcome
-- **Bull Performance**: Individual bull success rates and cow counts
+- **Buck Performance**: Individual Buck success rates and Doe counts
 - **Breeding Type Comparison**: Natural vs Artificial insemination performance
 
 ### 4. Real-time Updates
@@ -176,14 +176,14 @@ The system automatically determines breeding type:
 
 ## Database Requirements
 
-The system works with the existing `cattle_events` table structure:
+The system works with the existing `goat_events` table structure:
 
 ```sql
-CREATE TABLE cattle_events (
+CREATE TABLE goat_events (
     id INT PRIMARY KEY AUTO_INCREMENT,
     user_id INT NOT NULL,
-    cattle_tag VARCHAR(20) NOT NULL,
-    bull_tag VARCHAR(20),
+    goat_tag VARCHAR(20) NOT NULL,
+    Buck_tag VARCHAR(20),
     event_type ENUM('Breeding', 'Pregnant', 'Gives Birth', ...) NOT NULL,
     event_date DATE NOT NULL,
     semen_used VARCHAR(100),
@@ -229,7 +229,7 @@ The new system is backward compatible:
 
 1. **No Data Displayed**: Check database connectivity and event data
 2. **Filter Not Working**: Verify API endpoint URLs and parameters
-3. **Performance Issues**: Check database indexes on event_date and cattle_tag
+3. **Performance Issues**: Check database indexes on event_date and goat_tag
 4. **Permission Errors**: Verify user role and access rights
 
 ### Debug Mode
