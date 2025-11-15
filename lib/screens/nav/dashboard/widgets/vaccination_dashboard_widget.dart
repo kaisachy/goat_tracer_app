@@ -8,12 +8,12 @@ import 'package:goat_tracer_app/constants/app_colors.dart';
 import 'package:goat_tracer_app/screens/home_screen.dart';
 
 class VaccinationDashboardWidget extends StatefulWidget {
-  final List<goat> allgoat;
+  final List<Goat> allGoats;
   final List<Map<String, dynamic>> allEvents;
 
   const VaccinationDashboardWidget({
     super.key,
-    required this.allgoat,
+    required this.allGoats,
     required this.allEvents,
   });
 
@@ -40,20 +40,20 @@ class _VaccinationDashboardWidgetState extends State<VaccinationDashboardWidget>
 
       // Generate recommended vaccination schedules (for stats and goat-needing section)
       final schedules = await VaccinationService().generateVaccinationSchedules(
-        allgoat: widget.allgoat,
+        allGoats: widget.allGoats,
         allEvents: widget.allEvents,
       );
 
       // Get goat needing vaccination
-      final goatNeeding = VaccinationService().getgoatNeedingVaccination(
+      final goatNeeding = VaccinationService().getGoatNeedingVaccination(
         schedules: schedules,
-        allgoat: widget.allgoat,
+        allGoats: widget.allGoats,
       );
 
       // Get vaccination statistics
       final stats = VaccinationService().getVaccinationStatistics(
         schedules: schedules,
-        allgoat: widget.allgoat,
+        allGoats: widget.allGoats,
       );
 
       // Fetch actual scheduled vaccinations from backend schedule system

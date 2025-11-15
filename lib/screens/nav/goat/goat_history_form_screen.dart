@@ -15,12 +15,12 @@ import 'widgets/history/history_notes_section.dart';
 import 'modals/history_success_dialog.dart';
 import 'modals/history_delete_confirmation_dialog.dart';
 
-class goatHistoryFormScreen extends StatefulWidget {
+class GoatHistoryFormScreen extends StatefulWidget {
   final GoatHistoryRecord? historyRecord;
   final String? goatTag;
   final String? initialHistoryType;
 
-  const goatHistoryFormScreen({
+  const GoatHistoryFormScreen({
     super.key,
     this.historyRecord,
     this.goatTag,
@@ -28,10 +28,10 @@ class goatHistoryFormScreen extends StatefulWidget {
   });
 
   @override
-  State<goatHistoryFormScreen> createState() => _goatHistoryFormScreenState();
+  State<GoatHistoryFormScreen> createState() => _GoatHistoryFormScreenState();
 }
 
-class _goatHistoryFormScreenState extends State<goatHistoryFormScreen>
+class _GoatHistoryFormScreenState extends State<GoatHistoryFormScreen>
     with TickerProviderStateMixin {
   final _formKey = GlobalKey<FormState>();
   final Map<String, TextEditingController> _controllers = {};
@@ -41,9 +41,9 @@ class _goatHistoryFormScreenState extends State<goatHistoryFormScreen>
   bool _isLoading = false;
 
   // goat details
-  goat? _goatDetails;
+  Goat? _goatDetails;
 
-  // Partner linkage for unified editing when editing Buck reciprocal breeding
+  // Partner linkage for unified editing when editing buck reciprocal breeding
   String? _partnerTagForEdit;
   int? _partnerHistoryIdForEdit;
 
@@ -55,7 +55,7 @@ class _goatHistoryFormScreenState extends State<goatHistoryFormScreen>
 
   String selectedHistoryType = 'Select type of history record';
 
-  // New state for temporary Kid data
+  // New state for temporary kid data
   Map<String, dynamic>? _temporaryKidData;
 
   @override
@@ -72,7 +72,7 @@ class _goatHistoryFormScreenState extends State<goatHistoryFormScreen>
     _initializeControllers();
     _loadgoatDetails();
 
-    // Load existing Kid data if editing birth history record
+    // Load existing kid data if editing birth history record
     if (isEditing && widget.historyRecord != null && widget.historyRecord!.historyType == 'Gives Birth') {
       _loadExistingKidData();
     }
@@ -180,7 +180,7 @@ class _goatHistoryFormScreenState extends State<goatHistoryFormScreen>
     _controllers['breeding_date']?.text = _controllers['breeding_date']?.text ?? '';
     _controllers['expected_delivery_date']?.text = _controllers['expected_delivery_date']?.text ?? '';
 
-    // Pregnant requires latest Breeding; autofill breeding_date, expected_delivery_date, Buck/semen
+    // Pregnant requires latest Breeding; autofill breeding_date, expected_delivery_date, buck/semen
     if (value.toLowerCase() == 'pregnant') {
       debugPrint('DEBUG: Processing Pregnant history record for goat: $goatTag');
       final latestBreeding = await _getLatestHistoryRecord(goatTag: goatTag, historyType: 'Breeding');
@@ -197,7 +197,7 @@ class _goatHistoryFormScreenState extends State<goatHistoryFormScreen>
         _controllers['breeding_date']?.text = breedingDateStr;
         try {
           final breedingDate = DateTime.parse(breedingDateStr);
-          final expectedDelivery = breedingDate.add(const Duration(days: 283));
+          final expectedDelivery = breedingDate.add(const Duration(days: 150));
           final formatted = '${expectedDelivery.year.toString().padLeft(4, '0')}-'
               '${expectedDelivery.month.toString().padLeft(2, '0')}-'
               '${expectedDelivery.day.toString().padLeft(2, '0')}';
@@ -208,16 +208,16 @@ class _goatHistoryFormScreenState extends State<goatHistoryFormScreen>
           });
         } catch (_) {}
       }
-      // Autofill Buck/semen and technician if present
-      final BuckTag = latestBreeding['Buck_tag']?.toString();
+      // Autofill buck/semen and technician if present
+      final buckTag = latestBreeding['Buck_tag']?.toString();
       final semen = latestBreeding['semen_used']?.toString();
-      debugPrint('DEBUG: Found Buck_tag: $BuckTag, semen_used: $semen');
+      debugPrint('DEBUG: Found Buck_tag: $buckTag, semen_used: $semen');
 
-      // If semen is present (AI), treat semen's Buck as the Buck selection
+      // If semen is present (AI), treat semen's buck as the buck selection
       if (semen != null && semen.isNotEmpty) {
         debugPrint('DEBUG: Processing semen: $semen');
         _controllers['semen_used']?.text = semen;
-        // Try to extract the Buck tag from semen label like "TAG123 (Name) Semen"
+        // Try to extract the buck tag from semen label like "TAG123 (Name) Semen"
         String extractedBuckTag = semen.trim();
         if (extractedBuckTag.toLowerCase().endsWith('semen')) {
           extractedBuckTag = extractedBuckTag.substring(0, extractedBuckTag.length - 5).trim();
@@ -229,16 +229,16 @@ class _goatHistoryFormScreenState extends State<goatHistoryFormScreen>
           stop = paren;
         }
         final finalBuckTag = stop == -1 ? extractedBuckTag : extractedBuckTag.substring(0, stop).trim();
-        debugPrint('DEBUG: Extracted Buck tag from semen: $finalBuckTag');
+        debugPrint('DEBUG: Extracted buck tag from semen: $finalBuckTag');
         if (finalBuckTag.isNotEmpty) {
           _controllers['Buck_tag']?.text = finalBuckTag;
           debugPrint('DEBUG: Set Buck_tag controller to: $finalBuckTag');
         }
-      } else if (BuckTag != null && BuckTag.isNotEmpty) {
-        debugPrint('DEBUG: Using direct Buck_tag: $BuckTag');
-        _controllers['Buck_tag']?.text = BuckTag;
+      } else if (buckTag != null && buckTag.isNotEmpty) {
+        debugPrint('DEBUG: Using direct Buck_tag: $buckTag');
+        _controllers['Buck_tag']?.text = buckTag;
         _controllers['semen_used']?.text = '';
-        debugPrint('DEBUG: Set Buck_tag controller to: $BuckTag');
+        debugPrint('DEBUG: Set Buck_tag controller to: $buckTag');
       }
       final tech = latestBreeding['technician']?.toString();
       if (tech != null && tech.isNotEmpty) {
@@ -275,21 +275,21 @@ class _goatHistoryFormScreenState extends State<goatHistoryFormScreen>
 
       // Autofill sire info from latest Pregnant (preferred) or fallback to latest Breeding
       String? semen = latestPregnant['semen_used']?.toString();
-      String? Buck = latestPregnant['Buck_tag']?.toString();
-      debugPrint('DEBUG: Found in pregnant history record - Buck_tag: $Buck, semen_used: $semen');
-      if ((semen == null || semen.isEmpty) && (Buck == null || Buck.isEmpty)) {
+      String? buck = latestPregnant['Buck_tag']?.toString();
+      debugPrint('DEBUG: Found in pregnant history record - Buck_tag: $buck, semen_used: $semen');
+      if ((semen == null || semen.isEmpty) && (buck == null || buck.isEmpty)) {
         debugPrint('DEBUG: No sire info in pregnant history record, falling back to latest breeding');
         final latestBreeding = await _getLatestHistoryRecord(goatTag: goatTag, historyType: 'Breeding');
         debugPrint('DEBUG: Latest breeding history record for fallback: $latestBreeding');
         semen = latestBreeding?['semen_used']?.toString();
-        Buck = latestBreeding?['Buck_tag']?.toString();
-        debugPrint('DEBUG: Fallback values - Buck_tag: $Buck, semen_used: $semen');
+        buck = latestBreeding?['Buck_tag']?.toString();
+        debugPrint('DEBUG: Fallback values - Buck_tag: $buck, semen_used: $semen');
       }
 
       if (semen != null && semen.isNotEmpty) {
         debugPrint('DEBUG: Processing semen for Gives Birth: $semen');
         _controllers['semen_used']?.text = semen;
-        // Extract Buck tag from semen label like "TAG123 (Name) Semen"
+        // Extract buck tag from semen label like "TAG123 (Name) Semen"
         String extracted = semen.trim();
         if (extracted.toLowerCase().endsWith('semen')) {
           extracted = extracted.substring(0, extracted.length - 5).trim();
@@ -299,17 +299,17 @@ class _goatHistoryFormScreenState extends State<goatHistoryFormScreen>
         if (stop == -1 || (paren != -1 && paren < stop)) {
           stop = paren;
         }
-        final BuckTag = stop == -1 ? extracted : extracted.substring(0, stop).trim();
-        debugPrint('DEBUG: Extracted Buck tag from semen for Gives Birth: $BuckTag');
-        if (BuckTag.isNotEmpty) {
-          _controllers['Buck_tag']?.text = BuckTag;
-          debugPrint('DEBUG: Set Buck_tag controller for Gives Birth to: $BuckTag');
+        final buckTag = stop == -1 ? extracted : extracted.substring(0, stop).trim();
+        debugPrint('DEBUG: Extracted buck tag from semen for Gives Birth: $buckTag');
+        if (buckTag.isNotEmpty) {
+          _controllers['Buck_tag']?.text = buckTag;
+          debugPrint('DEBUG: Set Buck_tag controller for Gives Birth to: $buckTag');
         }
-      } else if (Buck != null && Buck.isNotEmpty) {
-        debugPrint('DEBUG: Using direct Buck_tag for Gives Birth: $Buck');
-        _controllers['Buck_tag']?.text = Buck;
+      } else if (buck != null && buck.isNotEmpty) {
+        debugPrint('DEBUG: Using direct Buck_tag for Gives Birth: $buck');
+        _controllers['Buck_tag']?.text = buck;
         _controllers['semen_used']?.text = '';
-        debugPrint('DEBUG: Set Buck_tag controller for Gives Birth to: $Buck');
+        debugPrint('DEBUG: Set Buck_tag controller for Gives Birth to: $buck');
       }
 
       // Force UI refresh so dropdowns pick up controller values
@@ -318,94 +318,94 @@ class _goatHistoryFormScreenState extends State<goatHistoryFormScreen>
         debugPrint('DEBUG: Triggered setState after Gives Birth auto-fill');
       }
 
-      // If no Kid data yet, prompt user to add Kid when saving
+      // If no kid data yet, prompt user to add kid when saving
     }
   }
 
-  // Load existing Kid data for editing
+  // Load existing kid data for editing
   Future<void> _loadExistingKidData() async {
-    if (widget.historyRecord == null || widget.historyRecord!.KidTag == null) return;
+    if (widget.historyRecord == null || widget.historyRecord!.kidTag == null) return;
 
     try {
-      final KidTagString = widget.historyRecord!.KidTag!;
-      debugPrint('Loading Kid data for tag string: $KidTagString');
+      final kidTagString = widget.historyRecord!.kidTag!;
+      debugPrint('Loading kid data for tag string: $kidTagString');
       
-      // Check if there are multiple Kid tags (comma-separated)
-      if (KidTagString.contains(',')) {
+      // Check if there are multiple kid tags (comma-separated)
+      if (kidTagString.contains(',')) {
         // Multiple calves - split by comma and load the first one for now
-        final KidTags = KidTagString.split(',').map((tag) => tag.trim()).where((tag) => tag.isNotEmpty).toList();
-        debugPrint('Found multiple Kid tags: $KidTags');
+        final kidTags = kidTagString.split(',').map((tag) => tag.trim()).where((tag) => tag.isNotEmpty).toList();
+        debugPrint('Found multiple kid tags: $kidTags');
         
-        if (KidTags.isNotEmpty) {
-          // Load the first Kid for editing
-          final firstKidTag = KidTags.first;
-          final Kid = await GoatService.getGoatByTag(firstKidTag);
-          if (Kid != null && mounted) {
+        if (kidTags.isNotEmpty) {
+          // Load the first kid for editing
+          final firstKidTag = kidTags.first;
+          final kid = await GoatService.getGoatByTag(firstKidTag);
+          if (kid != null && mounted) {
             setState(() {
               _temporaryKidData = {
-                'tag_no': Kid.tagNo,
-                'sex': Kid.sex,
+                'tag_no': kid.tagNo,
+                'sex': kid.sex,
                 'registered': true, // Mark as already registered since it exists
                 'isEditMode': true,
-                'KidId': Kid.id,
+                'kidId': kid.id,
                 'pendingOperation': 'update',
                 'fullKidData': {
-                  'id': Kid.id,
-                  'tag_no': Kid.tagNo,
-                  'sex': Kid.sex,
-                  'date_of_birth': Kid.dateOfBirth,
-                  'classification': Kid.classification,
-                  'status': Kid.status,
-                  'breed': Kid.breed,
-                  'source': Kid.source,
-                  'mother_tag': Kid.motherTag,
-                  'father_tag': Kid.fatherTag,
-                  'weight': Kid.weight,
-                  'group_name': Kid.groupName,
-                  'notes': Kid.notes,
+                  'id': kid.id,
+                  'tag_no': kid.tagNo,
+                  'sex': kid.sex,
+                  'date_of_birth': kid.dateOfBirth,
+                  'classification': kid.classification,
+                  'status': kid.status,
+                  'breed': kid.breed,
+                  'source': kid.source,
+                  'mother_tag': kid.motherTag,
+                  'father_tag': kid.fatherTag,
+                  'weight': kid.weight,
+                  'group_name': kid.groupName,
+                  'notes': kid.notes,
                 },
               };
-              _controllers['Kid_tag']?.text = KidTagString; // Keep the full string for display
+              _controllers['Kid_tag']?.text = kidTagString; // Keep the full string for display
             });
-            debugPrint('Loaded first Kid data: ${Kid.tagNo} with ID: ${Kid.id}');
+            debugPrint('Loaded first kid data: ${kid.tagNo} with ID: ${kid.id}');
           }
         }
       } else {
-        // Single Kid
-        final Kid = await GoatService.getGoatByTag(KidTagString);
-        if (Kid != null && mounted) {
+        // Single kid
+        final kid = await GoatService.getGoatByTag(kidTagString);
+        if (kid != null && mounted) {
           setState(() {
             _temporaryKidData = {
-              'tag_no': Kid.tagNo,
-              'sex': Kid.sex,
+              'tag_no': kid.tagNo,
+              'sex': kid.sex,
               'registered': true, // Mark as already registered since it exists
               'isEditMode': true,
-              'KidId': Kid.id,
+              'kidId': kid.id,
               'pendingOperation': 'update',
               'fullKidData': {
-                'id': Kid.id,
-                'tag_no': Kid.tagNo,
-                'sex': Kid.sex,
-                'date_of_birth': Kid.dateOfBirth,
-                'classification': Kid.classification,
-                'status': Kid.status,
-                'breed': Kid.breed,
-                'source': Kid.source,
-                'mother_tag': Kid.motherTag,
-                'father_tag': Kid.fatherTag,
-                'weight': Kid.weight,
-                'group_name': Kid.groupName,
-                'notes': Kid.notes,
+                'id': kid.id,
+                'tag_no': kid.tagNo,
+                'sex': kid.sex,
+                'date_of_birth': kid.dateOfBirth,
+                'classification': kid.classification,
+                'status': kid.status,
+                'breed': kid.breed,
+                'source': kid.source,
+                'mother_tag': kid.motherTag,
+                'father_tag': kid.fatherTag,
+                'weight': kid.weight,
+                'group_name': kid.groupName,
+                'notes': kid.notes,
               },
             };
-            _controllers['Kid_tag']?.text = Kid.tagNo;
+            _controllers['Kid_tag']?.text = kid.tagNo;
           });
-          debugPrint('Loaded existing Kid data: ${Kid.tagNo} with ID: ${Kid.id}');
+          debugPrint('Loaded existing kid data: ${kid.tagNo} with ID: ${kid.id}');
         }
       }
     } catch (e) {
-      debugPrint('Error loading Kid data: $e');
-      // If we can't load the Kid, clear the temporary data
+      debugPrint('Error loading kid data: $e');
+      // If we can't load the kid, clear the temporary data
       if (mounted) {
         setState(() {
           _temporaryKidData = null;
@@ -447,11 +447,11 @@ class _goatHistoryFormScreenState extends State<goatHistoryFormScreen>
         debugPrint('DEBUG: No breeding_type found in history record data');
         // Fallback inference based on available fields
         final semenUsedVal = eventJson['semen_used']?.toString() ?? '';
-        final BuckTagVal = eventJson['Buck_tag']?.toString() ?? '';
+        final buckTagVal = eventJson['Buck_tag']?.toString() ?? '';
         if (semenUsedVal.isNotEmpty) {
           _controllers['breeding_type']?.text = 'artificial_insemination';
           debugPrint('DEBUG: Inferred breeding_type as artificial_insemination from semen_used');
-        } else if (BuckTagVal.isNotEmpty) {
+        } else if (buckTagVal.isNotEmpty) {
           _controllers['breeding_type']?.text = 'natural_breeding';
           debugPrint('DEBUG: Inferred breeding_type as natural_breeding from Buck_tag');
         }
@@ -467,19 +467,19 @@ class _goatHistoryFormScreenState extends State<goatHistoryFormScreen>
         debugPrint('DEBUG: No semen_used found in history record data');
         // Fallback for AI: if breeding_type is AI and Buck_tag exists, use Buck_tag as semen_used
         final currentBreedingType = _controllers['breeding_type']?.text ?? '';
-        final BuckTagVal = eventJson['Buck_tag']?.toString() ?? '';
-        if (currentBreedingType == 'artificial_insemination' && BuckTagVal.isNotEmpty) {
-          _controllers['semen_used']?.text = BuckTagVal;
-          debugPrint('DEBUG: Inferred semen_used from Buck_tag for AI: $BuckTagVal');
+        final buckTagVal = eventJson['Buck_tag']?.toString() ?? '';
+        if (currentBreedingType == 'artificial_insemination' && buckTagVal.isNotEmpty) {
+          _controllers['semen_used']?.text = buckTagVal;
+          debugPrint('DEBUG: Inferred semen_used from Buck_tag for AI: $buckTagVal');
         }
       }
       
-      // Set Buck tag
-      final BuckTag = eventJson['Buck_tag']?.toString();
-      debugPrint('DEBUG: Found Buck_tag in history record: $BuckTag');
-      if (BuckTag != null && BuckTag.isNotEmpty) {
-        _controllers['Buck_tag']?.text = BuckTag;
-        debugPrint('DEBUG: Set Buck_tag controller to: $BuckTag');
+      // Set buck tag
+      final buckTag = eventJson['Buck_tag']?.toString();
+      debugPrint('DEBUG: Found Buck_tag in history record: $buckTag');
+      if (buckTag != null && buckTag.isNotEmpty) {
+        _controllers['Buck_tag']?.text = buckTag;
+        debugPrint('DEBUG: Set Buck_tag controller to: $buckTag');
       } else {
         debugPrint('DEBUG: No Buck_tag found in history record data');
       }
@@ -494,7 +494,7 @@ class _goatHistoryFormScreenState extends State<goatHistoryFormScreen>
         debugPrint('DEBUG: No technician found in history record data');
       }
       
-      // Buck-side reciprocal hydration: if subject is male and fields are missing, try to fetch partner Doe/Doeling history record on same date
+      // buck-side reciprocal hydration: if subject is male and fields are missing, try to fetch partner Doe/Doeling history record on same date
       try {
         final isMaleSubject = (_goatDetails?.sex.toLowerCase() == 'male');
         final isBreeding = (widget.historyRecord!.historyType.toLowerCase() == 'breeding');
@@ -609,28 +609,28 @@ class _goatHistoryFormScreenState extends State<goatHistoryFormScreen>
                   debugPrint('DEBUG: Hydration - set expected_delivery_date from partner: $pEDD');
                 }
               }
-              // For Natural breeding on Buck-side, prefill Buck dropdown with current Buck tag (UI only)
+              // For Natural breeding on buck-side, prefill buck dropdown with current buck tag (UI only)
               final btNow = (_controllers['breeding_type']?.text ?? '').trim();
               if (btNow == 'natural_breeding') {
-                final BuckCtrl = _controllers['Buck_tag'];
-                if (BuckCtrl != null && BuckCtrl.text.trim().isEmpty) {
-                  final BuckTagSelf = _goatDetails?.tagNo ?? '';
-                  if (BuckTagSelf.isNotEmpty) {
-                    BuckCtrl.text = BuckTagSelf;
-                    debugPrint('DEBUG: Hydration - set Buck_tag to self for natural breeding UI: $BuckTagSelf');
+                final buckCtrl = _controllers['Buck_tag'];
+                if (buckCtrl != null && buckCtrl.text.trim().isEmpty) {
+                  final buckTagSelf = _goatDetails?.tagNo ?? '';
+                  if (buckTagSelf.isNotEmpty) {
+                    buckCtrl.text = buckTagSelf;
+                    debugPrint('DEBUG: Hydration - set Buck_tag to self for natural breeding UI: $buckTagSelf');
                   }
                 }
               }
             } else {
               debugPrint('DEBUG: Hydration - no matching partner breeding history record found');
-              // Fallback: assume Natural on Buck-side for completeness in UI
+              // Fallback: assume Natural on buck-side for completeness in UI
               _controllers['breeding_type']?.text = 'natural_breeding';
-              final BuckCtrl = _controllers['Buck_tag'];
-              if (BuckCtrl != null && BuckCtrl.text.trim().isEmpty) {
-                final BuckTagSelf = _goatDetails?.tagNo ?? '';
-                if (BuckTagSelf.isNotEmpty) {
-                  BuckCtrl.text = BuckTagSelf;
-                  debugPrint('DEBUG: Hydration Fallback - set breeding_type to natural_breeding and Buck_tag to self: $BuckTagSelf');
+              final buckCtrl = _controllers['Buck_tag'];
+              if (buckCtrl != null && buckCtrl.text.trim().isEmpty) {
+                final buckTagSelf = _goatDetails?.tagNo ?? '';
+                if (buckTagSelf.isNotEmpty) {
+                  buckCtrl.text = buckTagSelf;
+                  debugPrint('DEBUG: Hydration Fallback - set breeding_type to natural_breeding and Buck_tag to self: $buckTagSelf');
                 }
               }
             }
@@ -639,7 +639,7 @@ class _goatHistoryFormScreenState extends State<goatHistoryFormScreen>
           }
         }
       } catch (e) {
-        debugPrint('DEBUG: Error hydrating Buck reciprocal fields from partner: $e');
+        debugPrint('DEBUG: Error hydrating buck reciprocal fields from partner: $e');
       }
 
       // Force UI refresh so dropdowns pick up controller values
@@ -721,7 +721,7 @@ class _goatHistoryFormScreenState extends State<goatHistoryFormScreen>
     }
   }
 
-  Future<void> _setEditEventType(goat goat) async {
+  Future<void> _setEditEventType(Goat goat) async {
     final editEventType = widget.historyRecord!.historyType;
     await Future.delayed(Duration.zero);
 
@@ -773,45 +773,45 @@ class _goatHistoryFormScreenState extends State<goatHistoryFormScreen>
   }
 
 
-  // Execute Kid operations only after successful event save
+  // Execute kid operations only after successful event save
   Future<bool> _executeKidOperations() async {
     if (_temporaryKidData == null || _temporaryKidData!['fullKidData'] == null) {
-      debugPrint('No Kid operations to execute');
+      debugPrint('No kid operations to execute');
       return true; // No operations needed
     }
 
     try {
       final pendingOperation = _temporaryKidData!['pendingOperation'];
-      final KidData = _temporaryKidData!['fullKidData'] as Map<String, dynamic>;
-      final KidTag = _safeParseString(KidData['tag_no']) ?? '';
+      final kidData = _temporaryKidData!['fullKidData'] as Map<String, dynamic>;
+      final kidTag = _safeParseString(kidData['tag_no']) ?? '';
 
-      debugPrint('Executing Kid $pendingOperation for: $KidTag');
+      debugPrint('Executing kid $pendingOperation for: $kidTag');
 
       bool success;
       if (pendingOperation == 'update') {
         // Ensure we have the ID for update
-        int? KidId = _safeParseInt(KidData['id']) ?? _safeParseInt(_temporaryKidData!['KidId']);
+        int? kidId = _safeParseInt(kidData['id']) ?? _safeParseInt(_temporaryKidData!['kidId']);
 
-        if (KidId == null) {
-          debugPrint('No Kid ID found for update, trying to find by tag');
-          final existingKid = await GoatService.getGoatByTag(KidTag);
+        if (kidId == null) {
+          debugPrint('No kid ID found for update, trying to find by tag');
+          final existingKid = await GoatService.getGoatByTag(kidTag);
           if (existingKid != null) {
-            KidId = existingKid.id;
-            KidData['id'] = KidId;
+            kidId = existingKid.id;
+            kidData['id'] = kidId;
           } else {
-            throw Exception('Could not find existing Kid with tag: $KidTag');
+            throw Exception('Could not find existing kid with tag: $kidTag');
           }
         }
 
-        success = await GoatService.updategoatInformation(KidData);
-        debugPrint('Kid update result: $success for ID: $KidId');
+        success = await GoatService.updateGoatInformation(kidData);
+        debugPrint('kid update result: $success for ID: $kidId');
       } else {
-        // Create new Kid - remove ID if present
-        final newKidData = Map<String, dynamic>.from(KidData);
+        // Create new kid - remove ID if present
+        final newKidData = Map<String, dynamic>.from(kidData);
         newKidData.remove('id');
 
         success = await GoatService.storegoatInformation(newKidData);
-        debugPrint('Kid registration result: $success');
+        debugPrint('kid registration result: $success');
       }
 
       if (success) {
@@ -823,7 +823,7 @@ class _goatHistoryFormScreenState extends State<goatHistoryFormScreen>
 
       return success;
     } catch (e) {
-      debugPrint('Error executing Kid operations: $e');
+      debugPrint('Error executing kid operations: $e');
       return false;
     }
   }
@@ -833,7 +833,7 @@ class _goatHistoryFormScreenState extends State<goatHistoryFormScreen>
       if (_goatDetails != null) {
         final updateData = Map<String, dynamic>.from(_goatDetails!.toJson());
         updateData['status'] = 'Lactating';
-        return await GoatService.updategoatInformation(updateData);
+        return await GoatService.updateGoatInformation(updateData);
       }
       return false;
     } catch (e) {
@@ -844,18 +844,18 @@ class _goatHistoryFormScreenState extends State<goatHistoryFormScreen>
 
   Future<void> _handleGivesBirthEvent() async {
     try {
-      bool KidHandled = false;
+      bool kidHandled = false;
       bool motherStatusUpdated = false;
-      String KidStatus = '';
+      String kidStatus = '';
 
-      // Execute Kid operations
-      // Prefer multi-Kid from HistorySpecificFields if available
+      // Execute kid operations
+      // Prefer multi-kid from HistorySpecificFields if available
       final multiCalves = _historySpecificFieldsKey.currentState?.getCalves();
       if (multiCalves != null && multiCalves.isNotEmpty) {
         bool allOk = true;
-        for (final Kid in multiCalves) {
+        for (final kid in multiCalves) {
           // Expect structure similar to _temporaryKidData
-          final Map<String, dynamic> full = Map<String, dynamic>.from(Kid['fullKidData'] ?? Kid);
+          final Map<String, dynamic> full = Map<String, dynamic>.from(kid['fullKidData'] ?? kid);
           // Ensure parent links
           full['mother_tag'] = _goatDetails?.tagNo ?? full['mother_tag'];
           full['father_tag'] = _controllers['Buck_tag']?.text.isNotEmpty == true
@@ -863,7 +863,7 @@ class _goatHistoryFormScreenState extends State<goatHistoryFormScreen>
               : full['father_tag'];
 
           // Enforce create or update explicitly
-          final String pending = (Kid['pendingOperation'] ?? 'create').toString();
+          final String pending = (kid['pendingOperation'] ?? 'create').toString();
           if (pending == 'create') {
             full.remove('id');
           }
@@ -872,27 +872,27 @@ class _goatHistoryFormScreenState extends State<goatHistoryFormScreen>
             'pendingOperation': pending,
             'fullKidData': full,
             'tag_no': full['tag_no'],
-            'KidId': full['id'],
+            'kidId': full['id'],
             'isEditMode': pending == 'update',
           };
           _temporaryKidData = op;
           final ok = await _executeKidOperations();
           allOk = allOk && ok;
         }
-        KidHandled = allOk;
+        kidHandled = allOk;
       } else {
-        KidHandled = await _executeKidOperations();
+        kidHandled = await _executeKidOperations();
       }
 
       if (_temporaryKidData != null) {
-        final KidTag = _temporaryKidData!['tag_no'] ?? 'unknown';
+        final kidTag = _temporaryKidData!['tag_no'] ?? 'unknown';
         final isEditMode = _temporaryKidData!['isEditMode'] == true;
-        KidStatus = KidHandled
-            ? (isEditMode ? 'Kid $KidTag updated successfully' : 'Kid $KidTag registered successfully')
-            : (isEditMode ? 'Failed to update Kid $KidTag' : 'Failed to register Kid $KidTag');
+        kidStatus = kidHandled
+            ? (isEditMode ? 'kid $kidTag updated successfully' : 'kid $kidTag registered successfully')
+            : (isEditMode ? 'Failed to update kid $kidTag' : 'Failed to register kid $kidTag');
       } else {
-        KidStatus = 'No Kid data to process';
-        KidHandled = true; // No Kid to handle
+        kidStatus = 'No kid data to process';
+        kidHandled = true; // No kid to handle
       }
 
       // Update mother status
@@ -902,7 +902,7 @@ class _goatHistoryFormScreenState extends State<goatHistoryFormScreen>
           : 'Failed to update mother status';
 
       // Log the results for debugging
-      debugPrint('Birth event results - Kid: $KidStatus, Mother: $motherStatus');
+      debugPrint('Birth event results - kid: $kidStatus, Mother: $motherStatus');
 
     } catch (e) {
       // Log any errors that occur during the process
@@ -919,7 +919,7 @@ class _goatHistoryFormScreenState extends State<goatHistoryFormScreen>
       if (_goatDetails != null) {
         final goatUpdateData = Map<String, dynamic>.from(_goatDetails!.toJson());
         goatUpdateData['classification'] = 'Buckling';
-        goatClassificationUpdated = await GoatService.updategoatInformation(goatUpdateData);
+        goatClassificationUpdated = await GoatService.updateGoatInformation(goatUpdateData);
         goatStatus = goatClassificationUpdated
             ? 'goat ${_goatDetails!.tagNo} classification updated to Buckling'
             : 'Failed to update goat ${_goatDetails!.tagNo} classification to Buckling';
@@ -970,7 +970,7 @@ class _goatHistoryFormScreenState extends State<goatHistoryFormScreen>
     final motherTag = goatTag ?? '';
     final fatherTag = _controllers['Buck_tag']?.text ?? '';
 
-    // Prepare existing Kid data for the dialog with safe type conversion
+    // Prepare existing kid data for the dialog with safe type conversion
     Map<String, dynamic>? existingKidData;
     if (_temporaryKidData != null) {
       try {
@@ -983,10 +983,10 @@ class _goatHistoryFormScreenState extends State<goatHistoryFormScreen>
         existingKidData['registered'] = _temporaryKidData!['registered'] ?? false;
         existingKidData['isEditMode'] = _temporaryKidData!['isEditMode'] ?? false;
 
-        // Safely get the Kid ID
-        int? KidId = _safeParseInt(_temporaryKidData!['KidId']);
-        if (KidId != null) {
-          existingKidData['KidId'] = KidId;
+        // Safely get the kid ID
+        int? kidId = _safeParseInt(_temporaryKidData!['kidId']);
+        if (kidId != null) {
+          existingKidData['kidId'] = kidId;
         }
 
         // Copy fullKidData if it exists
@@ -1011,8 +1011,8 @@ class _goatHistoryFormScreenState extends State<goatHistoryFormScreen>
           fullData['notes'] = _safeParseString(originalFullData['notes']);
 
           // Include ID if available
-          if (KidId != null) {
-            fullData['id'] = KidId;
+          if (kidId != null) {
+            fullData['id'] = kidId;
           } else if (originalFullData['id'] != null) {
             final id = _safeParseInt(originalFullData['id']);
             if (id != null) {
@@ -1021,9 +1021,9 @@ class _goatHistoryFormScreenState extends State<goatHistoryFormScreen>
           }
         }
 
-        debugPrint('Prepared Kid data for dialog: KidId=$KidId, isEditMode=${existingKidData['isEditMode']}');
+        debugPrint('Prepared kid data for dialog: kidId=$kidId, isEditMode=${existingKidData['isEditMode']}');
       } catch (e) {
-        debugPrint('Error preparing Kid data for dialog: $e');
+        debugPrint('Error preparing kid data for dialog: $e');
         existingKidData = null;
       }
     }
@@ -1044,7 +1044,7 @@ class _goatHistoryFormScreenState extends State<goatHistoryFormScreen>
         // Update the Kid_tag controller
         _controllers['Kid_tag']?.text = _safeParseString(result['tag_no']) ?? '';
       });
-      debugPrint('Kid dialog result: ${result['pendingOperation']} operation prepared for ${result['tag_no']}');
+      debugPrint('kid dialog result: ${result['pendingOperation']} operation prepared for ${result['tag_no']}');
     }
   }
 
@@ -1106,18 +1106,18 @@ class _goatHistoryFormScreenState extends State<goatHistoryFormScreen>
       };
 
       // Handle Kid_tag specially for Gives Birth history with multiple calves
-      String KidTagValue = _controllers['Kid_tag']!.text.trim();
+      String kidTagValue = _controllers['Kid_tag']!.text.trim();
       if (selectedHistoryType.toLowerCase() == 'gives birth') {
         final multiCalves = _historySpecificFieldsKey.currentState?.getCalves();
         if (multiCalves != null && multiCalves.isNotEmpty) {
-          // Collect all Kid tags from multiple calves
-          final KidTags = multiCalves
-              .map((Kid) => Kid['tag_no']?.toString())
+          // Collect all kid tags from multiple calves
+          final kidTags = multiCalves
+              .map((kid) => kid['tag_no']?.toString())
               .where((tag) => tag != null && tag.isNotEmpty)
               .toList();
-          if (KidTags.isNotEmpty) {
-            KidTagValue = KidTags.join(', ');
-            debugPrint('DEBUG: Multiple Kid tags collected: $KidTagValue');
+          if (kidTags.isNotEmpty) {
+            kidTagValue = kidTags.join(', ');
+            debugPrint('DEBUG: Multiple kid tags collected: $kidTagValue');
           }
         }
       }
@@ -1125,7 +1125,7 @@ class _goatHistoryFormScreenState extends State<goatHistoryFormScreen>
       // Add optional fields only if they have values
       final optionalFields = {
         'Buck_tag': _controllers['Buck_tag']!.text.trim(),
-        'Kid_tag': KidTagValue,
+        'Kid_tag': kidTagValue,
         'diagnosis': _controllers['diagnosis']!.text.trim(),
         'technician': _controllers['technician']!.text.trim(),
         'medicine_given': _controllers['medicine_given']!.text.trim(),
@@ -1161,7 +1161,7 @@ class _goatHistoryFormScreenState extends State<goatHistoryFormScreen>
         }
       });
 
-      // Note: We remove estimated_return_date only from the Buck-side payload later,
+      // Note: We remove estimated_return_date only from the buck-side payload later,
       // to ensure the partner Doe/Doeling keeps it when updated.
 
       // Handle weight field specially
@@ -1285,7 +1285,7 @@ class _goatHistoryFormScreenState extends State<goatHistoryFormScreen>
         final hasMulti = multiCalves != null && multiCalves.isNotEmpty;
         final hasSingle = _controllers['Kid_tag']!.text.trim().isNotEmpty || _temporaryKidData != null;
         if (!hasMulti && !hasSingle) {
-          _showErrorMessage('Please add at least one Kid for birth history.');
+          _showErrorMessage('Please add at least one kid for birth history.');
           setState(() => _isLoading = false);
           return;
         }
@@ -1311,7 +1311,7 @@ class _goatHistoryFormScreenState extends State<goatHistoryFormScreen>
         } else if (breedingType == 'natural_breeding') {
           // For natural breeding, require Buck_tag only
           if (_controllers['Buck_tag']!.text.trim().isEmpty) {
-            _showErrorMessage('Buck selection is required for Natural Breeding.');
+            _showErrorMessage('buck selection is required for Natural Breeding.');
             setState(() => _isLoading = false);
             return;
           }
@@ -1325,7 +1325,7 @@ class _goatHistoryFormScreenState extends State<goatHistoryFormScreen>
       debugPrint('Selected event type: $selectedHistoryType');
       debugPrint('goat details loaded: ${_goatDetails != null}');
       if (_temporaryKidData != null) {
-        debugPrint('Temporary Kid data: $_temporaryKidData');
+        debugPrint('Temporary kid data: $_temporaryKidData');
       }
 
       bool eventSuccess;
@@ -1337,7 +1337,7 @@ class _goatHistoryFormScreenState extends State<goatHistoryFormScreen>
           }
           data['id'] = widget.historyRecord!.id;
 
-          // Unified editing: if editing a Buck reciprocal breeding, first update the partner Doe/Doeling event with full details
+          // Unified editing: if editing a buck reciprocal breeding, first update the partner Doe/Doeling event with full details
           final isBuckSubject = _goatDetails?.sex.toLowerCase() == 'male';
           final isBreedingEdit = selectedHistoryType.toLowerCase() == 'breeding';
           if (isBuckSubject && isBreedingEdit && _partnerTagForEdit != null && _partnerHistoryIdForEdit != null) {
@@ -1358,35 +1358,35 @@ class _goatHistoryFormScreenState extends State<goatHistoryFormScreen>
               // keep semen_used, technician from current controllers
               partnerData.remove('Buck_tag');
             } else if ((partnerBT ?? '').toLowerCase() == 'natural_breeding') {
-              // set Buck_tag to this Buck's tag; remove semen/technician
-              final BuckSelf = _goatDetails?.tagNo ?? '';
-              if (BuckSelf.isNotEmpty) partnerData['Buck_tag'] = BuckSelf;
+              // set Buck_tag to this buck's tag; remove semen/technician
+              final buckSelf = _goatDetails?.tagNo ?? '';
+              if (buckSelf.isNotEmpty) partnerData['Buck_tag'] = buckSelf;
               partnerData.remove('semen_used');
               partnerData.remove('technician');
             }
-            // Remove return-to-heat only from Buck payload (current 'data'), not from partnerData
+            // Remove return-to-heat only from buck payload (current 'data'), not from partnerData
             data.remove('estimated_return_date');
-            // Execute partner update before saving the Buck event
+            // Execute partner update before saving the buck event
             final partnerOk = await GoatHistoryService.updategoatHistory(partnerData);
             debugPrint('Unified edit: partner update result: $partnerOk');
           }
 
-          // Unified editing: if editing a female breeding event, update the Buck reciprocal as well
+          // Unified editing: if editing a female breeding event, update the buck reciprocal as well
           final isFemaleSubject = _goatDetails?.sex.toLowerCase() == 'female';
           if (isFemaleSubject && isBreedingEdit) {
-            // Determine partner Buck tag based on breeding_type
+            // Determine partner buck tag based on breeding_type
             final breedingFieldsKey = _historySpecificFieldsKey.currentState;
             final bt = breedingFieldsKey?.getBreedingType() ?? data['breeding_type']?.toString();
             String? partnerBuckTag;
             if ((bt ?? '').toLowerCase() == 'natural_breeding') {
               partnerBuckTag = _controllers['Buck_tag']?.text.trim();
             } else if ((bt ?? '').toLowerCase() == 'artificial_insemination') {
-              // For AI, Buck tag is not used; reciprocal exists but without sire fields
+              // For AI, buck tag is not used; reciprocal exists but without sire fields
               partnerBuckTag = null;
             }
 
             if (partnerBuckTag != null && partnerBuckTag.isNotEmpty) {
-              // Fetch partner Buck history and find matching breeding by date
+              // Fetch partner buck history and find matching breeding by date
               final allPartnerEvents = await GoatHistoryService.getgoatHistoryByTag(partnerBuckTag);
               final partnerEvents = allPartnerEvents.where((e) => (e['goat_tag']?.toString() ?? '') == partnerBuckTag).toList();
               Map<String, dynamic> partner = {};
@@ -1405,18 +1405,18 @@ class _goatHistoryFormScreenState extends State<goatHistoryFormScreen>
               } catch (_) {}
 
               if (partner.isNotEmpty) {
-                // Build Buck-side payload with limited fields and explicitly omit return-to-heat
-                final BuckData = <String, dynamic>{
+                // Build buck-side payload with limited fields and explicitly omit return-to-heat
+                final buckData = <String, dynamic>{
                   'id': partner['id'],
                   'goat_tag': partnerBuckTag,
                   'history_type': 'Breeding',
                   'history_date': data['history_date'],
                   'breeding_type': 'Natural Breeding',
-                  // Do not overwrite partner Buck notes
+                  // Do not overwrite partner buck notes
                 };
-                // Execute Buck update
-                final BuckOk = await GoatHistoryService.updategoatHistory(BuckData);
-                debugPrint('Unified edit: Buck reciprocal update result: $BuckOk');
+                // Execute buck update
+                final buckOk = await GoatHistoryService.updategoatHistory(buckData);
+                debugPrint('Unified edit: buck reciprocal update result: $buckOk');
               }
             }
           }
@@ -1556,7 +1556,7 @@ class _goatHistoryFormScreenState extends State<goatHistoryFormScreen>
       if (_goatDetails != null) {
         final goatUpdateData = Map<String, dynamic>.from(_goatDetails!.toJson());
         goatUpdateData['status'] = 'Sold';
-        goatStatusUpdated = await GoatService.updategoatInformation(goatUpdateData);
+        goatStatusUpdated = await GoatService.updateGoatInformation(goatUpdateData);
         goatStatus = goatStatusUpdated
             ? 'goat ${_goatDetails!.tagNo} status updated to Sold'
             : 'Failed to update goat ${_goatDetails!.tagNo} status to Sold';
@@ -1635,22 +1635,22 @@ class _goatHistoryFormScreenState extends State<goatHistoryFormScreen>
   Future<void> _handleBreedingEvent() async {
     debugPrint('🚀🚀🚀 _handleBreedingEvent() CALLED! 🚀🚀🚀');
     try {
-      bool DoeStatusUpdated = false;
-      String DoeStatus = '';
+      bool doeStatusUpdated = false;
+      String doeStatus = '';
 
       // Update Doe (mother) status to Breeding
       if (_goatDetails != null) {
-        final DoeUpdateData = Map<String, dynamic>.from(_goatDetails!.toJson());
-        DoeUpdateData['status'] = 'Breeding';
-        DoeStatusUpdated = await GoatService.updategoatInformation(DoeUpdateData);
-        DoeStatus = DoeStatusUpdated
+        final doeUpdateData = Map<String, dynamic>.from(_goatDetails!.toJson());
+        doeUpdateData['status'] = 'Breeding';
+        doeStatusUpdated = await GoatService.updateGoatInformation(doeUpdateData);
+        doeStatus = doeStatusUpdated
             ? 'Doe ${_goatDetails!.tagNo} status updated to Breeding'
             : 'Failed to update Doe ${_goatDetails!.tagNo} status';
       }
 
       // Log the results for debugging
       debugPrint('Breeding event results:');
-      debugPrint('- Doe: $DoeStatus');
+      debugPrint('- Doe: $doeStatus');
 
       final returnToHeatText = _controllers['estimated_return_date']?.text ?? '';
       if (returnToHeatText.isNotEmpty) {
@@ -1660,9 +1660,9 @@ class _goatHistoryFormScreenState extends State<goatHistoryFormScreen>
             returnToHeatDate.year == today.year &&
             returnToHeatDate.month == today.month &&
             returnToHeatDate.day == today.day) {
-          final DoeUpdateData = Map<String, dynamic>.from(_goatDetails!.toJson());
-          DoeUpdateData['status'] = 'Healthy';
-          final updated = await GoatService.updategoatInformation(DoeUpdateData);
+          final doeUpdateData = Map<String, dynamic>.from(_goatDetails!.toJson());
+          doeUpdateData['status'] = 'Healthy';
+          final updated = await GoatService.updateGoatInformation(doeUpdateData);
           if (updated) {
             debugPrint('Doe ${_goatDetails!.tagNo} status auto-updated to Healthy');
             if (mounted) {
@@ -1685,15 +1685,15 @@ class _goatHistoryFormScreenState extends State<goatHistoryFormScreen>
       debugPrint('DEBUG: Current goat details: ${_goatDetails?.tagNo}');
       debugPrint('DEBUG: Breeding type controller value: ${_controllers['breeding_type']?.text}');
       debugPrint('DEBUG: Semen used controller value: ${_controllers['semen_used']?.text}');
-      debugPrint('DEBUG: Buck tag controller value: ${_controllers['Buck_tag']?.text}');
+      debugPrint('DEBUG: buck tag controller value: ${_controllers['Buck_tag']?.text}');
       await _createReciprocalBreedingEvent();
 
       // Log the results for debugging
       debugPrint('Breeding event results:');
-      debugPrint('- Doe: $DoeStatus');
+      debugPrint('- Doe: $doeStatus');
 
       // Optional: Show a snackbar with summary if needed
-      if (mounted && DoeStatusUpdated) {
+      if (mounted && doeStatusUpdated) {
 
         // You can uncomment this if you want to show success feedback
         /*
@@ -1755,7 +1755,7 @@ class _goatHistoryFormScreenState extends State<goatHistoryFormScreen>
             } else {
               partnergoatTag = tagPart;
             }
-            debugPrint('DEBUG: Extracted Buck tag from semen label: $partnergoatTag');
+            debugPrint('DEBUG: Extracted buck tag from semen label: $partnergoatTag');
           } else {
             partnergoatTag = semenUsed.trim();
             debugPrint('DEBUG: Using semen_used as pure tag for partner: $partnergoatTag');
@@ -1763,12 +1763,12 @@ class _goatHistoryFormScreenState extends State<goatHistoryFormScreen>
         }
       } else if (breedingType == 'natural_breeding') {
         partnergoatTag = _controllers['Buck_tag']?.text ?? '';
-        debugPrint('DEBUG: Buck tag from natural breeding: $partnergoatTag');
+        debugPrint('DEBUG: buck tag from natural breeding: $partnergoatTag');
       } else {
         // Fallback: try to determine from available fields
         debugPrint('DEBUG: Unknown breeding type, trying fallback detection');
         final semenUsed = _controllers['semen_used']?.text ?? '';
-        final BuckTag = _controllers['Buck_tag']?.text ?? '';
+        final buckTag = _controllers['Buck_tag']?.text ?? '';
         
         if (semenUsed.isNotEmpty) {
           debugPrint('DEBUG: Fallback - using semen field');
@@ -1780,9 +1780,9 @@ class _goatHistoryFormScreenState extends State<goatHistoryFormScreen>
               partnergoatTag = tagPart;
             }
           }
-        } else if (BuckTag.isNotEmpty) {
-          debugPrint('DEBUG: Fallback - using Buck tag field');
-          partnergoatTag = BuckTag;
+        } else if (buckTag.isNotEmpty) {
+          debugPrint('DEBUG: Fallback - using buck tag field');
+          partnergoatTag = buckTag;
         }
       }
       
@@ -1790,7 +1790,7 @@ class _goatHistoryFormScreenState extends State<goatHistoryFormScreen>
         debugPrint('DEBUG: No partner goat found for reciprocal breeding event');
         debugPrint('DEBUG: Breeding type was: $breedingType');
         debugPrint('DEBUG: Semen used was: ${_controllers['semen_used']?.text}');
-        debugPrint('DEBUG: Buck tag was: ${_controllers['Buck_tag']?.text}');
+        debugPrint('DEBUG: buck tag was: ${_controllers['Buck_tag']?.text}');
         return;
       }
       
@@ -1801,7 +1801,7 @@ class _goatHistoryFormScreenState extends State<goatHistoryFormScreen>
         return;
       }
       
-      // Check if partner goat is male (Buck)
+      // Check if partner goat is male (buck)
       final partnerSex = partnergoat.sex.toLowerCase().trim();
       if (partnerSex != 'male') {
         debugPrint('Partner goat is not male, skipping reciprocal breeding event');
@@ -1853,7 +1853,7 @@ class _goatHistoryFormScreenState extends State<goatHistoryFormScreen>
       
       // Add breeding-specific fields
       if (breedingType == 'artificial_insemination') {
-        // Do not include semen_used for reciprocal Buck event
+        // Do not include semen_used for reciprocal buck event
         reciprocalEventData['technician'] = _controllers['technician']?.text ?? '';
       } else if (breedingType == 'natural_breeding') {
         reciprocalEventData['Buck_tag'] = _controllers['Buck_tag']?.text ?? '';
@@ -1867,7 +1867,7 @@ class _goatHistoryFormScreenState extends State<goatHistoryFormScreen>
         // Update partner goat status to Breeding
         final partnerUpdateData = Map<String, dynamic>.from(partnergoat.toJson());
         partnerUpdateData['status'] = 'Breeding';
-        await GoatService.updategoatInformation(partnerUpdateData);
+        await GoatService.updateGoatInformation(partnerUpdateData);
         
         // Show success message
         if (mounted) {
@@ -1893,24 +1893,24 @@ class _goatHistoryFormScreenState extends State<goatHistoryFormScreen>
 
   Future<void> _handlePregnantEvent() async {
     try {
-      bool DoeStatusUpdated = false;
-      String DoeStatus = '';
+      bool doeStatusUpdated = false;
+      String doeStatus = '';
 
       // Update Doe (mother) status to Pregnant
       if (_goatDetails != null) {
-        final DoeUpdateData = Map<String, dynamic>.from(_goatDetails!.toJson());
-        DoeUpdateData['status'] = 'Pregnant';
-        DoeStatusUpdated = await GoatService.updategoatInformation(DoeUpdateData);
-        DoeStatus = DoeStatusUpdated
+        final doeUpdateData = Map<String, dynamic>.from(_goatDetails!.toJson());
+        doeUpdateData['status'] = 'Pregnant';
+        doeStatusUpdated = await GoatService.updateGoatInformation(doeUpdateData);
+        doeStatus = doeStatusUpdated
             ? 'Doe ${_goatDetails!.tagNo} status updated to Pregnant'
             : 'Failed to update Doe ${_goatDetails!.tagNo} status to Pregnant';
       }
 
       // Log the result for debugging
-      debugPrint('Pregnant event result: $DoeStatus');
+      debugPrint('Pregnant event result: $doeStatus');
 
       // Optional: Show success feedback to user
-      if (mounted && DoeStatusUpdated) {
+      if (mounted && doeStatusUpdated) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('goat status updated to Pregnant'),
@@ -1951,7 +1951,7 @@ class _goatHistoryFormScreenState extends State<goatHistoryFormScreen>
       if (_goatDetails != null) {
         final goatUpdateData = Map<String, dynamic>.from(_goatDetails!.toJson());
         goatUpdateData['status'] = 'Mortality';
-        goatStatusUpdated = await GoatService.updategoatInformation(goatUpdateData);
+        goatStatusUpdated = await GoatService.updateGoatInformation(goatUpdateData);
         goatStatus = goatStatusUpdated
             ? 'goat ${_goatDetails!.tagNo} status updated to Mortality'
             : 'Failed to update goat ${_goatDetails!.tagNo} status to Mortality';
@@ -2028,7 +2028,7 @@ class _goatHistoryFormScreenState extends State<goatHistoryFormScreen>
       final goatUpdateData = Map<String, dynamic>.from(_goatDetails!.toJson());
       goatUpdateData['weight'] = latestWeight;
 
-      final updated = await GoatService.updategoatInformation(goatUpdateData);
+      final updated = await GoatService.updateGoatInformation(goatUpdateData);
       debugPrint('goat weight update result: $updated');
 
       if (mounted && updated) {
@@ -2068,7 +2068,7 @@ class _goatHistoryFormScreenState extends State<goatHistoryFormScreen>
       if (_goatDetails != null) {
         final goatUpdateData = Map<String, dynamic>.from(_goatDetails!.toJson());
         goatUpdateData['status'] = 'Lost';
-        goatStatusUpdated = await GoatService.updategoatInformation(goatUpdateData);
+        goatStatusUpdated = await GoatService.updateGoatInformation(goatUpdateData);
         goatStatus = goatStatusUpdated
             ? 'goat ${_goatDetails!.tagNo} status updated to Lost'
             : 'Failed to update goat ${_goatDetails!.tagNo} status to Lost';
@@ -2139,7 +2139,7 @@ class _goatHistoryFormScreenState extends State<goatHistoryFormScreen>
       if (_goatDetails != null) {
         final goatUpdateData = Map<String, dynamic>.from(_goatDetails!.toJson());
         goatUpdateData['status'] = 'Sick';
-        goatStatusUpdated = await GoatService.updategoatInformation(goatUpdateData);
+        goatStatusUpdated = await GoatService.updateGoatInformation(goatUpdateData);
         goatStatus = goatStatusUpdated
             ? 'goat ${_goatDetails!.tagNo} status updated to Sick'
             : 'Failed to update goat ${_goatDetails!.tagNo} status to Sick';

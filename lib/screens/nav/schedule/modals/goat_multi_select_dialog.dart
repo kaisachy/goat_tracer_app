@@ -3,12 +3,12 @@ import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import '../../../../constants/app_colors.dart';
 import '../../../../models/goat.dart';
 
-class goatMultiSelectDialog extends StatefulWidget {
-  final List<goat> goatList;
+class GoatMultiSelectDialog extends StatefulWidget {
+  final List<Goat> goatList;
   final List<String> initialSelectedTags;
   final Set<String> scheduledTagsForVaccine; // uppercase tags already scheduled
 
-  const goatMultiSelectDialog({
+  const GoatMultiSelectDialog({
     super.key,
     required this.goatList,
     required this.initialSelectedTags,
@@ -16,10 +16,10 @@ class goatMultiSelectDialog extends StatefulWidget {
   });
 
   @override
-  State<goatMultiSelectDialog> createState() => _goatMultiSelectDialogState();
+  State<GoatMultiSelectDialog> createState() => _GoatMultiSelectDialogState();
 }
 
-class _goatMultiSelectDialogState extends State<goatMultiSelectDialog> {
+class _GoatMultiSelectDialogState extends State<GoatMultiSelectDialog> {
   late List<String> tempSelected;
   String searchQuery = '';
   String selectedClassification = 'All';
@@ -47,7 +47,7 @@ class _goatMultiSelectDialogState extends State<goatMultiSelectDialog> {
     super.dispose();
   }
 
-  List<goat> get filteredGoats {
+  List<Goat> get filteredGoats {
     return widget.goatList.where((goat) {
       final matchesSearch = searchQuery.isEmpty ||
           goat.tagNo.toLowerCase().contains(searchQuery.toLowerCase());
@@ -121,7 +121,7 @@ class _goatMultiSelectDialogState extends State<goatMultiSelectDialog> {
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: const FaIcon(
-                  FontAwesomeIcons.Doe,
+                  FontAwesomeIcons.cow,
                   color: Colors.white,
                   size: 20,
                 ),
@@ -421,7 +421,7 @@ class _goatMultiSelectDialogState extends State<goatMultiSelectDialog> {
                   child: Row(
                     crossAxisAlignment: CrossAxisAlignment.center,
                     children: [
-                      _buildgoatAvatar(goat, isSelected),
+                      _buildGoatAvatar(goat, isSelected),
                       const SizedBox(width: 10),
                       Expanded(
                         child: Column(
@@ -458,7 +458,7 @@ class _goatMultiSelectDialogState extends State<goatMultiSelectDialog> {
     );
   }
 
-  Widget _buildgoatAvatar(goat goat, bool isSelected) {
+  Widget _buildGoatAvatar(Goat goat, bool isSelected) {
     final color = _getClassificationColor(goat.classification);
     return Container(
       width: 48,
@@ -486,7 +486,7 @@ class _goatMultiSelectDialogState extends State<goatMultiSelectDialog> {
     );
   }
 
-  Widget _buildgoatTitle(goat goat) {
+  Widget _buildGoatTitle(Goat goat) {
     return Row(
       children: [
         Expanded(
@@ -504,14 +504,14 @@ class _goatMultiSelectDialogState extends State<goatMultiSelectDialog> {
     );
   }
 
-  Widget _buildTitleSection(goat goat, bool isBlocked) {
+  Widget _buildTitleSection(Goat goat, bool isBlocked) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Row(
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            Expanded(child: _buildgoatTitle(goat)),
+            Expanded(child: _buildGoatTitle(goat)),
           ],
         ),
         const SizedBox(height: 4),

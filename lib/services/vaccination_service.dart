@@ -9,7 +9,7 @@ class VaccinationService {
 
   /// Generate vaccination schedules for all goat based on their age and stage
   Future<List<VaccinationSchedule>> generateVaccinationSchedules({
-    required List<goat> allGoats,
+    required List<Goat> allGoats,
     required List<Map<String, dynamic>> allEvents,
   }) async {
     log('🚀 VACCINATION SERVICE: Generating schedules for ${allGoats.length} goat');
@@ -18,13 +18,13 @@ class VaccinationService {
     
     for (final goat in allGoats) {
       final ageInMonths = _getAccurateAgeInMonths(goat);
-      final isDairy = _isDairygoat(goat);
+      final isDairy = _isDairyGoat(goat);
       final pregnancyInfo = _getPregnancyInfo(goat.tagNo, allEvents);
       final classification = _normalizeClassification(goat.classification);
       
       log('🐄 Processing ${goat.tagNo}: Age=$ageInMonths months, Classification=$classification, Dairy=$isDairy, Pregnant=${pregnancyInfo != null}');
       
-      final goatSchedules = await _generategoatVaccinationSchedules(
+      final goatSchedules = await _generateGoatVaccinationSchedules(
         goat: goat,
         allEvents: allEvents,
         ageInMonths: ageInMonths,
@@ -41,7 +41,7 @@ class VaccinationService {
   }
 
   /// Get accurate age in months for goat
-  int _getAccurateAgeInMonths(goat goat) {
+  int _getAccurateAgeInMonths(Goat goat) {
     // First try to use the backend-provided age
     if (goat.age != null && goat.age!.isNotEmpty) {
       try {
@@ -72,7 +72,7 @@ class VaccinationService {
   }
 
   /// Compute accurate age in days (for newborn logic)
-  int _getAccurateAgeInDays(goat goat) {
+  int _getAccurateAgeInDays(Goat goat) {
     // Prefer DOB when available
     if (goat.dateOfBirth != null && goat.dateOfBirth!.isNotEmpty) {
       try {
@@ -171,8 +171,8 @@ class VaccinationService {
   }
 
   /// Generate vaccination schedules for a specific goat
-  Future<List<VaccinationSchedule>> _generategoatVaccinationSchedules({
-    required goat goat,
+  Future<List<VaccinationSchedule>> _generateGoatVaccinationSchedules({
+    required Goat goat,
     required List<Map<String, dynamic>> allEvents,
     required int ageInMonths,
     required bool isDairy,
@@ -223,7 +223,7 @@ class VaccinationService {
 
   /// Create a vaccination schedule for a specific vaccine
   Future<VaccinationSchedule?> _createVaccinationSchedule({
-    required goat goat,
+    required Goat goat,
     required VaccineType vaccine,
     required List<Map<String, dynamic>> vaccinationHistory,
     required int ageInMonths,
@@ -259,7 +259,7 @@ class VaccinationService {
         return VaccinationSchedule(
           goatTag: goat.tagNo,
           vaccineType: vaccine.name,
-          goatStage: _getgoatStage(goat, classification),
+          goatStage: _getGoatStage(goat, classification),
           recommendedDate: nextDate,
           status: _calculateStatus(nextDate),
           notes: 'Booster shot for ${vaccine.name}',
@@ -282,7 +282,7 @@ class VaccinationService {
         return VaccinationSchedule(
           goatTag: goat.tagNo,
           vaccineType: vaccine.name,
-          goatStage: _getgoatStage(goat, classification),
+          goatStage: _getGoatStage(goat, classification),
           recommendedDate: nextDate,
           status: _calculateStatus(nextDate),
           notes: 'Annual vaccination for ${vaccine.name}',
@@ -310,7 +310,7 @@ class VaccinationService {
     return VaccinationSchedule(
       goatTag: goat.tagNo,
       vaccineType: vaccine.name,
-      goatStage: _getgoatStage(goat, classification),
+      goatStage: _getGoatStage(goat, classification),
       recommendedDate: recommendedDate,
       status: _calculateStatus(recommendedDate),
       notes: _getVaccinationNotes(vaccine, pregnancyInfo),
@@ -400,7 +400,7 @@ class VaccinationService {
   }
 
   /// Determine if a goat is dairy goat with improved logic
-  bool _isDairygoat(goat goat) {
+  bool _isDairyGoat(Goat goat) {
     // Enhanced dairy breed detection
     final dairyBreeds = [
       'holstein', 'friesian', 'jersey', 'guernsey', 'ayrshire', 'brown swiss',
@@ -430,7 +430,7 @@ class VaccinationService {
   }
 
   /// Get the current stage of the goat for vaccination purposes
-  String _getgoatStage(goat goat, String classification) {
+  String _getGoatStage(Goat goat, String classification) {
     final sex = goat.sex;
     
     if (classification == 'Kid') {
@@ -449,9 +449,9 @@ class VaccinationService {
   }
 
   /// Get goat that need vaccination (overdue or due soon)
-  List<Map<String, dynamic>> getgoatNeedingVaccination({
+  List<Map<String, dynamic>> getGoatNeedingVaccination({
     required List<VaccinationSchedule> schedules,
-    required List<goat> allGoats,
+    required List<Goat> allGoats,
   }) {
     final List<Map<String, dynamic>> goatNeedingVaccination = [];
     
@@ -459,7 +459,7 @@ class VaccinationService {
       if (schedule.isOverdue || schedule.isDueSoon) {
         final goat = allGoats.firstWhere(
           (c) => c.tagNo == schedule.goatTag,
-          orElse: () => goat(
+          orElse: () => Goat(
             id: 0,
             tagNo: schedule.goatTag,
             sex: '',
@@ -527,7 +527,7 @@ class VaccinationService {
   /// Get vaccination statistics
   Map<String, dynamic> getVaccinationStatistics({
     required List<VaccinationSchedule> schedules,
-    required List<goat> allGoats,
+    required List<Goat> allGoats,
   }) {
     final totalgoat = allGoats.length;
     final pendingVaccinations = schedules.where((s) => s.isPending).length;

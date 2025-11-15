@@ -6,9 +6,9 @@ import 'package:goat_tracer_app/utils/goat_detail_utils.dart';
 import 'info_item_widget.dart';
 
 
-class goatManagementCard extends StatelessWidget {
-  final goat goat;
-  const goatManagementCard({super.key, required this.goat});
+class GoatManagementCard extends StatelessWidget {
+  final Goat goat;
+  const GoatManagementCard({super.key, required this.goat});
 
   @override
   Widget build(BuildContext context) {
@@ -43,7 +43,7 @@ class goatManagementCard extends StatelessWidget {
             InfoItemData(
               icon: Icons.home,
               title: 'Source',
-              value: goatDetailUtils.getSourceDisplay(goat.source, goat.sourceDetails),
+              value: GoatDetailUtils.getSourceDisplay(goat.source, goat.sourceDetails),
             ),
           ]),
         ],

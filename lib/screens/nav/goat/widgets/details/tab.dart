@@ -1,18 +1,18 @@
 ﻿import 'package:flutter/material.dart';
 import 'package:goat_tracer_app/constants/app_colors.dart';
 
-class goatDetailTabs extends StatelessWidget {
+class GoatDetailTabs extends StatelessWidget {
   final TabController controller;
   final Animation<double> fadeAnimation;
   final Animation<Offset> slideAnimation;
-  final VoidCallback ongoatUpdated;
+  final VoidCallback onGoatUpdated;
 
-  const goatDetailTabs({
+  const GoatDetailTabs({
     super.key,
     required this.controller,
     required this.fadeAnimation,
     required this.slideAnimation,
-    required this.ongoatUpdated,
+    required this.onGoatUpdated,
   });
 
   @override

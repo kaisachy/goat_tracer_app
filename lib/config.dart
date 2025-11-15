@@ -4,9 +4,9 @@
 
 
 // class AppConfig {
-//   static const String baseUrl = 'http://192.168.100.145/goat-tracer/public';
+//   static const String baseUrl = 'http://192.168.254.113/goat-tracer/public';
 // }
 
 class AppConfig {
-  static const String baseUrl = 'https://ruminanttrace.ph';
+  static const String baseUrl = 'https://goat.ruminanttrace.ph';
 }

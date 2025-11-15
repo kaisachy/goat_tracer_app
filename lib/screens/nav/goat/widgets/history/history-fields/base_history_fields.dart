@@ -20,7 +20,7 @@ abstract class BaseEventFields extends StatefulWidget {
 }
 
 abstract class BaseEventFieldsState<T extends BaseEventFields> extends State<T> {
-  List<goat> Bucks = [];
+  List<Goat> bucks = [];
   List<User> technicians = [];
   List<User> farmers = [];
   bool loadingBucks = false;
@@ -28,8 +28,8 @@ abstract class BaseEventFieldsState<T extends BaseEventFields> extends State<T> 
   bool loadingFarmers = false;
   bool _useTechnicianTextInput = false; // Toggle between dropdown and text input
 
-  static const int goatGestationPeriodDays = 283;
-  static const int returnToHeatDays = 21;
+  static const int goatGestationPeriodDays = 150;
+  static const int returnToHeatDays = 22;
 
   @override
   void initState() {
@@ -65,27 +65,27 @@ abstract class BaseEventFieldsState<T extends BaseEventFields> extends State<T> 
         debugPrint('DEBUG: fetchBucks started');
     setState(() => loadingBucks = true);
     try {
-      final allgoat = await GoatService.getAllGoats();
-      debugPrint('DEBUG: fetchBucks - loaded ${allgoat.length} total goat');
+      final allGoats = await GoatService.getAllGoats();
+      debugPrint('DEBUG: fetchBucks - loaded ${allGoats.length} total goat');
       
-      final BucksList = allgoat.where((goat) =>
-      goat.classification.toLowerCase() == 'Buck' &&
+      final bucksList = allGoats.where((goat) =>
+      goat.classification.toLowerCase() == 'buck' &&
           goat.status.toLowerCase() == 'healthy'
       ).toList();
       
-      debugPrint('DEBUG: fetchBucks - found ${BucksList.length} healthy Bucks');
-      for (final Buck in BucksList) {
-        debugPrint('DEBUG: fetchBucks - Buck: ${Buck.tagNo} (${Buck.classification}, ${Buck.status})');
+      debugPrint('DEBUG: fetchBucks - found ${bucksList.length} healthy bucks');
+      for (final buck in bucksList) {
+        debugPrint('DEBUG: fetchBucks - buck: ${buck.tagNo} (${buck.classification}, ${buck.status})');
       }
 
       setState(() {
-        Bucks = BucksList;
+        bucks = bucksList;
         loadingBucks = false;
       });
       
-      debugPrint('DEBUG: fetchBucks - Bucks list updated, calling onBucksLoaded');
+      debugPrint('DEBUG: fetchBucks - bucks list updated, calling onBucksLoaded');
 
-      // Notify subclasses that Bucks have been loaded
+      // Notify subclasses that bucks have been loaded
       onBucksLoaded();
     } catch (e) {
       debugPrint('DEBUG: fetchBucks - error: $e');
@@ -93,7 +93,7 @@ abstract class BaseEventFieldsState<T extends BaseEventFields> extends State<T> 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Failed to load Bucks: $e'),
+            content: Text('Failed to load bucks: $e'),
             backgroundColor: Colors.red.shade700,
           ),
         );
@@ -224,10 +224,20 @@ abstract class BaseEventFieldsState<T extends BaseEventFields> extends State<T> 
         return displayName == currentValue;
       });
 
-      // If it doesn't exist, clear the field
-      if (!exists) {
-        widget.controllers['technician']?.clear();
+      // Only clear the field if we're NOT in text input mode
+      // If we're in text input mode, preserve the user's custom input
+      if (!exists && !_useTechnicianTextInput) {
+        // If value doesn't exist and we're in dropdown mode, switch to text input mode
+        // instead of clearing, so user's custom input is preserved
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) {
+            setState(() {
+              _useTechnicianTextInput = true;
+            });
+          }
+        });
       }
+      // If we're already in text input mode or the value exists, keep it as is
     }
   }
 
@@ -375,7 +385,7 @@ abstract class BaseEventFieldsState<T extends BaseEventFields> extends State<T> 
   Widget buildBuckDropdown() {
     final currentRaw = widget.controllers['Buck_tag']?.text ?? '';
     final current = currentRaw.trim();
-    final isAutoFilled = current.isNotEmpty && !Bucks.any((Buck) => Buck.tagNo.toLowerCase() == current.toLowerCase());
+    final isAutoFilled = current.isNotEmpty && !bucks.any((buck) => buck.tagNo.toLowerCase() == current.toLowerCase());
     
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
@@ -383,8 +393,8 @@ abstract class BaseEventFieldsState<T extends BaseEventFields> extends State<T> 
       child: DropdownButtonFormField<String>(
         value: () {
           debugPrint('DEBUG: buildBuckDropdown - current controller value: "$current"');
-          debugPrint('DEBUG: buildBuckDropdown - Bucks list length: ${Bucks.length}');
-          debugPrint('DEBUG: buildBuckDropdown - Bucks tags: ${Bucks.map((b) => b.tagNo).join(', ')}');
+          debugPrint('DEBUG: buildBuckDropdown - bucks list length: ${bucks.length}');
+          debugPrint('DEBUG: buildBuckDropdown - bucks tags: ${bucks.map((b) => b.tagNo).join(', ')}');
           debugPrint('DEBUG: buildBuckDropdown - isAutoFilled: $isAutoFilled');
           
           if (current.isEmpty) {
@@ -392,12 +402,12 @@ abstract class BaseEventFieldsState<T extends BaseEventFields> extends State<T> 
             return null;
           }
           
-          final options = Bucks.map((b) => b.tagNo.trim()).toList();
+          final options = bucks.map((b) => b.tagNo.trim()).toList();
           final lowerToOriginal = { for (final o in options) o.toLowerCase(): o };
           
-          // If the current value is not in the Bucks list, add it as a temporary option
+          // If the current value is not in the bucks list, add it as a temporary option
           if (!lowerToOriginal.containsKey(current.toLowerCase())) {
-            debugPrint('DEBUG: buildBuckDropdown - current value "$current" not found in Bucks list, adding as temporary option');
+            debugPrint('DEBUG: buildBuckDropdown - current value "$current" not found in bucks list, adding as temporary option');
             options.add(current);
             lowerToOriginal[current.toLowerCase()] = current;
           }
@@ -407,7 +417,7 @@ abstract class BaseEventFieldsState<T extends BaseEventFields> extends State<T> 
           return result;
         }(),
         decoration: InputDecoration(
-          labelText: 'Buck Tag (Father)',
+          labelText: 'buck Tag (Father)',
           prefixIcon: const Icon(FontAwesomeIcons.mars, color: AppColors.primary),
           border: OutlineInputBorder(
             borderRadius: BorderRadius.circular(15),
@@ -442,19 +452,19 @@ abstract class BaseEventFieldsState<T extends BaseEventFields> extends State<T> 
                   : null,
         ),
         hint: Text(
-          loadingBucks ? 'Loading Bucks...' : 'Select Buck',
+          loadingBucks ? 'Loading bucks...' : 'Select buck',
           overflow: TextOverflow.ellipsis,
           maxLines: 1,
         ),
         isExpanded: true,
         items: () {
-          final items = Bucks.map((Buck) {
+          final items = bucks.map((buck) {
             return DropdownMenuItem<String>(
-              value: Buck.tagNo,
+              value: buck.tagNo,
               child: SizedBox(
                 width: double.infinity,
                 child: Text(
-                  Buck.tagNo,
+                  buck.tagNo,
                   overflow: TextOverflow.ellipsis,
                   maxLines: 1,
                 ),
@@ -462,7 +472,7 @@ abstract class BaseEventFieldsState<T extends BaseEventFields> extends State<T> 
             );
           }).toList();
           
-          // If current value is not in Bucks list, add it as a temporary option
+          // If current value is not in bucks list, add it as a temporary option
           if (isAutoFilled) {
             debugPrint('DEBUG: buildBuckDropdown - adding temporary item for "$current"');
             items.insert(0, DropdownMenuItem<String>(
@@ -470,7 +480,7 @@ abstract class BaseEventFieldsState<T extends BaseEventFields> extends State<T> 
               child: SizedBox(
                 width: double.infinity,
                 child: Text(
-                  current, // Show only the Buck tag, no "(Auto-filled)" text
+                  current, // Show only the buck tag, no "(Auto-filled)" text
                   overflow: TextOverflow.ellipsis,
                   maxLines: 1,
                   // Use normal text color, no special styling
@@ -486,7 +496,7 @@ abstract class BaseEventFieldsState<T extends BaseEventFields> extends State<T> 
         },
         validator: (value) {
           if (value == null || value.isEmpty) {
-            return 'Please select a Buck';
+            return 'Please select a buck';
           }
           return null;
         },
@@ -494,7 +504,7 @@ abstract class BaseEventFieldsState<T extends BaseEventFields> extends State<T> 
     );
   }
 
-  // Custom Buck dropdown for natural breeding (simpler label)
+  // Custom buck dropdown for natural breeding (simpler label)
   Widget buildBuckDropdownForNaturalBreeding() {
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
@@ -504,7 +514,7 @@ abstract class BaseEventFieldsState<T extends BaseEventFields> extends State<T> 
           final currentRaw = widget.controllers['Buck_tag']?.text ?? '';
           final current = currentRaw.trim();
           if (current.isEmpty) return null;
-          List<String> options = Bucks.map((b) => b.tagNo.trim()).toList();
+          List<String> options = bucks.map((b) => b.tagNo.trim()).toList();
           if (!options.map((o) => o.toLowerCase()).contains(current.toLowerCase())) {
             options = [current, ...options];
           }
@@ -512,11 +522,11 @@ abstract class BaseEventFieldsState<T extends BaseEventFields> extends State<T> 
           final match = lowerToOriginal[current.toLowerCase()];
           // Debug
           // ignore: avoid_print
-          debugPrint('Buck dropdown - current: "$current", options: ${options.join(', ')}');
+          debugPrint('buck dropdown - current: "$current", options: ${options.join(', ')}');
           return match ?? current;
         }(),
         decoration: InputDecoration(
-          labelText: 'Buck', // Simplified label for natural breeding
+          labelText: 'buck', // Simplified label for natural breeding
           prefixIcon: const Icon(FontAwesomeIcons.mars, color: AppColors.primary),
           border: OutlineInputBorder(
             borderRadius: BorderRadius.circular(15),
@@ -540,14 +550,14 @@ abstract class BaseEventFieldsState<T extends BaseEventFields> extends State<T> 
               : null,
         ),
         hint: Text(
-          loadingBucks ? 'Loading Bucks...' : 'Select Buck',
+          loadingBucks ? 'Loading bucks...' : 'Select buck',
           overflow: TextOverflow.ellipsis,
           maxLines: 1,
         ),
         isExpanded: true,
         items: () {
           final current = (widget.controllers['Buck_tag']?.text ?? '').trim();
-          List<String> options = Bucks.map((b) => b.tagNo.trim()).toList();
+          List<String> options = bucks.map((b) => b.tagNo.trim()).toList();
           if (current.isNotEmpty && !options.map((o) => o.toLowerCase()).contains(current.toLowerCase())) {
             options = [current, ...options];
           }
@@ -569,7 +579,7 @@ abstract class BaseEventFieldsState<T extends BaseEventFields> extends State<T> 
         },
         validator: (value) {
           if (value == null || value.isEmpty) {
-            return 'Please select a Buck';
+            return 'Please select a buck';
           }
           return null;
         },
@@ -597,12 +607,12 @@ abstract class BaseEventFieldsState<T extends BaseEventFields> extends State<T> 
       });
       if (!valueExists && !_useTechnicianTextInput) {
         // If value doesn't exist in dropdown and we haven't manually set text input mode,
-        // automatically switch to text input mode
+        // automatically switch to text input mode to preserve user input
+        // Set flag immediately to prevent any clearing logic
+        _useTechnicianTextInput = true;
         WidgetsBinding.instance.addPostFrameCallback((_) {
           if (mounted) {
-            setState(() {
-              _useTechnicianTextInput = true;
-            });
+            setState(() {});
           }
         });
       }
@@ -768,12 +778,14 @@ abstract class BaseEventFieldsState<T extends BaseEventFields> extends State<T> 
       debugPrint('Using existing value: "$dropdownValue"');
     } else {
       dropdownValue = null;
-      if (currentValue != null && !valueExists) {
-        debugPrint('Current value "$currentValue" not found in technicians, clearing...');
-        // Clear the controller if the value doesn't exist
+      if (currentValue != null && !valueExists && !_useTechnicianTextInput) {
+        debugPrint('Current value "$currentValue" not found in technicians, switching to text input mode...');
+        // Instead of clearing, switch to text input mode to preserve user's custom input
         WidgetsBinding.instance.addPostFrameCallback((_) {
           if (mounted) {
-            widget.controllers['technician']?.clear();
+            setState(() {
+              _useTechnicianTextInput = true;
+            });
           }
         });
       }
@@ -803,10 +815,19 @@ abstract class BaseEventFieldsState<T extends BaseEventFields> extends State<T> 
               ),
               TextButton.icon(
                 onPressed: () {
+                  // Only clear if switching to dropdown and value doesn't exist in dropdown
+                  final currentValue = widget.controllers['technician']?.text ?? '';
+                  final valueExists = technicians.any((technician) {
+                    final displayName = '${technician.firstName} ${technician.lastName}'.trim();
+                    return displayName.toLowerCase() == currentValue.toLowerCase();
+                  });
+                  
                   setState(() {
                     _useTechnicianTextInput = false;
-                    // Clear controller when switching to dropdown
-                    widget.controllers['technician']?.clear();
+                    // Only clear controller if value doesn't exist in dropdown list
+                    if (!valueExists && currentValue.isNotEmpty) {
+                      widget.controllers['technician']?.clear();
+                    }
                   });
                 },
                 icon: const Icon(Icons.swap_horiz, size: 16),
@@ -832,6 +853,15 @@ abstract class BaseEventFieldsState<T extends BaseEventFields> extends State<T> 
                 return 'Please enter technician/veterinarian name';
               }
               return null;
+            },
+            onChanged: (value) {
+              // Immediately set flag to prevent dropdown logic from clearing the value
+              // This must happen synchronously before any rebuild
+              if (!_useTechnicianTextInput && value.isNotEmpty) {
+                _useTechnicianTextInput = true;
+                // Use setState to update UI, but flag is already set
+                setState(() {});
+              }
             },
           ),
         ],
@@ -955,14 +985,14 @@ abstract class BaseEventFieldsState<T extends BaseEventFields> extends State<T> 
   Widget buildSemenDropdown() {
     List<String> allSemenOptions = [];
 
-    for (var Buck in Bucks) {
+    for (var buck in bucks) {
       // Use pure tag only
-      allSemenOptions.add(Buck.tagNo.trim());
+      allSemenOptions.add(buck.tagNo.trim());
     }
 
     final currentValueRaw = widget.controllers['semen_used']?.text ?? '';
     final currentValue = currentValueRaw.trim();
-    // If the current stored value isn't present in options (e.g., Bucks filtered or not healthy), include it so it can preselect
+    // If the current stored value isn't present in options (e.g., bucks filtered or not healthy), include it so it can preselect
     if (currentValue.isNotEmpty && !allSemenOptions.contains(currentValue)) {
       allSemenOptions = [currentValue, ...allSemenOptions];
     }

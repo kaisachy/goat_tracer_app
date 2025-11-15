@@ -7,17 +7,17 @@ import 'package:goat_tracer_app/screens/nav/goat/modals/goat_options_modal.dart'
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 
 class DetailgoatAppBar extends StatelessWidget {
-  final goat goat;
+  final Goat goat;
   final VoidCallback onAddEvent;
-  final Function(goat) onEditgoat;
-  final VoidCallback? ongoatUpdated;
+  final Function(Goat) onEditGoat;
+  final VoidCallback? onGoatUpdated;
 
   const DetailgoatAppBar({
     super.key,
     required this.goat,
     required this.onAddEvent,
-    required this.onEditgoat,
-    this.ongoatUpdated,
+    required this.onEditGoat,
+    this.onGoatUpdated,
   });
 
   @override
@@ -149,12 +149,12 @@ class DetailgoatAppBar extends StatelessWidget {
                     size: 20,
                   ),
                   onPressed: () {
-                    goatOptionsModal.show(
+                    GoatOptionsModal.show(
                       context: context,
                       goat: goat,
                       onAddEvent: onAddEvent,
-                      onEditgoat: onEditgoat,
-                      ongoatUpdated: ongoatUpdated, // Pass the callback
+                      onEditGoat: onEditGoat,
+                      onGoatUpdated: onGoatUpdated, // Pass the callback
                     );
                   },
                   tooltip: 'More Options',

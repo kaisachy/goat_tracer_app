@@ -9,7 +9,7 @@ import '../../../../../services/goat/goat_history_service.dart';
 
 
 class HistoryTypeDropdown extends StatefulWidget {
-  final goat? goatDetails;
+  final Goat? goatDetails;
   final String selectedHistoryType;
   final Map<String, TextEditingController> controllers;
   final ValueChanged<String?> onHistoryTypeChanged;

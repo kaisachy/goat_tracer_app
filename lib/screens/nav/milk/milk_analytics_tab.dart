@@ -8,12 +8,12 @@ import '../../../constants/app_colors.dart';
 
 class MilkAnalyticsTab extends StatefulWidget {
   final List<MilkProduction> milkRecords;
-  final List<goat> allgoat;
+  final List<Goat> allGoats;
 
   const MilkAnalyticsTab({
     super.key,
     required this.milkRecords,
-    required this.allgoat,
+    required this.allGoats,
   });
 
   @override

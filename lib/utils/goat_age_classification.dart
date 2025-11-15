@@ -1,28 +1,29 @@
 ﻿import 'package:goat_tracer_app/models/goat.dart';
+import 'package:flutter/foundation.dart';
 
 class GoatAgeClassification {
   // Age ranges in months
-  static const int Kid_MAX_AGE = 8;
-  static const int GROWER_MIN_AGE = 8;
-  static const int GROWER_MAX_AGE = 18;
-  static const int Doeling_Buckling_MIN_AGE = 18;
-  static const int Doeling_Buckling_MAX_AGE = 24; // Upper bound is exclusive in logic below
-  static const int Doe_Buck_MIN_AGE = 24; // Inclusive: >= 24 months is Doe/Buck
+  static const int kidMaxAge = 8;
+  static const int growerMinAge = 8;
+  static const int growerMaxAge = 18;
+  static const int doelingBucklingMinAge = 18;
+  static const int doelingBucklingMaxAge = 24; // Upper bound is exclusive in logic below
+  static const int doeBuckMinAge = 24; // Inclusive: >= 24 months is Doe/Buck
 
   /// Get the expected classification based on age and sex
   static String getExpectedClassification(int ageInMonths, String sex) {
-    if (ageInMonths <= Kid_MAX_AGE) {
+    if (ageInMonths <= kidMaxAge) {
       return 'Kid';
-    } else if (ageInMonths > GROWER_MIN_AGE && ageInMonths <= GROWER_MAX_AGE) {
+    } else if (ageInMonths > growerMinAge && ageInMonths <= growerMaxAge) {
       return 'Growers';
-    } else if (ageInMonths > Doeling_Buckling_MIN_AGE && ageInMonths < Doeling_Buckling_MAX_AGE) {
+    } else if (ageInMonths > doelingBucklingMinAge && ageInMonths < doelingBucklingMaxAge) {
       if (sex == 'Female') {
         return 'Doeling';
       } else if (sex == 'Male') {
         return 'Buckling';
       }
       return 'Doeling'; // Default fallback
-    } else if (ageInMonths >= Doe_Buck_MIN_AGE) {
+    } else if (ageInMonths >= doeBuckMinAge) {
       if (sex == 'Female') {
         return 'Doe';
       } else if (sex == 'Male') {
@@ -89,8 +90,8 @@ class GoatAgeClassification {
 
   /// Auto-update Goat classification if it doesn't match the age
   /// Returns the Goat with updated classification, or null if no update needed
-  static Goat? autoUpdateClassificationIfNeeded(Goat Goat) {
-    final displayAge = Goat.displayAge;
+  static Goat? autoUpdateClassificationIfNeeded(Goat goat) {
+    final displayAge = goat.displayAge;
     if (displayAge == null || displayAge.isEmpty) {
       return null; // Can't auto-update without age information
     }
@@ -101,32 +102,32 @@ class GoatAgeClassification {
         return null; // Can't parse age
       }
 
-      final expectedClassification = getExpectedClassification(ageInMonths, Goat.sex);
+      final expectedClassification = getExpectedClassification(ageInMonths, goat.sex);
 
       // Check if current classification is accurate
-      if (Goat.classification == expectedClassification) {
+      if (goat.classification == expectedClassification) {
         return null; // No update needed
       }
 
       // Classification needs to be updated
-      print('🔄 Auto-updating Goat ${Goat.tagNo} classification: "${Goat.classification}" -> "$expectedClassification" (Age: ${ageInMonths} months)');
+      debugPrint('🔄 Auto-updating Goat ${goat.tagNo} classification: "${goat.classification}" -> "$expectedClassification" (Age: $ageInMonths months)');
       
-      return Goat.copyWith(classification: expectedClassification);
+      return goat.copyWith(classification: expectedClassification);
     } catch (e) {
-      print('Error in autoUpdateClassificationIfNeeded: $e');
+      debugPrint('Error in autoUpdateClassificationIfNeeded: $e');
       return null;
     }
   }
 
   /// Get all Goat with auto-updated classifications
   /// Returns a map of Goat that need updates: {GoatId: updatedGoat}
-  static Map<int, Goat> autoUpdateClassificationsForList(List<Goat> GoatList) {
+  static Map<int, Goat> autoUpdateClassificationsForList(List<Goat> goatList) {
     final Map<int, Goat> updatedGoat = {};
     
-    for (var Goat in GoatList) {
-      final updated = autoUpdateClassificationIfNeeded(Goat);
+    for (var goat in goatList) {
+      final updated = autoUpdateClassificationIfNeeded(goat);
       if (updated != null) {
-        updatedGoat[Goat.id] = updated;
+        updatedGoat[goat.id] = updated;
       }
     }
     

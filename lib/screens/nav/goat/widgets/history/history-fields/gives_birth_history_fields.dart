@@ -40,13 +40,13 @@ class GivesBirthEventFieldsState extends BaseEventFieldsState<GivesBirthEventFie
     if (_newKidData != null) {
       _calves.add(_newKidData!);
     }
-    // Load existing Kid data if we're in edit mode and have Kid data
+    // Load existing kid data if we're in edit mode and have kid data
     _loadExistingKidData();
     
     // Also check if there are multiple calves in the Kid_tag controller
-    final KidTagText = widget.controllers['Kid_tag']?.text ?? '';
-    if (KidTagText.isNotEmpty && KidTagText.contains(',')) {
-      _loadMultipleExistingCalves(KidTagText);
+    final kidTagText = widget.controllers['Kid_tag']?.text ?? '';
+    if (kidTagText.isNotEmpty && kidTagText.contains(',')) {
+      _loadMultipleExistingCalves(kidTagText);
     }
   }
 
@@ -55,10 +55,10 @@ class GivesBirthEventFieldsState extends BaseEventFieldsState<GivesBirthEventFie
     debugPrint('DEBUG: GivesBirthEventFields onBucksLoaded called');
     // If semen_used has a value but Buck_tag is empty, try to derive Buck tag from semen label
     final semenText = widget.controllers['semen_used']?.text ?? '';
-    final BuckText = widget.controllers['Buck_tag']?.text ?? '';
-    debugPrint('DEBUG: Current semen: $semenText, Buck: $BuckText');
+    final buckText = widget.controllers['Buck_tag']?.text ?? '';
+    debugPrint('DEBUG: Current semen: $semenText, Buck: $buckText');
     
-    if (semenText.isNotEmpty && BuckText.isEmpty) {
+    if (semenText.isNotEmpty && buckText.isEmpty) {
       debugPrint('DEBUG: Extracting Buck tag from semen in onBucksLoaded for Gives Birth');
       // Expected semen format examples:
       // - "TAG123 (Name) Semen"
@@ -73,11 +73,11 @@ class GivesBirthEventFieldsState extends BaseEventFieldsState<GivesBirthEventFie
       if (stop == -1 || (paren != -1 && paren < stop)) {
         stop = paren;
       }
-      final BuckTag = stop == -1 ? extracted : extracted.substring(0, stop).trim();
-      debugPrint('DEBUG: Extracted Buck tag for Gives Birth: $BuckTag');
-      if (BuckTag.isNotEmpty) {
-        widget.controllers['Buck_tag']?.text = BuckTag;
-        debugPrint('DEBUG: Set Buck_tag controller for Gives Birth to: $BuckTag');
+      final buckTag = stop == -1 ? extracted : extracted.substring(0, stop).trim();
+      debugPrint('DEBUG: Extracted Buck tag for Gives Birth: $buckTag');
+      if (buckTag.isNotEmpty) {
+        widget.controllers['Buck_tag']?.text = buckTag;
+        debugPrint('DEBUG: Set Buck_tag controller for Gives Birth to: $buckTag');
         if (mounted) setState(() {});
       }
     }
@@ -89,7 +89,7 @@ class GivesBirthEventFieldsState extends BaseEventFieldsState<GivesBirthEventFie
     if (widget.temporaryKidData != oldWidget.temporaryKidData) {
       setState(() {
         _newKidData = widget.temporaryKidData;
-        // If we have new Kid data, update the calves list
+        // If we have new kid data, update the calves list
         if (_newKidData != null) {
           _calves.clear();
           _calves.add(_newKidData!);
@@ -99,7 +99,7 @@ class GivesBirthEventFieldsState extends BaseEventFieldsState<GivesBirthEventFie
   }
 
   void _loadExistingKidData() {
-    // If we're in edit mode and have temporary Kid data, it means there's an existing Kid
+    // If we're in edit mode and have temporary kid data, it means there's an existing kid
     if (widget.temporaryKidData != null && widget.temporaryKidData!['isEditMode'] == true) {
       setState(() {
         _calves.clear();
@@ -109,46 +109,46 @@ class GivesBirthEventFieldsState extends BaseEventFieldsState<GivesBirthEventFie
   }
 
   // Method to load multiple existing calves from a comma-separated tag string
-  Future<void> _loadMultipleExistingCalves(String KidTagString) async {
-    if (KidTagString.contains(',')) {
+  Future<void> _loadMultipleExistingCalves(String kidTagString) async {
+    if (kidTagString.contains(',')) {
       // Multiple calves - split by comma and load each one
-      final KidTags = KidTagString.split(',').map((tag) => tag.trim()).where((tag) => tag.isNotEmpty).toList();
-      debugPrint('Loading multiple calves: $KidTags');
+      final kidTags = kidTagString.split(',').map((tag) => tag.trim()).where((tag) => tag.isNotEmpty).toList();
+      debugPrint('Loading multiple calves: $kidTags');
       
       final List<Map<String, dynamic>> loadedCalves = [];
       
-      for (final KidTag in KidTags) {
+      for (final kidTag in kidTags) {
         try {
-          final Kid = await GoatService.getGoatByTag(KidTag);
-          if (Kid != null) {
-            final KidData = {
-              'tag_no': Kid.tagNo,
-              'sex': Kid.sex,
+          final kid = await GoatService.getGoatByTag(kidTag);
+          if (kid != null) {
+            final kidData = {
+              'tag_no': kid.tagNo,
+              'sex': kid.sex,
               'registered': true,
               'isEditMode': true,
-              'KidId': Kid.id,
+              'kidId': kid.id,
               'pendingOperation': 'update',
               'fullKidData': {
-                'id': Kid.id,
-                'tag_no': Kid.tagNo,
-                'sex': Kid.sex,
-                'date_of_birth': Kid.dateOfBirth,
-                'classification': Kid.classification,
-                'status': Kid.status,
-                'breed': Kid.breed,
-                'source': Kid.source,
-                'mother_tag': Kid.motherTag,
-                'father_tag': Kid.fatherTag,
-                'weight': Kid.weight,
-                'group_name': Kid.groupName,
-                'notes': Kid.notes,
+                'id': kid.id,
+                'tag_no': kid.tagNo,
+                'sex': kid.sex,
+                'date_of_birth': kid.dateOfBirth,
+                'classification': kid.classification,
+                'status': kid.status,
+                'breed': kid.breed,
+                'source': kid.source,
+                'mother_tag': kid.motherTag,
+                'father_tag': kid.fatherTag,
+                'weight': kid.weight,
+                'group_name': kid.groupName,
+                'notes': kid.notes,
               },
             };
-            loadedCalves.add(KidData);
-            debugPrint('Loaded Kid: ${Kid.tagNo} with ID: ${Kid.id}');
+            loadedCalves.add(kidData);
+            debugPrint('Loaded kid: ${kid.tagNo} with ID: ${kid.id}');
           }
         } catch (e) {
-          debugPrint('Error loading Kid $KidTag: $e');
+          debugPrint('Error loading kid $kidTag: $e');
         }
       }
       
@@ -194,7 +194,7 @@ class GivesBirthEventFieldsState extends BaseEventFieldsState<GivesBirthEventFie
   }
 
   Future<void> _openEditKidDialog(int index) async {
-    final KidData = _calves[index];
+    final kidData = _calves[index];
     final reserved = _calves
         .asMap()
         .entries
@@ -208,7 +208,7 @@ class GivesBirthEventFieldsState extends BaseEventFieldsState<GivesBirthEventFie
       builder: (context) => KidRegistrationDialog(
         motherTag: widget.goatTag ?? '',
         fatherTag: widget.controllers['Buck_tag']?.text ?? '',
-        existingKidData: KidData['fullKidData'] ?? KidData,
+        existingKidData: kidData['fullKidData'] ?? kidData,
         reservedTags: reserved,
         isEditMode: true,
       ),
@@ -249,14 +249,14 @@ class GivesBirthEventFieldsState extends BaseEventFieldsState<GivesBirthEventFie
       'pendingOperation': pending,
       'isEditMode': isEdit,
       'fullKidData': full,
-      'KidId': full['id'],
+      'kidId': full['id'],
     };
   }
 
   void _removeKidAt(int index) {
     if (index >= 0 && index < _calves.length) {
-      final Kid = _calves[index];
-      final isEditMode = Kid['isEditMode'] == true;
+      final kid = _calves[index];
+      final isEditMode = kid['isEditMode'] == true;
       
       if (isEditMode) {
         // For existing calves, show confirmation dialog
@@ -268,14 +268,14 @@ class GivesBirthEventFieldsState extends BaseEventFieldsState<GivesBirthEventFie
                 children: [
                   Icon(Icons.warning_rounded, color: Colors.red.shade400),
                   const SizedBox(width: 8),
-                  const Text('Delete Kid'),
+                  const Text('Delete kid'),
                 ],
               ),
               content: Column(
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('Are you sure you want to delete this Kid?'),
+                  Text('Are you sure you want to delete this kid?'),
                   const SizedBox(height: 12),
                   Container(
                     padding: const EdgeInsets.all(12),
@@ -288,18 +288,18 @@ class GivesBirthEventFieldsState extends BaseEventFieldsState<GivesBirthEventFie
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'Tag: ${Kid['tag_no'] ?? 'Not set'}',
+                          'Tag: ${kid['tag_no'] ?? 'Not set'}',
                           style: const TextStyle(fontWeight: FontWeight.bold),
                         ),
-                        if (Kid['name'] != null && Kid['name'].toString().isNotEmpty)
-                          Text('Name: ${Kid['name']}'),
-                        Text('Sex: ${Kid['sex'] ?? 'Not set'}'),
+                        if (kid['name'] != null && kid['name'].toString().isNotEmpty)
+                          Text('Name: ${kid['name']}'),
+                        Text('Sex: ${kid['sex'] ?? 'Not set'}'),
                       ],
                     ),
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    'This action will permanently delete the Kid from the database.',
+                    'This action will permanently delete the kid from the database.',
                     style: TextStyle(
                       color: Colors.red.shade600,
                       fontWeight: FontWeight.w500,
@@ -342,10 +342,10 @@ class GivesBirthEventFieldsState extends BaseEventFieldsState<GivesBirthEventFie
 
   void _performKidDeletion(int index) async {
     if (index >= 0 && index < _calves.length) {
-      final Kid = _calves[index];
-      final KidId = Kid['KidId'];
+      final kid = _calves[index];
+      final kidId = kid['kidId'];
       
-      if (KidId != null) {
+      if (kidId != null) {
         try {
           // Show loading indicator
           ScaffoldMessenger.of(context).showSnackBar(
@@ -361,7 +361,7 @@ class GivesBirthEventFieldsState extends BaseEventFieldsState<GivesBirthEventFie
                     ),
                   ),
                   const SizedBox(width: 12),
-                  Text('Deleting Kid ${Kid['tag_no']}...'),
+                  Text('Deleting kid ${kid['tag_no']}...'),
                 ],
               ),
               backgroundColor: Colors.orange.shade600,
@@ -369,8 +369,8 @@ class GivesBirthEventFieldsState extends BaseEventFieldsState<GivesBirthEventFie
             ),
           );
 
-          // Delete the Kid from database
-          final success = await GoatService.deletegoatInformation(KidId);
+          // Delete the kid from database
+          final success = await GoatService.deletegoatInformation(kidId);
           
           // Clear loading snackbar
           if (mounted) {
@@ -391,7 +391,7 @@ class GivesBirthEventFieldsState extends BaseEventFieldsState<GivesBirthEventFie
               // Show success message
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
-                  content: Text('Kid ${Kid['tag_no']} deleted successfully'),
+                  content: Text('kid ${kid['tag_no']} deleted successfully'),
                   backgroundColor: Colors.green,
                   behavior: SnackBarBehavior.floating,
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -403,7 +403,7 @@ class GivesBirthEventFieldsState extends BaseEventFieldsState<GivesBirthEventFie
             if (mounted) {
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
-                  content: Text('Failed to delete Kid ${Kid['tag_no']}'),
+                  content: Text('Failed to delete kid ${kid['tag_no']}'),
                   backgroundColor: Colors.red,
                   behavior: SnackBarBehavior.floating,
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -419,7 +419,7 @@ class GivesBirthEventFieldsState extends BaseEventFieldsState<GivesBirthEventFie
             // Show error message
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
-                content: Text('Error deleting Kid: $e'),
+                content: Text('Error deleting kid: $e'),
                 backgroundColor: Colors.red,
                 behavior: SnackBarBehavior.floating,
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -428,7 +428,7 @@ class GivesBirthEventFieldsState extends BaseEventFieldsState<GivesBirthEventFie
           }
         }
       } else {
-        // No Kid ID, just remove from list
+        // No kid ID, just remove from list
         setState(() {
           _calves.removeAt(index);
           if (_calves.isEmpty) {
@@ -462,7 +462,7 @@ class GivesBirthEventFieldsState extends BaseEventFieldsState<GivesBirthEventFie
               const SizedBox(width: 8),
               const Flexible(
                 child: Text(
-                  'Kid Information',
+                  'kid Information',
                   style: TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.w600,
@@ -476,7 +476,7 @@ class GivesBirthEventFieldsState extends BaseEventFieldsState<GivesBirthEventFie
                 child: ElevatedButton.icon(
                   onPressed: _openAddKidDialog,
                   icon: const Icon(Icons.add, size: 16),
-                  label: const Text('Add Kid', style: TextStyle(fontSize: 12)),
+                  label: const Text('Add kid', style: TextStyle(fontSize: 12)),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppColors.primary,
                     foregroundColor: Colors.white,
@@ -494,9 +494,9 @@ class GivesBirthEventFieldsState extends BaseEventFieldsState<GivesBirthEventFie
             const SizedBox(height: 12),
             ..._calves.asMap().entries.map((entry) {
               final index = entry.key;
-              final Kid = entry.value;
-              final isEditMode = Kid['isEditMode'] == true;
-              final isRegistered = Kid['registered'] == true;
+              final kid = entry.value;
+              final isEditMode = kid['isEditMode'] == true;
+              final isRegistered = kid['registered'] == true;
               
               return Container(
                 margin: const EdgeInsets.only(bottom: 8),
@@ -523,7 +523,7 @@ class GivesBirthEventFieldsState extends BaseEventFieldsState<GivesBirthEventFie
                         const SizedBox(width: 8),
                         Expanded(
                           child: Text(
-                            'Tag: ${Kid['tag_no'] ?? 'Not set'}',
+                            'Tag: ${kid['tag_no'] ?? 'Not set'}',
                             style: TextStyle(
                               fontWeight: FontWeight.w600,
                               color: AppColors.textPrimary,
@@ -532,7 +532,7 @@ class GivesBirthEventFieldsState extends BaseEventFieldsState<GivesBirthEventFie
                           ),
                         ),
                         IconButton(
-                          tooltip: isEditMode ? 'Delete Kid' : 'Remove',
+                          tooltip: isEditMode ? 'Delete kid' : 'Remove',
                           icon: Icon(
                             Icons.delete_forever, 
                             color: Colors.red.shade600, 
@@ -552,14 +552,14 @@ class GivesBirthEventFieldsState extends BaseEventFieldsState<GivesBirthEventFie
                       ],
                     ),
                     const SizedBox(height: 4),
-                    if (Kid['name'] != null && Kid['name'].toString().isNotEmpty) ...[
+                    if (kid['name'] != null && kid['name'].toString().isNotEmpty) ...[
                       Row(
                         children: [
                           const Icon(FontAwesomeIcons.signature, color: AppColors.primary, size: 16),
                           const SizedBox(width: 8),
                           Expanded(
                             child: Text(
-                              'Name: ${Kid['name']}',
+                              'Name: ${kid['name']}',
                               style: const TextStyle(color: AppColors.textSecondary),
                               overflow: TextOverflow.ellipsis,
                             ),
@@ -571,14 +571,14 @@ class GivesBirthEventFieldsState extends BaseEventFieldsState<GivesBirthEventFie
                     Row(
                       children: [
                         Icon(
-                          Kid['sex'] == 'Male' ? Icons.male : Icons.female,
+                          kid['sex'] == 'Male' ? Icons.male : Icons.female,
                           color: AppColors.primary,
                           size: 16,
                         ),
                         const SizedBox(width: 8),
                         Expanded(
                           child: Text(
-                            'Sex: ${Kid['sex'] ?? 'Not set'}',
+                            'Sex: ${kid['sex'] ?? 'Not set'}',
                             style: const TextStyle(color: AppColors.textSecondary),
                             overflow: TextOverflow.ellipsis,
                           ),

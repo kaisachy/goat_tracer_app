@@ -9,12 +9,12 @@ import 'package:goat_tracer_app/screens/nav/goat/goat_history_form_screen.dart';
 import 'package:goat_tracer_app/screens/nav/goat/goat_form_screen.dart';
 import 'package:goat_tracer_app/services/goat/goat_service.dart';
 
-class goatDetailScreen extends StatefulWidget {
-  final goat? goat;
+class GoatDetailScreen extends StatefulWidget {
+  final Goat? goat;
   final int? goatId;
   final bool isArchived;
 
-  const goatDetailScreen({
+  const GoatDetailScreen({
     super.key, 
     this.goat,
     this.goatId,
@@ -22,13 +22,13 @@ class goatDetailScreen extends StatefulWidget {
   }) : assert(goat != null || goatId != null, 'Either goat or goatId must be provided');
 
   @override
-  State<goatDetailScreen> createState() => _goatDetailScreenState();
+  State<GoatDetailScreen> createState() => _GoatDetailScreenState();
 }
 
-class _goatDetailScreenState extends State<goatDetailScreen>
+class _GoatDetailScreenState extends State<GoatDetailScreen>
     with TickerProviderStateMixin {
   late TabController _tabController;
-  goat? _currentgoat;
+  Goat? _currentGoat;
   bool _isUpdatingImage = false;
   bool _isLoading = false;
   bool _isRefreshing = false;
@@ -64,7 +64,7 @@ class _goatDetailScreenState extends State<goatDetailScreen>
       _isLoading = true;
       _loadgoatData();
     } else {
-      _currentgoat = widget.goat!;
+      _currentGoat = widget.goat!;
     }
 
     // Initialize animations
@@ -117,13 +117,13 @@ class _goatDetailScreenState extends State<goatDetailScreen>
   }
 
   void _navigateToAddEventForm() async {
-    if (_currentgoat == null) return;
+    if (_currentGoat == null) return;
     
     final result = await Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (_) => goatHistoryFormScreen(
-          goatTag: _currentgoat!.tagNo,
+          builder: (_) => GoatHistoryFormScreen(
+          goatTag: _currentGoat!.tagNo,
         ),
       ),
     );
@@ -145,13 +145,13 @@ class _goatDetailScreenState extends State<goatDetailScreen>
     }
   }
 
-  void _navigateToEditgoat(goat goat) async {
-    if (_currentgoat == null) return;
+  void _navigateToEditGoat(Goat goat) async {
+    if (_currentGoat == null) return;
     
     final result = await Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (_) => goatFormScreen(
+        builder: (_) => GoatFormScreen(
           goat: goat,
         ),
       ),
@@ -171,31 +171,31 @@ class _goatDetailScreenState extends State<goatDetailScreen>
 
   /// Enhanced refresh method with better error handling and user feedback
   Future<void> _refreshgoatData() async {
-    if (_isLoading || _isRefreshing || _currentgoat == null) return;
+    if (_isLoading || _isRefreshing || _currentGoat == null) return;
 
     setState(() {
       _isRefreshing = true;
     });
 
     try {
-      debugPrint('🔄 Refreshing goat data for ID: ${_currentgoat!.id}');
+      debugPrint('🔄 Refreshing goat data for ID: ${_currentGoat!.id}');
 
       // Add a small delay to show loading state
       await Future.delayed(const Duration(milliseconds: 300));
 
-      final updatedgoat = await GoatService.getgoatById(_currentgoat!.id);
+      final updatedGoat = await GoatService.getGoatById(_currentGoat!.id);
 
-      if (updatedgoat != null && mounted) {
+      if (updatedGoat != null && mounted) {
         debugPrint('✅ Updated goat received successfully');
-        debugPrint('   - Stage: ${updatedgoat.classification}');
-        debugPrint('   - Status: ${updatedgoat.status}');
-        debugPrint('   - Image: ${updatedgoat.goatPicture != null ? "Present" : "None"}');
+        debugPrint('   - Stage: ${updatedGoat.classification}');
+        debugPrint('   - Status: ${updatedGoat.status}');
+        debugPrint('   - Image: ${updatedGoat.goatPicture != null ? "Present" : "None"}');
 
         // Check if there are actual changes to avoid unnecessary rebuilds
-        final hasChanges = _hasDataChanged(_currentgoat!, updatedgoat);
+        final hasChanges = _hasDataChanged(_currentGoat!, updatedGoat);
 
         setState(() {
-          _currentgoat = updatedgoat;
+          _currentGoat = updatedGoat;
         });
 
         if (hasChanges) {
@@ -234,10 +234,10 @@ class _goatDetailScreenState extends State<goatDetailScreen>
   /// Load goat data when goatId is provided
   Future<void> _loadgoatData() async {
     try {
-      final goat = await GoatService.getgoatById(widget.goatId!);
+      final goat = await GoatService.getGoatById(widget.goatId!);
       if (goat != null && mounted) {
         setState(() {
-          _currentgoat = goat;
+          _currentGoat = goat;
           _isLoading = false;
         });
       } else {
@@ -270,13 +270,13 @@ class _goatDetailScreenState extends State<goatDetailScreen>
   }
 
   /// Check if there are meaningful changes between old and new goat data
-  bool _hasDataChanged(goat oldgoat, goat newgoat) {
-    return oldgoat.classification != newgoat.classification ||
-        oldgoat.status != newgoat.status ||
-        oldgoat.goatPicture != newgoat.goatPicture ||
-        oldgoat.weight != newgoat.weight ||
-        oldgoat.breed != newgoat.breed ||
-        oldgoat.dateOfBirth != newgoat.dateOfBirth;
+  bool _hasDataChanged(Goat oldGoat, Goat newGoat) {
+    return oldGoat.classification != newGoat.classification ||
+        oldGoat.status != newGoat.status ||
+        oldGoat.goatPicture != newGoat.goatPicture ||
+        oldGoat.weight != newGoat.weight ||
+        oldGoat.breed != newGoat.breed ||
+        oldGoat.dateOfBirth != newGoat.dateOfBirth;
   }
 
   /// Animate refresh to provide visual feedback
@@ -286,8 +286,8 @@ class _goatDetailScreenState extends State<goatDetailScreen>
   }
 
   /// Handle goat updates from the options modal
-  void _ongoatUpdated() async {
-    if (_currentgoat == null) return;
+  void _onGoatUpdated() async {
+    if (_currentGoat == null) return;
     
     debugPrint('🔄 goat update triggered from options modal');
     await _refreshgoatData();
@@ -303,14 +303,14 @@ class _goatDetailScreenState extends State<goatDetailScreen>
 
   /// Pull-to-refresh handler
   Future<void> _onPullToRefresh() async {
-    if (_currentgoat == null) return;
+    if (_currentGoat == null) return;
     
     debugPrint('📱 Pull-to-refresh triggered');
     await _refreshgoatData();
   }
 
   Future<void> _updategoatImage(String? base64Image) async {
-    if (_isUpdatingImage || _currentgoat == null) {
+    if (_isUpdatingImage || _currentGoat == null) {
       debugPrint('Image update already in progress or goat not loaded');
       return;
     }
@@ -334,7 +334,7 @@ class _goatDetailScreenState extends State<goatDetailScreen>
 
       debugPrint('Updating goat picture in database...');
       final success = await GoatService.updategoatPicture(
-        _currentgoat!.id,
+        _currentGoat!.id,
         base64Image,
       );
 
@@ -343,7 +343,7 @@ class _goatDetailScreenState extends State<goatDetailScreen>
 
         // Update the local goat object immediately
         setState(() {
-          _currentgoat = _currentgoat!.copyWith(goatPicture: base64Image);
+          _currentGoat = _currentGoat!.copyWith(goatPicture: base64Image);
         });
 
         // Refresh goat data to ensure sync with database
@@ -462,7 +462,7 @@ class _goatDetailScreenState extends State<goatDetailScreen>
   @override
   Widget build(BuildContext context) {
     // Show loading indicator while goat data is being loaded
-    if (_isLoading || _currentgoat == null) {
+    if (_isLoading || _currentGoat == null) {
       return Scaffold(
         appBar: AppBar(
           title: const Text('goat Details'),
@@ -512,12 +512,12 @@ class _goatDetailScreenState extends State<goatDetailScreen>
             slivers: [
               // Hero Section as a Sliver
               SliverToBoxAdapter(
-                child: goatHeroSection(
-                  goat: _currentgoat!,
+                child: GoatHeroSection(
+                  goat: _currentGoat!,
                   onImageUpdate: _updategoatImage,
-                  onEditgoat: _navigateToEditgoat,
+                  onEditGoat: _navigateToEditGoat,
                   onAddEvent: _navigateToAddEventForm,
-                  ongoatUpdated: _ongoatUpdated,
+                  onGoatUpdated: _onGoatUpdated,
                   isUpdatingImage: _isUpdatingImage,
                   isArchived: widget.isArchived,
                 ),
@@ -555,11 +555,11 @@ class _goatDetailScreenState extends State<goatDetailScreen>
                       opacity: _fadeAnimation,
                       child: SlideTransition(
                         position: _slideAnimation,
-                        child: goatDetailTabs(
+                        child: GoatDetailTabs(
                           controller: _tabController,
                           fadeAnimation: _fadeAnimation,
                           slideAnimation: _slideAnimation,
-                          ongoatUpdated: _ongoatUpdated,
+                          onGoatUpdated: _onGoatUpdated,
                         ),
                       ),
                     ),
@@ -576,8 +576,8 @@ class _goatDetailScreenState extends State<goatDetailScreen>
                     // Details Tab content
                     ScaleTransition(
                       scale: _scaleAnimation,
-                      child: goatDetailsTabContent(
-                        goat: _currentgoat!,
+                      child: GoatDetailsTabContent(
+                        goat: _currentGoat!,
                         fadeAnimation: _fadeAnimation,
                         slideAnimation: _slideAnimation,
                       ),
@@ -588,7 +588,7 @@ class _goatDetailScreenState extends State<goatDetailScreen>
                       scale: _scaleAnimation,
                       child: HistorygoatTabContent(
                         key: _historyTabKey,
-                        goat: _currentgoat!,
+                        goat: _currentGoat!,
                         onAddEvent: _navigateToAddEventForm,
                       ),
                     ),

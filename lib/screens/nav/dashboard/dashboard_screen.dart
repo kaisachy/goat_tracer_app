@@ -17,7 +17,7 @@ class DashboardScreen extends StatefulWidget {
 
 class _DashboardScreenState extends State<DashboardScreen>
     with TickerProviderStateMixin {
-  List<goat> allgoat = [];
+  List<Goat> allGoats = [];
   List<Map<String, dynamic>> allEvents = [];
   bool isLoading = true;
   String? error;
@@ -72,7 +72,7 @@ class _DashboardScreenState extends State<DashboardScreen>
 
       if (mounted) {
         setState(() {
-          allgoat = goatData;
+          allGoats = goatData;
           allEvents = eventsData;
           isLoading = false;
           error = null;
@@ -215,7 +215,7 @@ class _DashboardScreenState extends State<DashboardScreen>
 
   Widget _buildDashboardContent() {
     // Check if there's any data to display
-    if (allgoat.isEmpty && allEvents.isEmpty) {
+    if (allGoats.isEmpty && allEvents.isEmpty) {
       return Center(
         child: Padding(
           padding: const EdgeInsets.all(32),
@@ -230,7 +230,7 @@ class _DashboardScreenState extends State<DashboardScreen>
                   border: Border.all(color: AppColors.vibrantGreen.withValues(alpha: 0.3)),
                 ),
                 child: Icon(
-                  FontAwesomeIcons.Doe,
+                  FontAwesomeIcons.cow,
                   size: 64,
                   color: AppColors.vibrantGreen,
                 ),
@@ -296,7 +296,7 @@ class _DashboardScreenState extends State<DashboardScreen>
 
   Widget _buildWeightAnalysis() {
     // Available tags from all goat (not only those with weighed history)
-    final allTags = allgoat
+    final allTags = allGoats
         .map((c) => c.tagNo)
         .where((t) => t.isNotEmpty)
         .toSet() // ensure unique to avoid duplicate value assertion
@@ -471,10 +471,10 @@ class _DashboardScreenState extends State<DashboardScreen>
 
   Widget _buildKeepAnEyeOn() {
     // Identify goat that need attention
-    final List<goat> sickgoat = allgoat.where((c) => c.status.toLowerCase() == 'sick').toList();
-    final List<goat> lostgoat = allgoat.where((c) => c.status.toLowerCase() == 'lost').toList();
+    final List<Goat> sickGoat = allGoats.where((c) => c.status.toLowerCase() == 'sick').toList();
+    final List<Goat> lostGoat = allGoats.where((c) => c.status.toLowerCase() == 'lost').toList();
 
-    final bool hasItems = sickgoat.isNotEmpty || lostgoat.isNotEmpty;
+    final bool hasItems = sickGoat.isNotEmpty || lostGoat.isNotEmpty;
 
     return _buildAnimatedCard(
       delay: 700,
@@ -532,17 +532,17 @@ class _DashboardScreenState extends State<DashboardScreen>
                 ),
               )
             else ...[
-              if (sickgoat.isNotEmpty) _buildAttentionSection(
+              if (sickGoat.isNotEmpty) _buildAttentionSection(
                 label: 'Sick',
                 color: Colors.red.shade500,
                 icon: Icons.sick_rounded,
-                goat: sickgoat,
+                goat: sickGoat,
               ),
-              if (lostgoat.isNotEmpty) _buildAttentionSection(
+              if (lostGoat.isNotEmpty) _buildAttentionSection(
                 label: 'Lost',
                 color: Colors.amber.shade700,
                 icon: Icons.search_rounded,
-                goat: lostgoat,
+                goat: lostGoat,
               ),
             ],
           ],
@@ -555,7 +555,7 @@ class _DashboardScreenState extends State<DashboardScreen>
     required String label,
     required Color color,
     required IconData icon,
-    required List<goat> goat,
+    required List<Goat> goat,
   }) {
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
@@ -602,7 +602,7 @@ class _DashboardScreenState extends State<DashboardScreen>
                         Navigator.push(
                           context,
                           MaterialPageRoute(
-                            builder: (_) => goatDetailScreen(goat: c),
+                            builder: (_) => GoatDetailScreen(goat: c),
                           ),
                         );
                       },
@@ -923,8 +923,8 @@ class _DashboardScreenState extends State<DashboardScreen>
   }
 
   Widget _buildOverviewCards() {
-    final totalgoat = allgoat.length;
-    final activegoat = allgoat.where((c) => 
+    final totalgoat = allGoats.length;
+    final activegoat = allGoats.where((c) => 
       c.status.toLowerCase() != 'sold' && c.status.toLowerCase() != 'mortality').length;
 
     return _buildAnimatedCard(
@@ -932,7 +932,7 @@ class _DashboardScreenState extends State<DashboardScreen>
       child: _buildOverviewCard(
         title: 'Total goat',
         value: totalgoat.toString(),
-        icon: FontAwesomeIcons.Doe,
+        icon: FontAwesomeIcons.cow,
         color: AppColors.vibrantGreen,
         subtitle: '$activegoat active',
       ),
@@ -1030,7 +1030,7 @@ class _DashboardScreenState extends State<DashboardScreen>
     }
     
     // Count actual goat statuses
-    for (var goat in allgoat) {
+    for (var goat in allGoats) {
       final status = goat.status.isNotEmpty ? goat.status : 'Unknown';
       statusCount[status] = (statusCount[status] ?? 0) + 1;
     }
@@ -1279,7 +1279,7 @@ class _DashboardScreenState extends State<DashboardScreen>
 
   Widget _buildBreedDistribution() {
     final breedCount = <String, int>{};
-    for (var goat in allgoat) {
+    for (var goat in allGoats) {
       final breed = goat.breed ?? 'Unknown';
       if (breed.isNotEmpty) {
         breedCount[breed] = (breedCount[breed] ?? 0) + 1;
@@ -1394,14 +1394,14 @@ class _DashboardScreenState extends State<DashboardScreen>
     }
     
     // Count actual goat classifications
-    for (var goat in allgoat) {
+    for (var goat in allGoats) {
       final classification = goat.classification.isNotEmpty
           ? goat.classification
           : 'Unclassified';
       classificationCount[classification] = (classificationCount[classification] ?? 0) + 1;
     }
 
-    final total = allgoat.length;
+    final total = allGoats.length;
     final sortedClassifications = classificationCount.entries.toList()
       ..sort((a, b) => b.value.compareTo(a.value));
 
@@ -1698,11 +1698,11 @@ class _DashboardScreenState extends State<DashboardScreen>
   }
 
   Widget _buildKidChart() {
-    final KidMales = allgoat.where((c) => 
+    final kidMales = allGoats.where((c) => 
       c.classification.toLowerCase() == 'Kid' && c.sex.toLowerCase() == 'male').length;
-    final KidFemales = allgoat.where((c) => 
+    final kidFemales = allGoats.where((c) => 
       c.classification.toLowerCase() == 'Kid' && c.sex.toLowerCase() == 'female').length;
-    final totalCalves = KidMales + KidFemales;
+    final totalCalves = kidMales + kidFemales;
 
     if (totalCalves == 0) {
       return Container(
@@ -1756,8 +1756,8 @@ class _DashboardScreenState extends State<DashboardScreen>
       );
     }
 
-    final malePercentage = ((KidMales / totalCalves) * 100).toStringAsFixed(0);
-    final femalePercentage = ((KidFemales / totalCalves) * 100).toStringAsFixed(0);
+    final malePercentage = ((kidMales / totalCalves) * 100).toStringAsFixed(0);
+    final femalePercentage = ((kidFemales / totalCalves) * 100).toStringAsFixed(0);
 
     return Container(
       padding: const EdgeInsets.all(20),
@@ -1791,7 +1791,7 @@ class _DashboardScreenState extends State<DashboardScreen>
                 sections: [
                   PieChartSectionData(
                     color: AppColors.darkGreen,
-                    value: KidMales.toDouble(),
+                    value: kidMales.toDouble(),
                     title: '$malePercentage%',
                     radius: 25,
                     titleStyle: const TextStyle(
@@ -1802,7 +1802,7 @@ class _DashboardScreenState extends State<DashboardScreen>
                   ),
                   PieChartSectionData(
                     color: AppColors.gold,
-                    value: KidFemales.toDouble(),
+                    value: kidFemales.toDouble(),
                     title: '$femalePercentage%',
                     radius: 25,
                     titleStyle: const TextStyle(
@@ -1821,8 +1821,8 @@ class _DashboardScreenState extends State<DashboardScreen>
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
             children: [
-              _buildLegendItem('M', KidMales, AppColors.darkGreen),
-              _buildLegendItem('F', KidFemales, AppColors.gold),
+              _buildLegendItem('M', kidMales, AppColors.darkGreen),
+              _buildLegendItem('F', kidFemales, AppColors.gold),
             ],
           ),
         ],
@@ -1831,9 +1831,9 @@ class _DashboardScreenState extends State<DashboardScreen>
   }
 
   Widget _buildGrowerChart() {
-    final growerMales = allgoat.where((c) => 
+    final growerMales = allGoats.where((c) => 
       c.classification.toLowerCase() == 'grower' && c.sex.toLowerCase() == 'male').length;
-    final growerFemales = allgoat.where((c) => 
+    final growerFemales = allGoats.where((c) => 
       c.classification.toLowerCase() == 'grower' && c.sex.toLowerCase() == 'female').length;
     final totalGrowers = growerMales + growerFemales;
 

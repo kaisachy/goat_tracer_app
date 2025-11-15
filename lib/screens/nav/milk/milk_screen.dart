@@ -22,7 +22,7 @@ class _MilkScreenState extends State<MilkScreen> with TickerProviderStateMixin {
   late TabController _tabController;
   String _selectedPeriod = 'Daily';
   List<MilkProduction> _milkRecords = [];
-  List<goat> _allgoat = [];
+  List<Goat> _allGoat = [];
   bool _isLoading = true;
 
   // Statistics variables
@@ -48,14 +48,14 @@ class _MilkScreenState extends State<MilkScreen> with TickerProviderStateMixin {
 
     try {
       // Load all goat first, then filter for Does only
-      final allgoat = await GoatService.getAllGoats();
-      final Does = allgoat.where((goat) =>
+      final allGoats = await GoatService.getAllGoats();
+      final does = allGoats.where((goat) =>
       goat.classification.toLowerCase() == 'Doe').toList();
 
       final milkRecords = await MilkProductionService.getMilkProductions();
 
       setState(() {
-        _allgoat = Does; // Only store Does
+        _allGoat = does; // Only store Does
         _milkRecords = milkRecords;
         _calculateStatistics();
         _isLoading = false;
@@ -149,7 +149,7 @@ class _MilkScreenState extends State<MilkScreen> with TickerProviderStateMixin {
           const SizedBox(width: 12),
           Expanded(child: _buildStatCard(
               'Milking Does', '$_activeDoes',
-              FontAwesomeIcons.Doe, Colors.orange)),
+              FontAwesomeIcons.cow, Colors.orange)),
         ],
       ),
     );
@@ -300,9 +300,9 @@ class _MilkScreenState extends State<MilkScreen> with TickerProviderStateMixin {
 
   Widget _buildMilkRecordCard(MilkProduction record) {
     // Find goat name from tag
-    final goat = _allgoat.firstWhere(
+    final goat = _allGoat.firstWhere(
           (c) => c.tagNo == record.goatTag,
-      orElse: () => goat(
+      orElse: () => Goat(
         id: 0,
         tagNo: record.goatTag ?? 'Unknown',
         sex: 'Unknown',
@@ -337,7 +337,7 @@ class _MilkScreenState extends State<MilkScreen> with TickerProviderStateMixin {
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: FaIcon(
-                        isWholeFarmMilk ? FontAwesomeIcons.warehouse : FontAwesomeIcons.Doe,
+                        isWholeFarmMilk ? FontAwesomeIcons.warehouse : FontAwesomeIcons.cow,
                         color: Colors.blue,
                         size: 20
                     ),
@@ -468,7 +468,7 @@ class _MilkScreenState extends State<MilkScreen> with TickerProviderStateMixin {
   Widget _buildAnalyticsTab() {
     return MilkAnalyticsTab(
       milkRecords: _milkRecords,
-      allgoat: _allgoat,
+      allGoats: _allGoat,
     );
   }
 
@@ -492,7 +492,7 @@ class _MilkScreenState extends State<MilkScreen> with TickerProviderStateMixin {
     }
   }
 
-  void _showMilkRecordDetails(MilkProduction record, goat goat) {
+  void _showMilkRecordDetails(MilkProduction record, Goat goat) {
     // Check if this should be displayed as "Whole Farm Milk"
     final isWholeFarmMilk = (record.goatTag == null || record.goatTag == 'N/A' || record.goatTag == 'Unknown');
     final displayTitle = isWholeFarmMilk ? 'Whole Farm Milk' : (record.goatTag ?? 'N/A');
@@ -543,7 +543,7 @@ class _MilkScreenState extends State<MilkScreen> with TickerProviderStateMixin {
                       child: FaIcon(
                         isWholeFarmMilk
                             ? FontAwesomeIcons.warehouse
-                            : FontAwesomeIcons.Doe,
+                            : FontAwesomeIcons.cow,
                         color: Colors.white,
                         size: 24,
                       ),
@@ -955,7 +955,7 @@ class _MilkScreenState extends State<MilkScreen> with TickerProviderStateMixin {
       context,
       MaterialPageRoute(
         builder: (context) => MilkRecordFormScreen(
-          allgoat: _allgoat,
+          allGoats: _allGoat,
           isEditing: false,
         ),
       ),
@@ -980,7 +980,7 @@ class _MilkScreenState extends State<MilkScreen> with TickerProviderStateMixin {
       MaterialPageRoute(
         builder: (context) => MilkRecordFormScreen(
           record: record,
-          allgoat: _allgoat,
+          allGoats: _allGoat,
           isEditing: true,
         ),
       ),
@@ -1032,7 +1032,7 @@ class _MilkScreenState extends State<MilkScreen> with TickerProviderStateMixin {
       return;
     }
 
-    if (milkType == 'Individual Doe Milk' && _allgoat.isEmpty) {
+    if (milkType == 'Individual Doe Milk' && _allGoat.isEmpty) {
       _showErrorSnackBar('No Does available for milk recording');
       return;
     }

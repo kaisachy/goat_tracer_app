@@ -20,7 +20,7 @@ class VaccinationScheduleScreen extends StatefulWidget {
 
 class _VaccinationScheduleScreenState extends State<VaccinationScheduleScreen>
     with TickerProviderStateMixin {
-  List<goat> allGoats = [];
+  List<Goat> allGoats = [];
   List<Map<String, dynamic>> allEvents = [];
   List<VaccinationSchedule> vaccinationSchedules = [];
   List<Map<String, dynamic>> goatNeedingVaccination = [];
@@ -81,7 +81,7 @@ class _VaccinationScheduleScreenState extends State<VaccinationScheduleScreen>
         allEvents: eventsData,
       );
 
-      final goatNeeding = VaccinationService().getgoatNeedingVaccination(
+      final goatNeeding = VaccinationService().getGoatNeedingVaccination(
         schedules: schedules,
         allGoats: goatData,
       );
@@ -524,7 +524,7 @@ class _VaccinationScheduleScreenState extends State<VaccinationScheduleScreen>
                 ),
                 const SizedBox(height: 12),
                 if (pendingOrOverdue.isNotEmpty)
-                  ...pendingOrOverdue.map((schedule) => _buildgoatVaccinationRow(schedule))
+                  ...pendingOrOverdue.map((schedule) => _buildGoatVaccinationRow(schedule))
                 else
                   Container(
                     width: double.infinity,
@@ -565,10 +565,10 @@ class _VaccinationScheduleScreenState extends State<VaccinationScheduleScreen>
     );
   }
 
-  Widget _buildgoatVaccinationRow(VaccinationSchedule schedule) {
+  Widget _buildGoatVaccinationRow(VaccinationSchedule schedule) {
     final goat = allGoats.firstWhere(
       (c) => c.tagNo == schedule.goatTag,
-      orElse: () => goat(
+      orElse: () => Goat(
         id: 0,
         tagNo: schedule.goatTag,
         sex: '',
@@ -649,7 +649,7 @@ class _VaccinationScheduleScreenState extends State<VaccinationScheduleScreen>
     );
   }
 
-  int _getAccurateAgeInMonths(goat goat) {
+  int _getAccurateAgeInMonths(Goat goat) {
     if (goat.age != null && goat.age!.isNotEmpty) {
       try {
         final ageValue = int.tryParse(goat.age!);
@@ -691,7 +691,7 @@ class _VaccinationScheduleScreenState extends State<VaccinationScheduleScreen>
     }
   }
 
-  String _getAgeDisplay(goat goat, int ageInMonths) {
+  String _getAgeDisplay(Goat goat, int ageInMonths) {
     if (ageInMonths < 12) {
       return '$ageInMonths months';
     } else {

@@ -4,9 +4,9 @@ import 'package:goat_tracer_app/models/goat.dart';
 import 'package:goat_tracer_app/constants/app_colors.dart';
 import 'package:goat_tracer_app/utils/goat_detail_utils.dart';
 
-class goatNotesSection extends StatelessWidget {
-  final goat goat;
-  const goatNotesSection({super.key, required this.goat});
+class GoatNotesSection extends StatelessWidget {
+  final Goat goat;
+  const GoatNotesSection({super.key, required this.goat});
 
   @override
   Widget build(BuildContext context) {
@@ -50,14 +50,14 @@ class goatNotesSection extends StatelessWidget {
               ),
             ),
             child: Text(
-              goatDetailUtils.getNotesDisplay(goat.notes),
+              GoatDetailUtils.getNotesDisplay(goat.notes),
               style: TextStyle(
                 fontSize: 14,
                 height: 1.6,
-                color: goatDetailUtils.hasNotes(goat.notes)
+                color: GoatDetailUtils.hasNotes(goat.notes)
                     ? AppColors.textPrimary
                     : AppColors.textSecondary,
-                fontStyle: goatDetailUtils.hasNotes(goat.notes)
+                fontStyle: GoatDetailUtils.hasNotes(goat.notes)
                     ? FontStyle.normal
                     : FontStyle.italic,
               ),

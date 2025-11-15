@@ -2,7 +2,7 @@
 import 'dart:developer';
 import 'package:http/http.dart' as http;
 import '../../config.dart';
-import '../../models/Goat.dart';
+import '../../models/goat.dart';
 import '../../utils/goat_age_classification.dart';
 import '../auth_service.dart';
 
@@ -174,7 +174,7 @@ class GoatService {
   /// Update existing Goat information with image support
   // This method is already designed to handle the new logic because it accepts a generic map.
   // The UI will be responsible for populating this map with the necessary original and new parent tags.
-  static Future<bool> updategoatInformation(Map<String, dynamic> data) async {
+  static Future<bool> updateGoatInformation(Map<String, dynamic> data) async {
     final token = await AuthService.getToken();
     if (token == null) {
       log('Update failed: No token found.');
@@ -219,7 +219,7 @@ class GoatService {
         return false;
       }
     } catch (e, stackTrace) {
-      log('Error in updategoatInformation: $e', stackTrace: stackTrace);
+      log('Error in updateGoatInformation: $e', stackTrace: stackTrace);
       return false;
     }
   }
@@ -237,7 +237,7 @@ class GoatService {
       'goat_picture': base64Image,
     };
 
-    return await updategoatInformation(data);
+    return await updateGoatInformation(data);
   }
 
   /// Delete Goat picture only (set to null)
@@ -283,11 +283,11 @@ class GoatService {
   }
 
   /// Alternative method to get Goat by ID (if needed)
-  static Future<Goat?> getgoatById(int id) async {
+  static Future<Goat?> getGoatById(int id) async {
     final token = await AuthService.getToken();
 
     if (token == null) {
-      log('getgoatById failed: No token found.');
+      log('getGoatById failed: No token found.');
       return null;
     }
 
@@ -320,7 +320,7 @@ class GoatService {
         return foundGoat;
       }
     } catch (e) {
-      log('Error in getgoatById: $e');
+      log('Error in getGoatById: $e');
       return null;
     }
   }
@@ -342,12 +342,12 @@ class GoatService {
   }
 
   /// Get Goat with full image data
-  static Future<Goat?> getgoatWithImage(int id) async {
-    final Goat = await getgoatById(id);
-    if (Goat != null) {
-      log('Retrieved Goat with image data: ${Goat.tagNo}');
+  static Future<Goat?> getGoatWithImage(int id) async {
+    final goat = await getGoatById(id);
+    if (goat != null) {
+      log('Retrieved Goat with image data: ${goat.tagNo}');
     }
-    return Goat;
+    return goat;
   }
 
   /// Archive a Goat record
@@ -483,35 +483,35 @@ class GoatService {
       }
 
       // Check which Goat need classification updates
-      final updatedgoat = GoatAgeClassification.autoUpdateClassificationsForList(goatList);
+      final updatedGoat = GoatAgeClassification.autoUpdateClassificationsForList(goatList);
       
-      if (updatedgoat.isEmpty) {
+      if (updatedGoat.isEmpty) {
         log('No Goat need classification updates');
         return 0;
       }
 
-      log('Found ${updatedgoat.length} Goat that need classification updates');
+      log('Found ${updatedGoat.length} Goat that need classification updates');
 
       // Update each Goat that needs classification update
       int successCount = 0;
-      for (var entry in updatedgoat.entries) {
-        final Goat = entry.value;
+      for (var entry in updatedGoat.entries) {
+        final goat = entry.value;
         
         final updateData = {
-          'id': Goat.id,
-          'classification': Goat.classification,
+          'id': goat.id,
+          'classification': goat.classification,
         };
 
-        final success = await updategoatInformation(updateData);
+        final success = await updateGoatInformation(updateData);
         if (success) {
           successCount++;
-          log('✅ Auto-updated Goat ${Goat.tagNo} classification to ${Goat.classification}');
+          log('✅ Auto-updated Goat ${goat.tagNo} classification to ${goat.classification}');
         } else {
-          log('❌ Failed to auto-update Goat ${Goat.tagNo}');
+          log('❌ Failed to auto-update Goat ${goat.tagNo}');
         }
       }
 
-      log('Auto-update completed: $successCount/${updatedgoat.length} Goat updated');
+      log('Auto-update completed: $successCount/${updatedGoat.length} Goat updated');
       return successCount;
     } catch (e, stackTrace) {
       log('Error in autoUpdategoatClassifications: $e', stackTrace: stackTrace);
@@ -521,7 +521,7 @@ class GoatService {
 
   /// Get Goat with automatic classification updates
   /// Returns list of Goat with classifications auto-updated based on age
-  static Future<List<Goat>> getgoatWithAutoUpdatedClassifications() async {
+  static Future<List<Goat>> getGoatWithAutoUpdatedClassifications() async {
     try {
       // Get all Goat
       final goatList = await getAllGoats();
@@ -531,20 +531,20 @@ class GoatService {
       }
 
       // Check and auto-update classifications
-      final updatedgoat = GoatAgeClassification.autoUpdateClassificationsForList(goatList);
+      final updatedGoat = GoatAgeClassification.autoUpdateClassificationsForList(goatList);
       
-      if (updatedgoat.isEmpty) {
+      if (updatedGoat.isEmpty) {
         return goatList;
       }
 
       // Apply the updated classifications to the list
-      final resultList = goatList.map((Goat) {
-        return updatedgoat[Goat.id] ?? Goat;
+      final resultList = goatList.map<Goat>((goat) {
+        return updatedGoat[goat.id] ?? goat;
       }).toList();
 
       return resultList;
     } catch (e) {
-      log('Error in getgoatWithAutoUpdatedClassifications: $e');
+      log('Error in getGoatWithAutoUpdatedClassifications: $e');
       return await getAllGoats();
     }
   }

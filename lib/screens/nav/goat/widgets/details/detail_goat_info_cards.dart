@@ -6,23 +6,23 @@ import 'package:goat_tracer_app/constants/app_colors.dart';
 import 'package:goat_tracer_app/utils/goat_detail_utils.dart';
 import 'info_item_widget.dart';
 
-class goatBasicInfoCard extends StatefulWidget {
-  final goat goat;
+class GoatBasicInfoCard extends StatefulWidget {
+  final Goat goat;
 
-  const goatBasicInfoCard({super.key, required this.goat});
+  const GoatBasicInfoCard({super.key, required this.goat});
 
   /// Create a key that changes when goat data changes
-  static Key createKey(goat goat) {
+  static Key createKey(Goat goat) {
     return ValueKey('${goat.id}_${goat.dateOfBirth}_${goat.classification}_${goat.sex}');
   }
 
   @override
-  State<goatBasicInfoCard> createState() => _goatBasicInfoCardState();
+  State<GoatBasicInfoCard> createState() => _GoatBasicInfoCardState();
 }
 
-class _goatBasicInfoCardState extends State<goatBasicInfoCard> {
+class _GoatBasicInfoCardState extends State<GoatBasicInfoCard> {
   @override
-  void didUpdateWidget(goatBasicInfoCard oldWidget) {
+  void didUpdateWidget(GoatBasicInfoCard oldWidget) {
     super.didUpdateWidget(oldWidget);
     // Force rebuild when goat data changes by checking key fields
     if (_shouldRebuild(oldWidget.goat, widget.goat)) {
@@ -32,13 +32,13 @@ class _goatBasicInfoCardState extends State<goatBasicInfoCard> {
     }
   }
 
-  bool _shouldRebuild(goat oldgoat, goat newgoat) {
-    return oldgoat.dateOfBirth != newgoat.dateOfBirth ||
-        oldgoat.classification != newgoat.classification ||
-        oldgoat.sex != newgoat.sex ||
-        oldgoat.breed != newgoat.breed ||
-        oldgoat.weight != newgoat.weight ||
-        oldgoat.status != newgoat.status;
+  bool _shouldRebuild(Goat oldGoat, Goat newGoat) {
+    return oldGoat.dateOfBirth != newGoat.dateOfBirth ||
+        oldGoat.classification != newGoat.classification ||
+        oldGoat.sex != newGoat.sex ||
+        oldGoat.breed != newGoat.breed ||
+        oldGoat.weight != newGoat.weight ||
+        oldGoat.status != newGoat.status;
   }
 
   @override
@@ -75,32 +75,32 @@ class _goatBasicInfoCardState extends State<goatBasicInfoCard> {
             InfoItemData(
               icon: Icons.cake,
               title: 'Age',
-              value: goatDetailUtils.getAgeFromDob(widget.goat.dateOfBirth),
+              value: GoatDetailUtils.getAgeFromDob(widget.goat.dateOfBirth),
             ),
             InfoItemData(
               icon: Icons.event,
               title: 'Date of Birth',
-              value: goatDetailUtils.formatDate(widget.goat.dateOfBirth),
+              value: GoatDetailUtils.formatDate(widget.goat.dateOfBirth),
             ),
             InfoItemData(
-              icon: goatDetailUtils.getGenderIcon(widget.goat.sex),
+              icon: GoatDetailUtils.getGenderIcon(widget.goat.sex),
               title: 'Sex',
               value: widget.goat.sex,
             ),
             InfoItemData(
               icon: Icons.category,
               title: 'Classification',
-              value: goatDetailUtils.getClassificationDisplay(widget.goat.classification),
+              value: GoatDetailUtils.getClassificationDisplay(widget.goat.classification),
             ),
             InfoItemData(
-              icon: FontAwesomeIcons.Doe,
+              icon: FontAwesomeIcons.cow,
               title: 'Breed',
-              value: goatDetailUtils.getBreedDisplay(widget.goat.breed),
+              value: GoatDetailUtils.getBreedDisplay(widget.goat.breed),
             ),
             InfoItemData(
               icon: Icons.monitor_weight,
               title: 'Weight',
-              value: goatDetailUtils.formatWeight(widget.goat.weight),
+              value: GoatDetailUtils.formatWeight(widget.goat.weight),
             ),
           ]),
         ],

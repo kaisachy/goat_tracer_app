@@ -4,12 +4,12 @@ import 'goat_lineage_card.dart';
 import 'goat_management_card.dart';
 import 'detail_goat_info_cards.dart';
 
-class goatDetailsTabContent extends StatelessWidget {
-  final goat goat;
+class GoatDetailsTabContent extends StatelessWidget {
+  final Goat goat;
   final Animation<double> fadeAnimation;
   final Animation<Offset> slideAnimation;
 
-  const goatDetailsTabContent({
+  const GoatDetailsTabContent({
     super.key,
     required this.goat,
     required this.fadeAnimation,
@@ -32,20 +32,20 @@ class goatDetailsTabContent extends StatelessWidget {
               children: [
                 _buildAnimatedCard(
                   delay: 100,
-                  child: goatBasicInfoCard(
-                    key: goatBasicInfoCard.createKey(goat),
+                  child: GoatBasicInfoCard(
+                    key: GoatBasicInfoCard.createKey(goat),
                     goat: goat,
                   ),
                 ),
                 const SizedBox(height: 20),
                 _buildAnimatedCard(
                   delay: 200,
-                  child: goatLineageCard(goat: goat),
+                  child: GoatLineageCard(goat: goat),
                 ),
                 const SizedBox(height: 20),
                 _buildAnimatedCard(
                   delay: 300,
-                  child: goatManagementCard(goat: goat),
+                  child: GoatManagementCard(goat: goat),
                 ),
               ],
             ),

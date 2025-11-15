@@ -17,10 +17,10 @@ import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 
 
 class GoatScreen extends StatefulWidget {
-  const goatScreen({super.key});
+  const GoatScreen({super.key});
 
   @override
-  State<GoatScreen> createState() => _goatScreenState();
+  State<GoatScreen> createState() => _GoatScreenState();
 }
 
 // ✨ MODIFIED: Added the WidgetsBindingObserver mixin
@@ -62,32 +62,32 @@ class _GoatScreenState extends State<GoatScreen>
     // ✨ ADDED: Register the observer
     WidgetsBinding.instance.addObserver(this);
 
-    _fetchgoat();
+    _fetchGoat();
   }
 
   Widget _buildAddgoatGrid() {
     final List<Map<String, dynamic>> items = [
       {
         'label': 'Buck',
-        'iconPath': 'assets/images/goat-icons/Buck.png',
+        'iconPath': 'assets/images/goat-icons/buck.png',
         'color': AppColors.vibrantGreen,
         'fallback': Icons.male,
       },
       {
         'label': 'Doe',
-        'iconPath': 'assets/images/goat-icons/Doe.png',
+        'iconPath': 'assets/images/goat-icons/doe.png',
         'color': AppColors.primary,
-        'fallback': FontAwesomeIcons.Doe,
+        'fallback': FontAwesomeIcons.cow,
       },
       {
         'label': 'Buckling',
-        'iconPath': 'assets/images/goat-icons/Buckling.png',
+        'iconPath': 'assets/images/goat-icons/buckling.png',
         'color': Colors.blue,
         'fallback': Icons.pets,
       },
       {
         'label': 'Doeling',
-        'iconPath': 'assets/images/goat-icons/Doeling.png',
+        'iconPath': 'assets/images/goat-icons/doeling.png',
         'color': AppColors.accent,
         'fallback': Icons.female,
       },
@@ -111,7 +111,7 @@ class _GoatScreenState extends State<GoatScreen>
         'label': 'Kid (M)',
         'classification': 'Kid',
         'sex': 'Male',
-        'iconPath': 'assets/images/goat-icons/Kid.png',
+        'iconPath': 'assets/images/goat-icons/kid.png',
         'color': Colors.orange,
         'fallback': Icons.child_care,
       },
@@ -119,7 +119,7 @@ class _GoatScreenState extends State<GoatScreen>
         'label': 'Kid (F)',
         'classification': 'Kid',
         'sex': 'Female',
-        'iconPath': 'assets/images/goat-icons/Kid.png',
+        'iconPath': 'assets/images/goat-icons/kid.png',
         'color': Colors.orange,
         'fallback': Icons.child_care,
       },
@@ -212,11 +212,11 @@ class _GoatScreenState extends State<GoatScreen>
     super.didChangeAppLifecycleState(state);
     // When the app is resumed (brought to the foreground), refresh the data.
     if (state == AppLifecycleState.resumed) {
-      _fetchgoat();
+      _fetchGoat();
     }
   }
 
-  Future<void> _fetchgoat() async {
+  Future<void> _fetchGoat() async {
     // Always set loading state to true when starting to fetch
     setState(() => _isLoading = true);
     
@@ -231,8 +231,8 @@ class _GoatScreenState extends State<GoatScreen>
       final data = await GoatService.getGoatInformation();
       if (mounted) {
         setState(() {
-          _goatList = data.map((e) => goat.fromJson(e)).toList();
-          _filtergoat(); // Apply existing filters to the new data
+          _goatList = data.map((e) => Goat.fromJson(e)).toList();
+          _filterGoat(); // Apply existing filters to the new data
           _isLoading = false;
         });
         _animationController.forward(from: 0.0);
@@ -256,7 +256,7 @@ class _GoatScreenState extends State<GoatScreen>
     setState(() {
       _searchQuery = query;
     });
-    _filtergoat();
+    _filterGoat();
   }
 
   void _handleFiltersChanged(String sex, String classification, String status, String breed, String groupName) {
@@ -267,10 +267,10 @@ class _GoatScreenState extends State<GoatScreen>
       _selectedBreed = breed;
       _selectedGroupName = groupName;
     });
-    _filtergoat();
+    _filterGoat();
   }
 
-  int _classificationSortKey(goat goat) {
+  int _classificationSortKey(Goat goat) {
     // Desired order:
     // 0 Buck, 1 Doe, 2 Buckling, 3 Doeling, 4 Male Growers, 5 Female Growers, 6 Male Kid, 7 Female Kid
     switch (goat.classification) {
@@ -291,7 +291,7 @@ class _GoatScreenState extends State<GoatScreen>
     }
   }
 
-  void _filtergoat() {
+  void _filterGoat() {
     setState(() {
       _filteredGoatList = _goatList.where((goat) {
         final matchesSearch = _searchQuery.isEmpty ||
@@ -377,29 +377,29 @@ class _GoatScreenState extends State<GoatScreen>
     }
   }
 
-  void _navigateToForm({goat? goat, String? preSelectedClassification, String? preSelectedSex}) async {
+  void _navigateToForm({Goat? goat, String? preSelectedClassification, String? preSelectedSex}) async {
     // The await/fetch pattern is kept as a fallback and for immediate refresh
     await Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (_) => goatFormScreen(
+        builder: (_) => GoatFormScreen(
           goat: goat,
           preSelectedClassification: preSelectedClassification,
           preSelectedSex: preSelectedSex,
         ),
       ),
     );
-    _fetchgoat();
+    _fetchGoat();
   }
 
-  void _navigateToDetail(goat goat) async {
+  void _navigateToDetail(Goat goat) async {
     await Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (_) => goatDetailScreen(goat: goat),
+        builder: (_) => GoatDetailScreen(goat: goat),
       ),
     );
-    _fetchgoat();
+    _fetchGoat();
   }
 
 
@@ -408,7 +408,7 @@ class _GoatScreenState extends State<GoatScreen>
 
 
 
-  Widget _buildgoatOptionsMenu(goat goat) {
+  Widget _buildGoatOptionsMenu(Goat goat) {
     return PopupMenuButton<String>(
       icon: Icon(
         Icons.more_vert,
@@ -613,70 +613,104 @@ class _GoatScreenState extends State<GoatScreen>
             // Show goat selection modal for adding history
             final selectedTag = await showDialog<String>(
               context: context,
-              builder: (context) => const goatSelectionModal(),
+              builder: (context) => const GoatSelectionModal(),
             );
             if (selectedTag != null) {
               if (!mounted) break;
               await Navigator.push(
                 context,
                 MaterialPageRoute(
-                  builder: (context) => goatHistoryFormScreen(goatTag: selectedTag),
+                  builder: (context) => GoatHistoryFormScreen(goatTag: selectedTag),
                 ),
               );
               if (!mounted) break;
-              _fetchgoat();
+              _fetchGoat();
             }
             break;
           case 'export_excel':
-          case 'export_pdf':
-            // Show goat selection modal for export
-            final selectedTag = await showDialog<String>(
-              context: context,
-              builder: (context) => const goatSelectionModal(),
+            // Directly export the goat whose menu was clicked
+            final messenger = ScaffoldMessenger.of(context);
+            messenger.hideCurrentSnackBar();
+            messenger.showSnackBar(
+              SnackBar(
+                content: Row(
+                  children: [
+                    SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(
+                        color: Colors.white,
+                        strokeWidth: 2,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    const Text('Generating Excel report...'),
+                  ],
+                ),
+                backgroundColor: Colors.blue.shade600,
+                behavior: SnackBarBehavior.floating,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                duration: const Duration(seconds: 10),
+              ),
             );
-            if (selectedTag != null) {
-              if (!mounted) break;
-              final selectedgoat = _goatList.firstWhere(
-                (c) => c.tagNo == selectedTag,
-                orElse: () => goat,
-              );
-              if (value == 'export_excel') {
-                final messenger = ScaffoldMessenger.of(context);
-                messenger.hideCurrentSnackBar();
-                final okX = await GoatExportService.downloadgoatExcel(selectedgoat.id.toString());
-                if (!mounted) break;
-                messenger.showSnackBar(
-                  SnackBar(
-                    content: Text(okX ? 'Excel report ready! Choose where to open/save.' : 'Failed to download Excel report.'),
-                    backgroundColor: okX ? Colors.green.shade600 : Colors.red.shade700,
-                    behavior: SnackBarBehavior.floating,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                  ),
-                );
-              } else if (value == 'export_pdf') {
-                final messenger = ScaffoldMessenger.of(context);
-                messenger.hideCurrentSnackBar();
-                final okP = await GoatExportService.downloadgoatPdf(selectedgoat.id.toString());
-                if (!mounted) break;
-                messenger.showSnackBar(
-                  SnackBar(
-                    content: Text(okP ? 'PDF report ready! Choose where to open/save.' : 'Failed to generate PDF report.'),
-                    backgroundColor: okP ? Colors.green.shade600 : Colors.red.shade700,
-                    behavior: SnackBarBehavior.floating,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                  ),
-                );
-              }
-            }
+            final okX = await GoatExportService.downloadgoatExcel(goat.id.toString());
+            if (!mounted) break;
+            messenger.hideCurrentSnackBar();
+            messenger.showSnackBar(
+              SnackBar(
+                content: Text(okX ? 'Excel report ready! Choose where to open/save.' : 'Failed to download Excel report.'),
+                backgroundColor: okX ? Colors.green.shade600 : Colors.red.shade700,
+                behavior: SnackBarBehavior.floating,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              ),
+            );
+            break;
+          case 'export_pdf':
+            // Directly export the goat whose menu was clicked
+            final messengerPdf = ScaffoldMessenger.of(context);
+            messengerPdf.hideCurrentSnackBar();
+            messengerPdf.showSnackBar(
+              SnackBar(
+                content: Row(
+                  children: [
+                    SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(
+                        color: Colors.white,
+                        strokeWidth: 2,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    const Text('Generating PDF report...'),
+                  ],
+                ),
+                backgroundColor: Colors.blue.shade600,
+                behavior: SnackBarBehavior.floating,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                duration: const Duration(seconds: 10),
+              ),
+            );
+            final okP = await GoatExportService.downloadgoatPdf(goat.id.toString());
+            if (!mounted) break;
+            messengerPdf.hideCurrentSnackBar();
+            messengerPdf.showSnackBar(
+              SnackBar(
+                content: Text(okP ? 'PDF report ready! Choose where to open/save.' : 'Failed to generate PDF report.'),
+                backgroundColor: okP ? Colors.green.shade600 : Colors.red.shade700,
+                behavior: SnackBarBehavior.floating,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              ),
+            );
             break;
           case 'change_stage':
-            ChangeStageOption.show(context, goat, _fetchgoat);
+            ChangeStageOption.show(context, goat, _fetchGoat);
             break;
           case 'change_status':
-            ChangeStatusOption.show(context, goat, _fetchgoat);
+            ChangeStatusOption.show(context, goat, _fetchGoat);
             break;
           case 'archive':
-            ArchiveOption.show(context, goat: goat, ongoatUpdated: _fetchgoat);
+            ArchiveOption.show(context, goat: goat, onGoatUpdated: _fetchGoat);
             break;
           case 'delete':
             DeleteOption.show(context);
@@ -686,7 +720,7 @@ class _GoatScreenState extends State<GoatScreen>
     );
   }
 
-  Widget _buildgoatCard(goat goat, int index) {
+  Widget _buildGoatCard(Goat goat, int index) {
     return FadeTransition(
       opacity: _fadeAnimation,
       child: SlideTransition(
@@ -748,7 +782,7 @@ class _GoatScreenState extends State<GoatScreen>
                               color: AppColors.primary.withValues(alpha: 0.15),
                             ),
                             child: Icon(
-                              FontAwesomeIcons.Doe,
+                              FontAwesomeIcons.cow,
                               color: AppColors.primary,
                               size: 26,
                             ),
@@ -844,7 +878,7 @@ class _GoatScreenState extends State<GoatScreen>
                           ),
                         ),
                         // Replace the edit/delete buttons with options menu
-                        _buildgoatOptionsMenu(goat),
+                        _buildGoatOptionsMenu(goat),
                       ],
                     ),
                     const SizedBox(height: 12),
@@ -894,7 +928,7 @@ class _GoatScreenState extends State<GoatScreen>
               borderRadius: BorderRadius.circular(60),
             ),
             child: Icon(
-              FontAwesomeIcons.Doe,
+              FontAwesomeIcons.cow,
               size: 60,
               color: AppColors.primary,
             ),
@@ -942,7 +976,7 @@ class _GoatScreenState extends State<GoatScreen>
                 unselectedLabelColor: AppColors.textSecondary,
                 tabs: [
                   Tab(text: 'Add Goat'),
-                  Tab(text: 'goat List'),
+                  Tab(text: 'Goat List'),
                 ],
               ),
             ),
@@ -974,7 +1008,7 @@ class _GoatScreenState extends State<GoatScreen>
                         Column(
         children: [
           if (_goatList.isNotEmpty) ...[
-            goatSearchFilterWidget(
+            GoatSearchFilterWidget(
               onSearchChanged: _handleSearchChanged,
               onFiltersChanged: _handleFiltersChanged,
               initialSex: _selectedSex,
@@ -1087,13 +1121,13 @@ class _GoatScreenState extends State<GoatScreen>
             child: _filteredGoatList.isEmpty
                 ? _buildEmptyState()
                 : RefreshIndicator(
-              onRefresh: _fetchgoat,
+              onRefresh: _fetchGoat,
               color: AppColors.primary,
               child: ListView.builder(
                                         padding: const EdgeInsets.only(bottom: 16),
                 itemCount: _filteredGoatList.length,
                 itemBuilder: (context, index) =>
-                    _buildgoatCard(_filteredGoatList[index], index),
+                    _buildGoatCard(_filteredGoatList[index], index),
               ),
             ),
           ),

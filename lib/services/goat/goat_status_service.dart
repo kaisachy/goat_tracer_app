@@ -72,7 +72,7 @@ class GoatStatusService {
               final updateData = Map<String, dynamic>.from(goatMap);
               updateData['status'] = 'Healthy';
               
-              final success = await GoatService.updategoatInformation(updateData);
+              final success = await GoatService.updateGoatInformation(updateData);
               if (success) {
                 updatedgoat.add(goatMap['tag_number'] ?? 'Unknown');
                 log('GoatStatusService: Successfully updated goat $goatId status to Healthy');

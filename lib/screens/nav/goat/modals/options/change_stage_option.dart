@@ -15,7 +15,7 @@ class ChangeStageOption {
     'Kid', 'Growers', 'Doeling', 'Doe', 'Buck', 'Buckling'
   ];
 
-  static void show(BuildContext context, goat goat, VoidCallback? ongoatUpdated) {
+  static void show(BuildContext context, Goat goat, VoidCallback? onGoatUpdated) {
     // ✨ NEW: Dynamically select the list of stages based on sex
     List<String> stagesForSex;
     if (goat.sex == 'Male') {
@@ -78,7 +78,7 @@ class ChangeStageOption {
                       context,
                       goat,
                       selectedStage,
-                      ongoatUpdated,
+                      onGoatUpdated,
                     ),
                   ],
                 ),
@@ -120,7 +120,7 @@ class ChangeStageOption {
     );
   }
 
-  static Widget _buildCurrentStageInfo(goat goat) {
+  static Widget _buildCurrentStageInfo(Goat goat) {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -248,9 +248,9 @@ class ChangeStageOption {
 
   static Widget _buildActionButtons(
       BuildContext context,
-      goat goat,
+      Goat goat,
       String selectedStage,
-      VoidCallback? ongoatUpdated) {
+      VoidCallback? onGoatUpdated) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.end,
       children: [
@@ -272,8 +272,8 @@ class ChangeStageOption {
           onPressed: selectedStage == goat.classification
               ? null
               : () async {
-            await _updategoatStage(
-                context, goat, selectedStage, ongoatUpdated);
+            await _updateGoatStage(
+                context, goat, selectedStage, onGoatUpdated);
           },
           style: ElevatedButton.styleFrom(
             backgroundColor: AppColors.lightGreen,
@@ -305,11 +305,11 @@ class ChangeStageOption {
     );
   }
 
-  static Future<void> _updategoatStage(
+  static Future<void> _updateGoatStage(
       BuildContext context,
-      goat goat,
+      Goat goat,
       String newStage,
-      VoidCallback? ongoatUpdated) async {
+      VoidCallback? onGoatUpdated) async {
     UIHelpers.showEnhancedLoadingDialog(
         context, 'Updating goat stage...', Icons.update);
 
@@ -319,7 +319,7 @@ class ChangeStageOption {
         'classification': newStage,
       };
 
-      final success = await GoatService.updategoatInformation(updateData);
+      final success = await GoatService.updateGoatInformation(updateData);
       if (!context.mounted) return;
       Navigator.pop(context);
 
@@ -339,7 +339,7 @@ class ChangeStageOption {
 
         // A small delay can feel smoother before the UI refresh
         Future.delayed(const Duration(milliseconds: 300), () {
-          ongoatUpdated?.call();
+          onGoatUpdated?.call();
         });
       } else {
         if (!context.mounted) return;

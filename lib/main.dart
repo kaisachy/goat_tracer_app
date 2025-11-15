@@ -4,7 +4,7 @@ import 'auth_guard.dart';
 import 'screens/login_screen.dart';
 import 'services/secure_storage_service.dart';
 import 'screens/home_screen.dart';
-import 'screens/nav/goat/goat_detail_screen.dart';
+import 'package:goat_tracer_app/screens/nav/goat/goat_detail_screen.dart';
 import 'services/goat/goat_service.dart';
 import 'models/goat.dart';
 import 'services/auth_service.dart';
@@ -31,7 +31,7 @@ class MyApp extends StatelessWidget {
           final tag = args?['tag'] as String?;
 
           if (tag != null) {
-            return AuthGuard(child: goatDetailLoader(tag: tag));
+            return AuthGuard(child: GoatDetailLoader(tag: tag));
           } else {
             return const AuthGuard(
               child: Scaffold(
@@ -91,15 +91,15 @@ class AuthWrapper extends StatelessWidget {
 }
 
 /// Enhanced goat Detail Loader with authentication
-class goatDetailLoader extends StatelessWidget {
+class GoatDetailLoader extends StatelessWidget {
   final String tag;
 
-  const goatDetailLoader({super.key, required this.tag});
+  const GoatDetailLoader({super.key, required this.tag});
 
   @override
   Widget build(BuildContext context) {
-    return FutureBuilder<goat?>(
-      future: _fetchgoatByTag(tag),
+    return FutureBuilder<Goat?>(
+      future: _fetchGoatByTag(tag),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const Scaffold(
@@ -142,7 +142,7 @@ class goatDetailLoader extends StatelessWidget {
             ),
           );
         } else if (snapshot.hasData && snapshot.data != null) {
-          return goatDetailScreen(goat: snapshot.data!);
+          return GoatDetailScreen(goat: snapshot.data!);
         } else {
           return Scaffold(
             appBar: AppBar(title: const Text('Not Found')),
@@ -167,7 +167,7 @@ class goatDetailLoader extends StatelessWidget {
     );
   }
 
-  Future<goat?> _fetchgoatByTag(String tag) async {
+  Future<Goat?> _fetchGoatByTag(String tag) async {
     try {
       // Check authentication before making API call
       final token = await AuthService.getToken();

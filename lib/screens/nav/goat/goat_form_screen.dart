@@ -10,12 +10,12 @@ import '../../../services/goat/goat_service.dart';
 import '../../../services/auth_service.dart';
 import '../../../utils/goat_age_classification.dart';
 
-class goatFormScreen extends StatefulWidget {
-  final goat? goat;
+class GoatFormScreen extends StatefulWidget {
+  final Goat? goat;
   final String? preSelectedClassification;
   final String? preSelectedSex; // New: allow preselecting sex for Growers/Kid
 
-  const goatFormScreen({
+  const GoatFormScreen({
     super.key,
     this.goat,
     this.preSelectedClassification,
@@ -23,10 +23,10 @@ class goatFormScreen extends StatefulWidget {
   });
 
   @override
-  State<goatFormScreen> createState() => _goatFormScreenState();
+  State<GoatFormScreen> createState() => _GoatFormScreenState();
 }
 
-class _goatFormScreenState extends State<goatFormScreen> {
+class _GoatFormScreenState extends State<GoatFormScreen> {
   final _formKey = GlobalKey<FormState>();
 
   // Controllers for all form fields
@@ -51,15 +51,11 @@ class _goatFormScreenState extends State<goatFormScreen> {
 
   // Breed specific controls
   final List<String> defaultBreedOptions = [
-    'Native',
-    'Brahman',
-    'Upgraded Brahman',
-    'Angus',
-    'Upgraded Angus',
-    'Holstein Friesian',
-    'Upgraded Holstein Friesian',
-    'Sahiwal',
-    'Upgraded Sahiwal',
+    'Anglo Nubian',
+    'Boer',
+    'Saanen',
+    'French Alpine',
+    'Toggenburg',
     'Other',
   ];
   final TextEditingController _otherBreedController = TextEditingController();
@@ -69,8 +65,8 @@ class _goatFormScreenState extends State<goatFormScreen> {
   String? _originalFatherTag;
 
   // State variables for holding parent goat lists
-  List<goat> _femalegoat = [];
-  List<goat> _malegoat = [];
+  List<Goat> _femaleGoat = [];
+  List<Goat> _maleGoat = [];
   bool _isLoadingParents = true;
 
   // NEW: For tag generation
@@ -126,10 +122,10 @@ class _goatFormScreenState extends State<goatFormScreen> {
   /// Load existing tags from all goat
   Future<void> _loadExistingTags() async {
     try {
-      final allgoat = await GoatService.getAllGoats();
+      final allGoats = await GoatService.getAllGoats();
       setState(() {
         // For web admin compatibility, store tags as-is (6-digit numbers)
-        _existingTags = allgoat.map((goat) => goat.tagNo.toLowerCase()).toList();
+        _existingTags = allGoats.map((goat) => goat.tagNo.toLowerCase()).toList();
       });
     } catch (e) {
       debugPrint('Error loading existing tags: $e');
@@ -773,20 +769,20 @@ class _goatFormScreenState extends State<goatFormScreen> {
   Future<void> _fetchParentData() async {
     setState(() => _isLoadingParents = true);
 
-    final allgoat = await GoatService.getAllGoats();
+    final allGoats = await GoatService.getAllGoats();
     // Exclude the current goat being edited from the list of potential parents
-    final potentialParents = allgoat.where((c) => c.id != widget.goat?.id).toList();
+    final potentialParents = allGoats.where((c) => c.id != widget.goat?.id).toList();
 
     if (mounted) {
       setState(() {
-        _femalegoat = potentialParents.where((c) => c.sex == 'Female').toList();
-        _malegoat = potentialParents.where((c) => c.sex == 'Male').toList();
+        _femaleGoat = potentialParents.where((c) => c.sex == 'Female').toList();
+        _maleGoat = potentialParents.where((c) => c.sex == 'Male').toList();
 
         // Validate parent tags - if they don't exist in the current goat list, set them to null
-        if (_motherTag != null && !_femalegoat.any((c) => c.tagNo == _motherTag)) {
+        if (_motherTag != null && !_femaleGoat.any((c) => c.tagNo == _motherTag)) {
           _motherTag = null;
         }
-        if (_fatherTag != null && !_malegoat.any((c) => c.tagNo == _fatherTag)) {
+        if (_fatherTag != null && !_maleGoat.any((c) => c.tagNo == _fatherTag)) {
           _fatherTag = null;
         }
 
@@ -849,8 +845,8 @@ class _goatFormScreenState extends State<goatFormScreen> {
       );
 
       try {
-        final allgoat = await GoatService.getAllGoats();
-        final duplicateExists = allgoat.any((goat) =>
+        final allGoats = await GoatService.getAllGoats();
+        final duplicateExists = allGoats.any((goat) =>
         goat.tagNo.toLowerCase() == tagToCheck.toLowerCase() &&
             (!_isEditing || goat.id != widget.goat!.id));
 
@@ -932,7 +928,7 @@ class _goatFormScreenState extends State<goatFormScreen> {
         // IMPORTANT: Also add the original tag number for backend reference updates
         data['original_tag_no'] = widget.goat!.tagNo;
 
-        success = await GoatService.updategoatInformation(data);
+        success = await GoatService.updateGoatInformation(data);
       } else {
         // This is a CREATE
         success = await GoatService.storegoatInformation(data);
@@ -1098,7 +1094,7 @@ class _goatFormScreenState extends State<goatFormScreen> {
   Widget _buildSearchableDropdown({
     required String label,
     required String? value,
-    required List<goat> options,
+    required List<Goat> options,
     required Function(String?) onChanged,
     required IconData icon,
   }) {
@@ -1423,7 +1419,7 @@ class _goatFormScreenState extends State<goatFormScreen> {
           hint: const Text('Select Breed (Required)'),
           decoration: InputDecoration(
             labelText: 'Breed (Required)',
-            prefixIcon: Icon(FontAwesomeIcons.Doe, color: AppColors.primary),
+            prefixIcon: Icon(FontAwesomeIcons.cow, color: AppColors.primary),
             border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
@@ -1812,7 +1808,7 @@ class _goatFormScreenState extends State<goatFormScreen> {
                     _buildSearchableDropdown(
                       label: 'Dam Tag (Mother) (Optional)',
                       value: _motherTag,
-                      options: _femalegoat,
+                      options: _femaleGoat,
                       onChanged: (value) => setState(() => _motherTag = value),
                       icon: Icons.female,
                     ),
@@ -1820,7 +1816,7 @@ class _goatFormScreenState extends State<goatFormScreen> {
                     _buildSearchableDropdown(
                       label: 'Sire Tag (Father) (Optional)',
                       value: _fatherTag,
-                      options: _malegoat,
+                      options: _maleGoat,
                       onChanged: (value) => setState(() => _fatherTag = value),
                       icon: Icons.male,
                     ),

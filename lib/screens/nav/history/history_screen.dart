@@ -25,29 +25,48 @@ class _HistoryScreenState extends State<HistoryScreen> {
   String selectedHistoryType = 'All';
   Set<int> expandedCards = <int>{};
 
-  // All possible history types
+  // All possible history types - comprehensive list of all available history types
   List<String> get historyTypes {
-    // Reference order for grid: use HistoryTypeUtils for 'Doe' (most complete)
-    final DoeTypes = HistoryTypeUtils.getHistoryTypesForSex(null, classification: 'Doe');
-    return [...DoeTypes];
+    // Define all possible history types that can be recorded
+    // This ensures all types are always available in the Add History tab
+    const allHistoryTypes = [
+      'Vaccinated',
+      'Sick',
+      'Treated',
+      'Breeding',
+      'Pregnant',
+      'Gives Birth',
+      'Aborted Pregnancy',
+      'Dry off',
+      'Weighed',
+      'Deworming',
+      'Hoof Trimming',
+      'Castrated',
+      'Weaned',
+      'Mortality',
+      'Lost',
+      'Sold',
+      'Other',
+    ];
+    
+    debugPrint('DEBUG: All history types: ${allHistoryTypes.join(", ")}');
+    
+    return ['Select type of history record', ...allHistoryTypes];
   }
 
   Widget _buildAddHistoryGrid() {
+    // Get all types except the "Select type" option
     final allTypes = historyTypes.where((t) => t != 'Select type of history record').toList();
-    final knownTypesSet = {
-      'Vaccinated', 'Dry off', 'Sick', 'Treated', 'Breeding', 'Pregnant', 'Gives Birth', 'Aborted Pregnancy', 'Weighed', 'Deworming', 'Hoof Trimming', 'Castrated', 'Weaned', 'Mortality', 'Lost', 'Sold'
-    };
-    final gridTypes = <String>[];
-    bool hasOther = false;
-    for (final type in allTypes) {
-      if (type == 'Other') {
-        hasOther = true;
-      } else if (!knownTypesSet.contains(type)) {
-        gridTypes.add(type);
-      } else {
-        gridTypes.add(type);
-      }
-    }
+    
+    // Separate "Other" from the rest
+    final gridTypes = allTypes.where((t) => t != 'Other').toList();
+    final hasOther = allTypes.contains('Other');
+    
+    // Debug: Print all types to verify they're included
+    debugPrint('DEBUG: Total history types: ${allTypes.length}');
+    debugPrint('DEBUG: Grid types count: ${gridTypes.length}');
+    debugPrint('DEBUG: All history types in grid: ${gridTypes.join(", ")}');
+    
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
@@ -80,13 +99,13 @@ class _HistoryScreenState extends State<HistoryScreen> {
                     context: context,
                     barrierDismissible: false,
                     builder: (dialogContext) {
-                      return goatSelectionModal(historyType: type);
+                      return GoatSelectionModal(historyType: type);
                     },
                   );
                   if (!mounted || selectedgoatTag == null) return;
                   await Navigator.of(context).push(
                     MaterialPageRoute(
-                      builder: (routeContext) => goatHistoryFormScreen(
+                      builder: (routeContext) => GoatHistoryFormScreen(
                         goatTag: selectedgoatTag,
                         initialHistoryType: type,
                       ),
@@ -151,13 +170,13 @@ class _HistoryScreenState extends State<HistoryScreen> {
                     context: context,
                     barrierDismissible: false,
                     builder: (dialogContext) {
-                      return goatSelectionModal(historyType: 'Other');
+                      return GoatSelectionModal(historyType: 'Other');
                     },
                   );
                   if (!mounted || selectedgoatTag == null) return;
                   await Navigator.of(context).push(
                     MaterialPageRoute(
-                      builder: (routeContext) => goatHistoryFormScreen(
+                      builder: (routeContext) => GoatHistoryFormScreen(
                         goatTag: selectedgoatTag,
                         initialHistoryType: 'Other',
                       ),
@@ -588,12 +607,12 @@ class _HistoryScreenState extends State<HistoryScreen> {
   void _editHistory(Map<String, dynamic> historyRecord) async {
     try {
       // Create a GoatHistoryRecord object from the history record data
-      final GoatHistoryRecord = GoatHistoryRecord(
+      final historyRecordObj = GoatHistoryRecord(
         id: historyRecord['id'] ?? 0,
         userId: historyRecord['user_id'] ?? 0,
         goatTag: historyRecord['goat_tag']?.toString() ?? '',
-        BuckTag: historyRecord['Buck_tag']?.toString(),
-        KidTag: historyRecord['Kid_tag']?.toString(),
+        buckTag: historyRecord['buck_tag']?.toString() ?? historyRecord['Buck_tag']?.toString(),
+        kidTag: historyRecord['kid_tag']?.toString() ?? historyRecord['Kid_tag']?.toString(),
         historyType: historyRecord['history_type']?.toString() ?? '',
         historyDate: historyRecord['history_date']?.toString() ?? '',
         sicknessSymptoms: historyRecord['sickness_symptoms']?.toString(),
@@ -619,8 +638,8 @@ class _HistoryScreenState extends State<HistoryScreen> {
       final result = await Navigator.push(
         context,
         MaterialPageRoute(
-          builder: (context) => goatHistoryFormScreen(
-            historyRecord: GoatHistoryRecord,
+          builder: (context) => GoatHistoryFormScreen(
+            historyRecord: historyRecordObj,
             goatTag: historyRecord['goat_tag']?.toString() ?? '',
           ),
         ),
@@ -1197,16 +1216,16 @@ class _HistoryScreenState extends State<HistoryScreen> {
       }
       
       // Handle Kid tags - check if it's comma-separated (multiple calves)
-      final KidTagValue = historyRecord['Kid_tag']?.toString();
-      if (KidTagValue != null && KidTagValue.isNotEmpty && KidTagValue != 'N/A') {
-        if (KidTagValue.contains(',')) {
+      final kidTagValue = historyRecord['Kid_tag']?.toString();
+      if (kidTagValue != null && kidTagValue.isNotEmpty && kidTagValue != 'N/A') {
+        if (kidTagValue.contains(',')) {
           // Multiple calves - split by comma and count
-          final KidTags = KidTagValue.split(',').map((tag) => tag.trim()).where((tag) => tag.isNotEmpty).toList();
-          relevantDetails['Kid Tags'] = KidTags.join(', ');
-          relevantDetails['Litter Size'] = '${KidTags.length}';
+          final kidTags = kidTagValue.split(',').map((tag) => tag.trim()).where((tag) => tag.isNotEmpty).toList();
+          relevantDetails['Kid Tags'] = kidTags.join(', ');
+          relevantDetails['Litter Size'] = '${kidTags.length}';
         } else {
           // Single Kid
-          relevantDetails['Kid Tag'] = KidTagValue;
+          relevantDetails['Kid Tag'] = kidTagValue;
           relevantDetails['Litter Size'] = '1';
         }
       } else {

@@ -4,11 +4,11 @@ import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import '../../../../constants/app_colors.dart';
 import '../../../../models/schedule.dart';
 
-class goatListModal extends StatelessWidget {
+class GoatListModal extends StatelessWidget {
   final Schedule schedule;
   final List<String> goatTags;
 
-  const goatListModal({
+  const GoatListModal({
     super.key,
     required this.schedule,
     required this.goatTags,
@@ -22,7 +22,7 @@ class goatListModal extends StatelessWidget {
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (context) => goatListModal(
+      builder: (context) => GoatListModal(
         schedule: schedule,
         goatTags: goatTags,
       ),
@@ -90,7 +90,7 @@ class goatListModal extends StatelessWidget {
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: FaIcon(
-                  FontAwesomeIcons.Doe,
+                  FontAwesomeIcons.cow,
                   color: AppColors.primary,
                   size: 24,
                 ),

@@ -166,9 +166,11 @@ class GoatExportService {
         return false;
       }
 
-      final qp = (reportType != null && reportType.isNotEmpty)
-          ? '?report_type=${Uri.encodeQueryComponent(reportType)}'
-          : '';
+      final queryParams = <String>[];
+      if (reportType != null && reportType.isNotEmpty) {
+        queryParams.add('format_type=${Uri.encodeQueryComponent(reportType)}');
+      }
+      final qp = queryParams.isNotEmpty ? '?${queryParams.join('&')}' : '';
       final url = Uri.parse('$_baseUrl/farmer/goats/export-excel$qp');
       log('📥 GoatExportService: Downloading goat List Excel from $url');
 
@@ -181,11 +183,18 @@ class GoatExportService {
       );
 
       log('📥 GoatExportService: Response status: ${response.statusCode}');
+      log('📥 GoatExportService: Response headers: ${response.headers}');
+      log('📥 GoatExportService: Response body length: ${response.bodyBytes.length}');
       if (response.statusCode != 200) return false;
 
       final bytes = response.bodyBytes;
+      log('📥 GoatExportService: First 20 bytes: ${bytes.take(20).map((b) => b.toRadixString(16).padLeft(2, '0')).join(' ')}');
       final looksLikeZip = bytes.length >= 4 && bytes[0] == 0x50 && bytes[1] == 0x4B && bytes[2] == 0x03 && bytes[3] == 0x04;
-      if (!looksLikeZip) return false;
+      if (!looksLikeZip) {
+        log('❌ GoatExportService: Response is not a valid Excel file. Expected ZIP signature (50 4B 03 04)');
+        log('❌ GoatExportService: Response might be HTML or error message. First 200 chars: ${String.fromCharCodes(bytes.take(200))}');
+        return false;
+      }
 
       final dir = await getTemporaryDirectory();
       final ts = DateTime.now().toIso8601String().replaceAll(':', '-').split('.')[0];
@@ -207,9 +216,11 @@ class GoatExportService {
         return false;
       }
 
-      final qp = (reportType != null && reportType.isNotEmpty)
-          ? '?report_type=${Uri.encodeQueryComponent(reportType)}'
-          : '';
+      final queryParams = <String>[];
+      if (reportType != null && reportType.isNotEmpty) {
+        queryParams.add('format_type=${Uri.encodeQueryComponent(reportType)}');
+      }
+      final qp = queryParams.isNotEmpty ? '?${queryParams.join('&')}' : '';
       final url = Uri.parse('$_baseUrl/farmer/goats/export-pdf$qp');
       log('📥 GoatExportService: Downloading goat List PDF from $url');
 
@@ -222,11 +233,18 @@ class GoatExportService {
       );
 
       log('📥 GoatExportService: Response status: ${response.statusCode}');
+      log('📥 GoatExportService: Response headers: ${response.headers}');
+      log('📥 GoatExportService: Response body length: ${response.bodyBytes.length}');
       if (response.statusCode != 200) return false;
 
       final bytes = response.bodyBytes;
+      log('📥 GoatExportService: First 20 bytes: ${bytes.take(20).map((b) => b.toRadixString(16).padLeft(2, '0')).join(' ')}');
       final looksLikePdf = bytes.length >= 4 && bytes[0] == 0x25 && bytes[1] == 0x50 && bytes[2] == 0x44 && bytes[3] == 0x46;
-      if (!looksLikePdf) return false;
+      if (!looksLikePdf) {
+        log('❌ GoatExportService: Response is not a valid PDF file. Expected PDF signature (25 50 44 46 = %PDF)');
+        log('❌ GoatExportService: Response might be HTML or error message. First 200 chars: ${String.fromCharCodes(bytes.take(200))}');
+        return false;
+      }
 
       final dir = await getTemporaryDirectory();
       final ts = DateTime.now().toIso8601String().replaceAll(':', '-').split('.')[0];

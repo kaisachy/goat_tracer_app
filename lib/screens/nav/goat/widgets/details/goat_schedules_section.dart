@@ -6,15 +6,15 @@ import 'package:goat_tracer_app/constants/app_colors.dart';
 import 'package:goat_tracer_app/services/schedule/schedule_service.dart';
 import 'package:intl/intl.dart';
 
-class goatSchedulesSection extends StatefulWidget {
-  final goat goat;
-  const goatSchedulesSection({super.key, required this.goat});
+class GoatSchedulesSection extends StatefulWidget {
+  final Goat goat;
+  const GoatSchedulesSection({super.key, required this.goat});
 
   @override
-  State<goatSchedulesSection> createState() => _goatSchedulesSectionState();
+  State<GoatSchedulesSection> createState() => _GoatSchedulesSectionState();
 }
 
-class _goatSchedulesSectionState extends State<goatSchedulesSection> {
+class _GoatSchedulesSectionState extends State<GoatSchedulesSection> {
   List<Schedule>? schedules;
   bool isLoadingSchedules = true;
   String? scheduleError;

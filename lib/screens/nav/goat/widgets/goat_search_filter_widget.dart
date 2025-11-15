@@ -2,7 +2,7 @@
 import 'package:goat_tracer_app/constants/app_colors.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 
-class goatSearchFilterWidget extends StatefulWidget {
+class GoatSearchFilterWidget extends StatefulWidget {
   // MODIFIED: Callback now accepts breed and group name
   final Function(String, String, String, String, String) onFiltersChanged;
   final Function(String) onSearchChanged;
@@ -18,7 +18,7 @@ class goatSearchFilterWidget extends StatefulWidget {
   // NEW: Archive button callback
   final VoidCallback? onArchivePressed;
 
-  const goatSearchFilterWidget({
+  const GoatSearchFilterWidget({
     super.key,
     required this.onSearchChanged,
     required this.onFiltersChanged,
@@ -33,11 +33,11 @@ class goatSearchFilterWidget extends StatefulWidget {
   });
 
   @override
-  State<goatSearchFilterWidget> createState() =>
-      _goatSearchFilterWidgetState();
+  State<GoatSearchFilterWidget> createState() =>
+      _GoatSearchFilterWidgetState();
 }
 
-class _goatSearchFilterWidgetState extends State<goatSearchFilterWidget> {
+class _GoatSearchFilterWidgetState extends State<GoatSearchFilterWidget> {
   late String _selectedSex;
   late String _selectedClassification;
   late String _selectedStatus;
@@ -620,7 +620,7 @@ class _goatSearchFilterWidgetState extends State<goatSearchFilterWidget> {
                         constraints: const BoxConstraints(),
                       ),
                       const SizedBox(width: 12),
-                      Icon(FontAwesomeIcons.Doe, color: AppColors.primary, size: 24),
+                      Icon(FontAwesomeIcons.cow, color: AppColors.primary, size: 24),
                       const SizedBox(width: 8),
                       Text(
                         ' Breed',
@@ -1139,7 +1139,7 @@ class _goatSearchFilterWidgetState extends State<goatSearchFilterWidget> {
                                     color: Colors.purple.withValues(alpha: 0.1),
                                     borderRadius: BorderRadius.circular(8),
                                   ),
-                                  child: Icon(FontAwesomeIcons.Doe,
+                                  child: Icon(FontAwesomeIcons.cow,
                                       color: Colors.purple, size: 20),
                                 ),
                                 const SizedBox(width: 16),

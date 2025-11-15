@@ -66,14 +66,14 @@ class _BreedingSuccessDashboardState extends State<BreedingSuccessDashboard>
       setState(() => _isLoading = true);
 
       // Load available options for filters
-      final Does = await BreedingAnalysisService.getAvailableDoes();
-      final Bucks = await BreedingAnalysisService.getAvailableBucks();
+      final does = await BreedingAnalysisService.getAvailableDoes();
+      final bucks = await BreedingAnalysisService.getAvailableBucks();
       final breedingTypes = await BreedingAnalysisService.getAvailableBreedingTypes();
 
       if (mounted) {
         setState(() {
-          _availableDoes = Does;
-          _availableBucks = Bucks;
+          _availableDoes = does;
+          _availableBucks = bucks;
           _availableBreedingTypes = breedingTypes;
         });
       }
@@ -328,7 +328,7 @@ class _BreedingSuccessDashboardState extends State<BreedingSuccessDashboard>
                     });
                     _onFilterChanged();
                   },
-                  icon: FontAwesomeIcons.Doe,
+                  icon: FontAwesomeIcons.cow,
                 ),
               ),
               const SizedBox(width: 12),

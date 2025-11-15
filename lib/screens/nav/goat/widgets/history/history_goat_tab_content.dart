@@ -9,7 +9,7 @@ import '../../modals/history_duplication_modal.dart';
 import 'package:goat_tracer_app/utils/history_type_utils.dart';
 
 class HistorygoatTabContent extends StatefulWidget {
-  final goat goat;
+  final Goat goat;
   final VoidCallback onAddEvent;
 
   const HistorygoatTabContent({
@@ -451,8 +451,8 @@ class _HistorygoatTabContentState extends State<HistorygoatTabContent> {
         id: event['id'] ?? 0,
         userId: event['user_id'] ?? 0,
         goatTag: event['goat_tag']?.toString() ?? '',
-        BuckTag: event['Buck_tag']?.toString(),
-        KidTag: event['Kid_tag']?.toString(),
+        buckTag: event['buck_tag']?.toString() ?? event['Buck_tag']?.toString(),
+        kidTag: event['kid_tag']?.toString() ?? event['Kid_tag']?.toString(),
         historyType: event['history_type']?.toString() ?? '',
         historyDate: event['history_date']?.toString() ?? '',
         sicknessSymptoms: event['sickness_symptoms']?.toString(),
@@ -478,7 +478,7 @@ class _HistorygoatTabContentState extends State<HistorygoatTabContent> {
       final result = await Navigator.push(
         context,
         MaterialPageRoute(
-          builder: (context) => goatHistoryFormScreen(
+          builder: (context) => GoatHistoryFormScreen(
             historyRecord: goatEvent,
             goatTag: widget.goat.tagNo,
           ),
@@ -991,16 +991,16 @@ class _HistorygoatTabContentState extends State<HistorygoatTabContent> {
         }
         
         // Handle Kid tags and calculate litter size
-        final KidTagValue = event['Kid_tag']?.toString();
-        if (KidTagValue != null && KidTagValue.isNotEmpty && KidTagValue != 'N/A') {
-          if (KidTagValue.contains(',')) {
+        final kidTagValue = event['Kid_tag']?.toString();
+        if (kidTagValue != null && kidTagValue.isNotEmpty && kidTagValue != 'N/A') {
+          if (kidTagValue.contains(',')) {
             // Multiple calves - split by comma and count
-            final KidTags = KidTagValue.split(',').map((tag) => tag.trim()).where((tag) => tag.isNotEmpty).toList();
-            relevantDetails['Kid Tags'] = KidTags.join(', ');
-            relevantDetails['Litter Size'] = '${KidTags.length}';
+            final kidTags = kidTagValue.split(',').map((tag) => tag.trim()).where((tag) => tag.isNotEmpty).toList();
+            relevantDetails['Kid Tags'] = kidTags.join(', ');
+            relevantDetails['Litter Size'] = '${kidTags.length}';
           } else {
             // Single Kid
-            relevantDetails['Kid Tag'] = KidTagValue;
+            relevantDetails['Kid Tag'] = kidTagValue;
             relevantDetails['Litter Size'] = '1';
           }
         } else {

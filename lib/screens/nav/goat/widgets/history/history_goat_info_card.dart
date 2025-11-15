@@ -4,7 +4,7 @@ import '../../../../../models/goat.dart';
 import '../../../../../constants/app_colors.dart';
 
 class HistorygoatInfoCard extends StatelessWidget {
-  final goat? goatDetails;
+  final Goat? goatDetails;
   final String? goatTag;
 
   const HistorygoatInfoCard({
@@ -127,7 +127,7 @@ class HistorygoatInfoCard extends StatelessWidget {
                   borderRadius: BorderRadius.circular(15),
                 ),
                 child: const Icon(
-                  FontAwesomeIcons.Doe,
+                  FontAwesomeIcons.cow,
                   color: AppColors.vibrantGreen,
                   size: 22,
                 ),

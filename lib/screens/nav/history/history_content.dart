@@ -171,14 +171,14 @@ class _HistoryContentState extends State<HistoryContent> {
     // First show the goat selection modal
     final selectedgoatTag = await showDialog<String>(
       context: context,
-      builder: (dialogContext) => const goatSelectionModal(),
+      builder: (dialogContext) => const GoatSelectionModal(),
     );
 
     if (selectedgoatTag == null || !mounted) return;
 
     await Navigator.of(context).push(
       MaterialPageRoute(
-        builder: (routeContext) => goatHistoryFormScreen(goatTag: selectedgoatTag),
+        builder: (routeContext) => GoatHistoryFormScreen(goatTag: selectedgoatTag),
       ),
     );
 
@@ -630,7 +630,7 @@ class _HistoryContentState extends State<HistoryContent> {
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => goatHistoryFormScreen(
+        builder: (context) => GoatHistoryFormScreen(
           historyRecord: goatEvent,
           goatTag: event['goat_tag']?.toString(),
         ),
@@ -732,16 +732,16 @@ class _HistoryContentState extends State<HistoryContent> {
         if (event['Buck_tag'] != null) details.add({'label': 'Buck Tag (Father)', 'value': event['Buck_tag']});
         
         // Handle Kid tags and calculate litter size
-        final KidTagValue = event['Kid_tag']?.toString();
-        if (KidTagValue != null && KidTagValue.isNotEmpty && KidTagValue != 'N/A') {
-          if (KidTagValue.contains(',')) {
+        final kidTagValue = event['Kid_tag']?.toString();
+        if (kidTagValue != null && kidTagValue.isNotEmpty && kidTagValue != 'N/A') {
+          if (kidTagValue.contains(',')) {
             // Multiple calves - split by comma and count
-            final KidTags = KidTagValue.split(',').map((tag) => tag.trim()).where((tag) => tag.isNotEmpty).toList();
-            details.add({'label': 'Kid Tags', 'value': KidTags.join(', ')});
-            details.add({'label': 'Litter Size', 'value': '${KidTags.length}'});
+            final kidTags = kidTagValue.split(',').map((tag) => tag.trim()).where((tag) => tag.isNotEmpty).toList();
+            details.add({'label': 'Kid Tags', 'value': kidTags.join(', ')});
+            details.add({'label': 'Litter Size', 'value': '${kidTags.length}'});
           } else {
             // Single Kid
-            details.add({'label': 'Kid Tag', 'value': KidTagValue});
+            details.add({'label': 'Kid Tag', 'value': kidTagValue});
             details.add({'label': 'Litter Size', 'value': '1'});
           }
         } else {

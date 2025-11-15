@@ -8,11 +8,11 @@ import 'package:goat_tracer_app/services/goat/goat_service.dart';
 import 'package:goat_tracer_app/screens/nav/goat/goat_history_form_screen.dart';
 
 class ArchiveOption {
-  static void show(BuildContext context, {required goat goat, VoidCallback? ongoatUpdated}) {
-    _showArchiveOptions(context, goat: goat, ongoatUpdated: ongoatUpdated);
+  static void show(BuildContext context, {required Goat goat, VoidCallback? onGoatUpdated}) {
+    _showArchiveOptions(context, goat: goat, onGoatUpdated: onGoatUpdated);
   }
 
-  static void _showArchiveOptions(BuildContext context, {required goat goat, VoidCallback? ongoatUpdated}) {
+  static void _showArchiveOptions(BuildContext context, {required Goat goat, VoidCallback? onGoatUpdated}) {
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
@@ -63,7 +63,7 @@ class ArchiveOption {
               color: AppColors.gold,
               onTap: () {
                 Navigator.pop(context);
-                _archiveAsSold(context, goat: goat, ongoatUpdated: ongoatUpdated);
+                _archiveAsSold(context, goat: goat, onGoatUpdated: onGoatUpdated);
               },
             ),
             _buildArchiveOption(
@@ -74,7 +74,7 @@ class ArchiveOption {
               color: Colors.red[600]!,
               onTap: () {
                 Navigator.pop(context);
-                _archiveAsMortality(context, goat: goat, ongoatUpdated: ongoatUpdated);
+                _archiveAsMortality(context, goat: goat, onGoatUpdated: onGoatUpdated);
               },
             ),
             _buildArchiveOption(
@@ -85,7 +85,7 @@ class ArchiveOption {
               color: Colors.orange[600]!,
               onTap: () {
                 Navigator.pop(context);
-                _archiveAsLost(context, goat: goat, ongoatUpdated: ongoatUpdated);
+                _archiveAsLost(context, goat: goat, onGoatUpdated: onGoatUpdated);
               },
             ),
             const SizedBox(height: 24),
@@ -168,12 +168,12 @@ class ArchiveOption {
     );
   }
 
-  static void _archiveAsSold(BuildContext context, {required goat goat, VoidCallback? ongoatUpdated}) async {
+  static void _archiveAsSold(BuildContext context, {required Goat goat, VoidCallback? onGoatUpdated}) async {
     // Navigate to event form with "Sold" pre-selected
     final result = await Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => goatHistoryFormScreen(
+        builder: (context) => GoatHistoryFormScreen(
           goatTag: goat.tagNo,
           initialHistoryType: 'Sold',
         ),
@@ -196,7 +196,7 @@ class ArchiveOption {
             AppColors.gold,
             isSuccess: true,
           );
-          ongoatUpdated?.call();
+          onGoatUpdated?.call();
         } else {
           if (!context.mounted) return;
           UIHelpers.showEnhancedSnackbar(
@@ -220,12 +220,12 @@ class ArchiveOption {
     }
   }
 
-  static void _archiveAsMortality(BuildContext context, {required goat goat, VoidCallback? ongoatUpdated}) async {
+  static void _archiveAsMortality(BuildContext context, {required Goat goat, VoidCallback? onGoatUpdated}) async {
     // Navigate to event form with "Mortality" pre-selected
     final result = await Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => goatHistoryFormScreen(
+        builder: (context) => GoatHistoryFormScreen(
           goatTag: goat.tagNo,
           initialHistoryType: 'Mortality',
         ),
@@ -248,7 +248,7 @@ class ArchiveOption {
             Colors.red[600]!,
             isSuccess: true,
           );
-          ongoatUpdated?.call();
+          onGoatUpdated?.call();
         } else {
           if (!context.mounted) return;
           UIHelpers.showEnhancedSnackbar(
@@ -272,12 +272,12 @@ class ArchiveOption {
     }
   }
 
-  static void _archiveAsLost(BuildContext context, {required goat goat, VoidCallback? ongoatUpdated}) async {
+  static void _archiveAsLost(BuildContext context, {required Goat goat, VoidCallback? onGoatUpdated}) async {
     // Navigate to event form with "Lost" pre-selected
     final result = await Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => goatHistoryFormScreen(
+        builder: (context) => GoatHistoryFormScreen(
           goatTag: goat.tagNo,
           initialHistoryType: 'Lost',
         ),
@@ -300,7 +300,7 @@ class ArchiveOption {
             Colors.orange[600]!,
             isSuccess: true,
           );
-          ongoatUpdated?.call();
+          onGoatUpdated?.call();
         } else {
           if (!context.mounted) return;
           UIHelpers.showEnhancedSnackbar(

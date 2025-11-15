@@ -9,38 +9,36 @@ import 'package:goat_tracer_app/screens/nav/goat/modals/photo_options_modal.dart
 import 'package:goat_tracer_app/screens/nav/goat/widgets/details/goat_schedules_section.dart';
 import 'package:goat_tracer_app/services/schedule/schedule_service.dart';
 import 'package:goat_tracer_app/services/goat/goat_export_service.dart';
-import 'package:goat_tracer_app/services/goat/goat_service.dart';
 import 'package:goat_tracer_app/screens/nav/goat/modals/options/change_stage_option.dart';
 import 'package:goat_tracer_app/screens/nav/goat/modals/options/change_status_option.dart';
 import 'package:goat_tracer_app/screens/nav/goat/modals/options/archive_option.dart';
 import 'package:goat_tracer_app/screens/nav/goat/modals/options/delete_option.dart';
-import 'package:goat_tracer_app/screens/nav/history/goat_selection_modal.dart';
 
-class goatHeroSection extends StatefulWidget {
-  final goat goat;
+class GoatHeroSection extends StatefulWidget {
+  final Goat goat;
   final Function(String?) onImageUpdate;
-  final Function(goat) onEditgoat;
+  final Function(Goat) onEditGoat;
   final VoidCallback onAddEvent;
-  final VoidCallback? ongoatUpdated;
+  final VoidCallback? onGoatUpdated;
   final bool isUpdatingImage;
   final bool isArchived;
 
-  const goatHeroSection({
+  const GoatHeroSection({
     super.key,
     required this.goat,
     required this.onImageUpdate,
-    required this.onEditgoat,
+    required this.onEditGoat,
     required this.onAddEvent,
-    this.ongoatUpdated,
+    this.onGoatUpdated,
     this.isUpdatingImage = false,
     this.isArchived = false,
   });
 
   @override
-  State<goatHeroSection> createState() => _goatHeroSectionState();
+  State<GoatHeroSection> createState() => _GoatHeroSectionState();
 }
 
-class _goatHeroSectionState extends State<goatHeroSection> {
+class _GoatHeroSectionState extends State<GoatHeroSection> {
   int _scheduleCount = 0;
   bool _isLoadingSchedules = true;
 
@@ -148,7 +146,7 @@ class _goatHeroSectionState extends State<goatHeroSection> {
                             child: Text(
                               widget.goat.status.toUpperCase(),
                               style: TextStyle(
-                                color: goatDetailUtils.getStatusColor(widget.goat.status),
+                                color: GoatDetailUtils.getStatusColor(widget.goat.status),
                                 fontWeight: FontWeight.bold,
                                 fontSize: 15,
                                 letterSpacing: 0.5,
@@ -221,7 +219,7 @@ class _goatHeroSectionState extends State<goatHeroSection> {
                       ),
                     ),
                     child: const Icon(
-                      FontAwesomeIcons.Doe,
+                      FontAwesomeIcons.cow,
                       size: 50,
                       color: AppColors.lightGreen,
                     ),
@@ -538,7 +536,7 @@ class _goatHeroSectionState extends State<goatHeroSection> {
                       physics: const BouncingScrollPhysics(),
                       child: Column(
                         children: [
-                          goatSchedulesSection(goat: widget.goat),
+                          GoatSchedulesSection(goat: widget.goat),
                           const SizedBox(height: 24),
                         ],
                       ),
@@ -653,64 +651,95 @@ class _goatHeroSectionState extends State<goatHeroSection> {
         onSelected: (value) async {
           switch (value) {
             case 'edit':
-              widget.onEditgoat(widget.goat);
+              widget.onEditGoat(widget.goat);
               break;
             case 'add_event':
               widget.onAddEvent();
               break;
             case 'change_stage':
-              ChangeStageOption.show(context, widget.goat, widget.ongoatUpdated ?? () {});
+              ChangeStageOption.show(context, widget.goat, widget.onGoatUpdated ?? () {});
               break;
             case 'change_status':
-              ChangeStatusOption.show(context, widget.goat, widget.ongoatUpdated ?? () {});
+              ChangeStatusOption.show(context, widget.goat, widget.onGoatUpdated ?? () {});
               break;
             case 'export_excel':
-            case 'export_pdf':
-              // Show goat selection modal for export
-              final selectedTag = await showDialog<String>(
-                context: context,
-                builder: (dialogContext) => const goatSelectionModal(),
+              // Directly export the goat being viewed
+              final messenger = ScaffoldMessenger.of(context);
+              messenger.hideCurrentSnackBar();
+              messenger.showSnackBar(
+                SnackBar(
+                  content: Row(
+                    children: [
+                      SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(
+                          color: Colors.white,
+                          strokeWidth: 2,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      const Text('Generating Excel report...'),
+                    ],
+                  ),
+                  backgroundColor: Colors.blue.shade600,
+                  behavior: SnackBarBehavior.floating,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  duration: const Duration(seconds: 10),
+                ),
               );
-              if (selectedTag != null) {
-                if (!context.mounted) break;
-                // Find the selected goat
-                final allgoat = await GoatService.getAllGoats();
-                if (!context.mounted) break;
-                final selectedgoat = allgoat.firstWhere(
-                  (c) => c.tagNo == selectedTag,
-                  orElse: () => widget.goat,
-                );
-                if (value == 'export_excel') {
-                  final messenger = ScaffoldMessenger.of(context);
-                  messenger.hideCurrentSnackBar();
-                  final ok = await GoatExportService.downloadgoatExcel(selectedgoat.id.toString());
-                  if (!context.mounted) break;
-                  messenger.showSnackBar(
-                    SnackBar(
-                      content: Text(ok ? 'Excel report ready! Choose where to open/save.' : 'Failed to download Excel report.'),
-                      backgroundColor: ok ? Colors.green.shade600 : Colors.red.shade700,
-                      behavior: SnackBarBehavior.floating,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                    ),
-                  );
-                } else if (value == 'export_pdf') {
-                  final messenger = ScaffoldMessenger.of(context);
-                  messenger.hideCurrentSnackBar();
-                  final ok = await GoatExportService.downloadgoatPdf(selectedgoat.id.toString());
-                  if (!context.mounted) break;
-                  messenger.showSnackBar(
-                    SnackBar(
-                      content: Text(ok ? 'PDF report ready! Choose where to open/save.' : 'Failed to generate PDF report.'),
-                      backgroundColor: ok ? Colors.green.shade600 : Colors.red.shade700,
-                      behavior: SnackBarBehavior.floating,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                    ),
-                  );
-                }
-              }
+              final ok = await GoatExportService.downloadgoatExcel(widget.goat.id.toString());
+              if (!context.mounted) break;
+              messenger.hideCurrentSnackBar();
+              messenger.showSnackBar(
+                SnackBar(
+                  content: Text(ok ? 'Excel report ready! Choose where to open/save.' : 'Failed to download Excel report.'),
+                  backgroundColor: ok ? Colors.green.shade600 : Colors.red.shade700,
+                  behavior: SnackBarBehavior.floating,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                ),
+              );
+              break;
+            case 'export_pdf':
+              // Directly export the goat being viewed
+              final messengerPdf = ScaffoldMessenger.of(context);
+              messengerPdf.hideCurrentSnackBar();
+              messengerPdf.showSnackBar(
+                SnackBar(
+                  content: Row(
+                    children: [
+                      SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(
+                          color: Colors.white,
+                          strokeWidth: 2,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      const Text('Generating PDF report...'),
+                    ],
+                  ),
+                  backgroundColor: Colors.blue.shade600,
+                  behavior: SnackBarBehavior.floating,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  duration: const Duration(seconds: 10),
+                ),
+              );
+              final okPdf = await GoatExportService.downloadgoatPdf(widget.goat.id.toString());
+              if (!context.mounted) break;
+              messengerPdf.hideCurrentSnackBar();
+              messengerPdf.showSnackBar(
+                SnackBar(
+                  content: Text(okPdf ? 'PDF report ready! Choose where to open/save.' : 'Failed to generate PDF report.'),
+                  backgroundColor: okPdf ? Colors.green.shade600 : Colors.red.shade700,
+                  behavior: SnackBarBehavior.floating,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                ),
+              );
               break;
             case 'archive':
-              ArchiveOption.show(context, goat: widget.goat, ongoatUpdated: widget.ongoatUpdated ?? () {});
+              ArchiveOption.show(context, goat: widget.goat, onGoatUpdated: widget.onGoatUpdated ?? () {});
               break;
             case 'delete':
               DeleteOption.show(context);

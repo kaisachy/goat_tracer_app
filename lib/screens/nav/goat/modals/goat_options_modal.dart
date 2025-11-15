@@ -11,13 +11,13 @@ import 'package:goat_tracer_app/screens/nav/goat/modals/options/export_pdf_optio
 import 'package:goat_tracer_app/screens/nav/goat/modals/options/archive_option.dart';
 import 'package:goat_tracer_app/screens/nav/goat/modals/options/delete_option.dart';
 
-class goatOptionsModal {
+class GoatOptionsModal {
   static void show({
     required BuildContext context,
-    required goat goat,
+    required Goat goat,
     required VoidCallback onAddEvent,
-    required Function(goat) onEditgoat,
-    VoidCallback? ongoatUpdated,
+    required Function(Goat) onEditGoat,
+    VoidCallback? onGoatUpdated,
     bool isArchived = false,
   }) {
     final RenderBox button = context.findRenderObject() as RenderBox;
@@ -142,8 +142,8 @@ class goatOptionsModal {
           selectedValue,
           goat,
           onAddEvent,
-          onEditgoat,
-          ongoatUpdated,
+          onEditGoat,
+          onGoatUpdated,
           isArchived,
         );
       }
@@ -242,24 +242,24 @@ class goatOptionsModal {
   static void _handleMenuSelection(
       BuildContext context,
       String value,
-      goat goat,
+      Goat goat,
       VoidCallback onAddEvent,
-      Function(goat) onEditgoat,
-      VoidCallback? ongoatUpdated,
+      Function(Goat) onEditGoat,
+      VoidCallback? onGoatUpdated,
       bool isArchived,
       ) {
     switch (value) {
       case 'edit':
-        onEditgoat(goat);
+        onEditGoat(goat);
         break;
       case 'add_event':
         onAddEvent();
         break;
       case 'change_stage':
-        ChangeStageOption.show(context, goat, ongoatUpdated);
+        ChangeStageOption.show(context, goat, onGoatUpdated);
         break;
       case 'change_status':
-        ChangeStatusOption.show(context, goat, ongoatUpdated);
+        ChangeStatusOption.show(context, goat, onGoatUpdated);
         break;
       case 'weight_report':
         WeightReportOption.show(context);
@@ -268,7 +268,7 @@ class goatOptionsModal {
         ExportPdfOption.show(context);
         break;
       case 'archive':
-        ArchiveOption.show(context, goat: goat, ongoatUpdated: ongoatUpdated);
+        ArchiveOption.show(context, goat: goat, onGoatUpdated: onGoatUpdated);
         break;
       case 'delete':
         DeleteOption.show(context);

@@ -15,8 +15,8 @@ class ArchivedgoatScreen extends StatefulWidget {
 }
 
 class _ArchivedgoatScreenState extends State<ArchivedgoatScreen> {
-  List<goat> _archivedgoat = [];
-  List<goat> _filteredgoatList = [];
+  List<Goat> _archivedGoat = [];
+  List<Goat> _filteredGoatList = [];
   Map<String, Map<String, dynamic>> _goatEventDetails = {};
   final Map<String, bool> _expandedCards = {};
   bool _isLoading = true;
@@ -27,10 +27,10 @@ class _ArchivedgoatScreenState extends State<ArchivedgoatScreen> {
   @override
   void initState() {
     super.initState();
-    _loadArchivedgoat();
+    _loadArchivedGoat();
   }
 
-  List<Widget> _buildAgeLine(goat goat) {
+  List<Widget> _buildAgeLine(Goat goat) {
     String? ageText;
     if (goat.age != null && goat.age!.toString().trim().isNotEmpty &&
         goat.age!.toString().trim().toLowerCase() != 'unknown' &&
@@ -88,7 +88,7 @@ class _ArchivedgoatScreenState extends State<ArchivedgoatScreen> {
     }
   }
 
-  Future<void> _loadArchivedgoat() async {
+  Future<void> _loadArchivedGoat() async {
     setState(() {
       _isLoading = true;
     });
@@ -126,7 +126,7 @@ class _ArchivedgoatScreenState extends State<ArchivedgoatScreen> {
       }
       
       setState(() {
-        _archivedgoat = goat;
+        _archivedGoat = goat;
         _goatEventDetails = eventDetails;
         _filtergoat(); // Apply filters to the new data
         _isLoading = false;
@@ -155,7 +155,7 @@ class _ArchivedgoatScreenState extends State<ArchivedgoatScreen> {
 
   void _filtergoat() {
     setState(() {
-      _filteredgoatList = _archivedgoat.where((goat) {
+      _filteredGoatList = _archivedGoat.where((goat) {
         final matchesSearch = _searchQuery.isEmpty ||
             goat.tagNo.toLowerCase().contains(_searchQuery.toLowerCase());
 
@@ -167,7 +167,7 @@ class _ArchivedgoatScreenState extends State<ArchivedgoatScreen> {
     });
   }
 
-  Future<void> _unarchivegoat(goat goat) async {
+  Future<void> _unarchiveGoat(Goat goat) async {
     try {
       final success = await GoatService.unarchivegoat(goat.id);
       
@@ -179,7 +179,7 @@ class _ArchivedgoatScreenState extends State<ArchivedgoatScreen> {
               backgroundColor: Colors.green,
             ),
           );
-          _loadArchivedgoat(); // Refresh the list
+          _loadArchivedGoat(); // Refresh the list
         }
       } else {
         if (mounted) {
@@ -203,7 +203,7 @@ class _ArchivedgoatScreenState extends State<ArchivedgoatScreen> {
     }
   }
 
-  void _showUnarchiveDialog(goat goat) {
+  void _showUnarchiveDialog(Goat goat) {
     showDialog(
       context: context,
       builder: (BuildContext context) {
@@ -218,7 +218,7 @@ class _ArchivedgoatScreenState extends State<ArchivedgoatScreen> {
             ElevatedButton(
               onPressed: () {
                 Navigator.pop(context);
-                _unarchivegoat(goat);
+                _unarchiveGoat(goat);
               },
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.vibrantGreen,
@@ -232,11 +232,11 @@ class _ArchivedgoatScreenState extends State<ArchivedgoatScreen> {
     );
   }
 
-  void _navigateTogoatDetail(goat goat) {
+  void _navigateToGoatDetail(Goat goat) {
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => goatDetailScreen(
+        builder: (context) => GoatDetailScreen(
           goatId: goat.id,
           isArchived: true,
         ),
@@ -255,7 +255,7 @@ class _ArchivedgoatScreenState extends State<ArchivedgoatScreen> {
       ),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
-          : _archivedgoat.isEmpty
+          : _archivedGoat.isEmpty
               ? const Center(
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
@@ -362,15 +362,15 @@ class _ArchivedgoatScreenState extends State<ArchivedgoatScreen> {
                     ),
                     // goat List
                     Expanded(
-                      child: _filteredgoatList.isEmpty
+                      child: _filteredGoatList.isEmpty
                           ? _buildEmptyState()
                           : RefreshIndicator(
-                              onRefresh: _loadArchivedgoat,
+                              onRefresh: _loadArchivedGoat,
                               child: ListView.builder(
                                 padding: const EdgeInsets.only(bottom: 80),
-                                itemCount: _filteredgoatList.length,
+                                itemCount: _filteredGoatList.length,
                                 itemBuilder: (context, index) =>
-                                    _buildgoatCard(_filteredgoatList[index], index),
+                                    _buildGoatCard(_filteredGoatList[index], index),
                               ),
                             ),
                     ),
@@ -556,7 +556,7 @@ class _ArchivedgoatScreenState extends State<ArchivedgoatScreen> {
     );
   }
 
-  Widget _buildgoatCard(goat goat, int index) {
+  Widget _buildGoatCard(Goat goat, int index) {
     final isExpanded = _expandedCards[goat.tagNo] ?? false;
     
     return Container(
@@ -675,7 +675,7 @@ class _ArchivedgoatScreenState extends State<ArchivedgoatScreen> {
                         if (value == 'restore') {
                           _showUnarchiveDialog(goat);
                         } else if (value == 'goat_info') {
-                          _navigateTogoatDetail(goat);
+                          _navigateToGoatDetail(goat);
                         }
                       },
                       itemBuilder: (context) => [
@@ -796,11 +796,11 @@ class _ArchivedgoatScreenState extends State<ArchivedgoatScreen> {
       case 'lost':
         return FontAwesomeIcons.locationDot;
       default:
-        return FontAwesomeIcons.Doe;
+        return FontAwesomeIcons.cow;
     }
   }
 
-  String _getArchiveDetailsText(goat goat) {
+  String _getArchiveDetailsText(Goat goat) {
     final eventData = _goatEventDetails[goat.tagNo];
     
     if (eventData == null) {

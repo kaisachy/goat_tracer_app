@@ -64,10 +64,10 @@ class PregnantEventFieldsState extends BaseEventFieldsState<PregnantEventFields>
     debugPrint('DEBUG: PregnantEventFields onBucksLoaded called');
     // If semen_used has a value but Buck_tag is empty, try to derive Buck tag from semen label
     final semenText = widget.controllers['semen_used']?.text ?? '';
-    final BuckText = widget.controllers['Buck_tag']?.text ?? '';
-    debugPrint('DEBUG: Current semen: $semenText, Buck: $BuckText');
+    final buckText = widget.controllers['Buck_tag']?.text ?? '';
+    debugPrint('DEBUG: Current semen: $semenText, Buck: $buckText');
     
-    if (semenText.isNotEmpty && BuckText.isEmpty) {
+    if (semenText.isNotEmpty && buckText.isEmpty) {
       debugPrint('DEBUG: Extracting Buck tag from semen in onBucksLoaded');
       // Expected semen format examples:
       // - "TAG123 (Name) Semen"
@@ -84,11 +84,11 @@ class PregnantEventFieldsState extends BaseEventFieldsState<PregnantEventFields>
       if (stop == -1 || (paren != -1 && paren < stop)) {
         stop = paren;
       }
-      final BuckTag = stop == -1 ? extracted : extracted.substring(0, stop).trim();
-      debugPrint('DEBUG: Extracted Buck tag: $BuckTag');
-      if (BuckTag.isNotEmpty) {
-        widget.controllers['Buck_tag']?.text = BuckTag;
-        debugPrint('DEBUG: Set Buck_tag controller to: $BuckTag');
+      final buckTag = stop == -1 ? extracted : extracted.substring(0, stop).trim();
+      debugPrint('DEBUG: Extracted Buck tag: $buckTag');
+      if (buckTag.isNotEmpty) {
+        widget.controllers['Buck_tag']?.text = buckTag;
+        debugPrint('DEBUG: Set Buck_tag controller to: $buckTag');
         if (mounted) setState(() {});
       }
     }

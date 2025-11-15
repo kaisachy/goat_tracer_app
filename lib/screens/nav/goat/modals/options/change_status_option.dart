@@ -30,7 +30,7 @@ class ChangeStatusOption {
     'Lost',
   ];
 
-  static void show(BuildContext context, goat goat, VoidCallback? ongoatUpdated) {
+  static void show(BuildContext context, Goat goat, VoidCallback? onGoatUpdated) {
     // ✨ NEW: Dynamically select the list of statuses based on sex
     final List<String> statusesForSex =
     goat.sex == 'Male' ? _maleStatuses : _allStatuses;
@@ -86,7 +86,7 @@ class ChangeStatusOption {
                       context,
                       goat,
                       selectedStatus,
-                      ongoatUpdated,
+                      onGoatUpdated,
                     ),
                   ],
                 ),
@@ -128,7 +128,7 @@ class ChangeStatusOption {
     );
   }
 
-  static Widget _buildCurrentStatusInfo(goat goat) {
+  static Widget _buildCurrentStatusInfo(Goat goat) {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -252,9 +252,9 @@ class ChangeStatusOption {
 
   static Widget _buildActionButtons(
       BuildContext context,
-      goat goat,
+      Goat goat,
       String selectedStatus,
-      VoidCallback? ongoatUpdated,
+      VoidCallback? onGoatUpdated,
       ) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.end,
@@ -277,8 +277,8 @@ class ChangeStatusOption {
           onPressed: selectedStatus == goat.status
               ? null
               : () async {
-            await _updategoatStatus(
-                context, goat, selectedStatus, ongoatUpdated);
+            await _updateGoatStatus(
+                context, goat, selectedStatus, onGoatUpdated);
           },
           style: ElevatedButton.styleFrom(
             backgroundColor: AppColors.vibrantGreen,
@@ -359,11 +359,11 @@ class ChangeStatusOption {
     return Icon(iconData, size: 18, color: iconColor);
   }
 
-  static Future<void> _updategoatStatus(
+  static Future<void> _updateGoatStatus(
       BuildContext context,
-      goat goat,
+      Goat goat,
       String newStatus,
-      VoidCallback? ongoatUpdated,
+      VoidCallback? onGoatUpdated,
       ) async {
     UIHelpers.showEnhancedLoadingDialog(
         context, 'Updating goat status...', Icons.sync);
@@ -374,7 +374,7 @@ class ChangeStatusOption {
         'status': newStatus,
       };
 
-      final success = await GoatService.updategoatInformation(updateData);
+      final success = await GoatService.updateGoatInformation(updateData);
       if (!context.mounted) return;
       Navigator.pop(context);
 
@@ -393,7 +393,7 @@ class ChangeStatusOption {
         );
 
         Future.delayed(const Duration(milliseconds: 300), () {
-          ongoatUpdated?.call();
+          onGoatUpdated?.call();
         });
       } else {
         if (!context.mounted) return;

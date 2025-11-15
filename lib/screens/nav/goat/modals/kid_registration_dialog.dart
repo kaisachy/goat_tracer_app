@@ -51,18 +51,18 @@ class _KidRegistrationDialogState extends State<KidRegistrationDialog> {
 
       try {
         // Handle both direct data and nested fullKidData
-        Map<String, dynamic> KidData;
+        Map<String, dynamic> kidData;
         if (data.containsKey('fullKidData')) {
-          KidData = data['fullKidData'] as Map<String, dynamic>;
+          kidData = data['fullKidData'] as Map<String, dynamic>;
           // Try to get Kid ID from multiple possible sources
-          _existingKidId = _safeParseInt(data['KidId']) ?? _safeParseInt(KidData['id']);
+          _existingKidId = _safeParseInt(data['kidId']) ?? _safeParseInt(kidData['id']);
         } else {
-          KidData = data;
+          kidData = data;
           _existingKidId = _safeParseInt(data['id']);
         }
 
-        _tagController.text = _safeParseString(KidData['tag_no']) ?? '';
-        _selectedSex = _safeParseString(KidData['sex']) ?? 'Female';
+        _tagController.text = _safeParseString(kidData['tag_no']) ?? '';
+        _selectedSex = _safeParseString(kidData['sex']) ?? 'Female';
 
         debugPrint('Edit mode initialized with Kid ID: $_existingKidId, tag: ${_tagController.text}');
       } catch (e) {
@@ -308,8 +308,8 @@ class _KidRegistrationDialogState extends State<KidRegistrationDialog> {
     setState(() => _isLoading = true);
 
     try {
-      final KidData = _prepareKidData();
-      debugPrint('Kid data prepared for ${widget.isEditMode ? 'update' : 'registration'}: $KidData');
+      final kidData = _prepareKidData();
+      debugPrint('Kid data prepared for ${widget.isEditMode ? 'update' : 'registration'}: $kidData');
 
       // Prepare result data with safe type conversion - DO NOT register yet
       Map<String, dynamic> resultData = {
@@ -317,13 +317,13 @@ class _KidRegistrationDialogState extends State<KidRegistrationDialog> {
         'sex': _selectedSex,
         'registered': false, // Mark as not registered yet - will be done when event is saved
         'isEditMode': widget.isEditMode,
-        'fullKidData': KidData,
+        'fullKidData': kidData,
         'pendingOperation': widget.isEditMode ? 'update' : 'create', // Track what operation is pending
       };
 
       // Include the Kid ID if we have it
       if (_existingKidId != null) {
-        resultData['KidId'] = _existingKidId;
+        resultData['kidId'] = _existingKidId;
       }
 
       Navigator.of(context).pop(resultData);

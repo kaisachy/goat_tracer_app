@@ -68,11 +68,11 @@ class HistorySpecificFieldsState extends State<HistorySpecificFields> {
     }
   }
 
-  void updateKidData(Map<String, dynamic>? KidData) {
+  void updateKidData(Map<String, dynamic>? kidData) {
     setState(() {
-      _newKidData = KidData;
-      if (KidData != null) {
-        widget.controllers['Kid_tag']?.text = KidData['tag_no'] ?? '';
+      _newKidData = kidData;
+      if (kidData != null) {
+        widget.controllers['Kid_tag']?.text = kidData['tag_no'] ?? '';
       }
     });
   }

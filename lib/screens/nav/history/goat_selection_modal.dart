@@ -12,22 +12,22 @@ import 'package:goat_tracer_app/screens/nav/goat/modals/options/archive_option.d
 import 'package:goat_tracer_app/screens/nav/goat/modals/options/delete_option.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 
-class goatSelectionModal extends StatefulWidget {
+class GoatSelectionModal extends StatefulWidget {
   final String? historyType; // Optional: filter goat by history type applicability
 
-  const goatSelectionModal({super.key, this.historyType});
+  const GoatSelectionModal({super.key, this.historyType});
 
   @override
-  State<goatSelectionModal> createState() => _goatSelectionModalState();
+  State<GoatSelectionModal> createState() => _GoatSelectionModalState();
 }
 
-class _goatSelectionModalState extends State<goatSelectionModal> {
-  List<goat> allgoat = [];
-  List<goat> filteredgoat = [];
+class _GoatSelectionModalState extends State<GoatSelectionModal> {
+  List<Goat> allGoats = [];
+  List<Goat> filteredGoat = [];
   bool isLoading = true;
   String? error;
   String searchQuery = '';
-  goat? selectedgoat;
+  Goat? selectedGoat;
   final Set<String> _tagsWithBreeding = {};
   final Set<String> _tagsWithPregnant = {};
   final Set<String> _tagsWithSick = {};
@@ -47,12 +47,12 @@ class _goatSelectionModalState extends State<goatSelectionModal> {
 
       if (mounted) {
         setState(() {
-          allgoat = goat;
+          allGoats = goat;
           // Apply initial filter based on history type if provided
           final base = widget.historyType == null
-              ? allgoat
-              : allgoat.where(_matchesHistoryClassification).toList();
-          filteredgoat = base;
+              ? allGoats
+              : allGoats.where(_matchesHistoryClassification).toList();
+          filteredGoat = base;
           isLoading = false;
           error = null;
         });
@@ -96,13 +96,13 @@ class _goatSelectionModalState extends State<goatSelectionModal> {
     setState(() {
       searchQuery = query;
       final base = widget.historyType == null
-          ? allgoat
-          : allgoat.where(_matchesHistoryClassification).toList();
+          ? allGoats
+          : allGoats.where(_matchesHistoryClassification).toList();
 
       if (query.isEmpty) {
-        filteredgoat = base;
+        filteredGoat = base;
       } else {
-        filteredgoat = base.where((goat) {
+        filteredGoat = base.where((goat) {
           // Fix: Use the correct property name from your goat model
           // Replace 'tagNo' with whatever your actual property name is
           final tagNo = (goat.tagNo).toLowerCase(); // Assuming your property is 'tagNo'
@@ -115,7 +115,7 @@ class _goatSelectionModalState extends State<goatSelectionModal> {
     });
   }
 
-  bool _matchesHistoryClassification(goat goat) {
+  bool _matchesHistoryClassification(Goat goat) {
     final type = (widget.historyType ?? '').toLowerCase();
     final sex = (goat.sex).toLowerCase();
     final cls = (goat.classification).toLowerCase();
@@ -129,7 +129,7 @@ class _goatSelectionModalState extends State<goatSelectionModal> {
       'castrated'
     };
     // Kid-only history types
-    const KidOnly = {
+    const kidOnly = {
       'weaned'
     };
 
@@ -150,7 +150,7 @@ class _goatSelectionModalState extends State<goatSelectionModal> {
     if (maleOnly.contains(type)) {
       return sex == 'male';
     }
-    if (KidOnly.contains(type)) {
+    if (kidOnly.contains(type)) {
       return cls == 'Kid';
     }
 
@@ -163,24 +163,24 @@ class _goatSelectionModalState extends State<goatSelectionModal> {
     return true;
   }
 
-  void _selectgoat(goat goat) {
+  void _selectGoat(Goat goat) {
     setState(() {
-      selectedgoat = goat;
+      selectedGoat = goat;
     });
   }
 
   void _confirmSelection() {
-    if (selectedgoat != null) {
+    if (selectedGoat != null) {
       // Fix: Use the correct property name
-      Navigator.of(context).pop(selectedgoat!.tagNo); // Assuming your property is 'tagNo'
+      Navigator.of(context).pop(selectedGoat!.tagNo); // Assuming your property is 'tagNo'
     }
   }
 
   Future<void> _exportExcel() async {
-    if (selectedgoat == null) return;
+    if (selectedGoat == null) return;
     final messenger = ScaffoldMessenger.of(context);
     messenger.hideCurrentSnackBar();
-    final ok = await GoatExportService.downloadgoatExcel(selectedgoat!.id.toString());
+    final ok = await GoatExportService.downloadgoatExcel(selectedGoat!.id.toString());
     if (!mounted) return;
     messenger.showSnackBar(
       SnackBar(
@@ -193,10 +193,10 @@ class _goatSelectionModalState extends State<goatSelectionModal> {
   }
 
   Future<void> _exportPdf() async {
-    if (selectedgoat == null) return;
+    if (selectedGoat == null) return;
     final messenger = ScaffoldMessenger.of(context);
     messenger.hideCurrentSnackBar();
-    final ok = await GoatExportService.downloadgoatPdf(selectedgoat!.id.toString());
+    final ok = await GoatExportService.downloadgoatPdf(selectedGoat!.id.toString());
     if (!mounted) return;
     messenger.showSnackBar(
       SnackBar(
@@ -264,7 +264,7 @@ class _goatSelectionModalState extends State<goatSelectionModal> {
                       border: Border.all(color: AppColors.vibrantGreen.withValues(alpha: 0.3)),
                     ),
                     child: const FaIcon(
-                      FontAwesomeIcons.Doe,
+                      FontAwesomeIcons.cow,
                       color: AppColors.vibrantGreen,
                       size: 18,
                     ),
@@ -339,18 +339,18 @@ class _goatSelectionModalState extends State<goatSelectionModal> {
               )
                   : error != null
                   ? _buildErrorState()
-                  : filteredgoat.isEmpty
+                  : filteredGoat.isEmpty
                   ? _buildEmptyState()
                   : ListView.separated(
                 shrinkWrap: true,
                 padding: const EdgeInsets.symmetric(horizontal: 12),
-                itemCount: filteredgoat.length,
+                itemCount: filteredGoat.length,
                 separatorBuilder: (context, index) => const SizedBox(height: 6),
                 itemBuilder: (context, index) {
-                  final goat = filteredgoat[index];
+                  final goat = filteredGoat[index];
                   // Fix: Use the correct property name for comparison
-                  final isSelected = selectedgoat?.tagNo == goat.tagNo; // Assuming your property is 'tagNo'
-                  return _buildgoatCard(goat, isSelected);
+                  final isSelected = selectedGoat?.tagNo == goat.tagNo; // Assuming your property is 'tagNo'
+                  return _buildGoatCard(goat, isSelected);
                 },
               ),
             ),
@@ -374,7 +374,7 @@ class _goatSelectionModalState extends State<goatSelectionModal> {
               child: Column(
                 children: [
                   // Export buttons (only show when goat is selected)
-                  if (selectedgoat != null) ...[
+                  if (selectedGoat != null) ...[
                     Row(
                       children: [
                         Expanded(
@@ -436,9 +436,9 @@ class _goatSelectionModalState extends State<goatSelectionModal> {
                       const SizedBox(width: 12),
                       Expanded(
                         child: ElevatedButton(
-                          onPressed: selectedgoat != null ? _confirmSelection : null,
+                          onPressed: selectedGoat != null ? _confirmSelection : null,
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: selectedgoat != null
+                            backgroundColor: selectedGoat != null
                                 ? AppColors.vibrantGreen
                                 : Colors.grey.shade300,
                             foregroundColor: Colors.white,
@@ -446,14 +446,14 @@ class _goatSelectionModalState extends State<goatSelectionModal> {
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(12),
                             ),
-                            elevation: selectedgoat != null ? 2 : 0,
+                            elevation: selectedGoat != null ? 2 : 0,
                           ),
                           child: Text(
                             'Select',
                             style: TextStyle(
                               fontSize: 14,
                               fontWeight: FontWeight.w600,
-                              color: selectedgoat != null ? Colors.white : Colors.grey.shade500,
+                              color: selectedGoat != null ? Colors.white : Colors.grey.shade500,
                             ),
                           ),
                         ),
@@ -469,9 +469,9 @@ class _goatSelectionModalState extends State<goatSelectionModal> {
     );
   }
 
-  Widget _buildgoatCard(goat goat, bool isSelected) {
+  Widget _buildGoatCard(Goat goat, bool isSelected) {
     return InkWell(
-      onTap: () => _selectgoat(goat),
+      onTap: () => _selectGoat(goat),
       borderRadius: BorderRadius.circular(12),
       child: Container(
         padding: const EdgeInsets.all(12),
@@ -510,7 +510,7 @@ class _goatSelectionModalState extends State<goatSelectionModal> {
                 ),
               ),
               child: FaIcon(
-                FontAwesomeIcons.Doe,
+                FontAwesomeIcons.cow,
                 color: isSelected ? AppColors.vibrantGreen : Colors.grey.shade600,
                 size: 16,
               ),
@@ -542,7 +542,7 @@ class _goatSelectionModalState extends State<goatSelectionModal> {
                 ],
               ),
             ),
-            _buildgoatOptionsMenu(goat),
+            _buildGoatOptionsMenu(goat),
             if (isSelected)
               Container(
                 margin: const EdgeInsets.only(left: 8),
@@ -563,7 +563,7 @@ class _goatSelectionModalState extends State<goatSelectionModal> {
     );
   }
 
-  Widget _buildgoatOptionsMenu(goat goat) {
+  Widget _buildGoatOptionsMenu(Goat goat) {
     return PopupMenuButton<String>(
       icon: Icon(
         Icons.more_vert,
@@ -584,7 +584,7 @@ class _goatSelectionModalState extends State<goatSelectionModal> {
             await Navigator.push(
               context,
               MaterialPageRoute(
-                builder: (context) => goatFormScreen(goat: goat),
+                builder: (context) => GoatFormScreen(goat: goat),
               ),
             );
             if (!mounted) break;
@@ -595,7 +595,7 @@ class _goatSelectionModalState extends State<goatSelectionModal> {
             await Navigator.push(
               context,
               MaterialPageRoute(
-                builder: (context) => goatHistoryFormScreen(goatTag: goat.tagNo),
+                builder: (context) => GoatHistoryFormScreen(goatTag: goat.tagNo),
               ),
             );
             if (!mounted) break;
@@ -643,7 +643,7 @@ class _goatSelectionModalState extends State<goatSelectionModal> {
             break;
           case 'archive':
             if (!mounted) break;
-            ArchiveOption.show(context, goat: goat, ongoatUpdated: () {
+            ArchiveOption.show(context, goat: goat, onGoatUpdated: () {
               _loadgoat();
             });
             break;
@@ -853,7 +853,7 @@ class _goatSelectionModalState extends State<goatSelectionModal> {
               border: Border.all(color: Colors.grey.shade300),
             ),
             child: Icon(
-              searchQuery.isEmpty ? FontAwesomeIcons.Doe : Icons.search_off_rounded,
+              searchQuery.isEmpty ? FontAwesomeIcons.cow : Icons.search_off_rounded,
               size: 48,
               color: Colors.grey.shade500,
             ),

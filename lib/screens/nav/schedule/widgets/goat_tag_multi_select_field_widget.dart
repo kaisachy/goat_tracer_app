@@ -4,15 +4,15 @@ import '../../../../constants/app_colors.dart';
 import '../../../../models/goat.dart';
 import '../modals/goat_multi_select_dialog.dart';
 
-class goatTagMultiSelectField extends StatelessWidget {
+class GoatTagMultiSelectField extends StatelessWidget {
   final List<String> selectedgoatTags;
-  final List<goat> goatList;
+  final List<Goat> goatList;
   final bool isLoadinggoat;
   final Function(List<String>) ongoatTagsChanged;
   final VoidCallback onRefreshgoat;
   final Set<String>? scheduledTagsForVaccine; // uppercase tags that are already scheduled
 
-  const goatTagMultiSelectField({
+  const GoatTagMultiSelectField({
     super.key,
     required this.selectedgoatTags,
     required this.goatList,
@@ -46,7 +46,7 @@ class goatTagMultiSelectField extends StatelessWidget {
 
         // Enhanced dropdown field with selected goat displayed inside
         InkWell(
-          onTap: isLoadinggoat || goatList.isEmpty ? null : () => _showgoatMultiSelectDialog(context),
+          onTap: isLoadinggoat || goatList.isEmpty ? null : () => _showGoatMultiSelectDialog(context),
           child: Container(
             width: double.infinity,
             constraints: const BoxConstraints(minHeight: 56),
@@ -59,7 +59,7 @@ class goatTagMultiSelectField extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.center, // <-- This is the corrected line
               children: [
                 FaIcon(
-                  FontAwesomeIcons.Doe,
+                  FontAwesomeIcons.cow,
                   color: AppColors.darkGreen,
                 ),
                 const SizedBox(width: 12),
@@ -150,10 +150,10 @@ class goatTagMultiSelectField extends StatelessWidget {
     );
   }
 
-  Future<void> _showgoatMultiSelectDialog(BuildContext context) async {
+  Future<void> _showGoatMultiSelectDialog(BuildContext context) async {
     final result = await showDialog<List<String>>(
       context: context,
-      builder: (context) => goatMultiSelectDialog(
+      builder: (context) => GoatMultiSelectDialog(
         goatList: goatList,
         initialSelectedTags: selectedgoatTags,
         scheduledTagsForVaccine: scheduledTagsForVaccine ?? const {},

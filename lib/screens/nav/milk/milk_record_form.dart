@@ -7,13 +7,13 @@ import '../../../constants/app_colors.dart';
 
 class MilkRecordFormScreen extends StatefulWidget {
   final MilkProduction? record;
-  final List<goat> allgoat;
+  final List<Goat> allGoats;
   final bool isEditing;
 
   const MilkRecordFormScreen({
     super.key,
     this.record,
-    required this.allgoat,
+    required this.allGoats,
     this.isEditing = false,
   });
 
@@ -107,7 +107,7 @@ class _MilkRecordFormScreenState extends State<MilkRecordFormScreen> {
 
                     // goat Selection (only for individual Doe milk)
                     if (selectedMilkType == 'Individual Doe Milk') ...[
-                      _buildSectionTitle('Select Doe', FontAwesomeIcons.Doe),
+                      _buildSectionTitle('Select Doe', FontAwesomeIcons.cow),
                       const SizedBox(height: 12),
                       _buildgoatSelector(),
                       const SizedBox(height: 24),
@@ -315,17 +315,17 @@ class _MilkRecordFormScreenState extends State<MilkRecordFormScreen> {
           border: InputBorder.none,
           contentPadding: const EdgeInsets.all(16),
           prefixIcon: Icon(
-            FontAwesomeIcons.Doe,
+            FontAwesomeIcons.cow,
             color: AppColors.primary,
             size: 20,
           ),
         ),
-        items: widget.allgoat.isEmpty
+        items: widget.allGoats.isEmpty
             ? [const DropdownMenuItem(
           value: null,
           child: Text('No Does available'),
         )]
-            : widget.allgoat.map((goat) => DropdownMenuItem(
+            : widget.allGoats.map((goat) => DropdownMenuItem(
           value: goat.tagNo,
           child: Row(
             children: [
@@ -342,7 +342,7 @@ class _MilkRecordFormScreenState extends State<MilkRecordFormScreen> {
             ],
           ),
         )).toList(),
-        onChanged: widget.allgoat.isEmpty
+        onChanged: widget.allGoats.isEmpty
             ? null
             : (value) => setState(() => selectedgoatTag = value),
         validator: (value) {

@@ -40,7 +40,7 @@ class _ScheduleFormState extends State<ScheduleForm> {
   TimeOfDay _selectedTime = TimeOfDay.now();
   List<String> _selectedgoatTags = [];
 
-  List<goat> _goatList = [];
+  List<Goat> _goatList = [];
   bool _isLoadinggoat = false;
   bool _isLoading = false;
   bool get _isEditing => widget.scheduleToEdit != null;
@@ -163,9 +163,9 @@ class _ScheduleFormState extends State<ScheduleForm> {
             children: [
               _buildVaccineDropdown(),
               const SizedBox(height: 16),
-              goatTagMultiSelectField(
+              GoatTagMultiSelectField(
                 selectedgoatTags: _selectedgoatTags,
-                goatList: _filteredgoatForSelectedVaccine(),
+                goatList: _filteredGoatForSelectedVaccine(),
                 isLoadinggoat: _isLoadinggoat,
                 ongoatTagsChanged: (tags) {
                   if (mounted) {
@@ -675,7 +675,7 @@ extension _VaccinationUI on _ScheduleFormState {
     );
   }
 
-  List<goat> _filteredgoatForSelectedVaccine() {
+  List<Goat> _filteredGoatForSelectedVaccine() {
     if (_selectedVaccineName == null) return _goatList;
     if (_selectedgoatTags.isEmpty) return _goatList;
     final tagSet = _selectedgoatTags.toSet();
@@ -696,7 +696,7 @@ extension _VaccinationUI on _ScheduleFormState {
       await _loadExistingScheduledForSelectedVaccine();
       // Generate vaccination schedules for all goat
       final schedules = await VaccinationService().generateVaccinationSchedules(
-        allgoat: _goatList,
+        allGoats: _goatList,
         allEvents: _allEvents,
       );
 

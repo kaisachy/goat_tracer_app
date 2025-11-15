@@ -112,7 +112,7 @@ class ScheduleCard extends StatelessWidget {
   Widget _buildgoatClickableIcon(
       BuildContext context, List<String> goatTags) {
     return GestureDetector(
-      onTap: () => goatListModal.show(context, schedule),
+      onTap: () => GoatListModal.show(context, schedule),
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
         decoration: BoxDecoration(
@@ -127,7 +127,7 @@ class ScheduleCard extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             FaIcon(
-              FontAwesomeIcons.Doe,
+              FontAwesomeIcons.cow,
               size: 14,
               color: AppColors.primary,
             ),

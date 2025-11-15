@@ -13,6 +13,7 @@ class HistoryStyledTextField extends StatelessWidget {
   final IconData? icon;
   final String? Function(String?)? validator;
   final bool readOnly;
+  final void Function(String)? onChanged;
 
   const HistoryStyledTextField({
     super.key,
@@ -24,6 +25,7 @@ class HistoryStyledTextField extends StatelessWidget {
     this.icon,
     this.validator,
     this.readOnly = false,
+    this.onChanged,
   });
 
   @override
@@ -36,6 +38,7 @@ class HistoryStyledTextField extends StatelessWidget {
         keyboardType: isNumber ? TextInputType.number : TextInputType.text,
         maxLines: maxLines,
         style: const TextStyle(fontSize: 16),
+        onChanged: onChanged,
         decoration: InputDecoration(
           labelText: label,
           hintText: hint,

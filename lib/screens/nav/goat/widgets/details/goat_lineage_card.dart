@@ -8,10 +8,10 @@ import 'package:goat_tracer_app/utils/goat_detail_utils.dart';
 import 'package:goat_tracer_app/screens/nav/goat/goat_detail_screen.dart';
 import 'package:goat_tracer_app/services/goat/goat_service.dart';
 
-class goatLineageCard extends StatelessWidget {
-  final goat goat;
+class GoatLineageCard extends StatelessWidget {
+  final Goat goat;
 
-  const goatLineageCard({super.key, required this.goat});
+  const GoatLineageCard({super.key, required this.goat});
 
   Future<List<String>> _getValidOffspringTags() async {
     if (goat.offspring == null || goat.offspring!.isEmpty) {
@@ -66,13 +66,13 @@ class goatLineageCard extends StatelessWidget {
             _ParentInfoItemData(
               icon: Icons.female,
               title: 'Dam (Mother)',
-              value: goatDetailUtils.getParentDisplay(goat.motherTag),
+              value: GoatDetailUtils.getParentDisplay(goat.motherTag),
               tag: goat.motherTag,
             ),
             _ParentInfoItemData(
               icon: Icons.male,
               title: 'Sire (Father)',
-              value: goatDetailUtils.getParentDisplay(goat.fatherTag),
+              value: GoatDetailUtils.getParentDisplay(goat.fatherTag),
               tag: goat.fatherTag,
             ),
           ]),
@@ -303,7 +303,7 @@ class goatLineageCard extends StatelessWidget {
         // TODO: Update this to a proper navigation solution if needed, e.g. Navigator.pushNamed
         navigator.push(
           MaterialPageRoute(
-            builder: (context) => goatDetailScreen(goat: goat),
+            builder: (context) => GoatDetailScreen(goat: goat),
           ),
         );
       } else {
@@ -347,7 +347,7 @@ class goatLineageCard extends StatelessWidget {
       if (goat != null) {
         navigator.push(
           MaterialPageRoute(
-            builder: (context) => goatDetailScreen(goat: goat),
+            builder: (context) => GoatDetailScreen(goat: goat),
           ),
         );
       } else {

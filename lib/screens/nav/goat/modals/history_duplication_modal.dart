@@ -22,9 +22,9 @@ class _HistoryDuplicationModalState extends State<HistoryDuplicationModal> {
   final _formKey = GlobalKey<FormState>();
   final TextEditingController _eventDateController = TextEditingController();
 
-  List<goat> _allgoat = [];
-  List<goat> _availablegoat = [];
-  final Set<String> _selectedgoatTags = <String>{};
+  List<Goat> _allGoat = [];
+  List<Goat> _availableGoat = [];
+  final Set<String> _selectedGoatTags = <String>{};
   bool _isLoading = true;
   bool _isDuplicating = false;
   bool _selectAll = false;
@@ -56,15 +56,15 @@ class _HistoryDuplicationModalState extends State<HistoryDuplicationModal> {
     try {
       setState(() => _isLoading = true);
 
-      final allgoat = await GoatService.getAllGoats();
+      final allGoats = await GoatService.getAllGoats();
       final originalEventType = widget.originalEvent['history_type']?.toString().toLowerCase() ?? '';
       final originalgoatTag = widget.originalEvent['goat_tag']?.toString() ?? '';
 
       debugPrint('Debug: Loading goat for event type: $originalEventType');
-      debugPrint('Debug: Total goat loaded: ${allgoat.length}');
+      debugPrint('Debug: Total goat loaded: ${allGoats.length}');
 
       // Filter goat based on event type, sex, classification, and status
-      final availablegoat = allgoat.where((goat) {
+      final availableGoat = allGoats.where((goat) {
         // Check if goat is healthy
         if (goat.status.toLowerCase() != 'healthy') {
           debugPrint('Debug: Skipping ${goat.tagNo} - status: ${goat.status}');
@@ -94,13 +94,13 @@ class _HistoryDuplicationModalState extends State<HistoryDuplicationModal> {
       }).toList();
 
       // Sort goat by tag number
-      availablegoat.sort((a, b) => a.tagNo.compareTo(b.tagNo));
+      availableGoat.sort((a, b) => a.tagNo.compareTo(b.tagNo));
 
-      debugPrint('Debug: Available goat after filtering: ${availablegoat.length}');
+      debugPrint('Debug: Available goat after filtering: ${availableGoat.length}');
 
       setState(() {
-        _allgoat = availablegoat;
-        _availablegoat = availablegoat;
+        _allGoat = availableGoat;
+        _availableGoat = availableGoat;
         _isLoading = false;
       });
     } catch (e) {
@@ -183,13 +183,13 @@ class _HistoryDuplicationModalState extends State<HistoryDuplicationModal> {
     }
   }
 
-  void _filtergoat(String query) {
+  void _filterGoat(String query) {
     setState(() {
       _searchQuery = query;
       if (query.isEmpty) {
-        _availablegoat = _allgoat;
+        _availableGoat = _allGoat;
       } else {
-        _availablegoat = _allgoat.where((goat) {
+        _availableGoat = _allGoat.where((goat) {
           final tagNo = goat.tagNo.toLowerCase();
           final queryLower = query.toLowerCase();
           return tagNo.contains(queryLower);
@@ -197,8 +197,8 @@ class _HistoryDuplicationModalState extends State<HistoryDuplicationModal> {
       }
 
       // Update select all state based on filtered results
-      if (_availablegoat.isNotEmpty) {
-        _selectAll = _availablegoat.every((goat) => _selectedgoatTags.contains(goat.tagNo));
+      if (_availableGoat.isNotEmpty) {
+        _selectAll = _availableGoat.every((goat) => _selectedGoatTags.contains(goat.tagNo));
       }
     });
   }
@@ -207,14 +207,14 @@ class _HistoryDuplicationModalState extends State<HistoryDuplicationModal> {
     setState(() {
       if (_selectAll) {
         // Clear selection for visible goat
-        for (final goat in _availablegoat) {
-          _selectedgoatTags.remove(goat.tagNo);
+        for (final goat in _availableGoat) {
+          _selectedGoatTags.remove(goat.tagNo);
         }
         _selectAll = false;
       } else {
         // Select all visible goat
-        for (final goat in _availablegoat) {
-          _selectedgoatTags.add(goat.tagNo);
+        for (final goat in _availableGoat) {
+          _selectedGoatTags.add(goat.tagNo);
         }
         _selectAll = true;
       }
@@ -223,22 +223,22 @@ class _HistoryDuplicationModalState extends State<HistoryDuplicationModal> {
 
   void _clearAllSelection() {
     setState(() {
-      _selectedgoatTags.clear();
+      _selectedGoatTags.clear();
       _selectAll = false;
     });
   }
 
   void _togglegoatSelection(String tagNo) {
     setState(() {
-      if (_selectedgoatTags.contains(tagNo)) {
-        _selectedgoatTags.remove(tagNo);
+      if (_selectedGoatTags.contains(tagNo)) {
+        _selectedGoatTags.remove(tagNo);
       } else {
-        _selectedgoatTags.add(tagNo);
+        _selectedGoatTags.add(tagNo);
       }
 
       // Update select all state
-      if (_availablegoat.isNotEmpty) {
-        _selectAll = _availablegoat.every((goat) => _selectedgoatTags.contains(goat.tagNo));
+      if (_availableGoat.isNotEmpty) {
+        _selectAll = _availableGoat.every((goat) => _selectedGoatTags.contains(goat.tagNo));
       }
     });
   }
@@ -276,7 +276,7 @@ class _HistoryDuplicationModalState extends State<HistoryDuplicationModal> {
 
   Future<void> _duplicateEvents() async {
     if (!_formKey.currentState!.validate()) return;
-    if (_selectedgoatTags.isEmpty) {
+    if (_selectedGoatTags.isEmpty) {
       _showErrorSnackBar('Please select at least one goat to duplicate the event to.');
       return;
     }
@@ -288,7 +288,7 @@ class _HistoryDuplicationModalState extends State<HistoryDuplicationModal> {
       int failedCount = 0;
       final List<String> failedTags = [];
 
-      for (final goatTag in _selectedgoatTags) {
+      for (final goatTag in _selectedGoatTags) {
         try {
             final eventData = {
             'goat_tag': goatTag,
@@ -483,7 +483,7 @@ class _HistoryDuplicationModalState extends State<HistoryDuplicationModal> {
                         ),
                         contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
                       ),
-                      onChanged: _filtergoat,
+                      onChanged: _filterGoat,
                     ),
                   ),
                   const SizedBox(width: 12),
@@ -537,7 +537,7 @@ class _HistoryDuplicationModalState extends State<HistoryDuplicationModal> {
                     Icon(Icons.info_outline, color: AppColors.vibrantGreen, size: 16),
                     const SizedBox(width: 8),
                     Text(
-                      '${_selectedgoatTags.length} of ${_availablegoat.length} goat selected',
+                      '${_selectedGoatTags.length} of ${_availableGoat.length} goat selected',
                       style: const TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.w500,
@@ -555,7 +555,7 @@ class _HistoryDuplicationModalState extends State<HistoryDuplicationModal> {
                     ? const Center(
                   child: CircularProgressIndicator(color: AppColors.vibrantGreen),
                 )
-                    : _availablegoat.isEmpty
+                    : _availableGoat.isEmpty
                     ? Center(
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
@@ -596,14 +596,14 @@ class _HistoryDuplicationModalState extends State<HistoryDuplicationModal> {
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: ListView.separated(
-                    itemCount: _availablegoat.length,
+                    itemCount: _availableGoat.length,
                     separatorBuilder: (context, index) => Divider(
                       height: 1,
                       color: Colors.grey.shade200,
                     ),
                     itemBuilder: (context, index) {
-                      final goat = _availablegoat[index];
-                      final isSelected = _selectedgoatTags.contains(goat.tagNo);
+                      final goat = _availableGoat[index];
+                      final isSelected = _selectedGoatTags.contains(goat.tagNo);
 
                       return CheckboxListTile(
                         value: isSelected,
@@ -666,7 +666,7 @@ class _HistoryDuplicationModalState extends State<HistoryDuplicationModal> {
                   const SizedBox(width: 16),
                   Expanded(
                     child: ElevatedButton(
-                      onPressed: _isDuplicating || _selectedgoatTags.isEmpty
+                      onPressed: _isDuplicating || _selectedGoatTags.isEmpty
                           ? null
                           : _duplicateEvents,
                       style: ElevatedButton.styleFrom(
@@ -689,7 +689,7 @@ class _HistoryDuplicationModalState extends State<HistoryDuplicationModal> {
                         ),
                       )
                           : Text(
-                        'Duplicate (${_selectedgoatTags.length})',
+                        'Duplicate (${_selectedGoatTags.length})',
                         style: const TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.w600,

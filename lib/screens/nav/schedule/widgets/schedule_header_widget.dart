@@ -42,13 +42,13 @@ class _ScheduleHeaderState extends State<ScheduleHeader> {
       
       final vaccinationService = VaccinationService();
       final schedules = await vaccinationService.generateVaccinationSchedules(
-        allgoat: goatData,
+        allGoats: goatData,
         allEvents: eventsData,
       );
       
-      final goatNeeding = vaccinationService.getgoatNeedingVaccination(
+      final goatNeeding = vaccinationService.getGoatNeedingVaccination(
         schedules: schedules,
-        allgoat: goatData,
+        allGoats: goatData,
       );
 
       if (mounted) {

@@ -2,7 +2,7 @@
   import 'package:flutter/material.dart';
   import 'package:goat_tracer_app/constants/app_colors.dart';
   
-  class goatDetailUtils {
+  class GoatDetailUtils {
     /// Calculates age from date of birth string
     static String getAgeFromDob(String? dobString) {
       if (dobString == null || dobString.isEmpty) return 'Unknown';

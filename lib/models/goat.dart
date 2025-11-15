@@ -17,7 +17,7 @@ class Goat {
   final String? fatherTag;
   final String? offspring; // Added this line
   final String? notes;
-  final String? GoatPicture;
+  final String? goatPicture;
   final String? age;
 
   Goat({
@@ -36,7 +36,7 @@ class Goat {
     this.fatherTag,
     this.offspring, // Added this line
     this.notes,
-    this.GoatPicture,
+    this.goatPicture,
     this.age,
   });
 
@@ -57,7 +57,7 @@ class Goat {
       fatherTag: json['father_tag'],
       offspring: json['offspring'], // Added this line
       notes: json['notes'],
-      GoatPicture: json['Goat_picture'], // Base64 from backend
+      goatPicture: json['goat_picture'], // Base64 from backend
       age: json['age'], // Computed age from backend
     );
   }
@@ -79,25 +79,25 @@ class Goat {
       'father_tag': fatherTag,
       'offspring': offspring, // Added this line
       'notes': notes,
-      'Goat_picture': GoatPicture,
+      'goat_picture': goatPicture,
     };
   }
 
   /// Get image as Uint8List for display
   Uint8List? get imageBytes {
-    if (GoatPicture == null || GoatPicture!.isEmpty) {
+    if (goatPicture == null || goatPicture!.isEmpty) {
       return null;
     }
 
     try {
-      return base64Decode(GoatPicture!);
+      return base64Decode(goatPicture!);
     } catch (e) {
       return null;
     }
   }
 
   /// Check if Goat has a picture
-  bool get hasPicture => GoatPicture != null && GoatPicture!.isNotEmpty;
+  bool get hasPicture => goatPicture != null && goatPicture!.isNotEmpty;
 
   /// Get computed age in months from date of birth
   int? get computedAgeInMonths {
@@ -148,7 +148,7 @@ class Goat {
     String? fatherTag,
     String? offspring, // Added this line
     String? notes,
-    String? GoatPicture,
+    String? goatPicture,
     String? age,
   }) {
     return Goat(
@@ -167,7 +167,7 @@ class Goat {
       fatherTag: fatherTag ?? this.fatherTag,
       offspring: offspring ?? this.offspring, // Added this line
       notes: notes ?? this.notes,
-      GoatPicture: GoatPicture ?? this.GoatPicture,
+      goatPicture: goatPicture ?? this.goatPicture,
       age: age ?? this.age,
     );
   }
@@ -181,7 +181,7 @@ class Goat {
 class GoatHistoryRecord {
   final int id;
   final int userId;
-  final String GoatTag;
+  final String goatTag;
   final String? buckTag;
   final String? kidTag;
   final String historyType;
@@ -204,7 +204,7 @@ class GoatHistoryRecord {
   GoatHistoryRecord({
     required this.id,
     required this.userId,
-    required this.GoatTag,
+    required this.goatTag,
     this.buckTag,
     this.kidTag,
     required this.historyType,
@@ -229,9 +229,9 @@ class GoatHistoryRecord {
     return GoatHistoryRecord(
       id: json['id'],
       userId: json['user_id'],
-      GoatTag: json['Goat_tag'],
+      goatTag: json['goat_tag'],
       buckTag: json['buck_tag'],
-      kidTag: json['kid_tag'],
+      kidTag: json['kid_tag'] ?? json['KidTag'],
       historyType: json['history_type'],
       historyDate: json['history_date'],
       sicknessSymptoms: json['sickness_symptoms'],
@@ -259,7 +259,7 @@ class GoatHistoryRecord {
     return {
       'id': id,
       'user_id': userId,
-      'Goat_tag': GoatTag,
+      'goat_tag': goatTag,
       'buck_tag': buckTag,
       'kid_tag': kidTag,
       'history_type': historyType,

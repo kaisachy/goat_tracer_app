@@ -66,7 +66,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   void _initializePages() {
     _pages = [
       AuthGuard(child: ProfileScreen(userEmail: widget.userEmail ?? '')),
-      const AuthGuard(child: goatScreen()),
+      const AuthGuard(child: GoatScreen()),
       AuthGuard(child: DashboardScreen()),
       const AuthGuard(child: HistoryScreen()),
       const AuthGuard(child: FarmerSchedulerScreen()),
@@ -602,7 +602,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                   onTap: () => _onNavItemTapped(0),
                 ),
                 _buildDrawerItem(
-                  icon: FontAwesomeIcons.Doe,
+                  icon: FontAwesomeIcons.cow,
                   text: 'Production Record',
                   index: 1,
                   onTap: () => _onNavItemTapped(1),
