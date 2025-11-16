@@ -91,8 +91,19 @@ class AuthService {
       if (data['success'] == true) {
         debugPrint('🔍 AuthService DEBUG: Login successful, saving data...');
         // Save token and user data
-        await _storage.saveToken(data['token']);
+        final tokenToSave = data['token']?.toString() ?? '';
+        debugPrint('🔍 AuthService DEBUG: Token from server length: ${tokenToSave.length}');
+        debugPrint('🔍 AuthService DEBUG: Token from server (first 50): ${tokenToSave.length > 50 ? tokenToSave.substring(0, 50) : tokenToSave}...');
+        debugPrint('🔍 AuthService DEBUG: Token from server (last 20): ...${tokenToSave.length > 20 ? tokenToSave.substring(tokenToSave.length - 20) : tokenToSave}');
+        await _storage.saveToken(tokenToSave);
         debugPrint('🔍 AuthService DEBUG: Token saved');
+        
+        // Verify token was saved correctly
+        final verifyToken = await _storage.getToken();
+        debugPrint('🔍 AuthService DEBUG: Verified saved token length: ${verifyToken?.length ?? 0}');
+        if (verifyToken != null && verifyToken != tokenToSave.trim()) {
+          debugPrint('🔍 AuthService DEBUG: WARNING - Token mismatch after save!');
+        }
 
         if (data['user'] != null && data['user']['id'] != null) {
           final userId = data['user']['id'].toString();
@@ -233,6 +244,34 @@ class AuthService {
 
   static Future<String?> getToken() async {
     return await _storage.getToken();
+  }
+
+  /// Get authorization headers with Bearer token
+  /// Returns a map with Content-Type and Authorization headers
+  /// The token is trimmed and cleaned to ensure no whitespace issues
+  static Future<Map<String, String>> getAuthHeaders({
+    bool includeContentType = true,
+    String contentType = 'application/json',
+  }) async {
+    final token = await getToken();
+    if (token == null) {
+      return includeContentType ? {'Content-Type': contentType} : {};
+    }
+    
+    // Trim and remove any potential newlines or carriage returns
+    final cleanedToken = token.trim().replaceAll(RegExp(r'[\r\n]'), '');
+    
+    final headers = <String, String>{};
+    
+    if (includeContentType) {
+      headers['Content-Type'] = contentType;
+    }
+    
+    if (cleanedToken.isNotEmpty) {
+      headers['Authorization'] = 'Bearer $cleanedToken';
+    }
+    
+    return headers;
   }
 
   static Future<String?> getUserId() async {

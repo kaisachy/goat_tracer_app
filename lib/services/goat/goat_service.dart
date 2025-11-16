@@ -19,15 +19,38 @@ class GoatService {
     }
 
     try {
+      // Clean token: remove only newlines and carriage returns (not spaces)
+      String cleanedToken = token.trim();
+      cleanedToken = cleanedToken.replaceAll('\r', '').replaceAll('\n', '').trim();
+      
+      // Verify token format
+      final parts = cleanedToken.split('.');
+      if (parts.length != 3) {
+        log('🔍 GoatService DEBUG: ERROR - Invalid JWT format! Parts: ${parts.length}');
+      }
+      
+      log('🔍 GoatService DEBUG: Original token length: ${token.length}');
+      log('🔍 GoatService DEBUG: Cleaned token length: ${cleanedToken.length}');
+      log('🔍 GoatService DEBUG: Token parts count: ${parts.length}');
+      log('🔍 GoatService DEBUG: Token (first 50 chars): ${cleanedToken.substring(0, cleanedToken.length > 50 ? 50 : cleanedToken.length)}...');
+      
+      final authHeader = 'Bearer $cleanedToken';
+      log('🔍 GoatService DEBUG: Authorization header length: ${authHeader.length}');
+      
       final response = await http.get(
         Uri.parse('$_baseUrl/goats'),
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': 'Bearer $token',
+          'Authorization': authHeader,
+          'X-Auth-Token': cleanedToken, // Workaround for nginx + PHP-FPM
         },
       );
 
       log('getAllGoats response status: ${response.statusCode}');
+      if (response.statusCode != 200) {
+        log('🔍 GoatService DEBUG: Response headers: ${response.headers}');
+        log('🔍 GoatService DEBUG: Response body: ${response.body}');
+      }
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
@@ -101,11 +124,13 @@ class GoatService {
     }
 
     try {
+      final cleanedToken = token.trim().replaceAll(RegExp(r'[\r\n]'), '');
       final response = await http.get(
         Uri.parse('$_baseUrl/goats'),
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': 'Bearer $token',
+          'Authorization': 'Bearer $cleanedToken',
+          'X-Auth-Token': cleanedToken, // Workaround for nginx + PHP-FPM
         },
       );
 
@@ -146,11 +171,13 @@ class GoatService {
     log('Data to store: ${jsonEncode(sanitizedData).length} characters');
 
     try {
+      final cleanedToken = token.trim().replaceAll(RegExp(r'[\r\n]'), '');
       final response = await http.post(
         uri,
         headers: {
           'Content-Type': 'application/json; charset=UTF-8',
-          'Authorization': 'Bearer $token',
+          'Authorization': 'Bearer $cleanedToken',
+          'X-Auth-Token': cleanedToken, // Workaround for nginx + PHP-FPM
         },
         body: jsonEncode(sanitizedData),
       );
@@ -199,11 +226,13 @@ class GoatService {
     log('Data to update: ${jsonEncode(sanitizedData).length} characters');
 
     try {
+      final cleanedToken = token.trim().replaceAll(RegExp(r'[\r\n]'), '');
       final response = await http.put(
         uri,
         headers: {
           'Content-Type': 'application/json; charset=UTF-8',
-          'Authorization': 'Bearer $token',
+          'Authorization': 'Bearer $cleanedToken',
+          'X-Auth-Token': cleanedToken, // Workaround for nginx + PHP-FPM
         },
         body: jsonEncode(sanitizedData),
       );
@@ -257,11 +286,13 @@ class GoatService {
     log('Attempting to DELETE from $uri with id=$id');
 
     try {
+      final cleanedToken = token.trim().replaceAll(RegExp(r'[\r\n]'), '');
       final response = await http.delete(
         uri,
         headers: {
           'Content-Type': 'application/json; charset=UTF-8',
-          'Authorization': 'Bearer $token',
+          'Authorization': 'Bearer $cleanedToken',
+          'X-Auth-Token': cleanedToken, // Workaround for nginx + PHP-FPM
         },
         body: jsonEncode({'id': id}),
       );
@@ -365,11 +396,13 @@ class GoatService {
     };
 
     try {
+      final cleanedToken = token.trim().replaceAll(RegExp(r'[\r\n]'), '');
       final response = await http.post(
         Uri.parse('$_baseUrl/goats/archive'),
         headers: {
           'Content-Type': 'application/json; charset=UTF-8',
-          'Authorization': 'Bearer $token',
+          'Authorization': 'Bearer $cleanedToken',
+          'X-Auth-Token': cleanedToken, // Workaround for nginx + PHP-FPM
         },
         body: jsonEncode(data),
       );
@@ -403,11 +436,13 @@ class GoatService {
     };
 
     try {
+      final cleanedToken = token.trim().replaceAll(RegExp(r'[\r\n]'), '');
       final response = await http.post(
         Uri.parse('$_baseUrl/goats/unarchive'),
         headers: {
           'Content-Type': 'application/json; charset=UTF-8',
-          'Authorization': 'Bearer $token',
+          'Authorization': 'Bearer $cleanedToken',
+          'X-Auth-Token': cleanedToken, // Workaround for nginx + PHP-FPM
         },
         body: jsonEncode(data),
       );
@@ -438,11 +473,13 @@ class GoatService {
     }
 
     try {
+      final cleanedToken = token.trim().replaceAll(RegExp(r'[\r\n]'), '');
       final response = await http.get(
         Uri.parse('$_baseUrl/goats/archived'),
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': 'Bearer $token',
+          'Authorization': 'Bearer $cleanedToken',
+          'X-Auth-Token': cleanedToken, // Workaround for nginx + PHP-FPM
         },
       );
 

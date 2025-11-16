@@ -22,20 +22,40 @@ class PersonalInformationService {
     }
 
     try {
-      final trimmedToken = token.trim();
-      final authHeader = 'Bearer $trimmedToken';
+      // Clean token: trim and remove only newlines and carriage returns (not spaces)
+      // JWT tokens are base64url encoded and should not have newlines
+      String cleanedToken = token.trim();
+      cleanedToken = cleanedToken.replaceAll('\r', '').replaceAll('\n', '').trim();
+      
+      // Verify token format (JWT should have 3 parts separated by dots)
+      final parts = cleanedToken.split('.');
+      if (parts.length != 3) {
+        log('🔍 PersonalInformationService DEBUG: ERROR - Invalid JWT format! Parts: ${parts.length}');
+        log('🔍 PersonalInformationService DEBUG: Token preview: ${cleanedToken.substring(0, cleanedToken.length > 100 ? 100 : cleanedToken.length)}');
+      }
+      
+      final authHeader = 'Bearer $cleanedToken';
       log('🔍 PersonalInformationService DEBUG: Making API call to $_baseUrl/farmer/profile');
-      log('🔍 PersonalInformationService DEBUG: Token (first 20 chars): ${trimmedToken.substring(0, trimmedToken.length > 20 ? 20 : trimmedToken.length)}...');
+      log('🔍 PersonalInformationService DEBUG: Original token length: ${token.length}');
+      log('🔍 PersonalInformationService DEBUG: Cleaned token length: ${cleanedToken.length}');
+      log('🔍 PersonalInformationService DEBUG: Token parts count: ${parts.length}');
+      log('🔍 PersonalInformationService DEBUG: Token (first 50 chars): ${cleanedToken.substring(0, cleanedToken.length > 50 ? 50 : cleanedToken.length)}...');
+      log('🔍 PersonalInformationService DEBUG: Token (last 20 chars): ...${cleanedToken.length > 20 ? cleanedToken.substring(cleanedToken.length - 20) : cleanedToken}');
       log('🔍 PersonalInformationService DEBUG: Authorization header length: ${authHeader.length}');
+      
+      log('🔍 PersonalInformationService DEBUG: Sending request with headers...');
+      
       final response = await http.get(
         Uri.parse('$_baseUrl/farmer/profile'),
         headers: {
           'Content-Type': 'application/json',
           'Authorization': authHeader,
+          'X-Auth-Token': cleanedToken, // Workaround for nginx + PHP-FPM
         },
       );
 
       log('🔍 PersonalInformationService DEBUG: Response status: ${response.statusCode}');
+      log('🔍 PersonalInformationService DEBUG: Response headers: ${response.headers}');
       log('🔍 PersonalInformationService DEBUG: Response body: ${response.body}');
 
       if (response.statusCode == 200) {
@@ -61,12 +81,13 @@ class PersonalInformationService {
     }
 
     try {
-      final trimmedToken = token.trim();
+      final cleanedToken = token.trim().replaceAll(RegExp(r'[\r\n]'), '');
       final response = await http.post(
         Uri.parse('$_baseUrl/farmer/profile'),
         headers: {
           'Content-Type': 'application/json; charset=UTF-8',
-          'Authorization': 'Bearer $trimmedToken',
+          'Authorization': 'Bearer $cleanedToken',
+          'X-Auth-Token': cleanedToken, // Workaround for nginx + PHP-FPM
         },
         body: jsonEncode(data),
       );
@@ -93,12 +114,13 @@ class PersonalInformationService {
     }
 
     try {
-      final trimmedToken = token.trim();
+      final cleanedToken = token.trim().replaceAll(RegExp(r'[\r\n]'), '');
       final response = await http.put(
         Uri.parse('$_baseUrl/farmer/profile'),
         headers: {
           'Content-Type': 'application/json; charset=UTF-8',
-          'Authorization': 'Bearer $trimmedToken',
+          'Authorization': 'Bearer $cleanedToken',
+          'X-Auth-Token': cleanedToken, // Workaround for nginx + PHP-FPM
         },
         body: jsonEncode(data),
       );
@@ -125,11 +147,12 @@ class PersonalInformationService {
     }
 
     try {
-      final trimmedToken = token.trim();
+      final cleanedToken = token.trim().replaceAll(RegExp(r'[\r\n]'), '');
       final uri = Uri.parse('$_baseUrl/farmer/profile/picture');
       final request = http.MultipartRequest('POST', uri);
 
-      request.headers['Authorization'] = 'Bearer $trimmedToken';
+      request.headers['Authorization'] = 'Bearer $cleanedToken';
+      request.headers['X-Auth-Token'] = cleanedToken; // Workaround for nginx + PHP-FPM
       request.headers['Accept'] = 'application/json';
 
       request.files.add(
@@ -164,11 +187,12 @@ class PersonalInformationService {
     }
 
     try {
-      final trimmedToken = token.trim();
+      final cleanedToken = token.trim().replaceAll(RegExp(r'[\r\n]'), '');
       final response = await http.delete(
         Uri.parse('$_baseUrl/farmer/profile/picture'),
         headers: {
-          'Authorization': 'Bearer $trimmedToken',
+          'Authorization': 'Bearer $cleanedToken',
+          'X-Auth-Token': cleanedToken, // Workaround for nginx + PHP-FPM
         },
       );
 
