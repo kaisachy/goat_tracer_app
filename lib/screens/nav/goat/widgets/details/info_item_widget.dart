@@ -1,5 +1,6 @@
 ﻿import 'package:flutter/material.dart';
 import 'package:goat_tracer_app/constants/app_colors.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 
 class InfoItemData {
   final IconData icon;
@@ -38,7 +39,14 @@ class InfoItemWidget extends StatelessWidget {
         children: [
           Row(
             children: [
-              Icon(data.icon, color: color, size: 16),
+              data.icon == FontAwesomeIcons.cow
+                  ? Image.asset(
+                      'assets/images/goat-icons/goat.png',
+                      width: 16,
+                      height: 16,
+                      color: color,
+                    )
+                  : Icon(data.icon, color: color, size: 16),
               const SizedBox(width: 8),
               Expanded(
                 child: Text(

@@ -156,6 +156,7 @@ class _MilkScreenState extends State<MilkScreen> with TickerProviderStateMixin {
   }
 
   Widget _buildStatCard(String title, String value, IconData icon, Color color) {
+    final bool useGoatIcon = icon == FontAwesomeIcons.cow;
     return Card(
       elevation: 2,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -163,7 +164,14 @@ class _MilkScreenState extends State<MilkScreen> with TickerProviderStateMixin {
         padding: const EdgeInsets.all(16),
         child: Column(
           children: [
-            Icon(icon, color: color, size: 24),
+            useGoatIcon
+                ? Image.asset(
+                    'assets/images/goat-icons/goat.png',
+                    width: 24,
+                    height: 24,
+                    color: color,
+                  )
+                : Icon(icon, color: color, size: 24),
             const SizedBox(height: 8),
             Text(
               value,
@@ -336,10 +344,13 @@ class _MilkScreenState extends State<MilkScreen> with TickerProviderStateMixin {
                       color: Colors.blue.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(8),
                     ),
-                    child: FaIcon(
-                        isWholeFarmMilk ? FontAwesomeIcons.warehouse : FontAwesomeIcons.cow,
+                    child: isWholeFarmMilk
+                        ? FaIcon(FontAwesomeIcons.warehouse, color: Colors.blue, size: 20)
+                        : Image.asset(
+                            'assets/images/goat-icons/goat.png',
+                            width: 20,
+                            height: 20,
                         color: Colors.blue,
-                        size: 20
                     ),
                   ),
                   const SizedBox(width: 12),
@@ -540,12 +551,13 @@ class _MilkScreenState extends State<MilkScreen> with TickerProviderStateMixin {
                         color: Colors.white.withValues(alpha: 0.2),
                         borderRadius: BorderRadius.circular(12),
                       ),
-                      child: FaIcon(
-                        isWholeFarmMilk
-                            ? FontAwesomeIcons.warehouse
-                            : FontAwesomeIcons.cow,
+                      child: isWholeFarmMilk
+                          ? FaIcon(FontAwesomeIcons.warehouse, color: Colors.white, size: 24)
+                          : Image.asset(
+                              'assets/images/goat-icons/goat.png',
+                              width: 24,
+                              height: 24,
                         color: Colors.white,
-                        size: 24,
                       ),
                     ),
                     const SizedBox(width: 16),

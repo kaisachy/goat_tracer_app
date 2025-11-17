@@ -127,6 +127,29 @@ class _GoatHistoryFormScreenState extends State<GoatHistoryFormScreen>
       'sold_amount', 'buyer'
     ];
 
+    // Standard disease types list (must match sick_history_fields.dart)
+    final standardDiseases = [
+      'Bovine Respiratory Disease',
+      'Mastitis in Does',
+      'Kid Scour',
+      'Pink Eye',
+      'Bovine Viral Diarrhea (BVD)',
+      'Mad Doe Diseases',
+      'Footrot',
+      'Foot and Mouth Disease (FMD)',
+      'Blackleg',
+      'Lumpy Skin Disease',
+      'Ringworm',
+      'Brucellosis',
+      'Milk Fever in Does',
+      'Bovine tuberculosis (TB)',
+      'Anaplasmosis',
+      'Leptospirosis',
+      'Coccidiosis',
+      'Infectious Bovine Rhinotracheitis (IBR)',
+      'Other',
+    ];
+
     for (var field in fields) {
       String initialValue = '';
       if (isEditing && widget.historyRecord != null) {
@@ -134,6 +157,18 @@ class _GoatHistoryFormScreenState extends State<GoatHistoryFormScreen>
         initialValue = historyJson[field]?.toString() ?? '';
       }
       _controllers[field] = TextEditingController(text: initialValue);
+    }
+
+    // Special handling for disease_type: if the stored value is not in the standard list,
+    // it means it's a custom "Other" value, so set disease_type to "Other" and move the value to disease_type_other
+    if (isEditing && widget.historyRecord != null) {
+      final diseaseType = _controllers['disease_type']!.text.trim();
+      if (diseaseType.isNotEmpty && !standardDiseases.contains(diseaseType)) {
+        // This is a custom disease type, so it was stored as "Other" with custom text
+        _controllers['disease_type']!.text = 'Other';
+        _controllers['disease_type_other']!.text = diseaseType;
+        debugPrint('DEBUG: Found custom disease type "$diseaseType", setting disease_type to "Other" and disease_type_other to "$diseaseType"');
+      }
     }
   }
 
@@ -1214,7 +1249,7 @@ class _GoatHistoryFormScreenState extends State<GoatHistoryFormScreen>
           return;
         }
         if (_controllers['buyer']!.text.trim().isEmpty) {
-          _showErrorMessage('Buyer information is required for sold history.');
+          _showErrorMessage('Seller information is required for sold history.');
           setState(() => _isLoading = false);
           return;
         }
@@ -1479,6 +1514,30 @@ class _GoatHistoryFormScreenState extends State<GoatHistoryFormScreen>
           } else if (selectedHistoryType.toLowerCase() == 'sick') {
             debugPrint('🎯 Handling Sick event');
             await _handleSickEvent();
+          } else if (selectedHistoryType.toLowerCase() == 'treated') {
+            debugPrint('🎯 Handling Treated event');
+            await _handleTreatedEvent();
+          } else if (selectedHistoryType.toLowerCase() == 'vaccinated') {
+            debugPrint('🎯 Handling Vaccinated event');
+            await _handleVaccinatedEvent();
+          } else if (selectedHistoryType.toLowerCase() == 'deworming') {
+            debugPrint('🎯 Handling Deworming event');
+            await _handleDewormingEvent();
+          } else if (selectedHistoryType.toLowerCase() == 'hoof trimming') {
+            debugPrint('🎯 Handling Hoof Trimming event');
+            await _handleHoofTrimmingEvent();
+          } else if (selectedHistoryType.toLowerCase() == 'aborted pregnancy') {
+            debugPrint('🎯 Handling Aborted Pregnancy event');
+            await _handleAbortedPregnancyEvent();
+          } else if (selectedHistoryType.toLowerCase() == 'dry off') {
+            debugPrint('🎯 Handling Dry off event');
+            await _handleDryOffEvent();
+          } else if (selectedHistoryType.toLowerCase() == 'weaned') {
+            debugPrint('🎯 Handling Weaned event');
+            await _handleWeanedEvent();
+          } else if (selectedHistoryType.toLowerCase() == 'other') {
+            debugPrint('🎯 Handling Other event');
+            await _handleOtherEvent();
           } else {
             debugPrint('🎯 No specific event handler for: "$selectedHistoryType"');
           }
@@ -1497,6 +1556,9 @@ class _GoatHistoryFormScreenState extends State<GoatHistoryFormScreen>
             ),
           );
         }
+
+        // Update goat status based on latest history record
+        await _updateGoatStatusFromLatestHistory();
 
         if (!mounted) return;
         SuccessDialog.show(
@@ -1572,7 +1634,7 @@ class _GoatHistoryFormScreenState extends State<GoatHistoryFormScreen>
             archiveNotes += 'Sale amount: ₱${soldAmount.replaceAll(',', '')}';
           }
           if (buyer.isNotEmpty) {
-            archiveNotes += archiveNotes.isNotEmpty ? '\nBuyer: $buyer' : 'Buyer: $buyer';
+            archiveNotes += archiveNotes.isNotEmpty ? '\nSeller: $buyer' : 'Seller: $buyer';
           }
           if (notes.isNotEmpty) {
             archiveNotes += archiveNotes.isNotEmpty ? '\nNotes: $notes' : 'Notes: $notes';
@@ -2177,6 +2239,426 @@ class _GoatHistoryFormScreenState extends State<GoatHistoryFormScreen>
           ),
         );
       }
+    }
+  }
+
+  Future<void> _handleTreatedEvent() async {
+    try {
+      // Treated event doesn't require status update, just log
+      debugPrint('Treated event recorded for goat ${_goatDetails?.tagNo}');
+      
+      // Optional: Show success feedback to user
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Treatment record saved successfully'),
+            backgroundColor: Colors.blue[600],
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+            duration: const Duration(seconds: 2),
+          ),
+        );
+      }
+    } catch (e) {
+      debugPrint('Error in _handleTreatedEvent: $e');
+    }
+  }
+
+  Future<void> _handleVaccinatedEvent() async {
+    try {
+      // Vaccinated event doesn't require status update, just log
+      debugPrint('Vaccinated event recorded for goat ${_goatDetails?.tagNo}');
+      
+      // Optional: Show success feedback to user
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Vaccination record saved successfully'),
+            backgroundColor: Colors.green[600],
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+            duration: const Duration(seconds: 2),
+          ),
+        );
+      }
+    } catch (e) {
+      debugPrint('Error in _handleVaccinatedEvent: $e');
+    }
+  }
+
+  Future<void> _handleDewormingEvent() async {
+    try {
+      // Deworming event doesn't require status update, just log
+      debugPrint('Deworming event recorded for goat ${_goatDetails?.tagNo}');
+      
+      // Optional: Show success feedback to user
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Deworming record saved successfully'),
+            backgroundColor: Colors.yellow[700],
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+            duration: const Duration(seconds: 2),
+          ),
+        );
+      }
+    } catch (e) {
+      debugPrint('Error in _handleDewormingEvent: $e');
+    }
+  }
+
+  Future<void> _handleHoofTrimmingEvent() async {
+    try {
+      // Hoof Trimming event doesn't require status update, just log
+      debugPrint('Hoof Trimming event recorded for goat ${_goatDetails?.tagNo}');
+      
+      // Optional: Show success feedback to user
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Hoof Trimming record saved successfully'),
+            backgroundColor: Colors.brown[600],
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+            duration: const Duration(seconds: 2),
+          ),
+        );
+      }
+    } catch (e) {
+      debugPrint('Error in _handleHoofTrimmingEvent: $e');
+    }
+  }
+
+  Future<void> _handleAbortedPregnancyEvent() async {
+    try {
+      bool goatStatusUpdated = false;
+      String goatStatus = '';
+
+      // Update goat status back to Healthy after abortion
+      if (_goatDetails != null) {
+        final goatUpdateData = Map<String, dynamic>.from(_goatDetails!.toJson());
+        goatUpdateData['status'] = 'Healthy';
+        goatStatusUpdated = await GoatService.updateGoatInformation(goatUpdateData);
+        goatStatus = goatStatusUpdated
+            ? 'goat ${_goatDetails!.tagNo} status updated to Healthy'
+            : 'Failed to update goat ${_goatDetails!.tagNo} status to Healthy';
+      }
+
+      debugPrint('Aborted Pregnancy event result: $goatStatus');
+
+      if (mounted && goatStatusUpdated) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Aborted pregnancy recorded. Goat status updated to Healthy'),
+            backgroundColor: Colors.orange[600],
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+            duration: const Duration(seconds: 3),
+          ),
+        );
+      }
+    } catch (e) {
+      debugPrint('Error in _handleAbortedPregnancyEvent: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Warning: Failed to update goat status'),
+            backgroundColor: Colors.orange[600],
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+            duration: const Duration(seconds: 3),
+          ),
+        );
+      }
+    }
+  }
+
+  Future<void> _handleDryOffEvent() async {
+    try {
+      bool goatStatusUpdated = false;
+      String goatStatus = '';
+
+      // Update goat status from Lactating to Healthy after dry off
+      if (_goatDetails != null) {
+        final goatUpdateData = Map<String, dynamic>.from(_goatDetails!.toJson());
+        if (_goatDetails!.status == 'Lactating') {
+          goatUpdateData['status'] = 'Healthy';
+          goatStatusUpdated = await GoatService.updateGoatInformation(goatUpdateData);
+          goatStatus = goatStatusUpdated
+              ? 'goat ${_goatDetails!.tagNo} status updated to Healthy'
+              : 'Failed to update goat ${_goatDetails!.tagNo} status to Healthy';
+        } else {
+          debugPrint('Dry off event: Goat is not in Lactating status');
+        }
+      }
+
+      debugPrint('Dry off event result: $goatStatus');
+
+      if (mounted && goatStatusUpdated) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Dry off recorded. Goat status updated to Healthy'),
+            backgroundColor: Colors.grey[600],
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+            duration: const Duration(seconds: 2),
+          ),
+        );
+      }
+    } catch (e) {
+      debugPrint('Error in _handleDryOffEvent: $e');
+    }
+  }
+
+  Future<void> _handleWeanedEvent() async {
+    try {
+      // Weaned event doesn't require status update, just log
+      debugPrint('Weaned event recorded for goat ${_goatDetails?.tagNo}');
+      
+      // Optional: Show success feedback to user
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Weaning record saved successfully'),
+            backgroundColor: Colors.teal[600],
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+            duration: const Duration(seconds: 2),
+          ),
+        );
+      }
+    } catch (e) {
+      debugPrint('Error in _handleWeanedEvent: $e');
+    }
+  }
+
+  Future<void> _handleOtherEvent() async {
+    try {
+      // Other event doesn't require status update, just log
+      debugPrint('Other event recorded for goat ${_goatDetails?.tagNo}');
+      
+      // Optional: Show success feedback to user
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('History record saved successfully'),
+            backgroundColor: Colors.blueGrey[600],
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+            duration: const Duration(seconds: 2),
+          ),
+        );
+      }
+    } catch (e) {
+      debugPrint('Error in _handleOtherEvent: $e');
+    }
+  }
+
+  /// Update goat status based on the latest history record
+  /// This ensures the goat status always reflects the most recent event
+  Future<void> _updateGoatStatusFromLatestHistory() async {
+    try {
+      if (_goatDetails == null) {
+        debugPrint('Cannot update status: goat details not loaded');
+        return;
+      }
+
+      final goatTag = _goatDetails!.tagNo;
+      debugPrint('🔄 Updating goat status from latest history for: $goatTag');
+
+      // Get all history records for this goat
+      final allHistory = await GoatHistoryService.getgoatHistoryByTag(goatTag);
+      
+      if (allHistory.isEmpty) {
+        debugPrint('No history records found for goat $goatTag');
+        return;
+      }
+
+      // Sort by date (most recent first)
+      allHistory.sort((a, b) {
+        try {
+          final dateA = DateTime.parse(a['history_date']?.toString() ?? '1970-01-01');
+          final dateB = DateTime.parse(b['history_date']?.toString() ?? '1970-01-01');
+          return dateB.compareTo(dateA); // Descending order (newest first)
+        } catch (e) {
+          return 0;
+        }
+      });
+
+      // Get the latest history record
+      final latestHistory = allHistory.first;
+      final latestHistoryType = (latestHistory['history_type']?.toString() ?? '').toLowerCase();
+      final latestHistoryDate = latestHistory['history_date']?.toString() ?? '';
+
+      debugPrint('📋 Latest history record: $latestHistoryType on $latestHistoryDate');
+
+      // Determine status based on latest history type
+      String? newStatus;
+      bool shouldArchive = false;
+      String? archiveReason;
+
+      switch (latestHistoryType) {
+        case 'gives birth':
+          newStatus = 'Lactating';
+          break;
+        case 'breeding':
+          // Check if there's a return to heat date that has passed
+          final estimatedReturnDate = latestHistory['estimated_return_date']?.toString();
+          if (estimatedReturnDate != null && estimatedReturnDate.isNotEmpty) {
+            try {
+              final returnDate = DateTime.parse(estimatedReturnDate);
+              final today = DateTime.now();
+              // If return date is today or in the past, status should be Healthy
+              if (returnDate.year == today.year && 
+                  returnDate.month == today.month && 
+                  returnDate.day == today.day) {
+                newStatus = 'Healthy';
+              } else if (returnDate.isBefore(today)) {
+                newStatus = 'Healthy';
+              } else {
+                newStatus = 'Breeding';
+              }
+            } catch (e) {
+              newStatus = 'Breeding';
+            }
+          } else {
+            newStatus = 'Breeding';
+          }
+          break;
+        case 'pregnant':
+          newStatus = 'Pregnant';
+          break;
+        case 'sick':
+          newStatus = 'Sick';
+          break;
+        case 'treated':
+          // After treatment, check if there are any newer Sick records
+          bool hasNewerSick = false;
+          for (var history in allHistory) {
+            final historyType = (history['history_type']?.toString() ?? '').toLowerCase();
+            final historyDate = history['history_date']?.toString() ?? '';
+            if (historyType == 'sick' && historyDate.isNotEmpty) {
+              try {
+                final sickDate = DateTime.parse(historyDate);
+                final treatedDate = DateTime.parse(latestHistoryDate);
+                if (sickDate.isAfter(treatedDate)) {
+                  hasNewerSick = true;
+                  break;
+                }
+              } catch (e) {
+                // Ignore parse errors
+              }
+            }
+          }
+          // Only set to Healthy if there's no newer Sick record
+          if (!hasNewerSick) {
+            newStatus = 'Healthy';
+          }
+          break;
+        case 'sold':
+          newStatus = 'Sold';
+          shouldArchive = true;
+          archiveReason = 'Sold';
+          break;
+        case 'lost':
+          newStatus = 'Lost';
+          shouldArchive = true;
+          archiveReason = 'Lost';
+          break;
+        case 'mortality':
+          newStatus = 'Mortality';
+          shouldArchive = true;
+          archiveReason = 'Mortality';
+          break;
+        case 'aborted pregnancy':
+          newStatus = 'Healthy';
+          break;
+        case 'dry off':
+          // Only update if current status is Lactating
+          if (_goatDetails!.status == 'Lactating') {
+            newStatus = 'Healthy';
+          }
+          break;
+        // Weighed, Vaccinated, Deworming, Hoof Trimming, Weaned, Castrated, Other
+        // These don't change status, so we don't update
+        default:
+          debugPrint('Latest history type "$latestHistoryType" does not require status update');
+          return;
+      }
+
+      // Update status if determined
+      if (newStatus != null && _goatDetails != null) {
+        final currentStatus = _goatDetails!.status;
+        if (currentStatus != newStatus) {
+          debugPrint('🔄 Updating goat status from "$currentStatus" to "$newStatus"');
+          
+          final goatUpdateData = Map<String, dynamic>.from(_goatDetails!.toJson());
+          goatUpdateData['status'] = newStatus;
+          
+          final updated = await GoatService.updateGoatInformation(goatUpdateData);
+          
+          if (updated) {
+            debugPrint('✅ Goat status updated successfully to $newStatus');
+            
+            // Update local goat details
+            setState(() {
+              _goatDetails = Goat.fromJson(goatUpdateData);
+            });
+          } else {
+            debugPrint('❌ Failed to update goat status');
+          }
+        } else {
+          debugPrint('ℹ️ Goat status is already "$newStatus", no update needed');
+        }
+      }
+
+      // Handle archiving if needed
+      if (shouldArchive && archiveReason != null && _goatDetails != null) {
+        final soldAmount = latestHistory['sold_amount']?.toString() ?? '';
+        final seller = latestHistory['buyer']?.toString() ?? '';
+        final notes = latestHistory['notes']?.toString() ?? '';
+        final causeOfDeath = latestHistory['cause_of_death']?.toString() ?? '';
+        final lastLocation = latestHistory['last_known_location']?.toString() ?? '';
+        
+        String archiveNotes = '';
+        if (archiveReason == 'Sold') {
+          if (soldAmount.isNotEmpty) {
+            archiveNotes += 'Sale amount: ₱${soldAmount.replaceAll(',', '')}';
+          }
+          if (seller.isNotEmpty) {
+            archiveNotes += archiveNotes.isNotEmpty ? '\nSeller: $seller' : 'Seller: $seller';
+          }
+        } else if (archiveReason == 'Mortality') {
+          if (causeOfDeath.isNotEmpty) {
+            archiveNotes += 'Cause of death: $causeOfDeath';
+          }
+        } else if (archiveReason == 'Lost') {
+          if (lastLocation.isNotEmpty) {
+            archiveNotes += 'Last known location: $lastLocation';
+          }
+        }
+        if (notes.isNotEmpty) {
+          archiveNotes += archiveNotes.isNotEmpty ? '\nNotes: $notes' : 'Notes: $notes';
+        }
+        
+        final archived = await GoatService.archivegoat(
+          _goatDetails!.id,
+          archiveReason,
+          notes: archiveNotes.isNotEmpty ? archiveNotes : null,
+        );
+        
+        if (archived) {
+          debugPrint('✅ Goat archived successfully');
+        } else {
+          debugPrint('⚠️ Status updated but archiving failed');
+        }
+      }
+
+    } catch (e, stackTrace) {
+      debugPrint('Error updating goat status from latest history: $e');
+      debugPrint('Stack trace: $stackTrace');
+      // Don't show error to user as this is a background operation
     }
   }
 

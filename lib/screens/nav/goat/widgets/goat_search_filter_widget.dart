@@ -1,6 +1,5 @@
 ﻿import 'package:flutter/material.dart';
 import 'package:goat_tracer_app/constants/app_colors.dart';
-import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 
 class GoatSearchFilterWidget extends StatefulWidget {
   // MODIFIED: Callback now accepts breed and group name
@@ -620,7 +619,12 @@ class _GoatSearchFilterWidgetState extends State<GoatSearchFilterWidget> {
                         constraints: const BoxConstraints(),
                       ),
                       const SizedBox(width: 12),
-                      Icon(FontAwesomeIcons.cow, color: AppColors.primary, size: 24),
+                      Image.asset(
+                        'assets/images/goat-icons/goat.png',
+                        width: 24,
+                        height: 24,
+                        color: AppColors.primary,
+                      ),
                       const SizedBox(width: 8),
                       Text(
                         ' Breed',
@@ -1139,8 +1143,12 @@ class _GoatSearchFilterWidgetState extends State<GoatSearchFilterWidget> {
                                     color: Colors.purple.withValues(alpha: 0.1),
                                     borderRadius: BorderRadius.circular(8),
                                   ),
-                                  child: Icon(FontAwesomeIcons.cow,
-                                      color: Colors.purple, size: 20),
+                                  child: Image.asset(
+                                    'assets/images/goat-icons/goat.png',
+                                    width: 20,
+                                    height: 20,
+                                    color: Colors.purple,
+                                  ),
                                 ),
                                 const SizedBox(width: 16),
                                 Expanded(

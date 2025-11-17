@@ -30,26 +30,34 @@ class _FarmerSchedulerContentWidgetState extends State<FarmerSchedulerContentWid
         _isLoading = true;
       });
 
+      debugPrint('🔄 Loading schedules...');
       final schedules = await SchedulerService.getAllSchedules();
+      debugPrint('✅ Loaded ${schedules.length} schedules');
       
       setState(() {
         _schedules = schedules;
         _isLoading = false;
       });
       
-      // Show success message if schedules were loaded
+      // Show success message if schedules were loaded (only if there are schedules)
       if (schedules.isNotEmpty && mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Loaded ${schedules.length} scheduled events'),
+            content: Text('Loaded ${schedules.length} scheduled event${schedules.length > 1 ? 's' : ''}'),
             backgroundColor: Colors.green[600],
             behavior: SnackBarBehavior.floating,
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
             duration: const Duration(seconds: 2),
           ),
         );
+      } else if (schedules.isEmpty && mounted) {
+        // Show info message if no schedules found (but don't show error)
+        debugPrint('ℹ️ No schedules found');
       }
-    } catch (e) {
+    } catch (e, stackTrace) {
+      debugPrint('❌ Error loading schedules: $e');
+      debugPrint('Stack trace: $stackTrace');
+      
       // On error, still show calendar but with empty schedules
       setState(() {
         _schedules = [];
@@ -63,6 +71,7 @@ class _FarmerSchedulerContentWidgetState extends State<FarmerSchedulerContentWid
             backgroundColor: Colors.red[600],
             behavior: SnackBarBehavior.floating,
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+            duration: const Duration(seconds: 4),
           ),
         );
       }

@@ -1,5 +1,4 @@
 ﻿import 'package:flutter/material.dart';
-import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:intl/intl.dart';
 // import 'package:shared_preferences/shared_preferences.dart';
 // import 'dart:convert';
@@ -1419,7 +1418,19 @@ class _GoatFormScreenState extends State<GoatFormScreen> {
           hint: const Text('Select Breed (Required)'),
           decoration: InputDecoration(
             labelText: 'Breed (Required)',
-            prefixIcon: Icon(FontAwesomeIcons.cow, color: AppColors.primary),
+            prefixIcon: Padding(
+              padding: const EdgeInsets.all(12.0),
+              child: Transform.scale(
+                scale: 0.7,
+                child: Image.asset(
+                  'assets/images/goat-icons/goat.png',
+                  width: 32,
+                  height: 32,
+                  color: AppColors.primary,
+                  fit: BoxFit.contain,
+                ),
+              ),
+            ),
             border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),

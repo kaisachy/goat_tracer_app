@@ -93,7 +93,7 @@ class _GoatBasicInfoCardState extends State<GoatBasicInfoCard> {
               value: GoatDetailUtils.getClassificationDisplay(widget.goat.classification),
             ),
             InfoItemData(
-              icon: FontAwesomeIcons.cow,
+              icon: FontAwesomeIcons.cow, // Special marker - will be replaced in widget
               title: 'Breed',
               value: GoatDetailUtils.getBreedDisplay(widget.goat.breed),
             ),

@@ -422,7 +422,14 @@ class _BreedingAnalyticsWidgetState extends State<BreedingAnalyticsWidget>
         Row(
           children: [
             if (icon != null) ...[
-              Icon(icon, size: 10, color: AppColors.textSecondary),
+              icon == FontAwesomeIcons.cow
+                  ? Image.asset(
+                      'assets/images/goat-icons/goat.png',
+                      width: 10,
+                      height: 10,
+                      color: AppColors.textSecondary,
+                    )
+                  : Icon(icon, size: 10, color: AppColors.textSecondary),
               const SizedBox(width: 4),
             ],
             Text(

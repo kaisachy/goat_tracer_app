@@ -24,6 +24,11 @@ class ProfileExportService {
         return false;
       }
 
+      // Clean token: trim and remove only newlines and carriage returns (not spaces)
+      // JWT tokens are base64url encoded and should not have newlines
+      String cleanedToken = token.trim();
+      cleanedToken = cleanedToken.replaceAll('\r', '').replaceAll('\n', '').trim();
+
       final url = Uri.parse('$_baseUrl/farmer/farmers-profile/export-profile-excel?farmer_id=$farmerId');
       
       log('📥 ProfileExportService: Downloading Excel from $url');
@@ -31,7 +36,8 @@ class ProfileExportService {
       final response = await http.get(
         url,
         headers: {
-          'Authorization': 'Bearer $token',
+          'Authorization': 'Bearer $cleanedToken',
+          'X-Auth-Token': cleanedToken, // Workaround for nginx + PHP-FPM
           'Accept': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
         },
       );
@@ -124,6 +130,11 @@ class ProfileExportService {
         return false;
       }
 
+      // Clean token: trim and remove only newlines and carriage returns (not spaces)
+      // JWT tokens are base64url encoded and should not have newlines
+      String cleanedToken = token.trim();
+      cleanedToken = cleanedToken.replaceAll('\r', '').replaceAll('\n', '').trim();
+
       final url = Uri.parse('$_baseUrl/farmer/farmers-profile/export-profile-pdf?farmer_id=$farmerId');
       
       log('📥 ProfileExportService: Downloading PDF from $url');
@@ -131,7 +142,8 @@ class ProfileExportService {
       final response = await http.get(
         url,
         headers: {
-          'Authorization': 'Bearer $token',
+          'Authorization': 'Bearer $cleanedToken',
+          'X-Auth-Token': cleanedToken, // Workaround for nginx + PHP-FPM
           'Accept': 'application/pdf',
         },
       );

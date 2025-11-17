@@ -83,14 +83,14 @@ class SoldEventFieldsState extends BaseEventFieldsState<SoldEventFields> {
         ),
         const SizedBox(height: 16),
         HistoryStyledTextField(
-          label: 'Buyer',
+          label: 'Seller',
           controller: widget.controllers['buyer'] ?? TextEditingController(),
-          hint: 'Enter buyer name or information',
+          hint: 'Enter seller name or information',
           icon: FontAwesomeIcons.user,
           maxLines: 2,
           validator: (value) {
             if (value == null || value.trim().isEmpty) {
-              return 'Buyer information is required';
+              return 'Seller information is required';
             }
             return null;
           },

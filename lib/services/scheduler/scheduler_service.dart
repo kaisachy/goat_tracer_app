@@ -1,4 +1,5 @@
 ﻿import 'dart:convert';
+import 'dart:developer';
 import 'package:http/http.dart' as http;
 import '../../config.dart';
 import '../../models/schedule.dart';
@@ -16,36 +17,52 @@ class SchedulerService {
         throw Exception('Authentication required');
       }
 
+      // Clean token: remove newlines and carriage returns
+      String cleanedToken = token.trim();
+      cleanedToken = cleanedToken.replaceAll('\r', '').replaceAll('\n', '').trim();
+      final authHeader = 'Bearer $cleanedToken';
+
       final response = await http.get(
         Uri.parse('$_baseUrl/goats/schedule'),
         headers: {
-          'Authorization': 'Bearer $token',
           'Content-Type': 'application/json',
+          'Authorization': authHeader,
+          'X-Auth-Token': cleanedToken, // Workaround for nginx + PHP-FPM
         },
       ).timeout(const Duration(seconds: _timeoutDuration));
 
+      log('getAllSchedules: Response status: ${response.statusCode}');
+
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
+        log('getAllSchedules: Response data keys: ${data.keys.toList()}');
         
         if (data['data'] != null) {
           final List<dynamic> schedulesJson = data['data'];
+          log('getAllSchedules: Found ${schedulesJson.length} schedules');
           
           // Handle empty array case (valid response)
           if (schedulesJson.isEmpty) {
+            log('getAllSchedules: No schedules found (empty array)');
             return [];
           }
           
           final schedules = schedulesJson.map((json) => Schedule.fromJson(json)).toList();
+          log('getAllSchedules: Successfully parsed ${schedules.length} schedules');
           return schedules;
         } else {
+          log('getAllSchedules: No data field in response. Response: ${response.body}');
           throw Exception(data['message'] ?? 'Failed to fetch schedules');
         }
       } else if (response.statusCode == 401) {
+        log('getAllSchedules: Authentication failed (401). Response: ${response.body}');
         throw Exception('Authentication failed. Please login again.');
       } else {
+        log('getAllSchedules: Failed with status ${response.statusCode}. Response: ${response.body}');
         throw Exception('Failed to fetch schedules: ${response.statusCode}');
       }
-    } catch (e) {
+    } catch (e, stackTrace) {
+      log('getAllSchedules: Exception occurred: $e', stackTrace: stackTrace);
       // Return empty list instead of throwing exception to allow calendar to show
       // This matches the web version behavior where calendar is always visible
       return [];
@@ -63,14 +80,20 @@ class SchedulerService {
         throw Exception('Authentication required');
       }
 
+      // Clean token: remove newlines and carriage returns
+      String cleanedToken = token.trim();
+      cleanedToken = cleanedToken.replaceAll('\r', '').replaceAll('\n', '').trim();
+      final authHeader = 'Bearer $cleanedToken';
+
       final startDateStr = startDate.toIso8601String().split('T')[0];
       final endDateStr = endDate.toIso8601String().split('T')[0];
 
       final response = await http.get(
         Uri.parse('$_baseUrl/goats/schedule?start_date=$startDateStr&end_date=$endDateStr'),
         headers: {
-          'Authorization': 'Bearer $token',
           'Content-Type': 'application/json',
+          'Authorization': authHeader,
+          'X-Auth-Token': cleanedToken, // Workaround for nginx + PHP-FPM
         },
       ).timeout(const Duration(seconds: _timeoutDuration));
 
@@ -100,11 +123,17 @@ class SchedulerService {
         throw Exception('Authentication required');
       }
 
+      // Clean token: remove newlines and carriage returns
+      String cleanedToken = token.trim();
+      cleanedToken = cleanedToken.replaceAll('\r', '').replaceAll('\n', '').trim();
+      final authHeader = 'Bearer $cleanedToken';
+
       final response = await http.get(
         Uri.parse('$_baseUrl/goats/schedule?upcoming=$days'),
         headers: {
-          'Authorization': 'Bearer $token',
           'Content-Type': 'application/json',
+          'Authorization': authHeader,
+          'X-Auth-Token': cleanedToken, // Workaround for nginx + PHP-FPM
         },
       ).timeout(const Duration(seconds: _timeoutDuration));
 
@@ -146,11 +175,17 @@ class SchedulerService {
         throw Exception('Authentication required');
       }
 
+      // Clean token: remove newlines and carriage returns
+      String cleanedToken = token.trim();
+      cleanedToken = cleanedToken.replaceAll('\r', '').replaceAll('\n', '').trim();
+      final authHeader = 'Bearer $cleanedToken';
+
       final response = await http.get(
         Uri.parse('$_baseUrl/goats/schedule?status=$status'),
         headers: {
-          'Authorization': 'Bearer $token',
           'Content-Type': 'application/json',
+          'Authorization': authHeader,
+          'X-Auth-Token': cleanedToken, // Workaround for nginx + PHP-FPM
         },
       ).timeout(const Duration(seconds: _timeoutDuration));
 
@@ -180,11 +215,17 @@ class SchedulerService {
         throw Exception('Authentication required');
       }
 
+      // Clean token: remove newlines and carriage returns
+      String cleanedToken = token.trim();
+      cleanedToken = cleanedToken.replaceAll('\r', '').replaceAll('\n', '').trim();
+      final authHeader = 'Bearer $cleanedToken';
+
       final response = await http.get(
         Uri.parse('$_baseUrl/goats/schedule?overdue=1'),
         headers: {
-          'Authorization': 'Bearer $token',
           'Content-Type': 'application/json',
+          'Authorization': authHeader,
+          'X-Auth-Token': cleanedToken, // Workaround for nginx + PHP-FPM
         },
       ).timeout(const Duration(seconds: _timeoutDuration));
 

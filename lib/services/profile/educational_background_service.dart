@@ -15,12 +15,18 @@ class EducationalBackgroundService {
     }
 
     try {
-      final authHeader = 'Bearer ${token.trim()}';
+      // Clean token: trim and remove only newlines and carriage returns (not spaces)
+      // JWT tokens are base64url encoded and should not have newlines
+      String cleanedToken = token.trim();
+      cleanedToken = cleanedToken.replaceAll('\r', '').replaceAll('\n', '').trim();
+      
+      final authHeader = 'Bearer $cleanedToken';
       final response = await http.get(
         Uri.parse('$_baseUrl/farmer/education'),
         headers: {
           'Content-Type': 'application/json',
           'Authorization': authHeader,
+          'X-Auth-Token': cleanedToken, // Workaround for nginx + PHP-FPM
         },
       );
 
@@ -45,11 +51,13 @@ class EducationalBackgroundService {
     }
 
     try {
+      final cleanedToken = token.trim().replaceAll(RegExp(r'[\r\n]'), '');
       final response = await http.post(
         Uri.parse('$_baseUrl/farmer/education'),
         headers: {
           'Content-Type': 'application/json; charset=UTF-8',
-          'Authorization': 'Bearer $token',
+          'Authorization': 'Bearer $cleanedToken',
+          'X-Auth-Token': cleanedToken, // Workaround for nginx + PHP-FPM
         },
         body: jsonEncode(data),
       );
@@ -75,11 +83,13 @@ class EducationalBackgroundService {
     }
 
     try {
+      final cleanedToken = token.trim().replaceAll(RegExp(r'[\r\n]'), '');
       final response = await http.put(
         Uri.parse('$_baseUrl/farmer/education'),
         headers: {
           'Content-Type': 'application/json; charset=UTF-8',
-          'Authorization': 'Bearer $token',
+          'Authorization': 'Bearer $cleanedToken',
+          'X-Auth-Token': cleanedToken, // Workaround for nginx + PHP-FPM
         },
         body: jsonEncode(data),
       );
@@ -105,11 +115,13 @@ class EducationalBackgroundService {
     }
 
     try {
+      final cleanedToken = token.trim().replaceAll(RegExp(r'[\r\n]'), '');
       final response = await http.delete(
         Uri.parse('$_baseUrl/farmer/education'),
         headers: {
           'Content-Type': 'application/json; charset=UTF-8',
-          'Authorization': 'Bearer $token',
+          'Authorization': 'Bearer $cleanedToken',
+          'X-Auth-Token': cleanedToken, // Workaround for nginx + PHP-FPM
         },
         body: jsonEncode({'id': id}),
       );

@@ -15,12 +15,18 @@ class TrainingsSeminarsService {
     }
 
     try {
-      final authHeader = 'Bearer ${token.trim()}';
+      // Clean token: trim and remove only newlines and carriage returns (not spaces)
+      // JWT tokens are base64url encoded and should not have newlines
+      String cleanedToken = token.trim();
+      cleanedToken = cleanedToken.replaceAll('\r', '').replaceAll('\n', '').trim();
+      
+      final authHeader = 'Bearer $cleanedToken';
       final response = await http.get(
         Uri.parse('$_baseUrl/farmer/trainings'),
         headers: {
           'Content-Type': 'application/json',
           'Authorization': authHeader,
+          'X-Auth-Token': cleanedToken, // Workaround for nginx + PHP-FPM
         },
       );
 
@@ -48,11 +54,13 @@ class TrainingsSeminarsService {
     log('Attempting to POST to $uri'); // Debugging log
 
     try {
+      final cleanedToken = token.trim().replaceAll(RegExp(r'[\r\n]'), '');
       final response = await http.post(
         uri,
         headers: {
           'Content-Type': 'application/json; charset=UTF-8',
-          'Authorization': 'Bearer $token',
+          'Authorization': 'Bearer $cleanedToken',
+          'X-Auth-Token': cleanedToken, // Workaround for nginx + PHP-FPM
         },
         body: jsonEncode(data),
       );
@@ -81,11 +89,13 @@ class TrainingsSeminarsService {
     log('Attempting to PUT to $uri'); // Debugging log
 
     try {
+      final cleanedToken = token.trim().replaceAll(RegExp(r'[\r\n]'), '');
       final response = await http.put(
         uri,
         headers: {
           'Content-Type': 'application/json; charset=UTF-8',
-          'Authorization': 'Bearer $token',
+          'Authorization': 'Bearer $cleanedToken',
+          'X-Auth-Token': cleanedToken, // Workaround for nginx + PHP-FPM
         },
         body: jsonEncode(data),
       );
@@ -115,11 +125,13 @@ class TrainingsSeminarsService {
     log('Attempting to DELETE from $uri with id=$id'); // Debug log
 
     try {
+      final cleanedToken = token.trim().replaceAll(RegExp(r'[\r\n]'), '');
       final response = await http.delete(
         uri,
         headers: {
           'Content-Type': 'application/json; charset=UTF-8',
-          'Authorization': 'Bearer $token',
+          'Authorization': 'Bearer $cleanedToken',
+          'X-Auth-Token': cleanedToken, // Workaround for nginx + PHP-FPM
         },
         body: jsonEncode({'id': id}),
       );

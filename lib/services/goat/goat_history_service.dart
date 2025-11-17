@@ -15,11 +15,17 @@ class GoatHistoryService {
     }
 
     try {
+      // Clean token: trim and remove only newlines and carriage returns (not spaces)
+      // JWT tokens are base64url encoded and should not have newlines
+      String cleanedToken = token.trim();
+      cleanedToken = cleanedToken.replaceAll('\r', '').replaceAll('\n', '').trim();
+
       final response = await http.get(
         Uri.parse('$_baseUrl/goats/history'),
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': 'Bearer $token',
+          'Authorization': 'Bearer $cleanedToken',
+          'X-Auth-Token': cleanedToken, // Workaround for nginx + PHP-FPM
         },
       );
 
@@ -40,6 +46,11 @@ class GoatHistoryService {
       return false;
     }
 
+    // Clean token: trim and remove only newlines and carriage returns (not spaces)
+    // JWT tokens are base64url encoded and should not have newlines
+    String cleanedToken = token.trim();
+    cleanedToken = cleanedToken.replaceAll('\r', '').replaceAll('\n', '').trim();
+
     final uri = Uri.parse('$_baseUrl/goats/history');
     final requestBody = jsonEncode(data);
 
@@ -48,10 +59,14 @@ class GoatHistoryService {
         uri,
         headers: {
           'Content-Type': 'application/json; charset=UTF-8',
-          'Authorization': 'Bearer $token',
+          'Authorization': 'Bearer $cleanedToken',
+          'X-Auth-Token': cleanedToken, // Workaround for nginx + PHP-FPM
         },
         body: requestBody,
       );
+
+      log('storegoatHistory: Response status: ${response.statusCode}');
+      log('storegoatHistory: Response body: ${response.body}');
 
       if (response.statusCode == 201) {
         return true;
@@ -67,6 +82,7 @@ class GoatHistoryService {
         }
         return true; // Assume success for 200 status
       } else {
+        log('storegoatHistory: Failed with status ${response.statusCode}. Response: ${response.body}');
         return false;
       }
     } catch (e) {
@@ -113,6 +129,11 @@ class GoatHistoryService {
       return false;
     }
 
+    // Clean token: trim and remove only newlines and carriage returns (not spaces)
+    // JWT tokens are base64url encoded and should not have newlines
+    String cleanedToken = token.trim();
+    cleanedToken = cleanedToken.replaceAll('\r', '').replaceAll('\n', '').trim();
+
     final uri = Uri.parse('$_baseUrl/goats/history');
     final requestBody = jsonEncode({'id': id});
 
@@ -121,7 +142,8 @@ class GoatHistoryService {
         uri,
         headers: {
           'Content-Type': 'application/json; charset=UTF-8',
-          'Authorization': 'Bearer $token',
+          'Authorization': 'Bearer $cleanedToken',
+          'X-Auth-Token': cleanedToken, // Workaround for nginx + PHP-FPM
         },
         body: requestBody,
       );
@@ -141,11 +163,17 @@ class GoatHistoryService {
     }
 
     try {
+      // Clean token: trim and remove only newlines and carriage returns (not spaces)
+      // JWT tokens are base64url encoded and should not have newlines
+      String cleanedToken = token.trim();
+      cleanedToken = cleanedToken.replaceAll('\r', '').replaceAll('\n', '').trim();
+
       final response = await http.get(
         Uri.parse('$_baseUrl/goats/history?goat_tag=$goatTag'),
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': 'Bearer $token',
+          'Authorization': 'Bearer $cleanedToken',
+          'X-Auth-Token': cleanedToken, // Workaround for nginx + PHP-FPM
         },
       );
 

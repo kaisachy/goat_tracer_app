@@ -230,6 +230,7 @@ class _MilkRecordFormScreenState extends State<MilkRecordFormScreen> {
   }
 
   Widget _buildSectionTitle(String title, IconData icon) {
+    final bool useGoatIcon = icon == FontAwesomeIcons.cow;
     return Row(
       children: [
         Container(
@@ -238,11 +239,18 @@ class _MilkRecordFormScreenState extends State<MilkRecordFormScreen> {
             color: AppColors.primary.withValues(alpha: 0.1),
             borderRadius: BorderRadius.circular(8),
           ),
-          child: FaIcon(
-            icon,
-            color: AppColors.primary,
-            size: 16,
-          ),
+          child: useGoatIcon
+              ? Image.asset(
+                  'assets/images/goat-icons/goat.png',
+                  width: 20,
+                  height: 20,
+                  color: AppColors.primary,
+                )
+              : FaIcon(
+                  icon,
+                  color: AppColors.primary,
+                  size: 16,
+                ),
         ),
         const SizedBox(width: 12),
         Text(
@@ -314,10 +322,11 @@ class _MilkRecordFormScreenState extends State<MilkRecordFormScreen> {
           labelStyle: TextStyle(color: Colors.grey.shade600),
           border: InputBorder.none,
           contentPadding: const EdgeInsets.all(16),
-          prefixIcon: Icon(
-            FontAwesomeIcons.cow,
+          prefixIcon: Image.asset(
+            'assets/images/goat-icons/goat.png',
+            width: 20,
+            height: 20,
             color: AppColors.primary,
-            size: 20,
           ),
         ),
         items: widget.allGoats.isEmpty

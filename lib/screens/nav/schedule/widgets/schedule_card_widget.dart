@@ -1,5 +1,4 @@
 ﻿import 'package:flutter/material.dart';
-import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:intl/intl.dart'; // Import the intl package
 import '../../../../constants/app_colors.dart';
 import '../../../../models/schedule.dart';
@@ -126,9 +125,10 @@ class ScheduleCard extends StatelessWidget {
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            FaIcon(
-              FontAwesomeIcons.cow,
-              size: 14,
+            Image.asset(
+              'assets/images/goat-icons/goat.png',
+              width: 14,
+              height: 14,
               color: AppColors.primary,
             ),
             const SizedBox(width: 6),

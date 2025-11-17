@@ -11,7 +11,6 @@ import 'package:goat_tracer_app/screens/nav/goat/modals/options/change_stage_opt
 import 'package:goat_tracer_app/screens/nav/goat/modals/options/change_status_option.dart';
 import 'package:goat_tracer_app/screens/nav/goat/modals/options/archive_option.dart';
 import 'package:goat_tracer_app/screens/nav/goat/modals/options/delete_option.dart';
-import 'package:goat_tracer_app/screens/nav/history/goat_selection_modal.dart';
 import 'package:goat_tracer_app/constants/app_colors.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 
@@ -77,7 +76,7 @@ class _GoatScreenState extends State<GoatScreen>
         'label': 'Doe',
         'iconPath': 'assets/images/goat-icons/doe.png',
         'color': AppColors.primary,
-        'fallback': FontAwesomeIcons.cow,
+        'fallback': 'goat', // Special marker for goat icon
       },
       {
         'label': 'Buckling',
@@ -172,7 +171,16 @@ class _GoatScreenState extends State<GoatScreen>
                         color: color,
                         fit: BoxFit.contain,
                         errorBuilder: (context, error, stackTrace) {
-                          return Icon(item['fallback'] as IconData, color: color, size: 48);
+                          final fallback = item['fallback'];
+                          if (fallback == 'goat') {
+                            return Image.asset(
+                              'assets/images/goat-icons/goat.png',
+                              width: 48,
+                              height: 48,
+                              color: color,
+                            );
+                          }
+                          return Icon(fallback as IconData, color: color, size: 48);
                         },
                       ),
                     ),
@@ -440,7 +448,7 @@ class _GoatScreenState extends State<GoatScreen>
               ),
               const SizedBox(width: 8),
               const Expanded(
-                child: Text('Edit goat', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
+                child: Text('Edit Goat', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
               ),
             ],
           ),
@@ -598,7 +606,7 @@ class _GoatScreenState extends State<GoatScreen>
               ),
               const SizedBox(width: 8),
               Expanded(
-                child: Text('Delete goat', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Colors.red.shade600)),
+                child: Text('Delete Goat', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Colors.red.shade600)),
               ),
             ],
           ),
@@ -610,22 +618,16 @@ class _GoatScreenState extends State<GoatScreen>
             _navigateToForm(goat: goat);
             break;
           case 'add_event':
-            // Show goat selection modal for adding history
-            final selectedTag = await showDialog<String>(
-              context: context,
-              builder: (context) => const GoatSelectionModal(),
-            );
-            if (selectedTag != null) {
+            // Directly use the goat whose menu was clicked
               if (!mounted) break;
               await Navigator.push(
                 context,
                 MaterialPageRoute(
-                  builder: (context) => GoatHistoryFormScreen(goatTag: selectedTag),
+                builder: (context) => GoatHistoryFormScreen(goatTag: goat.tagNo),
                 ),
               );
               if (!mounted) break;
               _fetchGoat();
-            }
             break;
           case 'export_excel':
             // Directly export the goat whose menu was clicked
@@ -713,7 +715,7 @@ class _GoatScreenState extends State<GoatScreen>
             ArchiveOption.show(context, goat: goat, onGoatUpdated: _fetchGoat);
             break;
           case 'delete':
-            DeleteOption.show(context);
+            DeleteOption.show(context, goat: goat, onGoatDeleted: _fetchGoat);
             break;
         }
       },
@@ -781,10 +783,14 @@ class _GoatScreenState extends State<GoatScreen>
                             decoration: BoxDecoration(
                               color: AppColors.primary.withValues(alpha: 0.15),
                             ),
-                            child: Icon(
-                              FontAwesomeIcons.cow,
+                            child: Center(
+                              child: Image.asset(
+                                'assets/images/goat-icons/goat.png',
+                                width: 28,
+                                height: 28,
                               color: AppColors.primary,
-                              size: 26,
+                                fit: BoxFit.contain,
+                              ),
                             ),
                           ),
                         ),
@@ -927,9 +933,10 @@ class _GoatScreenState extends State<GoatScreen>
               color: AppColors.lightGreen.withValues(alpha: 0.2),
               borderRadius: BorderRadius.circular(60),
             ),
-            child: Icon(
-              FontAwesomeIcons.cow,
-              size: 60,
+            child: Image.asset(
+              'assets/images/goat-icons/goat.png',
+              width: 60,
+              height: 60,
               color: AppColors.primary,
             ),
           ),

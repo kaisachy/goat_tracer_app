@@ -297,6 +297,7 @@ class _FarmDetailsModalState extends State<FarmDetailsModal> {
         Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
             children: [
               Text(
                 'Farm Details',
@@ -305,6 +306,8 @@ class _FarmDetailsModalState extends State<FarmDetailsModal> {
                   fontWeight: FontWeight.bold,
                   color: AppColors.textPrimary,
                 ),
+                overflow: TextOverflow.ellipsis,
+                maxLines: 1,
               ),
               Text(
                 widget.isEditingMode
@@ -314,12 +317,16 @@ class _FarmDetailsModalState extends State<FarmDetailsModal> {
                   fontSize: 14,
                   color: AppColors.textSecondary,
                 ),
+                overflow: TextOverflow.ellipsis,
+                maxLines: 1,
               ),
             ],
           ),
         ),
         if (widget.isEditingMode)
-          _buildSaveButton(),
+          Flexible(
+            child: _buildSaveButton(),
+          ),
       ],
     );
   }
@@ -330,10 +337,11 @@ class _FarmDetailsModalState extends State<FarmDetailsModal> {
       style: ElevatedButton.styleFrom(
         backgroundColor: AppColors.primary,
         foregroundColor: Colors.white,
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         elevation: 2,
         shadowColor: AppColors.primary.withValues(alpha: 0.2),
+        minimumSize: const Size(0, 40),
       ),
       icon: _isLoading
           ? const SizedBox(
@@ -350,8 +358,10 @@ class _FarmDetailsModalState extends State<FarmDetailsModal> {
         style: TextStyle(
           color: Colors.white,
           fontWeight: FontWeight.w600,
-          fontSize: 16,
+          fontSize: 14,
         ),
+        overflow: TextOverflow.ellipsis,
+        maxLines: 1,
       ),
     );
   }
@@ -403,8 +413,16 @@ class _FarmDetailsModalState extends State<FarmDetailsModal> {
       ),
       child: DropdownButtonFormField<String>(
         value: _selectedFarmType,
+        isExpanded: true,
         items: _farmTypeOptions
-            .map((e) => DropdownMenuItem<String>(value: e, child: Text(e)))
+            .map((e) => DropdownMenuItem<String>(
+                  value: e,
+                  child: Text(
+                    e,
+                    overflow: TextOverflow.ellipsis,
+                    maxLines: 1,
+                  ),
+                ))
             .toList(),
         onChanged: (val) {
           setState(() {
@@ -480,8 +498,16 @@ class _FarmDetailsModalState extends State<FarmDetailsModal> {
       ),
       child: DropdownButtonFormField<String>(
         value: _selectedFarmLandArea,
+        isExpanded: true,
         items: _farmLandAreaOptions
-            .map((e) => DropdownMenuItem<String>(value: e, child: Text(e)))
+            .map((e) => DropdownMenuItem<String>(
+                  value: e,
+                  child: Text(
+                    e,
+                    overflow: TextOverflow.ellipsis,
+                    maxLines: 1,
+                  ),
+                ))
             .toList(),
         onChanged: (val) {
           setState(() {
@@ -557,8 +583,16 @@ class _FarmDetailsModalState extends State<FarmDetailsModal> {
       ),
       child: DropdownButtonFormField<String>(
         value: _selectedFarmClassification,
+        isExpanded: true,
         items: _farmClassificationOptions
-            .map((e) => DropdownMenuItem<String>(value: e, child: Text(e)))
+            .map((e) => DropdownMenuItem<String>(
+                  value: e,
+                  child: Text(
+                    e,
+                    overflow: TextOverflow.ellipsis,
+                    maxLines: 1,
+                  ),
+                ))
             .toList(),
         onChanged: (val) {
           setState(() {
@@ -647,6 +681,8 @@ class _FarmDetailsModalState extends State<FarmDetailsModal> {
           color: AppColors.textPrimary,
           fontWeight: FontWeight.w500,
         ),
+        maxLines: null,
+        textInputAction: TextInputAction.next,
         decoration: InputDecoration(
           labelText: label,
           labelStyle: TextStyle(
@@ -919,6 +955,7 @@ class _FarmDetailsModalState extends State<FarmDetailsModal> {
           ),
           child: DropdownButtonFormField<String>(
             value: _selectedProvince?['code']?.toString(),
+            isExpanded: true,
             decoration: InputDecoration(
               labelText: 'Province',
               labelStyle: TextStyle(
@@ -966,7 +1003,11 @@ class _FarmDetailsModalState extends State<FarmDetailsModal> {
             items: _provinces.map<DropdownMenuItem<String>>((province) {
               return DropdownMenuItem<String>(
                 value: province['code']?.toString(),
-                child: Text(province['name'] ?? 'Unknown Province'),
+                child: Text(
+                  province['name'] ?? 'Unknown Province',
+                  overflow: TextOverflow.ellipsis,
+                  maxLines: 1,
+                ),
               );
             }).toList(),
             onChanged: _isLoadingProvinces
@@ -1011,8 +1052,16 @@ class _FarmDetailsModalState extends State<FarmDetailsModal> {
               return null;
             },
             hint: _isLoadingProvinces
-                ? const Text('Loading provinces...')
-                : const Text('Select Province'),
+                ? const Text(
+                    'Loading provinces...',
+                    overflow: TextOverflow.ellipsis,
+                    maxLines: 1,
+                  )
+                : const Text(
+                    'Select Province',
+                    overflow: TextOverflow.ellipsis,
+                    maxLines: 1,
+                  ),
           ),
         ),
         if (_isLoadingProvinces)
@@ -1045,6 +1094,7 @@ class _FarmDetailsModalState extends State<FarmDetailsModal> {
       ),
       child: DropdownButtonFormField<String>(
         value: _selectedMunicipality?['code'],
+        isExpanded: true,
         decoration: InputDecoration(
           labelText: 'Municipality/City',
           labelStyle: TextStyle(
@@ -1092,7 +1142,11 @@ class _FarmDetailsModalState extends State<FarmDetailsModal> {
         items: _municipalities.map<DropdownMenuItem<String>>((municipality) {
           return DropdownMenuItem<String>(
             value: municipality['code']?.toString(),
-            child: Text(municipality['name'] ?? 'Unknown Municipality'),
+            child: Text(
+              municipality['name'] ?? 'Unknown Municipality',
+              overflow: TextOverflow.ellipsis,
+              maxLines: 1,
+            ),
           );
         }).toList(),
         onChanged: _isLoadingMunicipalities || _selectedProvince == null
@@ -1137,10 +1191,22 @@ class _FarmDetailsModalState extends State<FarmDetailsModal> {
           return null;
         },
         hint: _isLoadingMunicipalities
-            ? const Text('Loading municipalities...')
+            ? const Text(
+                'Loading municipalities...',
+                overflow: TextOverflow.ellipsis,
+                maxLines: 1,
+              )
             : _selectedProvince == null
-                ? const Text('Select province first')
-                : const Text('Municipality'),
+                ? const Text(
+                    'Select province first',
+                    overflow: TextOverflow.ellipsis,
+                    maxLines: 1,
+                  )
+                : const Text(
+                    'Municipality',
+                    overflow: TextOverflow.ellipsis,
+                    maxLines: 1,
+                  ),
       ),
     );
   }
@@ -1159,6 +1225,7 @@ class _FarmDetailsModalState extends State<FarmDetailsModal> {
       ),
       child: DropdownButtonFormField<String>(
         value: _selectedBarangay?['code']?.toString(),
+        isExpanded: true,
         decoration: InputDecoration(
           labelText: 'Barangay',
           labelStyle: TextStyle(
@@ -1206,7 +1273,11 @@ class _FarmDetailsModalState extends State<FarmDetailsModal> {
         items: _barangays.map<DropdownMenuItem<String>>((barangay) {
           return DropdownMenuItem<String>(
             value: barangay['code']?.toString(),
-            child: Text(barangay['name'] ?? 'Unknown Barangay'),
+            child: Text(
+              barangay['name'] ?? 'Unknown Barangay',
+              overflow: TextOverflow.ellipsis,
+              maxLines: 1,
+            ),
           );
         }).toList(),
         onChanged: _isLoadingBarangays || _selectedProvince == null || _selectedMunicipality == null
@@ -1256,10 +1327,22 @@ class _FarmDetailsModalState extends State<FarmDetailsModal> {
           return null;
         },
         hint: _isLoadingBarangays
-            ? const Text('Loading barangays...')
+            ? const Text(
+                'Loading barangays...',
+                overflow: TextOverflow.ellipsis,
+                maxLines: 1,
+              )
             : _selectedProvince == null || _selectedMunicipality == null
-                ? const Text('Select municipality first')
-                : const Text('Barangay'),
+                ? const Text(
+                    'Select municipality first',
+                    overflow: TextOverflow.ellipsis,
+                    maxLines: 1,
+                  )
+                : const Text(
+                    'Barangay',
+                    overflow: TextOverflow.ellipsis,
+                    maxLines: 1,
+                  ),
       ),
     );
   }
@@ -1343,6 +1426,7 @@ class _FarmDetailsModalState extends State<FarmDetailsModal> {
       ),
       child: DropdownButtonFormField<String>(
         value: _selectedRegion?['code']?.toString(),
+        isExpanded: true,
         decoration: InputDecoration(
           labelText: 'Region',
           labelStyle: TextStyle(
@@ -1390,7 +1474,11 @@ class _FarmDetailsModalState extends State<FarmDetailsModal> {
         items: _regions.map<DropdownMenuItem<String>>((region) {
           return DropdownMenuItem<String>(
             value: region['code']?.toString(),
-            child: Text(region['name'] ?? 'Unknown Region'),
+            child: Text(
+              region['name'] ?? 'Unknown Region',
+              overflow: TextOverflow.ellipsis,
+              maxLines: 1,
+            ),
           );
         }).toList(),
         onChanged: _isLoadingRegions
@@ -1436,8 +1524,16 @@ class _FarmDetailsModalState extends State<FarmDetailsModal> {
           return null;
         },
         hint: _isLoadingRegions
-            ? const Text('Loading regions...')
-            : const Text('Select Region'),
+            ? const Text(
+                'Loading regions...',
+                overflow: TextOverflow.ellipsis,
+                maxLines: 1,
+              )
+            : const Text(
+                'Select Region',
+                overflow: TextOverflow.ellipsis,
+                maxLines: 1,
+              ),
       ),
     );
   }
@@ -1541,6 +1637,8 @@ class _FarmDetailsModalState extends State<FarmDetailsModal> {
                     fontWeight: FontWeight.w600,
                     color: AppColors.textPrimary,
                   ),
+                  overflow: TextOverflow.ellipsis,
+                  maxLines: 3,
                 ),
               ],
             ),

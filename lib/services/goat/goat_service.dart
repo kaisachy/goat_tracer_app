@@ -282,6 +282,7 @@ class GoatService {
       return false;
     }
 
+    // Use /goats endpoint (API route) with ID in body
     final uri = Uri.parse('$_baseUrl/goats');
     log('Attempting to DELETE from $uri with id=$id');
 

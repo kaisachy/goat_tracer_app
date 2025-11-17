@@ -1,5 +1,4 @@
 ﻿import 'package:flutter/material.dart';
-import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import '../../../../constants/app_colors.dart';
 import '../../../../models/goat.dart';
 
@@ -120,10 +119,11 @@ class _GoatMultiSelectDialogState extends State<GoatMultiSelectDialog> {
                   color: Colors.white.withValues(alpha: 0.2),
                   borderRadius: BorderRadius.circular(12),
                 ),
-                child: const FaIcon(
-                  FontAwesomeIcons.cow,
+                child: Image.asset(
+                  'assets/images/goat-icons/goat.png',
+                  width: 20,
+                  height: 20,
                   color: Colors.white,
-                  size: 20,
                 ),
               ),
               const SizedBox(width: 12),

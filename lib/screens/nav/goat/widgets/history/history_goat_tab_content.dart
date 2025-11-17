@@ -472,6 +472,8 @@ class _HistorygoatTabContentState extends State<HistorygoatTabContent> {
             ? double.tryParse(event['sold_amount'].toString())
             : null,
         buyer: event['buyer']?.toString(),
+        diseaseType: event['disease_type']?.toString(),
+        diseaseTypeOther: event['disease_type_other']?.toString(),
       );
 
       // Navigate to edit screen
@@ -1071,7 +1073,7 @@ class _HistorygoatTabContentState extends State<HistorygoatTabContent> {
           relevantDetails['Sold Amount'] = '₱${event['sold_amount'].toString()}';
         }
         if (event['buyer'] != null && event['buyer'].toString().isNotEmpty && event['buyer'] != 'N/A') {
-          relevantDetails['Buyer'] = event['buyer'].toString();
+          relevantDetails['Seller'] = event['buyer'].toString();
         }
         break;
 

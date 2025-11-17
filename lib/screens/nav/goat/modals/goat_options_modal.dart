@@ -271,7 +271,7 @@ class GoatOptionsModal {
         ArchiveOption.show(context, goat: goat, onGoatUpdated: onGoatUpdated);
         break;
       case 'delete':
-        DeleteOption.show(context);
+        DeleteOption.show(context, goat: goat, onGoatDeleted: onGoatUpdated);
         break;
     }
   }

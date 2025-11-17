@@ -632,6 +632,8 @@ class _HistoryScreenState extends State<HistoryScreen> {
             ? double.tryParse(historyRecord['sold_amount'].toString())
             : null,
         buyer: historyRecord['buyer']?.toString(),
+        diseaseType: historyRecord['disease_type']?.toString(),
+        diseaseTypeOther: historyRecord['disease_type_other']?.toString(),
       );
 
       // Navigate to edit screen
@@ -1324,7 +1326,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
           relevantDetails['Sold Amount'] = '₱${historyRecord['sold_amount'].toString()}';
         }
         if (historyRecord['buyer'] != null && historyRecord['buyer'].toString().isNotEmpty && historyRecord['buyer'] != 'N/A') {
-          relevantDetails['Buyer'] = historyRecord['buyer'].toString();
+          relevantDetails['Seller'] = historyRecord['buyer'].toString();
         }
         break;
 

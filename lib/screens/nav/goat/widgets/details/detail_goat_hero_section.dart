@@ -218,9 +218,10 @@ class _GoatHeroSectionState extends State<GoatHeroSection> {
                         width: 2,
                       ),
                     ),
-                    child: const Icon(
-                      FontAwesomeIcons.cow,
-                      size: 50,
+                    child: Image.asset(
+                      'assets/images/goat-icons/goat.png',
+                      width: 50,
+                      height: 50,
                       color: AppColors.lightGreen,
                     ),
                   ),
@@ -742,7 +743,7 @@ class _GoatHeroSectionState extends State<GoatHeroSection> {
               ArchiveOption.show(context, goat: widget.goat, onGoatUpdated: widget.onGoatUpdated ?? () {});
               break;
             case 'delete':
-              DeleteOption.show(context);
+              DeleteOption.show(context, goat: widget.goat, onGoatDeleted: widget.onGoatUpdated);
               break;
           }
         },

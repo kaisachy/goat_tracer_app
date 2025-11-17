@@ -1,5 +1,4 @@
 ﻿import 'package:flutter/material.dart';
-import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import '../../../../constants/app_colors.dart';
 import '../../../../models/goat.dart';
 import '../modals/goat_multi_select_dialog.dart';
@@ -58,8 +57,10 @@ class GoatTagMultiSelectField extends StatelessWidget {
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.center, // <-- This is the corrected line
               children: [
-                FaIcon(
-                  FontAwesomeIcons.cow,
+                Image.asset(
+                  'assets/images/goat-icons/goat.png',
+                  width: 20,
+                  height: 20,
                   color: AppColors.darkGreen,
                 ),
                 const SizedBox(width: 12),

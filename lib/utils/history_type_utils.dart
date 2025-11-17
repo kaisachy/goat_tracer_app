@@ -33,6 +33,7 @@ class HistoryTypeUtils {
           'Hoof Trimming',
           'Castrated',
           'Weaned',
+          'Sold',
           'Mortality',
           'Lost',
           'Other',
@@ -131,10 +132,12 @@ class HistoryTypeUtils {
       default:
         historyTypes = [
           'Vaccinated',
+          'Sick',
           'Treated',
           'Weighed',
           'Deworming',
           'Hoof Trimming',
+          'Sold',
           'Mortality',
           'Lost',
           'Other',
@@ -179,6 +182,8 @@ class HistoryTypeUtils {
         return FontAwesomeIcons.skull;
       case 'lost':
         return FontAwesomeIcons.magnifyingGlass;
+      case 'sold':
+        return FontAwesomeIcons.coins;
       case 'other':
         return FontAwesomeIcons.ellipsis;
       case 'loading goat information...':
@@ -205,6 +210,7 @@ class HistoryTypeUtils {
       case 'aborted pregnancy': return Colors.red.shade600;
       case 'mortality': return Colors.grey.shade700;
       case 'lost': return Colors.amber.shade600;
+      case 'sold': return Colors.green.shade600;
       case 'other': return Colors.blueGrey.shade400;
       case 'loading goat information...': return Colors.grey.shade400;
       default: return AppColors.lightGreen;

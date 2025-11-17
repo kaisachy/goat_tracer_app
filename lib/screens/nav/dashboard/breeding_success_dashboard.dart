@@ -382,7 +382,14 @@ class _BreedingSuccessDashboardState extends State<BreedingSuccessDashboard>
         Row(
           children: [
             if (icon != null) ...[
-              Icon(icon, size: 12, color: AppColors.textSecondary),
+              icon == FontAwesomeIcons.cow
+                  ? Image.asset(
+                      'assets/images/goat-icons/goat.png',
+                      width: 12,
+                      height: 12,
+                      color: AppColors.textSecondary,
+                    )
+                  : Icon(icon, size: 12, color: AppColors.textSecondary),
               const SizedBox(width: 4),
             ],
             Text(

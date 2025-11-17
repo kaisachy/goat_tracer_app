@@ -229,9 +229,10 @@ class _DashboardScreenState extends State<DashboardScreen>
                   shape: BoxShape.circle,
                   border: Border.all(color: AppColors.vibrantGreen.withValues(alpha: 0.3)),
                 ),
-                child: Icon(
-                  FontAwesomeIcons.cow,
-                  size: 64,
+                child: Image.asset(
+                  'assets/images/goat-icons/goat.png',
+                  width: 64,
+                  height: 64,
                   color: AppColors.vibrantGreen,
                 ),
               ),
@@ -930,7 +931,7 @@ class _DashboardScreenState extends State<DashboardScreen>
     return _buildAnimatedCard(
       delay: 0,
       child: _buildOverviewCard(
-        title: 'Total goat',
+        title: 'TOTAL GOAT',
         value: totalgoat.toString(),
         icon: FontAwesomeIcons.cow,
         color: AppColors.vibrantGreen,
@@ -946,6 +947,9 @@ class _DashboardScreenState extends State<DashboardScreen>
     required Color color,
     required String subtitle,
   }) {
+    // Check if icon is cow icon, use goat image instead
+    final bool useGoatIcon = icon == FontAwesomeIcons.cow;
+    
     return Container(
       height: 180, // Fixed height to match pie chart container
       padding: const EdgeInsets.all(20),
@@ -972,7 +976,14 @@ class _DashboardScreenState extends State<DashboardScreen>
                   color: color.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(12),
                 ),
-                child: Icon(icon, color: color, size: 24),
+                child: useGoatIcon
+                    ? Image.asset(
+                        'assets/images/goat-icons/goat.png',
+                        width: 24,
+                        height: 24,
+                        color: color,
+                      )
+                    : Icon(icon, color: color, size: 24),
               ),
               const SizedBox(width: 12),
               Expanded(

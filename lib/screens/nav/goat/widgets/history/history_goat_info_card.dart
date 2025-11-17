@@ -1,5 +1,4 @@
 ﻿import 'package:flutter/material.dart';
-import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import '../../../../../models/goat.dart';
 import '../../../../../constants/app_colors.dart';
 
@@ -126,10 +125,11 @@ class HistorygoatInfoCard extends StatelessWidget {
                   color: AppColors.vibrantGreen.withValues(alpha: 0.15),
                   borderRadius: BorderRadius.circular(15),
                 ),
-                child: const Icon(
-                  FontAwesomeIcons.cow,
+                child: Image.asset(
+                  'assets/images/goat-icons/goat.png',
+                  width: 22,
+                  height: 22,
                   color: AppColors.vibrantGreen,
-                  size: 22,
                 ),
               ),
               const SizedBox(width: 14),

@@ -1,6 +1,5 @@
 ﻿import 'package:goat_tracer_app/utils/schedule_utils.dart';
 import 'package:flutter/material.dart';
-import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import '../../../../constants/app_colors.dart';
 import '../../../../models/schedule.dart';
 
@@ -89,10 +88,11 @@ class GoatListModal extends StatelessWidget {
                   color: AppColors.primary.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(12),
                 ),
-                child: FaIcon(
-                  FontAwesomeIcons.cow,
+                child: Image.asset(
+                  'assets/images/goat-icons/goat.png',
+                  width: 24,
+                  height: 24,
                   color: AppColors.primary,
-                  size: 24,
                 ),
               ),
               const SizedBox(width: 16),

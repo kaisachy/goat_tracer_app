@@ -25,9 +25,14 @@ class UserService {
       throw Exception('Authentication required. Please login again.');
     }
 
+    // Clean token: remove newlines and carriage returns
+    String cleanedToken = token.trim();
+    cleanedToken = cleanedToken.replaceAll('\r', '').replaceAll('\n', '').trim();
+    final authHeader = 'Bearer $cleanedToken';
+
     final url = '$_baseUrl/users/$id';
     debugPrint('🔍 UserService DEBUG: Making GET request to: $url');
-    debugPrint('🔍 UserService DEBUG: Request headers: {"Content-Type": "application/json", "Authorization": "Bearer ***"}');
+    debugPrint('🔍 UserService DEBUG: Request headers: {"Content-Type": "application/json", "Authorization": "Bearer ***", "X-Auth-Token": "***"}');
     debugPrint('🔍 UserService DEBUG: Request timestamp: ${DateTime.now()}');
 
     try {
@@ -35,7 +40,8 @@ class UserService {
         Uri.parse(url),
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': 'Bearer $token',
+          'Authorization': authHeader,
+          'X-Auth-Token': cleanedToken, // Workaround for nginx + PHP-FPM
         },
       );
 
@@ -96,6 +102,11 @@ class UserService {
       queryParams = '?roles=${roles.join(',')}';
     }
 
+    // Clean token: remove newlines and carriage returns
+    String cleanedToken = token.trim();
+    cleanedToken = cleanedToken.replaceAll('\r', '').replaceAll('\n', '').trim();
+    final authHeader = 'Bearer $cleanedToken';
+
     final fullUrl = '$_baseUrl/users/by-roles$queryParams';
     debugPrint('🔍 UserService DEBUG: Making request to: $fullUrl');
 
@@ -104,7 +115,8 @@ class UserService {
         Uri.parse(fullUrl),
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': 'Bearer $token',
+          'Authorization': authHeader,
+          'X-Auth-Token': cleanedToken, // Workaround for nginx + PHP-FPM
         },
       );
 
@@ -153,6 +165,11 @@ class UserService {
       throw Exception('Authentication required. Please login again.');
     }
 
+    // Clean token: remove newlines and carriage returns
+    String cleanedToken = token.trim();
+    cleanedToken = cleanedToken.replaceAll('\r', '').replaceAll('\n', '').trim();
+    final authHeader = 'Bearer $cleanedToken';
+
     debugPrint('Fetching technicians from dedicated endpoint...');
 
     try {
@@ -160,7 +177,8 @@ class UserService {
         Uri.parse('$_baseUrl/users/technicians'),
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': 'Bearer $token',
+          'Authorization': authHeader,
+          'X-Auth-Token': cleanedToken, // Workaround for nginx + PHP-FPM
         },
       );
 
@@ -213,11 +231,17 @@ class UserService {
     if (municipality != null) body['municipality'] = municipality;
     if (barangay != null) body['barangay'] = barangay;
 
+    // Clean token: remove newlines and carriage returns
+    String cleanedToken = token.trim();
+    cleanedToken = cleanedToken.replaceAll('\r', '').replaceAll('\n', '').trim();
+    final authHeader = 'Bearer $cleanedToken';
+
     final response = await http.put(
       Uri.parse('$_baseUrl/users/$id'),
       headers: {
         'Content-Type': 'application/json; charset=UTF-8',
-        'Authorization': 'Bearer $token',
+        'Authorization': authHeader,
+        'X-Auth-Token': cleanedToken, // Workaround for nginx + PHP-FPM
       },
       body: jsonEncode(body),
     );
@@ -245,9 +269,14 @@ class UserService {
       throw Exception('Authentication required. Please login again.');
     }
 
+    // Clean token: remove newlines and carriage returns
+    String cleanedToken = token.trim();
+    cleanedToken = cleanedToken.replaceAll('\r', '').replaceAll('\n', '').trim();
+    final authHeader = 'Bearer $cleanedToken';
+
     final url = '$_baseUrl/users/$userId/password';
     debugPrint('🔍 UserService DEBUG: Making PUT request to: $url');
-    debugPrint('🔍 UserService DEBUG: Request headers: {"Content-Type": "application/json; charset=UTF-8", "Authorization": "Bearer ***"}');
+    debugPrint('🔍 UserService DEBUG: Request headers: {"Content-Type": "application/json; charset=UTF-8", "Authorization": "Bearer ***", "X-Auth-Token": "***"}');
     debugPrint('🔍 UserService DEBUG: Request body: {"current_password": "***", "new_password": "***"}');
     debugPrint('🔍 UserService DEBUG: Request timestamp: ${DateTime.now()}');
 
@@ -256,7 +285,8 @@ class UserService {
         Uri.parse(url),
         headers: {
           'Content-Type': 'application/json; charset=UTF-8',
-          'Authorization': 'Bearer $token',
+          'Authorization': authHeader,
+          'X-Auth-Token': cleanedToken, // Workaround for nginx + PHP-FPM
         },
         body: jsonEncode({
           'current_password': currentPassword,

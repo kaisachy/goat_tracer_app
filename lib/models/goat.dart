@@ -199,6 +199,8 @@ class GoatHistoryRecord {
   final String? lastKnownLocation;
   final double? soldAmount;
   final String? buyer;
+  final String? diseaseType;
+  final String? diseaseTypeOther;
   final String? createdAt;
 
   GoatHistoryRecord({
@@ -222,6 +224,8 @@ class GoatHistoryRecord {
     this.lastKnownLocation,
     this.soldAmount,
     this.buyer,
+    this.diseaseType,
+    this.diseaseTypeOther,
     this.createdAt,
   });
 
@@ -251,6 +255,8 @@ class GoatHistoryRecord {
           ? double.tryParse(json['sold_amount'].toString())
           : null,
       buyer: json['buyer'],
+      diseaseType: json['disease_type'],
+      diseaseTypeOther: json['disease_type_other'],
       createdAt: json['created_at'],
     );
   }
@@ -277,6 +283,8 @@ class GoatHistoryRecord {
       'last_known_location': lastKnownLocation,
       'sold_amount': soldAmount,
       'buyer': buyer,
+      'disease_type': diseaseType,
+      'disease_type_other': diseaseTypeOther,
       'created_at': createdAt,
     };
   }

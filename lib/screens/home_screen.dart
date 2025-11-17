@@ -746,9 +746,17 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     int? index,
   }) {
     final bool isSelected = index != null && index == _selectedIndex;
+    final bool useGoatIcon = icon == FontAwesomeIcons.cow;
 
     return ListTile(
-      leading: Icon(
+      leading: useGoatIcon
+          ? Image.asset(
+              'assets/images/goat-icons/goat.png',
+              width: 24,
+              height: 24,
+              color: isSelected ? AppColors.accent : AppColors.textSecondary,
+            )
+          : Icon(
         icon,
         color: isSelected ? AppColors.accent : AppColors.textSecondary,
       ),

@@ -28,7 +28,7 @@ class _TrainingsSeminarsModalState extends State<TrainingsSeminarsModal> {
     'Silage Making',
     'Slaughtering & Cutting',
     'Meat Processing',
-    'goat Enterprise Development',
+    'Goat Enterprise Development',
     'Forage Production',
     'Health Management',
   ];
@@ -81,47 +81,58 @@ class _TrainingsSeminarsModalState extends State<TrainingsSeminarsModal> {
       child: Column(
         children: [
           Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text(
-                'Trainings & Seminars',
-                style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+              Expanded(
+                child: Text(
+                  'Trainings & Seminars',
+                  style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                  overflow: TextOverflow.ellipsis,
+                  maxLines: 1,
+                ),
               ),
               Row(
+                mainAxisSize: MainAxisSize.min,
                 children: [
                   if (widget.isEditingMode)
-                    ElevatedButton.icon(
-                      onPressed: _saving ? null : _saveSelection,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.primary,
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                        elevation: 2,
-                        shadowColor: AppColors.primary.withValues(alpha: 0.2),
-                      ),
-                      icon: _saving
-                          ? const SizedBox(
-                              width: 16,
-                              height: 16,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2,
-                                valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                              ),
-                            )
-                          : const Icon(Icons.check_rounded, size: 18, color: Colors.white),
-                      label: Text(
-                        _saving ? 'Saving...' : 'Save',
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontWeight: FontWeight.w600,
-                          fontSize: 16,
+                    Flexible(
+                      child: ElevatedButton.icon(
+                        onPressed: _saving ? null : _saveSelection,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.primary,
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                          elevation: 2,
+                          shadowColor: AppColors.primary.withValues(alpha: 0.2),
+                          minimumSize: const Size(0, 40),
+                        ),
+                        icon: _saving
+                            ? const SizedBox(
+                                width: 16,
+                                height: 16,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                ),
+                              )
+                            : const Icon(Icons.check_rounded, size: 18, color: Colors.white),
+                        label: Text(
+                          _saving ? 'Saving...' : 'Save',
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.w600,
+                            fontSize: 14,
+                          ),
+                          overflow: TextOverflow.ellipsis,
+                          maxLines: 1,
                         ),
                       ),
                     ),
                   IconButton(
                     onPressed: () => Navigator.pop(context),
                     icon: const Icon(Icons.close),
+                    constraints: const BoxConstraints(),
+                    padding: const EdgeInsets.all(8),
                   ),
                 ],
               ),
@@ -177,6 +188,8 @@ class _TrainingsSeminarsModalState extends State<TrainingsSeminarsModal> {
                                 child: Text(
                                   title,
                                   style: const TextStyle(fontWeight: FontWeight.w600),
+                                  overflow: TextOverflow.ellipsis,
+                                  maxLines: 2,
                                 ),
                               ),
                             ],

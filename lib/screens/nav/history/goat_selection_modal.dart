@@ -3,14 +3,12 @@ import 'package:goat_tracer_app/constants/app_colors.dart';
 import 'package:goat_tracer_app/models/goat.dart';
 import 'package:goat_tracer_app/services/goat/goat_service.dart';
 import 'package:goat_tracer_app/services/goat/goat_history_service.dart';
-import 'package:goat_tracer_app/services/goat/goat_export_service.dart';
 import 'package:goat_tracer_app/screens/nav/goat/goat_form_screen.dart';
 import 'package:goat_tracer_app/screens/nav/goat/goat_history_form_screen.dart';
 import 'package:goat_tracer_app/screens/nav/goat/modals/options/change_stage_option.dart';
 import 'package:goat_tracer_app/screens/nav/goat/modals/options/change_status_option.dart';
 import 'package:goat_tracer_app/screens/nav/goat/modals/options/archive_option.dart';
 import 'package:goat_tracer_app/screens/nav/goat/modals/options/delete_option.dart';
-import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 
 class GoatSelectionModal extends StatefulWidget {
   final String? historyType; // Optional: filter goat by history type applicability
@@ -176,37 +174,6 @@ class _GoatSelectionModalState extends State<GoatSelectionModal> {
     }
   }
 
-  Future<void> _exportExcel() async {
-    if (selectedGoat == null) return;
-    final messenger = ScaffoldMessenger.of(context);
-    messenger.hideCurrentSnackBar();
-    final ok = await GoatExportService.downloadgoatExcel(selectedGoat!.id.toString());
-    if (!mounted) return;
-    messenger.showSnackBar(
-      SnackBar(
-        content: Text(ok ? 'Excel report ready! Choose where to open/save.' : 'Failed to download Excel report.'),
-        backgroundColor: ok ? Colors.green.shade600 : Colors.red.shade700,
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      ),
-    );
-  }
-
-  Future<void> _exportPdf() async {
-    if (selectedGoat == null) return;
-    final messenger = ScaffoldMessenger.of(context);
-    messenger.hideCurrentSnackBar();
-    final ok = await GoatExportService.downloadgoatPdf(selectedGoat!.id.toString());
-    if (!mounted) return;
-    messenger.showSnackBar(
-      SnackBar(
-        content: Text(ok ? 'PDF report ready! Choose where to open/save.' : 'Failed to generate PDF report.'),
-        backgroundColor: ok ? Colors.green.shade600 : Colors.red.shade700,
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      ),
-    );
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -263,10 +230,11 @@ class _GoatSelectionModalState extends State<GoatSelectionModal> {
                       borderRadius: BorderRadius.circular(10),
                       border: Border.all(color: AppColors.vibrantGreen.withValues(alpha: 0.3)),
                     ),
-                    child: const FaIcon(
-                      FontAwesomeIcons.cow,
+                    child: Image.asset(
+                      'assets/images/goat-icons/goat.png',
+                      width: 18,
+                      height: 18,
                       color: AppColors.vibrantGreen,
-                      size: 18,
                     ),
                   ),
                   const SizedBox(width: 12),
@@ -373,43 +341,6 @@ class _GoatSelectionModalState extends State<GoatSelectionModal> {
               ),
               child: Column(
                 children: [
-                  // Export buttons (only show when goat is selected)
-                  if (selectedGoat != null) ...[
-                    Row(
-                      children: [
-                        Expanded(
-                          child: OutlinedButton.icon(
-                            onPressed: _exportExcel,
-                            icon: const FaIcon(FontAwesomeIcons.fileExcel, size: 14),
-                            label: const Text('Export Excel', style: TextStyle(fontSize: 13)),
-                            style: OutlinedButton.styleFrom(
-                              padding: const EdgeInsets.symmetric(vertical: 10),
-                              side: BorderSide(color: Colors.green.shade400),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: OutlinedButton.icon(
-                            onPressed: _exportPdf,
-                            icon: const Icon(Icons.picture_as_pdf_rounded, size: 14),
-                            label: const Text('Export PDF', style: TextStyle(fontSize: 13)),
-                            style: OutlinedButton.styleFrom(
-                              padding: const EdgeInsets.symmetric(vertical: 10),
-                              side: BorderSide(color: Colors.red.shade400),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 10),
-                  ],
                   // Action buttons
                   Row(
                     children: [
@@ -509,10 +440,11 @@ class _GoatSelectionModalState extends State<GoatSelectionModal> {
                       : Colors.grey.shade300,
                 ),
               ),
-              child: FaIcon(
-                FontAwesomeIcons.cow,
+              child: Image.asset(
+                'assets/images/goat-icons/goat.png',
+                width: 16,
+                height: 16,
                 color: isSelected ? AppColors.vibrantGreen : Colors.grey.shade600,
-                size: 16,
               ),
             ),
             const SizedBox(width: 12),
@@ -613,34 +545,6 @@ class _GoatSelectionModalState extends State<GoatSelectionModal> {
               _loadgoat();
             });
             break;
-          case 'export_excel':
-            final messenger = ScaffoldMessenger.of(context);
-            messenger.hideCurrentSnackBar();
-            final ok = await GoatExportService.downloadgoatExcel(goat.id.toString());
-            if (!mounted) break;
-            messenger.showSnackBar(
-              SnackBar(
-                content: Text(ok ? 'Excel report ready! Choose where to open/save.' : 'Failed to download Excel report.'),
-                backgroundColor: ok ? Colors.green.shade600 : Colors.red.shade700,
-                behavior: SnackBarBehavior.floating,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-              ),
-            );
-            break;
-          case 'export_pdf':
-            final messenger = ScaffoldMessenger.of(context);
-            messenger.hideCurrentSnackBar();
-            final ok = await GoatExportService.downloadgoatPdf(goat.id.toString());
-            if (!mounted) break;
-            messenger.showSnackBar(
-              SnackBar(
-                content: Text(ok ? 'PDF report ready! Choose where to open/save.' : 'Failed to generate PDF report.'),
-                backgroundColor: ok ? Colors.green.shade600 : Colors.red.shade700,
-                behavior: SnackBarBehavior.floating,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-              ),
-            );
-            break;
           case 'archive':
             if (!mounted) break;
             ArchiveOption.show(context, goat: goat, onGoatUpdated: () {
@@ -649,8 +553,7 @@ class _GoatSelectionModalState extends State<GoatSelectionModal> {
             break;
           case 'delete':
             if (!mounted) break;
-            DeleteOption.show(context);
-            _loadgoat();
+            DeleteOption.show(context, goat: goat, onGoatDeleted: _loadgoat);
             break;
         }
       },
@@ -746,52 +649,6 @@ class _GoatSelectionModalState extends State<GoatSelectionModal> {
         ),
         const PopupMenuDivider(height: 1),
         PopupMenuItem<String>(
-          value: 'export_excel',
-          height: 36,
-          child: Row(
-            children: [
-              Container(
-                width: 24,
-                height: 24,
-                decoration: BoxDecoration(
-                  color: Colors.green.withValues(alpha: 0.12),
-                  borderRadius: BorderRadius.circular(6),
-                  border: Border.all(color: Colors.green.withValues(alpha: 0.2)),
-                ),
-                alignment: Alignment.center,
-                child: const FaIcon(FontAwesomeIcons.fileExcel, color: Colors.green, size: 14),
-              ),
-              const SizedBox(width: 8),
-              const Expanded(
-                child: Text('Download Excel Report', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
-              ),
-            ],
-          ),
-        ),
-        PopupMenuItem<String>(
-          value: 'export_pdf',
-          height: 36,
-          child: Row(
-            children: [
-              Container(
-                width: 24,
-                height: 24,
-                decoration: BoxDecoration(
-                  color: Colors.red.withValues(alpha: 0.12),
-                  borderRadius: BorderRadius.circular(6),
-                  border: Border.all(color: Colors.red.withValues(alpha: 0.2)),
-                ),
-                child: const Icon(Icons.picture_as_pdf_rounded, color: Colors.red, size: 14),
-              ),
-              const SizedBox(width: 8),
-              const Expanded(
-                child: Text('Generate PDF Report', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
-              ),
-            ],
-          ),
-        ),
-        const PopupMenuDivider(height: 1),
-        PopupMenuItem<String>(
           value: 'archive',
           height: 36,
           child: Row(
@@ -852,8 +709,15 @@ class _GoatSelectionModalState extends State<GoatSelectionModal> {
               shape: BoxShape.circle,
               border: Border.all(color: Colors.grey.shade300),
             ),
-            child: Icon(
-              searchQuery.isEmpty ? FontAwesomeIcons.cow : Icons.search_off_rounded,
+            child: searchQuery.isEmpty
+                ? Image.asset(
+                    'assets/images/goat-icons/goat.png',
+                    width: 48,
+                    height: 48,
+                    color: Colors.grey.shade500,
+                  )
+                : Icon(
+                    Icons.search_off_rounded,
               size: 48,
               color: Colors.grey.shade500,
             ),

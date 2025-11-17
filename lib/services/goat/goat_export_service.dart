@@ -18,13 +18,19 @@ class GoatExportService {
         return false;
       }
 
+      // Clean token: trim and remove only newlines and carriage returns (not spaces)
+      // JWT tokens are base64url encoded and should not have newlines
+      String cleanedToken = token.trim();
+      cleanedToken = cleanedToken.replaceAll('\r', '').replaceAll('\n', '').trim();
+
       final url = Uri.parse('$_baseUrl/farmer/goats/export-goat-excel?goat_id=$goatId');
       log('📥 GoatExportService: Downloading goat Excel from $url');
 
       final response = await http.get(
         url,
         headers: {
-          'Authorization': 'Bearer $token',
+          'Authorization': 'Bearer $cleanedToken',
+          'X-Auth-Token': cleanedToken, // Workaround for nginx + PHP-FPM
           'Accept': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
         },
       );
@@ -92,13 +98,19 @@ class GoatExportService {
         return false;
       }
 
+      // Clean token: trim and remove only newlines and carriage returns (not spaces)
+      // JWT tokens are base64url encoded and should not have newlines
+      String cleanedToken = token.trim();
+      cleanedToken = cleanedToken.replaceAll('\r', '').replaceAll('\n', '').trim();
+
       final url = Uri.parse('$_baseUrl/farmer/goats/export-goat-pdf?goat_id=$goatId');
       log('📥 GoatExportService: Downloading goat PDF from $url');
 
       final response = await http.get(
         url,
         headers: {
-          'Authorization': 'Bearer $token',
+          'Authorization': 'Bearer $cleanedToken',
+          'X-Auth-Token': cleanedToken, // Workaround for nginx + PHP-FPM
           'Accept': 'application/pdf',
         },
       );
@@ -166,6 +178,11 @@ class GoatExportService {
         return false;
       }
 
+      // Clean token: trim and remove only newlines and carriage returns (not spaces)
+      // JWT tokens are base64url encoded and should not have newlines
+      String cleanedToken = token.trim();
+      cleanedToken = cleanedToken.replaceAll('\r', '').replaceAll('\n', '').trim();
+
       final queryParams = <String>[];
       if (reportType != null && reportType.isNotEmpty) {
         queryParams.add('format_type=${Uri.encodeQueryComponent(reportType)}');
@@ -177,7 +194,8 @@ class GoatExportService {
       final response = await http.get(
         url,
         headers: {
-          'Authorization': 'Bearer $token',
+          'Authorization': 'Bearer $cleanedToken',
+          'X-Auth-Token': cleanedToken, // Workaround for nginx + PHP-FPM
           'Accept': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
         },
       );
@@ -216,6 +234,11 @@ class GoatExportService {
         return false;
       }
 
+      // Clean token: trim and remove only newlines and carriage returns (not spaces)
+      // JWT tokens are base64url encoded and should not have newlines
+      String cleanedToken = token.trim();
+      cleanedToken = cleanedToken.replaceAll('\r', '').replaceAll('\n', '').trim();
+
       final queryParams = <String>[];
       if (reportType != null && reportType.isNotEmpty) {
         queryParams.add('format_type=${Uri.encodeQueryComponent(reportType)}');
@@ -227,7 +250,8 @@ class GoatExportService {
       final response = await http.get(
         url,
         headers: {
-          'Authorization': 'Bearer $token',
+          'Authorization': 'Bearer $cleanedToken',
+          'X-Auth-Token': cleanedToken, // Workaround for nginx + PHP-FPM
           'Accept': 'application/pdf',
         },
       );

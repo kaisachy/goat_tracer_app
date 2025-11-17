@@ -594,11 +594,7 @@ class _ArchivedgoatScreenState extends State<ArchivedgoatScreen> {
                         ),
                       ),
                       child: Center(
-                        child: FaIcon(
-                          _getStatusIcon(goat.status),
-                          color: _getStatusColor(goat.status),
-                          size: 20,
-                        ),
+                        child: _getStatusIcon(goat.status),
                       ),
                     ),
                     
@@ -787,16 +783,21 @@ class _ArchivedgoatScreenState extends State<ArchivedgoatScreen> {
     }
   }
 
-  IconData _getStatusIcon(String status) {
+  Widget _getStatusIcon(String status) {
     switch (status.toLowerCase()) {
       case 'sold':
-        return FontAwesomeIcons.dollarSign;
+        return FaIcon(FontAwesomeIcons.dollarSign, color: _getStatusColor(status), size: 20);
       case 'mortality':
-        return FontAwesomeIcons.skull;
+        return FaIcon(FontAwesomeIcons.skull, color: _getStatusColor(status), size: 20);
       case 'lost':
-        return FontAwesomeIcons.locationDot;
+        return FaIcon(FontAwesomeIcons.locationDot, color: _getStatusColor(status), size: 20);
       default:
-        return FontAwesomeIcons.cow;
+        return Image.asset(
+          'assets/images/goat-icons/goat.png',
+          width: 20,
+          height: 20,
+          color: _getStatusColor(status),
+        );
     }
   }
 
@@ -830,7 +831,7 @@ class _ArchivedgoatScreenState extends State<ArchivedgoatScreen> {
           details += '\nAmount: ₱$formattedAmount';
         }
         if (buyer != null && buyer.isNotEmpty) {
-          details += '\nBuyer: $buyer';
+          details += '\nSeller: $buyer';
         }
         if (notes.isNotEmpty) {
           details += '\nNotes: $notes';

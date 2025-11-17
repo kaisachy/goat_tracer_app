@@ -16,13 +16,19 @@ class FarmDetailsService {
     }
 
     try {
-      final authHeader = 'Bearer ${token.trim()}';
-      log('🔍 FarmDetailsService DEBUG: Authorization header: Bearer ${token.substring(0, token.length > 20 ? 20 : token.length)}...');
+      // Clean token: trim and remove only newlines and carriage returns (not spaces)
+      // JWT tokens are base64url encoded and should not have newlines
+      String cleanedToken = token.trim();
+      cleanedToken = cleanedToken.replaceAll('\r', '').replaceAll('\n', '').trim();
+      
+      final authHeader = 'Bearer $cleanedToken';
+      log('🔍 FarmDetailsService DEBUG: Authorization header: Bearer ${cleanedToken.substring(0, cleanedToken.length > 20 ? 20 : cleanedToken.length)}...');
       final response = await http.get(
         Uri.parse('$_baseUrl/farmer/farm'),
         headers: {
           'Content-Type': 'application/json',
           'Authorization': authHeader,
+          'X-Auth-Token': cleanedToken, // Workaround for nginx + PHP-FPM
         },
       );
 
@@ -67,12 +73,14 @@ class FarmDetailsService {
     }
 
     try {
+      final cleanedToken = token.trim().replaceAll(RegExp(r'[\r\n]'), '');
       // Use http.post to call your store/create endpoint
       final response = await http.post(
         Uri.parse('$_baseUrl/farmer/farm'), // Assuming this is your POST route
         headers: {
           'Content-Type': 'application/json; charset=UTF-8',
-          'Authorization': 'Bearer $token',
+          'Authorization': 'Bearer $cleanedToken',
+          'X-Auth-Token': cleanedToken, // Workaround for nginx + PHP-FPM
         },
         body: jsonEncode(data),
       );
@@ -99,12 +107,14 @@ class FarmDetailsService {
     }
 
     try {
+      final cleanedToken = token.trim().replaceAll(RegExp(r'[\r\n]'), '');
       // Use http.post to call your store/create endpoint
       final response = await http.put(
         Uri.parse('$_baseUrl/farmer/farm'), // Assuming this is your POST route
         headers: {
           'Content-Type': 'application/json; charset=UTF-8',
-          'Authorization': 'Bearer $token',
+          'Authorization': 'Bearer $cleanedToken',
+          'X-Auth-Token': cleanedToken, // Workaround for nginx + PHP-FPM
         },
         body: jsonEncode(data),
       );

@@ -94,14 +94,29 @@ class _SettingScreenState extends State<SettingScreen> with TickerProviderStateM
     
     try {
       _isInitializing = true;
+      setState(() => _isLoading = true); // Ensure loading is true at start
       
-      // Load regions first
+      // Load regions first - wait for it to complete
       await _loadRegions();
+      
+      // Ensure regions are loaded before proceeding
+      if (_regions.isEmpty) {
+        debugPrint('Regions not loaded, waiting...');
+        // Wait a bit and retry if needed
+        await Future.delayed(const Duration(milliseconds: 500));
+        if (_regions.isEmpty) {
+          debugPrint('Regions still not loaded after wait');
+        }
+      }
       
       // Then load user data (which will load municipalities and barangays based on province)
       await _loadUserData();
     } catch (e) {
       debugPrint('Error initializing data: $e');
+      setState(() {
+        _isLoading = false;
+        _isDataReady = false;
+      });
     } finally {
       _isInitializing = false;
     }
@@ -235,7 +250,7 @@ class _SettingScreenState extends State<SettingScreen> with TickerProviderStateM
         _currentUser = user;
         _firstNameController.text = user.firstName;
         _lastNameController.text = user.lastName;
-        _isLoading = false;
+        // Don't set _isLoading = false yet - wait for address data to load
       });
 
       // If we have user's province, find and set its region first, then load provinces
@@ -266,9 +281,19 @@ class _SettingScreenState extends State<SettingScreen> with TickerProviderStateM
       }
 
       // Wait for provinces to be loaded before setting address selection
+      // If user has no province or provinces couldn't be loaded, still mark as ready
       if (_provinces.isEmpty) {
-        setState(() => _isLoading = false);
         debugPrint('Provinces not loaded yet, skipping address initialization');
+        // Ensure regions are loaded before marking as ready
+        if (_regions.isNotEmpty) {
+          setState(() {
+            _isDataReady = true;
+            _isLoading = false; // Set loading to false only when regions are ready
+          });
+        } else {
+          debugPrint('Regions not loaded yet, keeping loading state');
+          // Keep loading state true - regions should be loading
+        }
         return;
       }
 
@@ -327,14 +352,23 @@ class _SettingScreenState extends State<SettingScreen> with TickerProviderStateM
         }
       }
 
-       // Mark data as ready for dropdowns
+       // Mark data as ready for dropdowns and stop loading animation
+       // Only stop loading when regions are loaded (required for dropdowns)
+       if (_regions.isNotEmpty) {
        setState(() {
          _isDataReady = true;
+           _isLoading = false; // Only set loading to false when all address data is ready
        });
-
        _animationController.forward();
+       } else {
+         debugPrint('Regions not loaded yet, keeping loading state');
+         // Keep loading state - regions should be loading or will be loaded
+       }
          } catch (e) {
-      setState(() => _isLoading = false);
+      setState(() {
+        _isLoading = false;
+        _isDataReady = false; // Reset data ready flag on error
+      });
 
       String errorMessage;
       if (e.toString().contains('User session not found') ||
