@@ -1,4 +1,7 @@
-﻿plugins {
+﻿import java.util.Properties
+import java.io.FileInputStream
+
+plugins {
     id("com.android.application")
     id("kotlin-android")
     // The Flutter Gradle Plugin must be applied after the Android and Kotlin Gradle plugins.
@@ -28,13 +31,42 @@ android {
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
         versionName = flutter.versionName
+        
+        // Enable multi-dex support for large apps
+        multiDexEnabled = true
+    }
+
+    signingConfigs {
+        create("release") {
+            // Load keystore properties from key.properties file
+            val keystorePropertiesFile = rootProject.file("key.properties")
+            if (keystorePropertiesFile.exists()) {
+                val keystoreProperties = Properties()
+                keystoreProperties.load(FileInputStream(keystorePropertiesFile))
+                
+                keyAlias = keystoreProperties["keyAlias"] as String
+                keyPassword = keystoreProperties["keyPassword"] as String
+                storeFile = file(keystoreProperties["storeFile"] as String)
+                storePassword = keystoreProperties["storePassword"] as String
+            }
+        }
     }
 
     buildTypes {
         release {
-            // TODO: Add your own signing config for the release build.
-            // Signing with the debug keys for now, so `flutter run --release` works.
-            signingConfig = signingConfigs.getByName("debug")
+            // Use release signing config if available, otherwise fallback to debug
+            val keystorePropertiesFile = rootProject.file("key.properties")
+            if (keystorePropertiesFile.exists()) {
+                signingConfig = signingConfigs.getByName("release")
+            } else {
+                signingConfig = signingConfigs.getByName("debug")
+            }
+            
+            // Code shrinking disabled - Flutter already optimizes Dart code
+            // Enable minification only if you need additional native code optimization
+            // Note: Enabling minification may require additional ProGuard rules for Flutter plugins
+            isMinifyEnabled = false
+            isShrinkResources = false
         }
     }
 }
