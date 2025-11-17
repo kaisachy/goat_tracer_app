@@ -8,9 +8,10 @@ import 'package:goat_tracer_app/services/goat/goat_service.dart';
 
 class DeleteOption {
   static void show(BuildContext context, {required Goat goat, VoidCallback? onGoatDeleted}) {
+    final parentContext = context; // Store the original context
     showDialog(
       context: context,
-      builder: (BuildContext context) {
+      builder: (BuildContext dialogContext) {
         return Dialog(
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
           elevation: 16,
@@ -56,7 +57,7 @@ class DeleteOption {
                   children: [
                     Expanded(
                       child: TextButton(
-                        onPressed: () => Navigator.pop(context),
+                        onPressed: () => Navigator.pop(dialogContext),
                         style: TextButton.styleFrom(
                           padding: const EdgeInsets.symmetric(vertical: 12),
                         ),
@@ -72,9 +73,11 @@ class DeleteOption {
                     const SizedBox(width: 12),
                     Expanded(
                       child: ElevatedButton(
-                        onPressed: () {
-                          Navigator.pop(context);
-                          _confirmDelete(context, goat: goat, onGoatDeleted: onGoatDeleted);
+                        onPressed: () async {
+                          Navigator.pop(dialogContext);
+                          // Wait for dialog to close
+                          await Future.delayed(const Duration(milliseconds: 50));
+                          _confirmDelete(parentContext, goat: goat, onGoatDeleted: onGoatDeleted);
                         },
                         style: ElevatedButton.styleFrom(
                           backgroundColor: Colors.red[600],
@@ -112,64 +115,17 @@ class DeleteOption {
   }
 
   static Future<void> _confirmDelete(BuildContext context, {required Goat goat, VoidCallback? onGoatDeleted}) async {
-    final scaffoldMessenger = ScaffoldMessenger.of(context);
-    
-    // Show loading snackbar
-    scaffoldMessenger.clearSnackBars();
-    final loadingSnackBar = SnackBar(
-      content: Container(
-        padding: const EdgeInsets.symmetric(vertical: 4),
-        child: Row(
-          children: [
-            const SizedBox(
-              width: 18,
-              height: 18,
-              child: CircularProgressIndicator(
-                strokeWidth: 2,
-                valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-              ),
-            ),
-            const SizedBox(width: 12),
-            const Expanded(
-              child: Text(
-                'Deleting goat...',
-                style: TextStyle(
-                  fontSize: 14,
-                  color: Colors.white,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-      backgroundColor: Colors.orange[700],
-      behavior: SnackBarBehavior.floating,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      margin: const EdgeInsets.all(16),
-      duration: const Duration(seconds: 30),
-      elevation: 8,
-    );
-    
-    scaffoldMessenger.showSnackBar(loadingSnackBar);
-
     try {
       final success = await GoatService.deletegoatInformation(goat.id);
       
       if (!context.mounted) return;
 
-      // Immediately hide the loading snackbar - clearSnackBars is the most immediate method
-      scaffoldMessenger.clearSnackBars();
-
       if (success) {
-        // Trigger refresh immediately - this will call _fetchGoat() to refresh the screen
-        if (onGoatDeleted != null) {
+        // Trigger refresh immediately - the callback will call setState
+        if (context.mounted && onGoatDeleted != null) {
           onGoatDeleted();
         }
-        
-        // No success snackbar - just disappear immediately as requested
       } else {
-        // Show error snackbar only on failure
         if (context.mounted) {
           UIHelpers.showEnhancedSnackbar(
             context,
@@ -182,8 +138,7 @@ class DeleteOption {
       }
     } catch (e) {
       if (!context.mounted) return;
-      // Forcefully remove loading snackbar
-      scaffoldMessenger.clearSnackBars();
+      
       // Show error snackbar
       UIHelpers.showEnhancedSnackbar(
         context,
