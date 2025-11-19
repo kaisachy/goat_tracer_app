@@ -34,7 +34,7 @@ class _FarmDetailsModalState extends State<FarmDetailsModal> {
   late TextEditingController coopController;
   // farmLocationController removed - using structured address fields instead
   bool _isLoading = false;
-  final List<String> _farmTypeOptions = const ['Beef goat', 'Dairy goat'];
+  final List<String> _farmTypeOptions = const ['Meat Goat', 'Dairy Goat'];
   String? _selectedFarmType;
   
   final List<String> _farmLandAreaOptions = const [

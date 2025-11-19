@@ -22,8 +22,8 @@ class TrainingsSeminarsModal extends StatefulWidget {
 class _TrainingsSeminarsModalState extends State<TrainingsSeminarsModal> {
   late Future<List<Map<String, dynamic>>> trainingFuture;
   final List<String> _options = const [
-    'Beef goat Raising',
-    'Dairy goat Raising',
+    'Meat Goat Raising',
+    'Dairy Goat Raising',
     'Feedlot Fattening',
     'Silage Making',
     'Slaughtering & Cutting',
