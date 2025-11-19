@@ -175,15 +175,21 @@ class _GoatHistoryFormScreenState extends State<GoatHistoryFormScreen>
   Future<Map<String, dynamic>?> _getLatestHistoryRecord({
     required String goatTag,
     required String historyType,
+    DateTime? mustBeAfter,
   }) async {
     try {
-      final all = await GoatHistoryService.getgoatHistory();
-      final filtered = all
-          .where((e) =>
-              e['goat_tag'] == goatTag &&
-              (e['history_type']?.toString().toLowerCase() ?? '') ==
-                  historyType.toLowerCase())
-          .toList();
+      final eventsForTag = await GoatHistoryService.getgoatHistoryByTag(goatTag);
+      final filtered = eventsForTag.where((e) {
+        final matchesType =
+            (e['history_type']?.toString().toLowerCase() ?? '') ==
+                historyType.toLowerCase();
+        if (!matchesType) return false;
+        if (mustBeAfter == null) return true;
+        final rawDate = e['history_date']?.toString();
+        final parsedDate = DateTime.tryParse(rawDate ?? '');
+        if (parsedDate == null) return false;
+        return parsedDate.isAfter(mustBeAfter);
+      }).toList();
       if (filtered.isEmpty) return null;
       filtered.sort((a, b) {
         try {
@@ -196,6 +202,27 @@ class _GoatHistoryFormScreenState extends State<GoatHistoryFormScreen>
       });
       return filtered.first;
     } catch (e) {
+      return null;
+    }
+  }
+
+  Future<DateTime?> _getLatestClosureDate(String goatTag) async {
+    try {
+      final eventsForTag = await GoatHistoryService.getgoatHistoryByTag(goatTag);
+      DateTime? latestClosure;
+      for (final event in eventsForTag) {
+        final type = (event['history_type']?.toString().toLowerCase() ?? '');
+        if (type == 'gives birth' || type == 'aborted pregnancy') {
+          final rawDate = event['history_date']?.toString();
+          final date = DateTime.tryParse(rawDate ?? '');
+          if (date == null) continue;
+          if (latestClosure == null || date.isAfter(latestClosure)) {
+            latestClosure = date;
+          }
+        }
+      }
+      return latestClosure;
+    } catch (_) {
       return null;
     }
   }
@@ -218,11 +245,19 @@ class _GoatHistoryFormScreenState extends State<GoatHistoryFormScreen>
     // Pregnant requires latest Breeding; autofill breeding_date, expected_delivery_date, buck/semen
     if (value.toLowerCase() == 'pregnant') {
       debugPrint('DEBUG: Processing Pregnant history record for goat: $goatTag');
-      final latestBreeding = await _getLatestHistoryRecord(goatTag: goatTag, historyType: 'Breeding');
+      final latestClosure = await _getLatestClosureDate(goatTag);
+      final latestBreeding = await _getLatestHistoryRecord(
+        goatTag: goatTag,
+        historyType: 'Breeding',
+        mustBeAfter: latestClosure,
+      );
       debugPrint('DEBUG: Latest breeding history record found: $latestBreeding');
       if (latestBreeding == null) {
         debugPrint('DEBUG: No breeding history record found, showing warning');
-        _showWarningMessage('No recent Breeding history record found. Cannot create Pregnant history record.');
+        _showWarningMessage(
+          'No Breeding history record has been logged since the last Gives Birth/Aborted event. '
+          'Please add a new Breeding record before marking this goat as Pregnant.',
+        );
         setState(() => selectedHistoryType = 'Select type of history record');
         return;
       }
@@ -290,11 +325,19 @@ class _GoatHistoryFormScreenState extends State<GoatHistoryFormScreen>
     // Gives Birth requires latest Pregnant; autofill breeding_date and expected_delivery_date
     if (value.toLowerCase() == 'gives birth') {
       debugPrint('DEBUG: Processing Gives Birth history record for goat: $goatTag');
-      final latestPregnant = await _getLatestHistoryRecord(goatTag: goatTag, historyType: 'Pregnant');
+      final latestClosure = await _getLatestClosureDate(goatTag);
+      final latestPregnant = await _getLatestHistoryRecord(
+        goatTag: goatTag,
+        historyType: 'Pregnant',
+        mustBeAfter: latestClosure,
+      );
       debugPrint('DEBUG: Latest pregnant history record found: $latestPregnant');
       if (latestPregnant == null) {
         debugPrint('DEBUG: No pregnant history record found, showing warning');
-        _showWarningMessage('No Pregnant history record found. Cannot create Gives Birth history record.');
+        _showWarningMessage(
+          'No Pregnant history record has been logged since the last Gives Birth/Aborted event. '
+          'Please record a new Pregnant entry before logging Gives Birth.',
+        );
         setState(() => selectedHistoryType = 'Select type of history record');
         return;
       }
@@ -354,6 +397,69 @@ class _GoatHistoryFormScreenState extends State<GoatHistoryFormScreen>
       }
 
       // If no kid data yet, prompt user to add kid when saving
+    }
+
+    if (value.toLowerCase() == 'aborted pregnancy') {
+      debugPrint('DEBUG: Processing Aborted Pregnancy history record for goat: $goatTag');
+      final latestClosure = await _getLatestClosureDate(goatTag);
+      final latestPregnant = await _getLatestHistoryRecord(
+        goatTag: goatTag,
+        historyType: 'Pregnant',
+        mustBeAfter: latestClosure,
+      );
+      debugPrint('DEBUG: Latest pregnant history record for aborted pregnancy: $latestPregnant');
+      if (latestPregnant == null) {
+        _showWarningMessage(
+          'No Pregnant history record has been logged since the last Gives Birth/Aborted event. '
+          'Record a new Pregnant entry before logging an Aborted Pregnancy.',
+        );
+        setState(() => selectedHistoryType = 'Select type of history record');
+        return;
+      }
+
+      final breedingDate = latestPregnant['breeding_date']?.toString();
+      if (breedingDate != null && breedingDate.isNotEmpty) {
+        _controllers['breeding_date']?.text = breedingDate;
+      }
+      final due = latestPregnant['expected_delivery_date']?.toString();
+      if (due != null && due.isNotEmpty) {
+        _controllers['expected_delivery_date']?.text = due;
+      }
+
+      String? semen = latestPregnant['semen_used']?.toString();
+      String? buck = latestPregnant['Buck_tag']?.toString();
+      if ((semen == null || semen.isEmpty) && (buck == null || buck.isEmpty)) {
+        final latestBreeding = await _getLatestHistoryRecord(
+          goatTag: goatTag,
+          historyType: 'Breeding',
+        );
+        semen = latestBreeding?['semen_used']?.toString();
+        buck = latestBreeding?['Buck_tag']?.toString();
+      }
+
+      if (semen != null && semen.isNotEmpty) {
+        _controllers['semen_used']?.text = semen;
+        String extracted = semen.trim();
+        if (extracted.toLowerCase().endsWith('semen')) {
+          extracted = extracted.substring(0, extracted.length - 5).trim();
+        }
+        int stop = extracted.indexOf(' ');
+        int paren = extracted.indexOf('(');
+        if (stop == -1 || (paren != -1 && paren < stop)) {
+          stop = paren;
+        }
+        final buckTag = stop == -1 ? extracted : extracted.substring(0, stop).trim();
+        if (buckTag.isNotEmpty) {
+          _controllers['Buck_tag']?.text = buckTag;
+        }
+      } else if (buck != null && buck.isNotEmpty) {
+        _controllers['Buck_tag']?.text = buck;
+        _controllers['semen_used']?.text = '';
+      }
+
+      if (mounted) {
+        setState(() {});
+      }
     }
   }
 
@@ -885,21 +991,40 @@ class _GoatHistoryFormScreenState extends State<GoatHistoryFormScreen>
 
       // Execute kid operations
       // Prefer multi-kid from HistorySpecificFields if available
-      final multiCalves = _historySpecificFieldsKey.currentState?.getCalves();
-      if (multiCalves != null && multiCalves.isNotEmpty) {
+      final multiKids = _historySpecificFieldsKey.currentState?.getKids();
+      debugPrint('DEBUG: Processing kids - multiKids count: ${multiKids?.length ?? 0}');
+      if (multiKids != null && multiKids.isNotEmpty) {
         bool allOk = true;
-        for (final kid in multiCalves) {
+        // Get the history event date for setting kid's date_of_birth
+        final historyDate = _controllers['history_date']?.text.trim() ?? '';
+        debugPrint('DEBUG: History event date: $historyDate');
+        for (final kid in multiKids) {
+          debugPrint('DEBUG: Processing kid: ${kid['tag_no']}, pendingOperation: ${kid['pendingOperation']}');
           // Expect structure similar to _temporaryKidData
           final Map<String, dynamic> full = Map<String, dynamic>.from(kid['fullKidData'] ?? kid);
+          
+          // Ensure all required fields are present
+          full['tag_no'] = full['tag_no'] ?? kid['tag_no'];
+          full['sex'] = full['sex'] ?? kid['sex'];
+          
           // Ensure parent links
           full['mother_tag'] = _goatDetails?.tagNo ?? full['mother_tag'];
           full['father_tag'] = _controllers['Buck_tag']?.text.isNotEmpty == true
               ? _controllers['Buck_tag']!.text
               : full['father_tag'];
-
-          // Enforce create or update explicitly
+          
+          // Ensure required fields for new kids
           final String pending = (kid['pendingOperation'] ?? 'create').toString();
           if (pending == 'create') {
+            // Set date_of_birth to match the history event date
+            if (historyDate.isNotEmpty) {
+              full['date_of_birth'] = historyDate;
+            }
+            // Ensure classification, status, and source are set
+            full['classification'] = full['classification'] ?? 'Kid';
+            full['status'] = full['status'] ?? 'Healthy';
+            full['source'] = full['source'] ?? 'Born on farm';
+            // Remove id for new kids
             full.remove('id');
           }
 
@@ -910,8 +1035,10 @@ class _GoatHistoryFormScreenState extends State<GoatHistoryFormScreen>
             'kidId': full['id'],
             'isEditMode': pending == 'update',
           };
+          debugPrint('DEBUG: Kid operation data - tag: ${full['tag_no']}, classification: ${full['classification']}, status: ${full['status']}, date_of_birth: ${full['date_of_birth']}');
           _temporaryKidData = op;
           final ok = await _executeKidOperations();
+          debugPrint('DEBUG: Kid operation result for ${full['tag_no']}: $ok');
           allOk = allOk && ok;
         }
         kidHandled = allOk;
@@ -1140,13 +1267,13 @@ class _GoatHistoryFormScreenState extends State<GoatHistoryFormScreen>
         'notes': _controllers['notes']!.text.trim(),
       };
 
-      // Handle Kid_tag specially for Gives Birth history with multiple calves
+      // Handle Kid_tag specially for Gives Birth history with multiple kids
       String kidTagValue = _controllers['Kid_tag']!.text.trim();
       if (selectedHistoryType.toLowerCase() == 'gives birth') {
-        final multiCalves = _historySpecificFieldsKey.currentState?.getCalves();
-        if (multiCalves != null && multiCalves.isNotEmpty) {
-          // Collect all kid tags from multiple calves
-          final kidTags = multiCalves
+        final multiKids = _historySpecificFieldsKey.currentState?.getKids();
+        if (multiKids != null && multiKids.isNotEmpty) {
+          // Collect all kid tags from multiple kids
+          final kidTags = multiKids
               .map((kid) => kid['tag_no']?.toString())
               .where((tag) => tag != null && tag.isNotEmpty)
               .toList();
@@ -1291,12 +1418,16 @@ class _GoatHistoryFormScreenState extends State<GoatHistoryFormScreen>
       }
       // Enforce prerequisite: Pregnant requires latest Breeding
       if (selectedHistoryType.toLowerCase() == 'pregnant') {
+        final latestClosure = await _getLatestClosureDate(data['goat_tag']);
         final latestBreeding = await _getLatestHistoryRecord(
           goatTag: data['goat_tag'],
           historyType: 'Breeding',
+          mustBeAfter: latestClosure,
         );
         if (latestBreeding == null) {
-          _showErrorMessage('Cannot create Pregnant history record: no Breeding history record found.');
+          _showErrorMessage(
+            'Cannot create Pregnant history record: no Breeding history has been logged since the last Gives Birth/Aborted event.',
+          );
           setState(() => _isLoading = false);
           return;
         }
@@ -1304,20 +1435,40 @@ class _GoatHistoryFormScreenState extends State<GoatHistoryFormScreen>
 
       // Enforce prerequisite: Gives Birth requires latest Pregnant
       if (selectedHistoryType.toLowerCase() == 'gives birth') {
+        final latestClosure = await _getLatestClosureDate(data['goat_tag']);
         final latestPregnant = await _getLatestHistoryRecord(
           goatTag: data['goat_tag'],
           historyType: 'Pregnant',
+          mustBeAfter: latestClosure,
         );
         if (latestPregnant == null) {
-          _showErrorMessage('Cannot create Gives Birth history record: no Pregnant history record found.');
+          _showErrorMessage(
+            'Cannot create Gives Birth history record: no Pregnant history has been logged since the last Gives Birth/Aborted event.',
+          );
+          setState(() => _isLoading = false);
+          return;
+        }
+      }
+
+      if (selectedHistoryType.toLowerCase() == 'aborted pregnancy') {
+        final latestClosure = await _getLatestClosureDate(data['goat_tag']);
+        final latestPregnant = await _getLatestHistoryRecord(
+          goatTag: data['goat_tag'],
+          historyType: 'Pregnant',
+          mustBeAfter: latestClosure,
+        );
+        if (latestPregnant == null) {
+          _showErrorMessage(
+            'Cannot create Aborted Pregnancy history record: no Pregnant history has been logged since the last Gives Birth/Aborted event.',
+          );
           setState(() => _isLoading = false);
           return;
         }
       }
 
       if (selectedHistoryType.toLowerCase() == 'gives birth') {
-        final multiCalves = _historySpecificFieldsKey.currentState?.getCalves();
-        final hasMulti = multiCalves != null && multiCalves.isNotEmpty;
+        final multiKids = _historySpecificFieldsKey.currentState?.getKids();
+        final hasMulti = multiKids != null && multiKids.isNotEmpty;
         final hasSingle = _controllers['Kid_tag']!.text.trim().isNotEmpty || _temporaryKidData != null;
         if (!hasMulti && !hasSingle) {
           _showErrorMessage('Please add at least one kid for birth history.');
@@ -1489,6 +1640,9 @@ class _GoatHistoryFormScreenState extends State<GoatHistoryFormScreen>
           debugPrint('🎯 Event type handling - selectedHistoryType: "$selectedHistoryType"');
           if (selectedHistoryType.toLowerCase() == 'gives birth') {
             debugPrint('🎯 Handling Gives Birth event');
+            // Check kids before processing
+            final kidsBefore = _historySpecificFieldsKey.currentState?.getKids();
+            debugPrint('DEBUG: Kids available before _handleGivesBirthEvent: ${kidsBefore?.length ?? 0}');
             await _handleGivesBirthEvent();
           } else if (selectedHistoryType.toLowerCase() == 'breeding') {
             debugPrint('🎯 Handling Breeding event');

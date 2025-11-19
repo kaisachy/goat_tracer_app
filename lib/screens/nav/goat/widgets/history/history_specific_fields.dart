@@ -198,13 +198,21 @@ class HistorySpecificFieldsState extends State<HistorySpecificFields> {
     }
   }
 
-  // Expose calves collected in Gives Birth fields
-  List<Map<String, dynamic>>? getCalves() {
+  // Expose kids collected in Gives Birth fields
+  List<Map<String, dynamic>>? getKids() {
     if (widget.selectedEventType.toLowerCase() == 'gives birth') {
-      return _givesBirthFieldsKey.currentState?.getCalves();
+      debugPrint('DEBUG: history_specific_fields getKids() - event type is gives birth');
+      final kids = _givesBirthFieldsKey.currentState?.getKids();
+      debugPrint('DEBUG: history_specific_fields getKids() - returned ${kids?.length ?? 0} kids');
+      return kids;
     }
+    debugPrint('DEBUG: history_specific_fields getKids() - event type is NOT gives birth: ${widget.selectedEventType}');
     return null;
   }
+  
+  // Keep getCalves() for backward compatibility, but it calls getKids()
+  @Deprecated('Use getKids() instead')
+  List<Map<String, dynamic>>? getCalves() => getKids();
 
   // Get breeding type from breeding event fields
   String? getBreedingType() {

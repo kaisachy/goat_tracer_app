@@ -24,75 +24,229 @@ class _HistoryScreenState extends State<HistoryScreen> {
   String searchQuery = '';
   String selectedHistoryType = 'All';
   Set<int> expandedCards = <int>{};
+  String _addTabCategoryFilter = 'All'; // All, Health, Breeding, Lifecycle
 
-  // All possible history types - comprehensive list of all available history types
+  // All possible history types
   List<String> get historyTypes {
-    // Define all possible history types that can be recorded
-    // This ensures all types are always available in the Add History tab
-    const allHistoryTypes = [
+    // Reference order for grid: use HistoryTypeUtils for 'Doe' (most complete)
+    final doeTypes = HistoryTypeUtils.getHistoryTypesForSex(null, classification: 'Doe');
+    return [...doeTypes];
+  }
+
+  Widget _buildAddHistoryGrid() {
+    final allTypes = historyTypes.where((t) => t != 'Select type of history record').toList();
+    // Ensure global list includes types that may only apply to specific sexes/classifications
+    if (!allTypes.contains('Castrated')) allTypes.add('Castrated');
+    if (!allTypes.contains('Weaned')) allTypes.add('Weaned');
+
+    // Define category sets
+    final healthSet = {
       'Vaccinated',
       'Sick',
       'Treated',
+      'Deworming',
+      'Hoof Trimming',
+    };
+    final breedingSet = {
       'Breeding',
       'Pregnant',
       'Gives Birth',
       'Aborted Pregnancy',
+    };
+    final lifecycleSet = {
       'Dry off',
       'Weighed',
-      'Deworming',
-      'Hoof Trimming',
-      'Castrated',
       'Weaned',
+      'Castrated',
       'Mortality',
       'Lost',
       'Sold',
       'Other',
-    ];
-    
-    debugPrint('DEBUG: All history types: ${allHistoryTypes.join(", ")}');
-    
-    return ['Select type of history record', ...allHistoryTypes];
-  }
+    };
 
-  Widget _buildAddHistoryGrid() {
-    // Get all types except the "Select type" option
-    final allTypes = historyTypes.where((t) => t != 'Select type of history record').toList();
-    
-    // Separate "Other" from the rest
-    final gridTypes = allTypes.where((t) => t != 'Other').toList();
-    final hasOther = allTypes.contains('Other');
-    
-    // Debug: Print all types to verify they're included
-    debugPrint('DEBUG: Total history types: ${allTypes.length}');
-    debugPrint('DEBUG: Grid types count: ${gridTypes.length}');
-    debugPrint('DEBUG: All history types in grid: ${gridTypes.join(", ")}');
-    
+    final healthTypes = allTypes.where((t) => healthSet.contains(t)).toList();
+    final breedingTypes = allTypes.where((t) => breedingSet.contains(t)).toList();
+    final lifecycleTypes = allTypes.where((t) => lifecycleSet.contains(t)).toList();
+    // Ensure Weaned and Castrated appear first (same row), and "Other" appears last
+    final List<String> lifecyclePriority = ['Weaned', 'Castrated'];
+    for (final p in lifecyclePriority.reversed) {
+      if (lifecycleTypes.remove(p)) {
+        lifecycleTypes.insert(0, p);
+      }
+    }
+    if (lifecycleTypes.remove('Other')) {
+      lifecycleTypes.add('Other');
+    }
+
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
-        GridView.builder(
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: 2,
-            crossAxisSpacing: 12,
-            mainAxisSpacing: 12,
-            childAspectRatio: 4 / 3,
+        if ((_addTabCategoryFilter == 'All' || _addTabCategoryFilter == 'Health') && healthTypes.isNotEmpty)
+          _buildHistoryCategorySection(
+            title: 'Animal Health & Treatment',
+            subtitle: 'Record sickness, treatments, vaccinations, weighing, and other health-related events.',
+            types: healthTypes,
           ),
-          itemCount: gridTypes.length,
-          itemBuilder: (gridContext, index) {
-            final type = gridTypes[index];
-            final color = HistoryTypeUtils.getHistoryColor(type);
-            final icon = HistoryTypeUtils.getHistoryIcon(type);
-            return Card(
-              elevation: 3,
-              shadowColor: color.withValues(alpha: 0.25),
-              color: Colors.white,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(16),
-                side: BorderSide(color: color.withValues(alpha: 0.25), width: 1),
+        if ((_addTabCategoryFilter == 'All' || _addTabCategoryFilter == 'Breeding') && breedingTypes.isNotEmpty)
+          const SizedBox(height: 24),
+        if ((_addTabCategoryFilter == 'All' || _addTabCategoryFilter == 'Breeding') && breedingTypes.isNotEmpty)
+          _buildHistoryCategorySection(
+            title: 'Breeding & Reproduction',
+            subtitle: 'Log breeding, pregnancies, kidding, and reproductive events.',
+            types: breedingTypes,
+          ),
+        if ((_addTabCategoryFilter == 'All' || _addTabCategoryFilter == 'Lifecycle') && lifecycleTypes.isNotEmpty)
+          const SizedBox(height: 24),
+        if ((_addTabCategoryFilter == 'All' || _addTabCategoryFilter == 'Lifecycle') && lifecycleTypes.isNotEmpty)
+          _buildHistoryCategorySection(
+            title: 'Animal Lifecycle Management',
+            subtitle: 'Track dry-off, weaning, sales, losses, and other lifecycle changes.',
+            types: lifecycleTypes,
+          ),
+      ],
+    );
+  }
+
+  Widget _buildAddTabBottomNav() {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(24),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.05),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          _buildCategoryNavItem(
+            label: 'All',
+            value: 'All',
+            icon: Icons.apps_rounded,
+          ),
+          _buildCategoryNavItem(
+            label: 'Health',
+            value: 'Health',
+            icon: Icons.medical_services_rounded,
+          ),
+          _buildCategoryNavItem(
+            label: 'Breeding',
+            value: 'Breeding',
+            icon: Icons.favorite_rounded,
+          ),
+          _buildCategoryNavItem(
+            label: 'Lifecycle',
+            value: 'Lifecycle',
+            icon: Icons.timeline_rounded,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildCategoryNavItem({
+    required String label,
+    required String value,
+    required IconData icon,
+  }) {
+    final bool selected = _addTabCategoryFilter == value;
+    final Color activeColor = AppColors.vibrantGreen;
+    final Color inactiveColor = Colors.grey.shade500;
+
+    return Expanded(
+      child: InkWell(
+        borderRadius: BorderRadius.circular(20),
+        onTap: () {
+          setState(() {
+            _addTabCategoryFilter = value;
+          });
+        },
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 4),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                icon,
+                size: 20,
+                color: selected ? activeColor : inactiveColor,
               ),
-              child: InkWell(
+              const SizedBox(height: 2),
+              Text(
+                label,
+                style: TextStyle(
+                  fontSize: 11,
+                  fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
+                  color: selected ? activeColor : inactiveColor,
+                ),
+              ),
+              const SizedBox(height: 2),
+              AnimatedContainer(
+                duration: const Duration(milliseconds: 200),
+                height: 2,
+                width: selected ? 18 : 0,
+                decoration: BoxDecoration(
+                  color: activeColor,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildHistoryCategorySection({
+    required String title,
+    required String subtitle,
+    required List<String> types,
+  }) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 20),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.05),
+            blurRadius: 15,
+            offset: const Offset(0, 6),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            title,
+            style: const TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.w700,
+              color: AppColors.textPrimary,
+            ),
+          ),
+          const SizedBox(height: 12),
+          GridView.builder(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: 2,
+              crossAxisSpacing: 12,
+              mainAxisSpacing: 12,
+              childAspectRatio: 4 / 3,
+            ),
+            itemCount: types.length,
+            itemBuilder: (gridContext, index) {
+              final type = types[index];
+              final color = HistoryTypeUtils.getHistoryColor(type);
+              final icon = HistoryTypeUtils.getHistoryIcon(type);
+              return InkWell(
                 borderRadius: BorderRadius.circular(16),
                 onTap: () async {
                   final selectedgoatTag = await showDialog<String>(
@@ -115,23 +269,19 @@ class _HistoryScreenState extends State<HistoryScreen> {
                   await _refreshHistory();
                 },
                 child: Padding(
-                  padding: const EdgeInsets.all(16),
+                  padding: const EdgeInsets.all(8),
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Expanded(
-                        child: Center(
-                          child: Container(
-                            width: 56,
-                            height: 56,
-                            decoration: BoxDecoration(
-                              color: color.withValues(alpha: 0.12),
-                              borderRadius: BorderRadius.circular(12),
-                              border: Border.all(color: color.withValues(alpha: 0.2)),
-                            ),
-                            child: Icon(icon, color: color, size: 28),
-                          ),
+                      Container(
+                        width: 56,
+                        height: 56,
+                        decoration: BoxDecoration(
+                          color: color.withValues(alpha: 0.12),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: color.withValues(alpha: 0.2)),
                         ),
+                        child: Icon(icon, color: color, size: 28),
                       ),
                       const SizedBox(height: 8),
                       Text(
@@ -148,77 +298,11 @@ class _HistoryScreenState extends State<HistoryScreen> {
                     ],
                   ),
                 ),
-              ),
-            );
-          },
-        ),
-        if (hasOther)
-          Padding(
-            padding: const EdgeInsets.only(top: 12, left: 0, right: 0),
-            child: Card(
-              elevation: 3,
-              shadowColor: HistoryTypeUtils.getHistoryColor('Other').withValues(alpha: 0.25),
-              color: Colors.white,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(16),
-                side: BorderSide(color: HistoryTypeUtils.getHistoryColor('Other').withValues(alpha: 0.25), width: 1),
-              ),
-              child: InkWell(
-                borderRadius: BorderRadius.circular(16),
-                onTap: () async {
-                  final selectedgoatTag = await showDialog<String>(
-                    context: context,
-                    barrierDismissible: false,
-                    builder: (dialogContext) {
-                      return GoatSelectionModal(historyType: 'Other');
-                    },
-                  );
-                  if (!mounted || selectedgoatTag == null) return;
-                  await Navigator.of(context).push(
-                    MaterialPageRoute(
-                      builder: (routeContext) => GoatHistoryFormScreen(
-                        goatTag: selectedgoatTag,
-                        initialHistoryType: 'Other',
-                      ),
-                    ),
-                  );
-                  if (!mounted) return;
-                  await _refreshHistory();
-                },
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 24),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Container(
-                        width: 56,
-                        height: 56,
-                        decoration: BoxDecoration(
-                          color: HistoryTypeUtils.getHistoryColor('Other').withValues(alpha: 0.08),
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(color: HistoryTypeUtils.getHistoryColor('Other').withValues(alpha: 0.13)),
-                        ),
-                        child: Icon(HistoryTypeUtils.getHistoryIcon('Other'), color: HistoryTypeUtils.getHistoryColor('Other'), size: 28),
-                      ),
-                      const SizedBox(width: 28),
-                      Text(
-                        'Other',
-                        textAlign: TextAlign.center,
-                        style: const TextStyle(
-                          fontSize: 17,
-                          fontWeight: FontWeight.w600,
-                          color: AppColors.textPrimary,
-                        ),
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ),
+              );
+            },
           ),
-      ],
+        ],
+      ),
     );
   }
 
@@ -559,7 +643,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
             children: [
               Icon(Icons.delete_rounded, color: Colors.red.shade400, size: 20),
               const SizedBox(width: 12),
-              Text('Delete History Record', style: TextStyle(color: Colors.red.shade400)),
+              Text('Delete History', style: TextStyle(color: Colors.red.shade400)),
             ],
           ),
         ),
@@ -678,68 +762,184 @@ class _HistoryScreenState extends State<HistoryScreen> {
     showDialog(
       context: context,
       builder: (BuildContext context) {
+        Widget buildInfoRow(IconData icon, String label, String value) {
+          return Padding(
+            padding: const EdgeInsets.symmetric(vertical: 6),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: AppColors.primary.withValues(alpha: 0.08),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Icon(icon, color: AppColors.primary, size: 18),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        label,
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.grey.shade600,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        value,
+                        style: const TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                          color: AppColors.textPrimary,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          );
+        }
+
+        final historyType = (historyRecord['history_type'] ?? 'History').toString();
+        final goatTag = (historyRecord['goat_tag'] ?? 'Unknown').toString();
+        final historyDate = _formatDate(historyRecord['history_date']);
+
         return AlertDialog(
-          title: Row(
-            children: [
-              Icon(Icons.warning_rounded, color: Colors.red.shade400),
-              const SizedBox(width: 8),
-              const Text('Delete History Record'),
-            ],
-          ),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text('Are you sure you want to delete this history record?'),
-              const SizedBox(height: 12),
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: Colors.grey.shade100,
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: Colors.grey.shade300),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      '${historyRecord['history_type']} - ${historyRecord['goat_tag']}',
-                      style: const TextStyle(fontWeight: FontWeight.bold),
+          backgroundColor: Colors.white,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          contentPadding: EdgeInsets.zero,
+          content: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 420),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+                  decoration: BoxDecoration(
+                    color: Colors.red.shade50,
+                    borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+                    border: Border(
+                      bottom: BorderSide(color: Colors.red.shade100),
                     ),
-                    Text(
-                      'Date: ${_formatDate(historyRecord['history_date'])}',
-                      style: TextStyle(color: Colors.grey.shade600, fontSize: 12),
-                    ),
-                  ],
+                  ),
+                  child: Row(
+                    children: [
+                      Container(
+                        width: 44,
+                        height: 44,
+                        decoration: BoxDecoration(
+                          color: Colors.red.shade100,
+                          shape: BoxShape.circle,
+                        ),
+                        child: Icon(Icons.delete_forever_rounded, color: Colors.red.shade700),
+                      ),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text(
+                              'Delete History',
+                              style: TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.w700,
+                                color: AppColors.textPrimary,
+                              ),
+                            ),
+                            Text(
+                              'This action cannot be undone',
+                              style: TextStyle(
+                                color: Colors.red.shade600,
+                                fontSize: 13,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                'This action cannot be undone.',
-                style: TextStyle(
-                  color: Colors.red.shade600,
-                  fontWeight: FontWeight.w500,
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(24, 20, 24, 8),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Removing this history record will permanently erase it from the timeline.',
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: Colors.grey.shade700,
+                          height: 1.4,
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: Colors.grey.shade100,
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(color: Colors.grey.shade200),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            buildInfoRow(Icons.timeline_rounded, 'History Type', historyType),
+                            buildInfoRow(Icons.tag_rounded, 'Goat Tag', goatTag),
+                            buildInfoRow(Icons.calendar_today_rounded, 'Date', historyDate),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
-              ),
-            ],
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: OutlinedButton(
+                          onPressed: () => Navigator.of(context).pop(),
+                          style: OutlinedButton.styleFrom(
+                            foregroundColor: AppColors.textPrimary,
+                            padding: const EdgeInsets.symmetric(vertical: 14),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                            side: BorderSide(color: Colors.grey.shade300),
+                          ),
+                          child: const Text('Cancel'),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: ElevatedButton(
+                          onPressed: () {
+                            Navigator.of(context).pop();
+                            _performDelete(historyRecord);
+                          },
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.red.shade500,
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(vertical: 14),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                            shadowColor: Colors.red.shade200,
+                          ),
+                          child: const Text('Delete Record'),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
           ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(),
-              child: const Text('Cancel'),
-            ),
-            ElevatedButton(
-              onPressed: () {
-                Navigator.of(context).pop();
-                _performDelete(historyRecord);
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.red.shade400,
-                foregroundColor: Colors.white,
-              ),
-              child: const Text('Delete'),
-            ),
-          ],
         );
       },
     );
@@ -838,8 +1038,16 @@ class _HistoryScreenState extends State<HistoryScreen> {
             Expanded(
               child: TabBarView(
                 children: [
-                  // Tab 1: Add History (grid of history types)
-                  _buildAddHistoryGrid(),
+                  // Tab 1: Add History (grid of history types + sticky bottom filter)
+                  Column(
+                    children: [
+                      Expanded(child: _buildAddHistoryGrid()),
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+                        child: _buildAddTabBottomNav(),
+                      ),
+                    ],
+                  ),
                   // Tab 2: History List (existing design)
                   Container(
         padding: const EdgeInsets.all(16),
@@ -851,7 +1059,10 @@ class _HistoryScreenState extends State<HistoryScreen> {
                   child: HistorySearchFilterBar(
                     initialSearchQuery: searchQuery,
                     initialEventType: selectedHistoryType,
-                    eventTypes: historyTypes,
+                    eventTypes: [
+                      'All',
+                      ...historyTypes.where((t) => t != 'Select type of history record'),
+                    ],
                     onSearchChanged: _onSearchChanged,
                     onFilterChanged: _onFilterChanged,
                     onClearFilter: _onClearFilter,

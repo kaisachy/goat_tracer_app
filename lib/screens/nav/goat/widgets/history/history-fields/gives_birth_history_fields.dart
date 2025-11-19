@@ -28,7 +28,7 @@ class GivesBirthEventFields extends BaseEventFields {
 
 class GivesBirthEventFieldsState extends BaseEventFieldsState<GivesBirthEventFields> {
   Map<String, dynamic>? _newKidData;
-  final List<Map<String, dynamic>> _calves = [];
+  final List<Map<String, dynamic>> _kids = [];
 
   @override
   bool needsBucks() => true;
@@ -38,15 +38,15 @@ class GivesBirthEventFieldsState extends BaseEventFieldsState<GivesBirthEventFie
     super.initState();
     _newKidData = widget.temporaryKidData;
     if (_newKidData != null) {
-      _calves.add(_newKidData!);
+      _kids.add(_newKidData!);
     }
     // Load existing kid data if we're in edit mode and have kid data
     _loadExistingKidData();
     
-    // Also check if there are multiple calves in the Kid_tag controller
+    // Also check if there are multiple kids in the Kid_tag controller
     final kidTagText = widget.controllers['Kid_tag']?.text ?? '';
     if (kidTagText.isNotEmpty && kidTagText.contains(',')) {
-      _loadMultipleExistingCalves(kidTagText);
+      _loadMultipleExistingKids(kidTagText);
     }
   }
 
@@ -86,15 +86,33 @@ class GivesBirthEventFieldsState extends BaseEventFieldsState<GivesBirthEventFie
   @override
   void didUpdateWidget(GivesBirthEventFields oldWidget) {
     super.didUpdateWidget(oldWidget);
+    // Only update if temporaryKidData changed AND we're in edit mode
+    // For new kids being added, we manage the list internally via _openAddKidDialog
     if (widget.temporaryKidData != oldWidget.temporaryKidData) {
-      setState(() {
-        _newKidData = widget.temporaryKidData;
-        // If we have new kid data, update the calves list
-        if (_newKidData != null) {
-          _calves.clear();
-          _calves.add(_newKidData!);
-        }
-      });
+      // Only clear and replace if we're editing an existing kid (isEditMode = true)
+      // For new kids, the list is managed internally and shouldn't be cleared
+      final isEditMode = widget.temporaryKidData?['isEditMode'] == true;
+      if (isEditMode && widget.temporaryKidData != null) {
+        setState(() {
+          _newKidData = widget.temporaryKidData;
+          // Only clear if this is an edit of an existing kid
+          // Check if this kid already exists in the list
+          final kidTag = widget.temporaryKidData!['tag_no'] ?? widget.temporaryKidData!['fullKidData']?['tag_no'];
+          if (kidTag != null) {
+            final existingIndex = _kids.indexWhere((c) => (c['tag_no'] ?? c['fullKidData']?['tag_no']) == kidTag);
+            if (existingIndex >= 0) {
+              // Update existing kid in list
+              _kids[existingIndex] = widget.temporaryKidData!;
+            } else {
+              // Add new kid to list (shouldn't happen in edit mode, but handle it)
+              _kids.add(widget.temporaryKidData!);
+            }
+          }
+        });
+      } else if (widget.temporaryKidData == null && oldWidget.temporaryKidData != null) {
+        // If temporaryKidData was cleared, don't clear the list - keep all kids
+        _newKidData = null;
+      }
     }
   }
 
@@ -102,20 +120,20 @@ class GivesBirthEventFieldsState extends BaseEventFieldsState<GivesBirthEventFie
     // If we're in edit mode and have temporary kid data, it means there's an existing kid
     if (widget.temporaryKidData != null && widget.temporaryKidData!['isEditMode'] == true) {
       setState(() {
-        _calves.clear();
-        _calves.add(widget.temporaryKidData!);
+        _kids.clear();
+        _kids.add(widget.temporaryKidData!);
       });
     }
   }
 
-  // Method to load multiple existing calves from a comma-separated tag string
-  Future<void> _loadMultipleExistingCalves(String kidTagString) async {
+  // Method to load multiple existing kids from a comma-separated tag string
+  Future<void> _loadMultipleExistingKids(String kidTagString) async {
     if (kidTagString.contains(',')) {
-      // Multiple calves - split by comma and load each one
+      // Multiple kids - split by comma and load each one
       final kidTags = kidTagString.split(',').map((tag) => tag.trim()).where((tag) => tag.isNotEmpty).toList();
-      debugPrint('Loading multiple calves: $kidTags');
+      debugPrint('Loading multiple kids: $kidTags');
       
-      final List<Map<String, dynamic>> loadedCalves = [];
+      final List<Map<String, dynamic>> loadedKids = [];
       
       for (final kidTag in kidTags) {
         try {
@@ -144,7 +162,7 @@ class GivesBirthEventFieldsState extends BaseEventFieldsState<GivesBirthEventFie
                 'notes': kid.notes,
               },
             };
-            loadedCalves.add(kidData);
+            loadedKids.add(kidData);
             debugPrint('Loaded kid: ${kid.tagNo} with ID: ${kid.id}');
           }
         } catch (e) {
@@ -152,19 +170,19 @@ class GivesBirthEventFieldsState extends BaseEventFieldsState<GivesBirthEventFie
         }
       }
       
-      if (mounted && loadedCalves.isNotEmpty) {
+      if (mounted && loadedKids.isNotEmpty) {
         setState(() {
-          _calves.clear();
-          _calves.addAll(loadedCalves);
+          _kids.clear();
+          _kids.addAll(loadedKids);
         });
-        debugPrint('Loaded ${loadedCalves.length} existing calves');
+        debugPrint('Loaded ${loadedKids.length} existing kids');
       }
     }
   }
 
 
   Future<void> _openAddKidDialog() async {
-    final reserved = _calves.map((c) => (c['tag_no'] ?? '').toString()).where((t) => t.isNotEmpty).toList();
+    final reserved = _kids.map((c) => (c['tag_no'] ?? '').toString()).where((t) => t.isNotEmpty).toList();
     final result = await showDialog<Map<String, dynamic>>(
       context: context,
       barrierDismissible: false,
@@ -181,21 +199,32 @@ class GivesBirthEventFieldsState extends BaseEventFieldsState<GivesBirthEventFie
       final normalized = _normalizeKidResult(result, isEdit: false);
       setState(() {
         final tag = normalized['tag_no'];
-        final idx = _calves.indexWhere((c) => c['tag_no'] == tag);
+        final idx = _kids.indexWhere((c) => (c['tag_no'] ?? '') == tag);
         if (idx >= 0) {
-          _calves[idx] = normalized;
+          _kids[idx] = normalized;
+          debugPrint('DEBUG: Updated existing kid in list at index $idx: $tag');
         } else {
-          _calves.add(normalized);
+          _kids.add(normalized);
+          debugPrint('DEBUG: Added new kid to list. Total kids: ${_kids.length}, tag: $tag');
         }
-        widget.controllers['Kid_tag']?.text = normalized['tag_no'] ?? '';
+        // Update controller with comma-separated tags for multiple kids
+        final allTags = _kids.map((c) => c['tag_no'] ?? '').where((t) => t.isNotEmpty).join(', ');
+        widget.controllers['Kid_tag']?.text = allTags;
+        debugPrint('DEBUG: Updated Kid_tag controller with: $allTags');
+        debugPrint('DEBUG: Current _kids list: ${_kids.map((c) => c['tag_no']).join(', ')}');
       });
-      widget.onKidDataChanged(normalized);
+      // Don't call onKidDataChanged for new kids - it causes the list to be cleared
+      // The list is managed internally, and getKids() will return all kids when needed
+      // Only call it if we're editing a single existing kid
+      if (normalized['isEditMode'] == true) {
+        widget.onKidDataChanged(normalized);
+      }
     }
   }
 
   Future<void> _openEditKidDialog(int index) async {
-    final kidData = _calves[index];
-    final reserved = _calves
+    final kidData = _kids[index];
+    final reserved = _kids
         .asMap()
         .entries
         .where((e) => e.key != index)
@@ -217,8 +246,10 @@ class GivesBirthEventFieldsState extends BaseEventFieldsState<GivesBirthEventFie
     if (result != null) {
       final normalized = _normalizeKidResult(result, isEdit: true);
       setState(() {
-        _calves[index] = normalized;
-        widget.controllers['Kid_tag']?.text = normalized['tag_no'] ?? '';
+        _kids[index] = normalized;
+        // Update controller with comma-separated tags for multiple kids
+        final allTags = _kids.map((c) => c['tag_no'] ?? '').where((t) => t.isNotEmpty).join(', ');
+        widget.controllers['Kid_tag']?.text = allTags;
       });
       widget.onKidDataChanged(normalized);
     }
@@ -229,16 +260,24 @@ class GivesBirthEventFieldsState extends BaseEventFieldsState<GivesBirthEventFie
     final fatherTag = widget.controllers['Buck_tag']?.text ?? '';
 
     // Ensure fullKidData exists and contains required fields
+    // Start with fullKidData if available, otherwise use input directly
     final full = Map<String, dynamic>.from(input['fullKidData'] ?? input);
+    
+    // Preserve all existing fields from fullKidData, then override specific ones
     full['tag_no'] = full['tag_no'] ?? input['tag_no'];
     full['name'] = full['name'] ?? input['name'];
     full['sex'] = full['sex'] ?? input['sex'];
-    full['mother_tag'] = motherTag;
-    full['father_tag'] = fatherTag;
+    full['mother_tag'] = motherTag.isNotEmpty ? motherTag : (full['mother_tag'] ?? '');
+    full['father_tag'] = fatherTag.isNotEmpty ? fatherTag : (full['father_tag'] ?? '');
 
-    // For create operations, remove id to avoid unintended updates
+    // Ensure required fields are present for new kids
     final pending = input['pendingOperation'] ?? (isEdit ? 'update' : 'create');
     if (pending == 'create') {
+      // Ensure classification, status, and source are set
+      full['classification'] = full['classification'] ?? 'Kid';
+      full['status'] = full['status'] ?? 'Healthy';
+      full['source'] = full['source'] ?? 'Born on farm';
+      // Remove id for new kids
       full.remove('id');
     }
 
@@ -248,18 +287,18 @@ class GivesBirthEventFieldsState extends BaseEventFieldsState<GivesBirthEventFie
       'sex': full['sex'],
       'pendingOperation': pending,
       'isEditMode': isEdit,
-      'fullKidData': full,
+      'fullKidData': full, // This contains all fields including classification, status, source, date_of_birth, etc.
       'kidId': full['id'],
     };
   }
 
   void _removeKidAt(int index) {
-    if (index >= 0 && index < _calves.length) {
-      final kid = _calves[index];
+    if (index >= 0 && index < _kids.length) {
+      final kid = _kids[index];
       final isEditMode = kid['isEditMode'] == true;
       
       if (isEditMode) {
-        // For existing calves, show confirmation dialog
+        // For existing kids, show confirmation dialog
         showDialog(
           context: context,
           builder: (BuildContext context) {
@@ -328,12 +367,16 @@ class GivesBirthEventFieldsState extends BaseEventFieldsState<GivesBirthEventFie
           },
         );
       } else {
-        // For new calves, just remove from list
+        // For new kids, just remove from list
         setState(() {
-          _calves.removeAt(index);
-          if (_calves.isEmpty) {
+          _kids.removeAt(index);
+          if (_kids.isEmpty) {
             _newKidData = null;
             widget.controllers['Kid_tag']?.text = '';
+          } else {
+            // Update controller with remaining kids
+            final allTags = _kids.map((c) => c['tag_no'] ?? '').where((t) => t.isNotEmpty).join(', ');
+            widget.controllers['Kid_tag']?.text = allTags;
           }
         });
       }
@@ -341,8 +384,8 @@ class GivesBirthEventFieldsState extends BaseEventFieldsState<GivesBirthEventFie
   }
 
   void _performKidDeletion(int index) async {
-    if (index >= 0 && index < _calves.length) {
-      final kid = _calves[index];
+    if (index >= 0 && index < _kids.length) {
+      final kid = _kids[index];
       final kidId = kid['kidId'];
       
       if (kidId != null) {
@@ -381,10 +424,14 @@ class GivesBirthEventFieldsState extends BaseEventFieldsState<GivesBirthEventFie
             // Remove from local list
             if (mounted) {
               setState(() {
-                _calves.removeAt(index);
-                if (_calves.isEmpty) {
+                _kids.removeAt(index);
+                if (_kids.isEmpty) {
                   _newKidData = null;
                   widget.controllers['Kid_tag']?.text = '';
+                } else {
+                  // Update controller with remaining kids
+                  final allTags = _kids.map((c) => c['tag_no'] ?? '').where((t) => t.isNotEmpty).join(', ');
+                  widget.controllers['Kid_tag']?.text = allTags;
                 }
               });
               
@@ -430,17 +477,27 @@ class GivesBirthEventFieldsState extends BaseEventFieldsState<GivesBirthEventFie
       } else {
         // No kid ID, just remove from list
         setState(() {
-          _calves.removeAt(index);
-          if (_calves.isEmpty) {
+          _kids.removeAt(index);
+          if (_kids.isEmpty) {
             _newKidData = null;
             widget.controllers['Kid_tag']?.text = '';
+          } else {
+            // Update controller with remaining kids
+            final allTags = _kids.map((c) => c['tag_no'] ?? '').where((t) => t.isNotEmpty).join(', ');
+            widget.controllers['Kid_tag']?.text = allTags;
           }
         });
       }
     }
   }
 
-  List<Map<String, dynamic>> getCalves() => List<Map<String, dynamic>>.from(_calves);
+  List<Map<String, dynamic>> getKids() {
+    debugPrint('DEBUG: getKids() called - returning ${_kids.length} kids');
+    for (int i = 0; i < _kids.length; i++) {
+      debugPrint('DEBUG: Kid $i: tag=${_kids[i]['tag_no']}, hasFullKidData=${_kids[i]['fullKidData'] != null}');
+    }
+    return List<Map<String, dynamic>>.from(_kids);
+  }
 
   Widget _buildKidRegistrationField() {
     return Container(
@@ -490,9 +547,9 @@ class GivesBirthEventFieldsState extends BaseEventFieldsState<GivesBirthEventFie
               ),
             ],
           ),
-          if (_calves.isNotEmpty) ...[
+          if (_kids.isNotEmpty) ...[
             const SizedBox(height: 12),
-            ..._calves.asMap().entries.map((entry) {
+            ..._kids.asMap().entries.map((entry) {
               final index = entry.key;
               final kid = entry.value;
               final isEditMode = kid['isEditMode'] == true;
@@ -625,11 +682,11 @@ class GivesBirthEventFieldsState extends BaseEventFieldsState<GivesBirthEventFie
       children: [
         buildBuckDropdown(),
         _buildKidRegistrationField(),
-        if (_calves.isNotEmpty)
+        if (_kids.isNotEmpty)
           Align(
             alignment: Alignment.centerLeft,
             child: Text(
-              'Total calves: ${_calves.length}',
+              'Total Kids: ${_kids.length}',
               style: const TextStyle(color: AppColors.textSecondary),
             ),
           ),

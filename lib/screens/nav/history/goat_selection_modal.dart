@@ -3,12 +3,6 @@ import 'package:goat_tracer_app/constants/app_colors.dart';
 import 'package:goat_tracer_app/models/goat.dart';
 import 'package:goat_tracer_app/services/goat/goat_service.dart';
 import 'package:goat_tracer_app/services/goat/goat_history_service.dart';
-import 'package:goat_tracer_app/screens/nav/goat/goat_form_screen.dart';
-import 'package:goat_tracer_app/screens/nav/goat/goat_history_form_screen.dart';
-import 'package:goat_tracer_app/screens/nav/goat/modals/options/change_stage_option.dart';
-import 'package:goat_tracer_app/screens/nav/goat/modals/options/change_status_option.dart';
-import 'package:goat_tracer_app/screens/nav/goat/modals/options/archive_option.dart';
-import 'package:goat_tracer_app/screens/nav/goat/modals/options/delete_option.dart';
 
 class GoatSelectionModal extends StatefulWidget {
   final String? historyType; // Optional: filter goat by history type applicability
@@ -67,24 +61,71 @@ class _GoatSelectionModalState extends State<GoatSelectionModal> {
 
   Future<void> _maybeLoadHistoryEligibility() async {
     final type = (widget.historyType ?? '').toLowerCase();
-    if (type != 'pregnant' && type != 'gives birth' && type != 'treated') return;
+    if (type != 'pregnant' && type != 'gives birth' && type != 'aborted pregnancy' && type != 'treated') return;
 
     try {
       final events = await GoatHistoryService.getgoatHistory();
       _tagsWithBreeding.clear();
       _tagsWithPregnant.clear();
+      _tagsWithSick.clear();
       for (final e in events) {
         final tag = (e['goat_tag'] ?? '').toString().trim();
         if (tag.isEmpty) continue;
         final evType = (e['history_type'] ?? '').toString().toLowerCase();
-        if (evType == 'breeding') {
-          _tagsWithBreeding.add(tag);
-        } else if (evType == 'pregnant') {
-          _tagsWithPregnant.add(tag);
-        } else if (evType == 'sick') {
+        if (evType == 'sick') {
           _tagsWithSick.add(tag);
         }
       }
+
+      final Map<String, List<Map<String, dynamic>>> eventsByTag = {};
+      for (final event in events) {
+        final tag = (event['goat_tag'] ?? '').toString().trim();
+        if (tag.isEmpty) continue;
+        eventsByTag.putIfAbsent(tag, () => []).add(event);
+      }
+
+      eventsByTag.forEach((tag, tagEvents) {
+        DateTime? latestClosure;
+        for (final event in tagEvents) {
+          final evType = (event['history_type'] ?? '').toString().toLowerCase();
+          if (evType == 'gives birth' || evType == 'aborted pregnancy') {
+            final raw = event['history_date']?.toString();
+            final date = DateTime.tryParse(raw ?? '');
+            if (date == null) continue;
+            if (latestClosure == null || date.isAfter(latestClosure)) {
+              latestClosure = date;
+            }
+          }
+        }
+
+        bool hasOpenBreeding = false;
+        bool hasOpenPregnant = false;
+
+        for (final event in tagEvents) {
+          final evType = (event['history_type'] ?? '').toString().toLowerCase();
+          final raw = event['history_date']?.toString();
+          final date = DateTime.tryParse(raw ?? '');
+          if (date == null) continue;
+
+          if (evType == 'breeding') {
+            if (latestClosure == null || date.isAfter(latestClosure)) {
+              hasOpenBreeding = true;
+              hasOpenPregnant = false;
+            }
+          } else if (evType == 'pregnant') {
+            if (hasOpenBreeding && (latestClosure == null || date.isAfter(latestClosure))) {
+              hasOpenPregnant = true;
+            }
+          }
+        }
+
+        if (hasOpenBreeding) {
+          _tagsWithBreeding.add(tag);
+        }
+        if (hasOpenPregnant) {
+          _tagsWithPregnant.add(tag);
+        }
+      });
     } catch (_) {
       // If history cannot be loaded, leave sets empty and fall back to basic filters
     }
@@ -132,14 +173,14 @@ class _GoatSelectionModalState extends State<GoatSelectionModal> {
     };
 
     if (femaleOnly.contains(type)) {
-      final isFemaleEligible = sex == 'female' && (cls == 'Doe' || cls == 'Doeling');
+      final isFemaleEligible = sex == 'female' && (cls == 'doe' || cls == 'doeling');
       if (!isFemaleEligible) return false;
       // Extra eligibility rules
       if (type == 'pregnant') {
         // Require an existing Breeding record
         return _tagsWithBreeding.contains(goat.tagNo);
       }
-      if (type == 'gives birth') {
+      if (type == 'gives birth' || type == 'aborted pregnancy') {
         // Require an existing Pregnant record
         return _tagsWithPregnant.contains(goat.tagNo);
       }
@@ -149,7 +190,7 @@ class _GoatSelectionModalState extends State<GoatSelectionModal> {
       return sex == 'male';
     }
     if (kidOnly.contains(type)) {
-      return cls == 'Kid';
+      return cls == 'kid';
     }
 
     // Treated requires an existing Sick record
@@ -474,7 +515,7 @@ class _GoatSelectionModalState extends State<GoatSelectionModal> {
                 ],
               ),
             ),
-            _buildGoatOptionsMenu(goat),
+            _buildGoatOptionsMenu(),
             if (isSelected)
               Container(
                 margin: const EdgeInsets.only(left: 8),
@@ -495,205 +536,8 @@ class _GoatSelectionModalState extends State<GoatSelectionModal> {
     );
   }
 
-  Widget _buildGoatOptionsMenu(Goat goat) {
-    return PopupMenuButton<String>(
-      icon: Icon(
-        Icons.more_vert,
-        color: AppColors.textSecondary.withValues(alpha: 0.8),
-        size: 20,
-      ),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-      ),
-      elevation: 8,
-      offset: const Offset(0, 10),
-      color: Colors.white,
-      shadowColor: Colors.black26,
-      onSelected: (String value) async {
-        switch (value) {
-          case 'edit':
-            if (!mounted) break;
-            await Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (context) => GoatFormScreen(goat: goat),
-              ),
-            );
-            if (!mounted) break;
-            _loadgoat();
-            break;
-          case 'add_event':
-            if (!mounted) break;
-            await Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (context) => GoatHistoryFormScreen(goatTag: goat.tagNo),
-              ),
-            );
-            if (!mounted) break;
-            _loadgoat();
-            break;
-          case 'change_stage':
-            if (!mounted) break;
-            ChangeStageOption.show(context, goat, () {
-              _loadgoat();
-            });
-            break;
-          case 'change_status':
-            if (!mounted) break;
-            ChangeStatusOption.show(context, goat, () {
-              _loadgoat();
-            });
-            break;
-          case 'archive':
-            if (!mounted) break;
-            ArchiveOption.show(context, goat: goat, onGoatUpdated: () {
-              _loadgoat();
-            });
-            break;
-          case 'delete':
-            if (!mounted) break;
-            DeleteOption.show(context, goat: goat, onGoatDeleted: _loadgoat);
-            break;
-        }
-      },
-      itemBuilder: (BuildContext context) => [
-        PopupMenuItem<String>(
-          value: 'edit',
-          height: 36,
-          child: Row(
-            children: [
-              Container(
-                width: 24,
-                height: 24,
-                decoration: BoxDecoration(
-                  color: AppColors.vibrantGreen.withValues(alpha: 0.12),
-                  borderRadius: BorderRadius.circular(6),
-                  border: Border.all(color: AppColors.vibrantGreen.withValues(alpha: 0.2)),
-                ),
-                child: const Icon(Icons.edit_outlined, color: AppColors.vibrantGreen, size: 14),
-              ),
-              const SizedBox(width: 8),
-              const Expanded(
-                child: Text('Edit goat', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
-              ),
-            ],
-          ),
-        ),
-        PopupMenuItem<String>(
-          value: 'add_event',
-          height: 36,
-          child: Row(
-            children: [
-              Container(
-                width: 24,
-                height: 24,
-                decoration: BoxDecoration(
-                  color: AppColors.darkGreen.withValues(alpha: 0.12),
-                  borderRadius: BorderRadius.circular(6),
-                  border: Border.all(color: AppColors.darkGreen.withValues(alpha: 0.2)),
-                ),
-                child: const Icon(Icons.event_note_outlined, color: AppColors.darkGreen, size: 14),
-              ),
-              const SizedBox(width: 8),
-              const Expanded(
-                child: Text('Add History Record', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
-              ),
-            ],
-          ),
-        ),
-        const PopupMenuDivider(height: 1),
-        PopupMenuItem<String>(
-          value: 'change_stage',
-          height: 36,
-          child: Row(
-            children: [
-              Container(
-                width: 24,
-                height: 24,
-                decoration: BoxDecoration(
-                  color: AppColors.lightGreen.withValues(alpha: 0.12),
-                  borderRadius: BorderRadius.circular(6),
-                  border: Border.all(color: AppColors.lightGreen.withValues(alpha: 0.2)),
-                ),
-                child: const Icon(Icons.arrow_upward_outlined, color: AppColors.lightGreen, size: 14),
-              ),
-              const SizedBox(width: 8),
-              const Expanded(
-                child: Text('Change Stage', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
-              ),
-            ],
-          ),
-        ),
-        PopupMenuItem<String>(
-          value: 'change_status',
-          height: 36,
-          child: Row(
-            children: [
-              Container(
-                width: 24,
-                height: 24,
-                decoration: BoxDecoration(
-                  color: AppColors.vibrantGreen.withValues(alpha: 0.12),
-                  borderRadius: BorderRadius.circular(6),
-                  border: Border.all(color: AppColors.vibrantGreen.withValues(alpha: 0.2)),
-                ),
-                child: const Icon(Icons.swap_horiz, color: AppColors.vibrantGreen, size: 14),
-              ),
-              const SizedBox(width: 8),
-              const Expanded(
-                child: Text('Change Status', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
-              ),
-            ],
-          ),
-        ),
-        const PopupMenuDivider(height: 1),
-        PopupMenuItem<String>(
-          value: 'archive',
-          height: 36,
-          child: Row(
-            children: [
-              Container(
-                width: 24,
-                height: 24,
-                decoration: BoxDecoration(
-                  color: AppColors.gold.withValues(alpha: 0.12),
-                  borderRadius: BorderRadius.circular(6),
-                  border: Border.all(color: AppColors.gold.withValues(alpha: 0.2)),
-                ),
-                child: const Icon(Icons.archive_outlined, color: AppColors.gold, size: 14),
-              ),
-              const SizedBox(width: 8),
-              const Expanded(
-                child: Text('Archive', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
-              ),
-            ],
-          ),
-        ),
-        PopupMenuItem<String>(
-          value: 'delete',
-          height: 36,
-          child: Row(
-            children: [
-              Container(
-                width: 24,
-                height: 24,
-                decoration: BoxDecoration(
-                  color: Colors.red.shade600.withValues(alpha: 0.12),
-                  borderRadius: BorderRadius.circular(6),
-                  border: Border.all(color: Colors.red.shade600.withValues(alpha: 0.2)),
-                ),
-                child: Icon(Icons.delete_forever_outlined, color: Colors.red.shade600, size: 14),
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Text('Delete goat', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Colors.red.shade600)),
-              ),
-            ],
-          ),
-        ),
-      ],
-    );
+  Widget _buildGoatOptionsMenu() {
+    return const SizedBox.shrink();
   }
 
   Widget _buildEmptyState() {

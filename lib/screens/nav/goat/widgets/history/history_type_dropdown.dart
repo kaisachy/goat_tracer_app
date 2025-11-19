@@ -57,50 +57,49 @@ class HistoryTypeDropdownState extends State<HistoryTypeDropdown> {
     if (widget.goatDetails != null) {
       final eventsForTag = await GoatHistoryService.getgoatHistoryByTag(widget.goatDetails!.tagNo);
       final hasSick = eventsForTag.any((e) => (e['history_type']?.toString().toLowerCase() ?? '') == 'sick');
-      final hasBreeding = eventsForTag.any((e) => (e['history_type']?.toString().toLowerCase() ?? '') == 'breeding');
-      final hasPregnant = eventsForTag.any((e) => (e['history_type']?.toString().toLowerCase() ?? '') == 'pregnant');
+      DateTime? latestClosureDate;
+      for (final event in eventsForTag) {
+        final type = (event['history_type']?.toString().toLowerCase() ?? '');
+        if (type != 'gives birth' && type != 'aborted pregnancy') continue;
+        final rawDate = event['history_date']?.toString();
+        final parsedDate = DateTime.tryParse(rawDate ?? '');
+        if (parsedDate == null) continue;
+        if (latestClosureDate == null || parsedDate.isAfter(latestClosureDate)) {
+          latestClosureDate = parsedDate;
+        }
+      }
+      bool hasBreedingAfterClosure = false;
+      bool hasPregnantAfterClosure = false;
+      for (final event in eventsForTag) {
+        final type = (event['history_type']?.toString().toLowerCase() ?? '');
+        final rawDate = event['history_date']?.toString();
+        final parsedDate = DateTime.tryParse(rawDate ?? '');
+        if (parsedDate == null) continue;
+        final isAfterClosure = latestClosureDate == null || parsedDate.isAfter(latestClosureDate);
+        if (!isAfterClosure) continue;
+        if (!hasBreedingAfterClosure && type == 'breeding') {
+          hasBreedingAfterClosure = true;
+        }
+        if (!hasPregnantAfterClosure && type == 'pregnant') {
+          hasPregnantAfterClosure = true;
+        }
+        if (hasBreedingAfterClosure && hasPregnantAfterClosure) {
+          break;
+        }
+      }
       if (filtered.contains('Treated') && !hasSick) {
         filtered = filtered.where((type) => type != 'Treated').toList();
       }
-      if (filtered.contains('Pregnant') && !hasBreeding) {
+      if (filtered.contains('Pregnant') && !hasBreedingAfterClosure) {
         filtered = filtered.where((type) => type != 'Pregnant').toList();
       }
-      if (filtered.contains('Gives Birth') && !hasPregnant) {
+      if (filtered.contains('Gives Birth') && !hasPregnantAfterClosure) {
         filtered = filtered.where((type) => type != 'Gives Birth').toList();
       }
       if (filtered.contains('Aborted Pregnancy')) {
         final classification = widget.goatDetails!.classification.toLowerCase();
-        bool isEligibleClass = classification == 'Doe' || classification == 'Doeling';
-        // Find the latest Pregnant history record
-        final pregnantEvents = eventsForTag.where((e) => (e['history_type']?.toString().toLowerCase() ?? '') == 'pregnant').toList();
-        if (pregnantEvents.isNotEmpty && isEligibleClass) {
-          // Get the latest Pregnant record by date
-          pregnantEvents.sort((a, b) {
-            try {
-              final da = DateTime.parse(a['history_date']);
-              final db = DateTime.parse(b['history_date']);
-              return db.compareTo(da);
-            } catch (_) {
-              return 0;
-            }
-          });
-          final latestPregnant = pregnantEvents.first;
-          final latestPregnantDate = latestPregnant['history_date'];
-          // Look for any Gives Birth history after this date
-          final givesBirthAfterPregnant = eventsForTag.any((e) {
-            if ((e['history_type']?.toString().toLowerCase() ?? '') != 'gives birth') return false;
-            try {
-              final givesBirthDate = DateTime.parse(e['history_date']);
-              final pregnantDate = DateTime.parse(latestPregnantDate);
-              return givesBirthDate.isAfter(pregnantDate) || givesBirthDate.isAtSameMomentAs(pregnantDate);
-            } catch (_) {
-              return false;
-            }
-          });
-          if (givesBirthAfterPregnant) {
-            filtered = filtered.where((type) => type != 'Aborted Pregnancy').toList();
-          }
-        } else {
+        final isEligibleClass = classification == 'doe' || classification == 'doeling';
+        if (!isEligibleClass || !hasPregnantAfterClosure) {
           filtered = filtered.where((type) => type != 'Aborted Pregnancy').toList();
         }
       }

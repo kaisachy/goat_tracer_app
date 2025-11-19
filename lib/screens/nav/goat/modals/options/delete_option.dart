@@ -77,6 +77,7 @@ class DeleteOption {
                           Navigator.pop(dialogContext);
                           // Wait for dialog to close
                           await Future.delayed(const Duration(milliseconds: 50));
+                          if (!parentContext.mounted) return;
                           _confirmDelete(parentContext, goat: goat, onGoatDeleted: onGoatDeleted);
                         },
                         style: ElevatedButton.styleFrom(

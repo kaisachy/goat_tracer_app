@@ -22,8 +22,8 @@ class HistoryTypeUtils {
     List<String> historyTypes = [];
 
     switch (classificationLower) {
-      case 'Kid':
-      case 'calves':
+      case 'kid':
+      case 'kids':
         historyTypes = [
           'Sick',
           'Treated',
@@ -40,8 +40,8 @@ class HistoryTypeUtils {
         ];
         debugPrint('DEBUG: Using Kid history types');
         break;
-      case 'Doeling':
-      case 'Doelings':
+      case 'doeling':
+      case 'doelings':
         historyTypes = [
           'Vaccinated',
           'Sick',
@@ -60,8 +60,8 @@ class HistoryTypeUtils {
         ];
         debugPrint('DEBUG: Using Doeling history types');
         break;
-      case 'Doe':
-      case 'Does':
+      case 'doe':
+      case 'does':
         historyTypes = [
           'Vaccinated',
           'Sick',
@@ -81,8 +81,8 @@ class HistoryTypeUtils {
         ];
         debugPrint('DEBUG: Using Doe history types');
         break;
-      case 'Buck':
-      case 'Bucks':
+      case 'buck':
+      case 'bucks':
         historyTypes = [
           'Vaccinated',
           'Sick',
@@ -97,8 +97,8 @@ class HistoryTypeUtils {
         ];
         debugPrint('DEBUG: Using Buck history types');
         break;
-      case 'Buckling':
-      case 'Bucklings':
+      case 'buckling':
+      case 'bucklings':
         historyTypes = [
           'Vaccinated',
           'Sick',
@@ -175,7 +175,7 @@ class HistoryTypeUtils {
       case 'hoof trimming':
         return FontAwesomeIcons.scissors;
       case 'castrated':
-        return FontAwesomeIcons.mars;
+        return FontAwesomeIcons.scissors;
       case 'weaned':
         return FontAwesomeIcons.bottleWater;
       case 'mortality':
