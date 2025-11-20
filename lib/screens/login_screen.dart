@@ -6,6 +6,7 @@ import 'register_screen.dart';
 import '../config.dart';
 import 'home_screen.dart';
 import '../services/secure_storage_service.dart';
+import '../services/auth_service.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -18,6 +19,10 @@ class _LoginScreenState extends State<LoginScreen> {
   final _formKey = GlobalKey<FormState>();
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
+  TextEditingController? _forgotPasswordController;
+  TextEditingController? _otpController;
+  TextEditingController? _otpNewPasswordController;
+  TextEditingController? _otpConfirmPasswordController;
   bool _isLoading = false;
   bool _isPasswordVisible = false;
 
@@ -25,6 +30,10 @@ class _LoginScreenState extends State<LoginScreen> {
   void dispose() {
     _emailController.dispose();
     _passwordController.dispose();
+    _forgotPasswordController?.dispose();
+    _otpController?.dispose();
+    _otpNewPasswordController?.dispose();
+    _otpConfirmPasswordController?.dispose();
     super.dispose();
   }
 
@@ -85,6 +94,295 @@ class _LoginScreenState extends State<LoginScreen> {
         }
       }
     }
+  }
+
+  void _showForgotPasswordDialog() {
+    _forgotPasswordController ??= TextEditingController();
+    _forgotPasswordController!.text = _emailController.text.trim();
+    final formKey = GlobalKey<FormState>();
+    bool isSubmitting = false;
+
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (dialogContext) {
+        return StatefulBuilder(
+          builder: (context, setStateDialog) {
+            Future<void> handleSubmit() async {
+              FocusScope.of(dialogContext).unfocus();
+              if (!formKey.currentState!.validate()) return;
+
+              setStateDialog(() => isSubmitting = true);
+
+              try {
+                final response = await AuthService.requestPasswordReset(
+                  _forgotPasswordController!.text.trim(),
+                );
+
+                if (!mounted) return;
+
+                final success = response['success'] == true;
+                final message = response['message'] ?? (success
+                    ? 'OTP sent to your email.'
+                    : 'Failed to send OTP. Please try again.');
+
+                _showMessage(
+                  message,
+                  success ? AppColors.vibrantGreen : Colors.red,
+                );
+
+                if (success) {
+                  final email = _forgotPasswordController!.text.trim();
+                  Navigator.of(dialogContext).pop();
+                  Future.microtask(() {
+                    if (mounted && email.isNotEmpty) {
+                      _showOtpVerificationDialog(email);
+                    }
+                  });
+                }
+              } catch (e) {
+                if (mounted) {
+                  _showMessage('Unable to send OTP. Please try again.', Colors.red);
+                }
+              } finally {
+                if (mounted) {
+                  setStateDialog(() => isSubmitting = false);
+                }
+              }
+            }
+
+            return WillPopScope(
+              onWillPop: () async => !isSubmitting,
+              child: AlertDialog(
+                title: const Text('Forgot Password'),
+                content: Form(
+                  key: formKey,
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'Enter your registered email address to receive a one-time password (OTP).',
+                      ),
+                      const SizedBox(height: 16),
+                      TextFormField(
+                        controller: _forgotPasswordController,
+                        keyboardType: TextInputType.emailAddress,
+                        decoration: const InputDecoration(
+                          labelText: 'Email',
+                          prefixIcon: Icon(Icons.email_outlined),
+                        ),
+                        validator: _validateEmail,
+                      ),
+                    ],
+                  ),
+                ),
+                actions: [
+                  TextButton(
+                    onPressed: isSubmitting
+                        ? null
+                        : () => Navigator.of(dialogContext).pop(),
+                    child: const Text('Cancel'),
+                  ),
+                  ElevatedButton(
+                    onPressed: isSubmitting ? null : handleSubmit,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.primary,
+                      foregroundColor: Colors.white,
+                    ),
+                    child: isSubmitting
+                        ? const SizedBox(
+                            width: 18,
+                            height: 18,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                            ),
+                          )
+                        : const Text('Send OTP'),
+                  ),
+                ],
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  void _showOtpVerificationDialog(String email) {
+    final formKey = GlobalKey<FormState>();
+    _otpController ??= TextEditingController();
+    _otpNewPasswordController ??= TextEditingController();
+    _otpConfirmPasswordController ??= TextEditingController();
+    _otpController!.clear();
+    _otpNewPasswordController!.clear();
+    _otpConfirmPasswordController!.clear();
+    bool isSubmitting = false;
+    bool isNewPasswordVisible = false;
+    bool isConfirmPasswordVisible = false;
+
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (dialogContext) {
+        return StatefulBuilder(
+          builder: (context, setStateDialog) {
+            Future<void> handleSubmit() async {
+              FocusScope.of(dialogContext).unfocus();
+              if (!formKey.currentState!.validate()) return;
+
+              setStateDialog(() => isSubmitting = true);
+
+              try {
+                final response = await AuthService.resetPassword(
+                  _otpController!.text.trim(),
+                  _otpNewPasswordController!.text,
+                );
+
+                if (!mounted) return;
+
+                final success = response['success'] == true;
+                final message = response['message'] ??
+                    (success
+                        ? 'Password reset successful! You can now log in.'
+                        : 'Failed to reset password. Please try again.');
+
+                _showMessage(
+                  message,
+                  success ? AppColors.vibrantGreen : Colors.red,
+                );
+
+                if (success) {
+                  Navigator.of(dialogContext).pop();
+                }
+              } catch (e) {
+                if (mounted) {
+                  _showMessage('Unable to reset password. Please try again.', Colors.red);
+                }
+              } finally {
+                if (mounted) {
+                  setStateDialog(() => isSubmitting = false);
+                }
+              }
+            }
+
+            return WillPopScope(
+              onWillPop: () async => !isSubmitting,
+              child: AlertDialog(
+                title: const Text('Enter OTP'),
+                content: Form(
+                  key: formKey,
+                  child: SingleChildScrollView(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'We sent a 6-digit OTP to $email. Enter it below along with your new password.',
+                          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                color: AppColors.textSecondary,
+                              ),
+                        ),
+                        const SizedBox(height: 16),
+                        TextFormField(
+                          controller: _otpController,
+                          keyboardType: TextInputType.number,
+                          maxLength: 6,
+                          decoration: const InputDecoration(
+                            labelText: 'OTP Code',
+                            prefixIcon: Icon(Icons.shield_outlined),
+                            counterText: '',
+                          ),
+                          validator: _validateOtpCode,
+                        ),
+                        const SizedBox(height: 16),
+                        TextFormField(
+                          controller: _otpNewPasswordController,
+                          obscureText: !isNewPasswordVisible,
+                          decoration: InputDecoration(
+                            labelText: 'New Password',
+                            prefixIcon: const Icon(Icons.lock_reset_outlined),
+                            suffixIcon: IconButton(
+                              icon: Icon(
+                                isNewPasswordVisible
+                                    ? Icons.visibility_off_outlined
+                                    : Icons.visibility_outlined,
+                              ),
+                              onPressed: () {
+                                setStateDialog(
+                                  () => isNewPasswordVisible = !isNewPasswordVisible,
+                                );
+                              },
+                            ),
+                          ),
+                          validator: _validatePassword,
+                        ),
+                        const SizedBox(height: 16),
+                        TextFormField(
+                          controller: _otpConfirmPasswordController,
+                          obscureText: !isConfirmPasswordVisible,
+                          decoration: InputDecoration(
+                            labelText: 'Confirm Password',
+                            prefixIcon: const Icon(Icons.check_circle_outline),
+                            suffixIcon: IconButton(
+                              icon: Icon(
+                                isConfirmPasswordVisible
+                                    ? Icons.visibility_off_outlined
+                                    : Icons.visibility_outlined,
+                              ),
+                              onPressed: () {
+                                setStateDialog(
+                                  () => isConfirmPasswordVisible = !isConfirmPasswordVisible,
+                                );
+                              },
+                            ),
+                          ),
+                          validator: (value) {
+                            if (value == null || value.isEmpty) {
+                              return 'Please confirm your password';
+                            }
+                            if (value != _otpNewPasswordController!.text) {
+                              return 'Passwords do not match';
+                            }
+                            return null;
+                          },
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                actions: [
+                  TextButton(
+                    onPressed: isSubmitting
+                        ? null
+                        : () => Navigator.of(dialogContext).pop(),
+                    child: const Text('Cancel'),
+                  ),
+                  ElevatedButton(
+                    onPressed: isSubmitting ? null : handleSubmit,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.primary,
+                      foregroundColor: Colors.white,
+                    ),
+                    child: isSubmitting
+                        ? const SizedBox(
+                            width: 18,
+                            height: 18,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                            ),
+                          )
+                        : const Text('Reset Password'),
+                  ),
+                ],
+              ),
+            );
+          },
+        );
+      },
+    );
   }
 
   // Email verification flow removed: login no longer requires verified email
@@ -181,7 +479,21 @@ class _LoginScreenState extends State<LoginScreen> {
                     textInputAction: TextInputAction.done,
                     onFieldSubmitted: (_) => _loginUser(),
                   ),
-                  const SizedBox(height: 40),
+                  const SizedBox(height: 16),
+                  Align(
+                    alignment: Alignment.centerRight,
+                    child: TextButton(
+                      onPressed: _showForgotPasswordDialog,
+                      child: const Text(
+                        'Forgot Password?',
+                        style: TextStyle(
+                          color: AppColors.primary,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 24),
 
                   // Login Button
                   _isLoading
@@ -239,6 +551,13 @@ class _LoginScreenState extends State<LoginScreen> {
   String? _validatePassword(String? value) {
     if (value == null || value.isEmpty) return 'Please enter your password';
     if (value.length < 6) return 'Password must be at least 6 characters';
+    return null;
+  }
+
+  String? _validateOtpCode(String? value) {
+    if (value == null || value.trim().isEmpty) return 'Please enter the OTP';
+    final otpRegex = RegExp(r'^\d{6}$');
+    if (!otpRegex.hasMatch(value.trim())) return 'OTP must be a 6-digit code';
     return null;
   }
 
