@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
@@ -133,6 +134,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
                 if (success) {
                   final email = _forgotPasswordController!.text.trim();
+                  if (!dialogContext.mounted) return;
                   Navigator.of(dialogContext).pop();
                   Future.microtask(() {
                     if (mounted && email.isNotEmpty) {
@@ -151,8 +153,8 @@ class _LoginScreenState extends State<LoginScreen> {
               }
             }
 
-            return WillPopScope(
-              onWillPop: () async => !isSubmitting,
+            return PopScope(
+              canPop: !isSubmitting,
               child: AlertDialog(
                 title: const Text('Forgot Password'),
                 content: Form(
@@ -222,12 +224,53 @@ class _LoginScreenState extends State<LoginScreen> {
     bool isNewPasswordVisible = false;
     bool isConfirmPasswordVisible = false;
 
+    // Resend OTP state (30s cooldown)
+    bool isResending = false;
+    bool canResend = false;
+    int resendSeconds = 30;
+    Timer? resendTimer;
+    bool hasStartedTimer = false;
+
     showDialog(
       context: context,
       barrierDismissible: false,
       builder: (dialogContext) {
         return StatefulBuilder(
           builder: (context, setStateDialog) {
+            void startResendCountdown() {
+              // Cancel any existing timer
+              resendTimer?.cancel();
+              setStateDialog(() {
+                canResend = false;
+                resendSeconds = 30;
+              });
+
+              resendTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
+                if (!mounted) {
+                  timer.cancel();
+                  return;
+                }
+                setStateDialog(() {
+                  resendSeconds -= 1;
+                  if (resendSeconds <= 0) {
+                    timer.cancel();
+                    canResend = true;
+                  }
+                });
+              });
+            }
+
+            // Start cooldown once when dialog is first built
+            if (!hasStartedTimer) {
+              hasStartedTimer = true;
+              // Slight delay to ensure dialog is fully built
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                if (mounted) {
+                  startResendCountdown();
+                }
+              });
+            }
+
             Future<void> handleSubmit() async {
               FocusScope.of(dialogContext).unfocus();
               if (!formKey.currentState!.validate()) return;
@@ -254,6 +297,8 @@ class _LoginScreenState extends State<LoginScreen> {
                 );
 
                 if (success) {
+                  resendTimer?.cancel();
+                  if (!dialogContext.mounted) return;
                   Navigator.of(dialogContext).pop();
                 }
               } catch (e) {
@@ -267,8 +312,52 @@ class _LoginScreenState extends State<LoginScreen> {
               }
             }
 
-            return WillPopScope(
-              onWillPop: () async => !isSubmitting,
+            Future<void> handleResendOtp() async {
+              if (!canResend || isResending || isSubmitting) return;
+              setStateDialog(() {
+                isResending = true;
+              });
+
+              try {
+                final response = await AuthService.requestPasswordReset(email.trim());
+                if (!mounted) return;
+
+                final success = response['success'] == true;
+                final message = response['message'] ??
+                    (success
+                        ? 'OTP resent successfully.'
+                        : 'Failed to resend OTP. Please try again.');
+
+                _showMessage(
+                  message,
+                  success ? AppColors.vibrantGreen : Colors.red,
+                );
+
+                // Restart cooldown regardless of success, to match web behavior
+                startResendCountdown();
+              } catch (e) {
+                if (mounted) {
+                  _showMessage(
+                    'Unable to resend OTP. Please try again.',
+                    Colors.red,
+                  );
+                }
+              } finally {
+                if (mounted) {
+                  setStateDialog(() {
+                    isResending = false;
+                  });
+                }
+              }
+            }
+
+            return PopScope(
+              canPop: !isSubmitting,
+              onPopInvokedWithResult: (didPop, _) {
+                if (didPop) {
+                  resendTimer?.cancel();
+                }
+              },
               child: AlertDialog(
                 title: const Text('Enter OTP'),
                 content: Form(
@@ -278,8 +367,23 @@ class _LoginScreenState extends State<LoginScreen> {
                       mainAxisSize: MainAxisSize.min,
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
-                          'We sent a 6-digit OTP to $email. Enter it below along with your new password.',
+                        Text.rich(
+                          TextSpan(
+                            children: [
+                              const TextSpan(
+                                text: 'We sent a 6-digit OTP to ',
+                              ),
+                              TextSpan(
+                                text: email,
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                              const TextSpan(
+                                text: '. Enter it below along with your new password.',
+                              ),
+                            ],
+                          ),
                           style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                                 color: AppColors.textSecondary,
                               ),
@@ -295,6 +399,58 @@ class _LoginScreenState extends State<LoginScreen> {
                             counterText: '',
                           ),
                           validator: _validateOtpCode,
+                        ),
+                        const SizedBox(height: 8),
+                        Center(
+                          child: isResending
+                              ? const SizedBox(
+                                  width: 16,
+                                  height: 16,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                  ),
+                                )
+                              : canResend
+                                  ? Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Text(
+                                          "Didn't receive the code? ",
+                                          style: Theme.of(context)
+                                              .textTheme
+                                              .bodyMedium
+                                              ?.copyWith(
+                                                color: AppColors.textSecondary,
+                                              ),
+                                        ),
+                                        TextButton(
+                                          onPressed: (!isSubmitting)
+                                              ? handleResendOtp
+                                              : null,
+                                          style: TextButton.styleFrom(
+                                            padding: EdgeInsets.zero,
+                                            minimumSize: const Size(0, 0),
+                                            tapTargetSize:
+                                                MaterialTapTargetSize.shrinkWrap,
+                                          ),
+                                          child: const Text(
+                                            'Resend',
+                                            style: TextStyle(
+                                              fontWeight: FontWeight.bold,
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    )
+                                  : Text(
+                                      "Didn't receive the code? Resend in ${resendSeconds}s",
+                                      style: Theme.of(context)
+                                          .textTheme
+                                          .bodyMedium
+                                          ?.copyWith(
+                                            color: AppColors.textSecondary,
+                                          ),
+                                    ),
                         ),
                         const SizedBox(height: 16),
                         TextFormField(

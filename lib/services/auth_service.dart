@@ -182,6 +182,38 @@ class AuthService {
     }
   }
 
+  /// Verify email using 6-digit OTP code
+  static Future<Map<String, dynamic>> verifyEmailOtp(String otp) async {
+    try {
+      final response = await http.post(
+        Uri.parse('$_baseUrl/auth/verify-email'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({'otp': otp}),
+      );
+
+      final data = jsonDecode(response.body);
+      final success = data['success'] ?? false;
+
+      // If verification succeeded, persist verified flag locally
+      if (success) {
+        await _storage.write(key: 'user_email_verified', value: 'true');
+      }
+
+      return {
+        'success': success,
+        'message': data['message'] ?? (success
+            ? 'Email verified successfully.'
+            : 'Failed to verify email'),
+        'status_code': response.statusCode,
+      };
+    } catch (e) {
+      return {
+        'success': false,
+        'message': 'Network error: $e',
+      };
+    }
+  }
+
   /// Request password reset
   static Future<Map<String, dynamic>> requestPasswordReset(String email) async {
     try {
