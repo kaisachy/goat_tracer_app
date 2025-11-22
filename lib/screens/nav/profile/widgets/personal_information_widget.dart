@@ -7,11 +7,13 @@ import '../../../../constants/app_colors.dart';
 class PersonalInformationWidget extends StatelessWidget {
   final bool isEditingMode;
   final VoidCallback onRefresh;
+  final VoidCallback onToggleEditMode;
 
   const PersonalInformationWidget({
     super.key,
     required this.isEditingMode,
     required this.onRefresh,
+    required this.onToggleEditMode,
   });
 
   @override
@@ -76,6 +78,7 @@ class PersonalInformationWidget extends StatelessWidget {
       builder: (context) => PersonalInformationModal(
         isEditingMode: isEditingMode,
         onSaveSuccess: onRefresh,
+        onToggleEditMode: onToggleEditMode,
       ),
     );
   }

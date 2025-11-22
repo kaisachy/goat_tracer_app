@@ -143,31 +143,12 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
     HapticFeedback.mediumImpact();
 
     if (isEditingMode) {
-      bool saveSuccess = true;
-
-      if (_imageFile != null) {
-        _showModernLoadingDialog('Uploading profile picture...');
-        saveSuccess = await PersonalInformationService.updateProfilePicture(_imageFile!);
-        if (mounted) {
-          Navigator.of(context, rootNavigator: true).pop();
-        }
+      if (mounted) {
+        setState(() {
+          isEditingMode = false;
+        });
       }
-
-      if (saveSuccess) {
-        if (mounted) {
-          setState(() {
-            isEditingMode = false;
-            _imageFile = null;
-          });
-        }
-        _editModeController.reverse();
-        await _handleRefresh();
-        if (mounted) {
-          _showModernSnackBar('Profile updated successfully!', isSuccess: true);
-        }
-      } else if (mounted) {
-        _showModernSnackBar('Failed to update picture. Please try again.', isSuccess: false);
-      }
+      _editModeController.reverse();
     } else {
       if (mounted) {
         setState(() {
@@ -292,13 +273,34 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
             _imageFile = pickedFile;
           });
         }
+        
+        // Upload the image immediately
         if (mounted) {
-          _showModernSnackBar('Image selected successfully!', isSuccess: true);
+          _showModernLoadingDialog('Uploading profile picture...');
+        }
+        
+        final uploadSuccess = await PersonalInformationService.updateProfilePicture(pickedFile);
+        
+        if (mounted) {
+          Navigator.of(context, rootNavigator: true).pop();
+          
+          if (uploadSuccess) {
+            // Reload data to show the new profile picture
+            await _handleRefresh();
+            _showModernSnackBar('Profile picture updated successfully!', isSuccess: true);
+            // Clear the local file reference since it's now uploaded
+            setState(() {
+              _imageFile = null;
+            });
+          } else {
+            _showModernSnackBar('Failed to upload picture. Please try again.', isSuccess: false);
+          }
         }
       }
     } catch (e, stackTrace) {
       log('Failed to pick image: $e', stackTrace: stackTrace);
       if (mounted) {
+        Navigator.of(context, rootNavigator: true).pop();
         _showModernSnackBar('Failed to pick image: $e', isSuccess: false);
       }
     }
@@ -650,33 +652,32 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
                           : null,
                     ),
                   ),
-                  if (isEditingMode)
-                    Positioned(
-                      bottom: 0,
-                      right: 0,
-                      child: GestureDetector(
-                        onTap: () => _showModernImagePicker(context, hasProfilePicture),
-                        child: Container(
-                          padding: const EdgeInsets.all(6),
-                          decoration: BoxDecoration(
-                            color: AppColors.primary,
-                            shape: BoxShape.circle,
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.black.withValues(alpha: 0.1),
-                                blurRadius: 4,
-                                offset: const Offset(0, 2),
-                              ),
-                            ],
-                          ),
-                          child: const Icon(
-                            Icons.camera_alt_rounded,
-                            color: Colors.white,
-                            size: 16,
-                          ),
+                  Positioned(
+                    bottom: 0,
+                    right: 0,
+                    child: GestureDetector(
+                      onTap: () => _showModernImagePicker(context, hasProfilePicture),
+                      child: Container(
+                        padding: const EdgeInsets.all(6),
+                        decoration: BoxDecoration(
+                          color: AppColors.primary,
+                          shape: BoxShape.circle,
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withValues(alpha: 0.1),
+                              blurRadius: 4,
+                              offset: const Offset(0, 2),
+                            ),
+                          ],
+                        ),
+                        child: const Icon(
+                          Icons.camera_alt_rounded,
+                          color: Colors.white,
+                          size: 16,
                         ),
                       ),
                     ),
+                  ),
                 ],
               ),
             ],
@@ -739,104 +740,102 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
                         ),
                       )
                     : const SizedBox.shrink()),
-                
-                const SizedBox(height: 12),
-                
-                // Action Buttons Row
-                Align(
-                  alignment: Alignment.centerRight,
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                    // Edit Button
-                    Tooltip(
-                      message: isEditingMode ? 'Save Changes' : 'Edit Profile',
-                      child: GestureDetector(
-                        onTap: _toggleEditMode,
-                        child: Container(
-                          padding: const EdgeInsets.all(8),
-                          margin: const EdgeInsets.only(right: 8),
-                          decoration: BoxDecoration(
-                            color: isEditingMode ? Colors.green : AppColors.accent,
-                            borderRadius: BorderRadius.circular(8),
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.black.withValues(alpha: 0.1),
-                                blurRadius: 4,
-                                offset: const Offset(0, 2),
-                              ),
-                            ],
-                          ),
-                          child: Icon(
-                            isEditingMode ? Icons.check_rounded : Icons.edit_rounded,
-                            color: Colors.white,
-                            size: 20,
-                          ),
-                        ),
-                      ),
-                    ),
-                    // Excel Export Button
-                    Tooltip(
-                      message: 'Download Excel Report',
-                      child: GestureDetector(
-                        onTap: () => _downloadExcelReport(profile),
-                        child: Container(
-                          padding: const EdgeInsets.all(8),
-                          margin: const EdgeInsets.only(right: 8),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFF107C41), // Excel official dark green color
-                            borderRadius: BorderRadius.circular(8),
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.black.withValues(alpha: 0.1),
-                                blurRadius: 4,
-                                offset: const Offset(0, 2),
-                              ),
-                            ],
-                          ),
-                          child: FaIcon(
-                            FontAwesomeIcons.fileExcel,
-                            color: Colors.white,
-                            size: 20,
-                          ),
-                        ),
-                      ),
-                    ),
-                    // PDF Export Button
-                    Tooltip(
-                      message: 'Generate PDF Report',
-                      child: GestureDetector(
-                        onTap: () => _downloadPdfReport(profile),
-                        child: Container(
-                          padding: const EdgeInsets.all(8),
-                          decoration: BoxDecoration(
-                            color: Colors.red[600],
-                            borderRadius: BorderRadius.circular(8),
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.black.withValues(alpha: 0.1),
-                                blurRadius: 4,
-                                offset: const Offset(0, 2),
-                              ),
-                            ],
-                          ),
-                          child: Icon(
-                            Icons.picture_as_pdf_rounded,
-                            color: Colors.white,
-                            size: 20,
-                          ),
-                        ),
-                      ),
-                    ),
-                    ],
-                  ),
-                ),
               ],
             ),
           ),
         ],
       ),
     ],
+    ),
+
+    const SizedBox(height: 16),
+
+    // Action Buttons Row - Below profile picture and name
+    Row(
+      mainAxisAlignment: MainAxisAlignment.end,
+      children: [
+        // Excel Export Button
+        Tooltip(
+          message: 'Download Excel Report',
+          child: GestureDetector(
+            onTap: () => _downloadExcelReport(profile),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+              margin: const EdgeInsets.only(right: 8),
+              decoration: BoxDecoration(
+                color: const Color(0xFF107C41), // Excel official dark green color
+                borderRadius: BorderRadius.circular(8),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.1),
+                    blurRadius: 4,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  FaIcon(
+                    FontAwesomeIcons.fileExcel,
+                    color: Colors.white,
+                    size: 16,
+                  ),
+                  const SizedBox(width: 6),
+                  const Text(
+                    'Excel Profile',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+        // PDF Export Button
+        Tooltip(
+          message: 'Generate PDF Report',
+          child: GestureDetector(
+            onTap: () => _downloadPdfReport(profile),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+              decoration: BoxDecoration(
+                color: Colors.red[600],
+                borderRadius: BorderRadius.circular(8),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.1),
+                    blurRadius: 4,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    Icons.picture_as_pdf_rounded,
+                    color: Colors.white,
+                    size: 16,
+                  ),
+                  const SizedBox(width: 6),
+                  const Text(
+                    'PDF Profile',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ],
     ),
 
     const SizedBox(height: 24),
@@ -1158,6 +1157,7 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
                           PersonalInformationWidget(
                             isEditingMode: isEditingMode,
                             onRefresh: _handleRefresh,
+                            onToggleEditMode: _toggleEditMode,
                           ),
                           0,
                         ),
@@ -1165,6 +1165,7 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
                           FarmDetailsWidget(
                             isEditingMode: isEditingMode,
                             onRefresh: _handleRefresh,
+                            onToggleEditMode: _toggleEditMode,
                           ),
                           1,
                         ),
@@ -1172,6 +1173,7 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
                           EducationalBackgroundWidget(
                             isEditingMode: isEditingMode,
                             onRefresh: _handleRefresh,
+                            onToggleEditMode: _toggleEditMode,
                           ),
                           2,
                         ),
@@ -1179,6 +1181,7 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
                           TrainingsSeminarsWidget(
                             isEditingMode: isEditingMode,
                             onRefresh: _handleRefresh,
+                            onToggleEditMode: _toggleEditMode,
                           ),
                           3,
                         ),

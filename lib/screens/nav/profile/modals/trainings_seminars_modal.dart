@@ -8,11 +8,13 @@ import '../../../../constants/app_colors.dart';
 class TrainingsSeminarsModal extends StatefulWidget {
   final bool isEditingMode;
   final VoidCallback onSaveSuccess;
+  final VoidCallback onToggleEditMode;
 
   const TrainingsSeminarsModal({
     super.key,
     required this.isEditingMode,
     required this.onSaveSuccess,
+    required this.onToggleEditMode,
   });
 
   @override
@@ -21,6 +23,7 @@ class TrainingsSeminarsModal extends StatefulWidget {
 
 class _TrainingsSeminarsModalState extends State<TrainingsSeminarsModal> {
   late Future<List<Map<String, dynamic>>> trainingFuture;
+  bool _localEditingMode = false;
   final List<String> _options = const [
     'Meat Goat Raising',
     'Dairy Goat Raising',
@@ -41,6 +44,7 @@ class _TrainingsSeminarsModalState extends State<TrainingsSeminarsModal> {
   @override
   void initState() {
     super.initState();
+    _localEditingMode = widget.isEditingMode;
     _loadTrainings();
   }
 
@@ -75,69 +79,19 @@ class _TrainingsSeminarsModalState extends State<TrainingsSeminarsModal> {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
+    return PopScope(
+      onPopInvokedWithResult: (bool didPop, dynamic result) {
+        if (didPop && _localEditingMode) {
+          // Exit edit mode when modal is closed
+          widget.onToggleEditMode();
+        }
+      },
+      child: Container(
       height: MediaQuery.of(context).size.height * 0.8,
       padding: const EdgeInsets.all(20),
       child: Column(
         children: [
-          Row(
-            children: [
-              Expanded(
-                child: Text(
-                  'Trainings & Seminars',
-                  style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-                  overflow: TextOverflow.ellipsis,
-                  maxLines: 1,
-                ),
-              ),
-              Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  if (widget.isEditingMode)
-                    Flexible(
-                      child: ElevatedButton.icon(
-                        onPressed: _saving ? null : _saveSelection,
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: AppColors.primary,
-                          foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                          elevation: 2,
-                          shadowColor: AppColors.primary.withValues(alpha: 0.2),
-                          minimumSize: const Size(0, 40),
-                        ),
-                        icon: _saving
-                            ? const SizedBox(
-                                width: 16,
-                                height: 16,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                                ),
-                              )
-                            : const Icon(Icons.check_rounded, size: 18, color: Colors.white),
-                        label: Text(
-                          _saving ? 'Saving...' : 'Save',
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontWeight: FontWeight.w600,
-                            fontSize: 14,
-                          ),
-                          overflow: TextOverflow.ellipsis,
-                          maxLines: 1,
-                        ),
-                      ),
-                    ),
-                  IconButton(
-                    onPressed: () => Navigator.pop(context),
-                    icon: const Icon(Icons.close),
-                    constraints: const BoxConstraints(),
-                    padding: const EdgeInsets.all(8),
-                  ),
-                ],
-              ),
-            ],
-          ),
+          _buildHeader(),
           const SizedBox(height: 16),
           Expanded(
             child: FutureBuilder<List<Map<String, dynamic>>>(
@@ -170,7 +124,7 @@ class _TrainingsSeminarsModalState extends State<TrainingsSeminarsModal> {
                             children: [
                               Checkbox(
                                 value: checked,
-                                onChanged: widget.isEditingMode
+                                onChanged: _localEditingMode
                                     ? (val) {
                                         setState(() {
                                           if (val == true) {
@@ -196,10 +150,10 @@ class _TrainingsSeminarsModalState extends State<TrainingsSeminarsModal> {
                           ),
                           childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
                           children: [
-                            _buildLabeledTextField(
+                                _buildLabeledTextField(
                               label: 'Conducted By',
                               value: details['conducted_by']?.toString() ?? '',
-                              enabled: widget.isEditingMode && checked,
+                              enabled: _localEditingMode && checked,
                               onChanged: (val) {
                                 details['conducted_by'] = val.trim().isEmpty ? null : val.trim();
                               },
@@ -209,7 +163,7 @@ class _TrainingsSeminarsModalState extends State<TrainingsSeminarsModal> {
                             _buildLabeledTextField(
                               label: 'Location',
                               value: details['location']?.toString() ?? '',
-                              enabled: widget.isEditingMode && checked,
+                              enabled: _localEditingMode && checked,
                               onChanged: (val) {
                                 details['location'] = val.trim().isEmpty ? null : val.trim();
                               },
@@ -231,7 +185,7 @@ class _TrainingsSeminarsModalState extends State<TrainingsSeminarsModal> {
                                 ),
                                 Checkbox(
                                   value: (details['certificate_issued'] == 1),
-                                  onChanged: (widget.isEditingMode && checked)
+                                  onChanged: (_localEditingMode && checked)
                                       ? (val) {
                                           setState(() {
                                             details['certificate_issued'] = (val == true) ? 1 : 0;
@@ -253,6 +207,95 @@ class _TrainingsSeminarsModalState extends State<TrainingsSeminarsModal> {
           ),
         ],
       ),
+      ),
+    );
+  }
+
+  Widget _buildHeader() {
+    return Row(
+      children: [
+        Container(
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: AppColors.lightGreen.withValues(alpha: 0.2),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: const Icon(
+            Icons.workspace_premium,
+            color: AppColors.primary,
+            size: 24,
+          ),
+        ),
+        const SizedBox(width: 16),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'Trainings & Seminars',
+                style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.textPrimary,
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                _localEditingMode ? 'Edit your training records' : 'View your professional development',
+                style: const TextStyle(
+                  fontSize: 14,
+                  color: AppColors.textSecondary,
+                ),
+              ),
+            ],
+          ),
+        ),
+        Tooltip(
+          message: _localEditingMode ? 'Save & Exit Edit Mode' : 'Edit',
+          child: GestureDetector(
+            onTap: () async {
+              if (_localEditingMode) {
+                // Save when exiting edit mode
+                await _saveSelection();
+              } else {
+                // Enter edit mode
+                setState(() {
+                  _localEditingMode = true;
+                });
+                widget.onToggleEditMode();
+              }
+            },
+            child: Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: _localEditingMode ? Colors.green : AppColors.accent,
+                borderRadius: BorderRadius.circular(8),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.1),
+                    blurRadius: 4,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
+              ),
+              child: _localEditingMode && _saving
+                  ? const SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                      ),
+                    )
+                  : Icon(
+                      _localEditingMode ? Icons.check_rounded : Icons.edit_rounded,
+                      color: Colors.white,
+                      size: 20,
+                    ),
+            ),
+          ),
+        ),
+      ],
     );
   }
 
@@ -361,10 +404,16 @@ class _TrainingsSeminarsModalState extends State<TrainingsSeminarsModal> {
       }
 
       if (!mounted) return;
+      
       // Reload and notify
-      setState(() {
-        _loadTrainings();
-      });
+      if (allOk) {
+        _loadTrainings(); // This updates trainingFuture and calls setState internally
+        setState(() {
+          _localEditingMode = false;
+        });
+        widget.onToggleEditMode();
+      }
+      
       widget.onSaveSuccess();
 
       ScaffoldMessenger.of(context).showSnackBar(

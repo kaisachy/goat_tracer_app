@@ -13,12 +13,14 @@ class FarmDetailsModal extends StatefulWidget {
   final Map<String, dynamic>? farmDetails;
   final bool isEditingMode;
   final VoidCallback onSaveSuccess;
+  final VoidCallback onToggleEditMode;
 
   const FarmDetailsModal({
     super.key,
     required this.farmDetails,
     required this.isEditingMode,
     required this.onSaveSuccess,
+    required this.onToggleEditMode,
   });
 
   @override
@@ -53,6 +55,8 @@ class _FarmDetailsModalState extends State<FarmDetailsModal> {
     'Commercial - 16 and above Does'
   ];
   String? _selectedFarmClassification;
+  bool _localEditingMode = false;
+  Map<String, dynamic>? _currentFarmDetails;
   
   // Address validation state variables
   List<dynamic> _regions = [];
@@ -78,6 +82,8 @@ class _FarmDetailsModalState extends State<FarmDetailsModal> {
   @override
   void initState() {
     super.initState();
+    _localEditingMode = widget.isEditingMode;
+    _currentFarmDetails = widget.farmDetails;
     final farm = widget.farmDetails;
     farmNameController = TextEditingController(text: farm?['farm_name'] ?? '');
     farmTypeController = TextEditingController(text: farm?['farm_type'] ?? '');
@@ -230,7 +236,14 @@ class _FarmDetailsModalState extends State<FarmDetailsModal> {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
+    return PopScope(
+      onPopInvokedWithResult: (bool didPop, dynamic result) {
+        if (didPop && _localEditingMode) {
+          // Exit edit mode when modal is closed
+          widget.onToggleEditMode();
+        }
+      },
+      child: Container(
       decoration: const BoxDecoration(
         color: AppColors.cardBackground,
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
@@ -266,7 +279,7 @@ class _FarmDetailsModalState extends State<FarmDetailsModal> {
               child: SingleChildScrollView(
                 child: Form(
                   key: formKey,
-                  child: widget.isEditingMode
+                  child: _localEditingMode
                       ? _buildEditingForm()
                       : _buildViewContent(),
                 ),
@@ -274,6 +287,7 @@ class _FarmDetailsModalState extends State<FarmDetailsModal> {
             ),
           ],
         ),
+      ),
       ),
     );
   }
@@ -310,7 +324,7 @@ class _FarmDetailsModalState extends State<FarmDetailsModal> {
                 maxLines: 1,
               ),
               Text(
-                widget.isEditingMode
+                _localEditingMode
                     ? 'Edit your farm information'
                     : 'View your farm information',
                 style: TextStyle(
@@ -323,46 +337,52 @@ class _FarmDetailsModalState extends State<FarmDetailsModal> {
             ],
           ),
         ),
-        if (widget.isEditingMode)
-          Flexible(
-            child: _buildSaveButton(),
-          ),
-      ],
-    );
-  }
-
-  Widget _buildSaveButton() {
-    return ElevatedButton.icon(
-      onPressed: _isLoading ? null : _saveFarmDetails,
-      style: ElevatedButton.styleFrom(
-        backgroundColor: AppColors.primary,
-        foregroundColor: Colors.white,
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        elevation: 2,
-        shadowColor: AppColors.primary.withValues(alpha: 0.2),
-        minimumSize: const Size(0, 40),
-      ),
-      icon: _isLoading
-          ? const SizedBox(
-              width: 16,
-              height: 16,
-              child: CircularProgressIndicator(
-                strokeWidth: 2,
-                valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+        Tooltip(
+          message: _localEditingMode ? 'Save & Exit Edit Mode' : 'Edit',
+          child: GestureDetector(
+            onTap: () async {
+              if (_localEditingMode) {
+                // Save when exiting edit mode
+                await _saveFarmDetails();
+              } else {
+                // Enter edit mode
+                setState(() {
+                  _localEditingMode = true;
+                });
+                widget.onToggleEditMode();
+              }
+            },
+            child: Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: _localEditingMode ? Colors.green : AppColors.accent,
+                borderRadius: BorderRadius.circular(8),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.1),
+                    blurRadius: 4,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
               ),
-            )
-          : const Icon(Icons.check_rounded, size: 18, color: Colors.white),
-      label: const Text(
-        'Save',
-        style: TextStyle(
-          color: Colors.white,
-          fontWeight: FontWeight.w600,
-          fontSize: 14,
+              child: _localEditingMode && _isLoading
+                  ? const SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                      ),
+                    )
+                  : Icon(
+                      _localEditingMode ? Icons.check_rounded : Icons.edit_rounded,
+                      color: Colors.white,
+                      size: 20,
+                    ),
+            ),
+          ),
         ),
-        overflow: TextOverflow.ellipsis,
-        maxLines: 1,
-      ),
+      ],
     );
   }
 
@@ -1539,21 +1559,22 @@ class _FarmDetailsModalState extends State<FarmDetailsModal> {
   }
 
   Widget _buildViewContent() {
+    final farmDetails = _currentFarmDetails ?? widget.farmDetails;
     return Column(
       children: [
-        _buildInfoCard('Farm Name', widget.farmDetails?['farm_name'] ?? 'None', FontAwesomeIcons.leaf),
+        _buildInfoCard('Farm Name', farmDetails?['farm_name'] ?? 'None', FontAwesomeIcons.leaf),
         const SizedBox(height: 16),
 
-        _buildInfoCard('Farm Type', widget.farmDetails?['farm_type'] ?? 'None', FontAwesomeIcons.tractor),
+        _buildInfoCard('Farm Type', farmDetails?['farm_type'] ?? 'None', FontAwesomeIcons.tractor),
         const SizedBox(height: 16),
 
-        _buildInfoCard('Farm Classification', widget.farmDetails?['farm_classification'] ?? 'None', FontAwesomeIcons.shapes),
+        _buildInfoCard('Farm Classification', farmDetails?['farm_classification'] ?? 'None', FontAwesomeIcons.shapes),
         const SizedBox(height: 16),
 
-        _buildInfoCard('Farm Land Area', widget.farmDetails?['farm_land_area'] ?? 'None', FontAwesomeIcons.expand),
+        _buildInfoCard('Farm Land Area', farmDetails?['farm_land_area'] ?? 'None', FontAwesomeIcons.expand),
         const SizedBox(height: 16),
 
-        _buildInfoCard('Cooperative Membership', widget.farmDetails?['cooperative_affiliation'] ?? 'None', FontAwesomeIcons.handshake),
+        _buildInfoCard('Cooperative Membership', farmDetails?['cooperative_affiliation'] ?? 'None', FontAwesomeIcons.handshake),
         const SizedBox(height: 16),
 
         _buildInfoCard('Farm Location', _formatFarmLocation(), FontAwesomeIcons.mapLocation),
@@ -1573,8 +1594,8 @@ class _FarmDetailsModalState extends State<FarmDetailsModal> {
       final base = '${_selectedMunicipality!['name']}, ${_selectedProvince!['name']}';
       return regionName != null && regionName.isNotEmpty ? '$base, $regionName' : base;
     } else {
-      // Fallback to structured fields from widget data
-      final farm = widget.farmDetails;
+      // Fallback to structured fields from current farm details
+      final farm = _currentFarmDetails ?? widget.farmDetails;
       if (farm != null) {
         final parts = <String>[];
         if (farm['farm_barangay']?.toString().isNotEmpty == true) parts.add(farm['farm_barangay']);
@@ -1649,8 +1670,12 @@ class _FarmDetailsModalState extends State<FarmDetailsModal> {
   }
 
   Future<void> _saveFarmDetails() async {
-    if (formKey.currentState!.validate()) {
-      setState(() => _isLoading = true);
+    if (!formKey.currentState!.validate()) {
+      // If validation fails, don't exit edit mode
+      return;
+    }
+
+    setState(() => _isLoading = true);
 
       // Attempt a final single geocode before submission if coordinates are empty and barangay is selected
       if ((_farmLatitude == null || _farmLongitude == null) && _selectedBarangay != null && _selectedBarangay!['name'] != null && _selectedBarangay!['name'].isNotEmpty) {
@@ -1692,40 +1717,97 @@ class _FarmDetailsModalState extends State<FarmDetailsModal> {
       setState(() => _isLoading = false);
 
       if (!mounted) return;
-      Navigator.pop(context);
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Row(
-            children: [
-              FaIcon(
-                success ? FontAwesomeIcons.circleCheck : FontAwesomeIcons.circleXmark,
-                color: Colors.white,
-                size: 20,
-              ),
-              const SizedBox(width: 12),
-              Text(
-                success
-                    ? 'Farm details saved successfully!'
-                    : 'Save failed. Please try again.',
-                style: const TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w500,
+      if (success) {
+        // Reload farm details to show updated information
+        final updatedFarmDetails = await FarmDetailsService.getFarmDetails();
+        if (mounted && updatedFarmDetails != null) {
+          // Update the widget's farm details by reloading the modal state
+          // Since this is a StatefulWidget, we need to update the local state
+          setState(() {
+            _localEditingMode = false;
+            _currentFarmDetails = updatedFarmDetails; // Update local farm details for view mode
+            // Update controllers with new data
+            farmNameController.text = updatedFarmDetails['farm_name'] ?? '';
+            farmTypeController.text = updatedFarmDetails['farm_type'] ?? '';
+            farmClassificationController.text = updatedFarmDetails['farm_classification'] ?? '';
+            farmAreaController.text = updatedFarmDetails['farm_land_area']?.toString() ?? '';
+            coopController.text = updatedFarmDetails['cooperative_affiliation'] ?? '';
+            
+            // Update selected values
+            _selectedFarmType = updatedFarmDetails['farm_type'];
+            _selectedFarmClassification = updatedFarmDetails['farm_classification'];
+            _selectedFarmLandArea = updatedFarmDetails['farm_land_area']?.toString();
+            
+            // Update coordinates
+            final latStr = updatedFarmDetails['farm_latitude']?.toString();
+            final lngStr = updatedFarmDetails['farm_longitude']?.toString();
+            _farmLatitude = (latStr != null && latStr.isNotEmpty) ? double.tryParse(latStr) : null;
+            _farmLongitude = (lngStr != null && lngStr.isNotEmpty) ? double.tryParse(lngStr) : null;
+          });
+          
+          // Reinitialize address from updated data
+          await _initializeAddressFromStructuredData(updatedFarmDetails);
+        }
+        widget.onToggleEditMode();
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Row(
+              children: [
+                FaIcon(
+                  FontAwesomeIcons.circleCheck,
+                  color: Colors.white,
+                  size: 20,
                 ),
-              ),
-            ],
+                const SizedBox(width: 12),
+                const Text(
+                  'Farm details saved successfully!',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ],
+            ),
+            backgroundColor: AppColors.vibrantGreen,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+            margin: const EdgeInsets.all(16),
+            duration: const Duration(seconds: 3),
           ),
-          backgroundColor: success ? AppColors.vibrantGreen : Colors.red[600],
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
+        );
+        widget.onSaveSuccess();
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Row(
+              children: [
+                FaIcon(
+                  FontAwesomeIcons.circleXmark,
+                  color: Colors.white,
+                  size: 20,
+                ),
+                const SizedBox(width: 12),
+                const Text(
+                  'Save failed. Please try again.',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ],
+            ),
+            backgroundColor: Colors.red[600],
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+            margin: const EdgeInsets.all(16),
+            duration: const Duration(seconds: 3),
           ),
-          margin: const EdgeInsets.all(16),
-          duration: const Duration(seconds: 3),
-        ),
-      );
-
-      if (success) widget.onSaveSuccess();
-    }
+        );
+      }
   }
 }

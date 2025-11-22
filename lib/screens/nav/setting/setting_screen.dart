@@ -37,7 +37,7 @@ class _SettingScreenState extends State<SettingScreen> with TickerProviderStateM
   bool _obscureNewPassword = true;
   bool _obscureConfirmPassword = true;
 
-  bool _personalInfoExpanded = true;
+  bool _personalInfoExpanded = false;
   bool _emailVerificationExpanded = false;
   bool _passwordExpanded = false;
 
@@ -242,8 +242,10 @@ class _SettingScreenState extends State<SettingScreen> with TickerProviderStateM
         _currentUser = user;
         _firstNameController.text = user.firstName;
         _lastNameController.text = user.lastName;
-        // Don't set _isLoading = false here - keep it true until all addresses are loaded
+        _isLoading = false; // Set loading to false to display content immediately
       });
+
+      _animationController.forward();
 
       // If we have user's province, find and set its region first, then load provinces
       if (user.province != null && user.province!.isNotEmpty && _regions.isNotEmpty) {
@@ -272,10 +274,13 @@ class _SettingScreenState extends State<SettingScreen> with TickerProviderStateM
         }
       }
 
-      // Wait for provinces to be loaded before setting address selection
+      // Continue loading addresses in the background
       if (_provinces.isEmpty) {
-        setState(() => _isLoading = false);
         debugPrint('Provinces not loaded yet, skipping address initialization');
+        // Continue to mark data as ready even if provinces are not loaded
+        setState(() {
+          _isDataReady = true;
+        });
         return;
       }
 
@@ -334,13 +339,10 @@ class _SettingScreenState extends State<SettingScreen> with TickerProviderStateM
         }
       }
 
-      // Mark data as ready for dropdowns and stop loading only after all addresses are fetched
+      // Mark data as ready for dropdowns (addresses may still be loading in background)
       setState(() {
         _isDataReady = true;
-        _isLoading = false; // Only set loading to false after all addresses are loaded
       });
-
-      _animationController.forward();
     } catch (e) {
       setState(() => _isLoading = false);
 
@@ -1032,65 +1034,6 @@ class _SettingScreenState extends State<SettingScreen> with TickerProviderStateM
             ),
           ),
         ),
-        if (_currentUser != null) ...[
-          Row(
-            children: [
-              const Icon(Icons.email_outlined, color: AppColors.darkGreen),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      _currentUser!.email,
-                      style: TextStyle(
-                        color: AppColors.textPrimary,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(
-                          _currentUser!.emailVerified
-                              ? Icons.check_circle
-                              : Icons.error_outline,
-                          size: 16,
-                          color: _currentUser!.emailVerified
-                              ? AppColors.success
-                              : AppColors.danger,
-                        ),
-                        const SizedBox(width: 4),
-                        Text(
-                          _currentUser!.emailVerified
-                              ? 'Verified'
-                              : 'Unverified',
-                          style: TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.w600,
-                            color: _currentUser!.emailVerified
-                                ? AppColors.success
-                                : AppColors.danger,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-              if (!_currentUser!.emailVerified)
-                TextButton(
-                  onPressed: _startEmailVerificationFlow,
-                  child: const Text(
-                    'Verify Email',
-                    style: TextStyle(fontWeight: FontWeight.bold),
-                  ),
-                ),
-            ],
-          ),
-          const SizedBox(height: 16),
-        ],
         Form(
           key: _formKey,
           child: Column(

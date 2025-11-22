@@ -9,11 +9,13 @@ import '../../../../constants/app_colors.dart';
 class FarmDetailsWidget extends StatelessWidget {
   final bool isEditingMode;
   final VoidCallback onRefresh;
+  final VoidCallback onToggleEditMode;
 
   const FarmDetailsWidget({
     super.key,
     required this.isEditingMode,
     required this.onRefresh,
+    required this.onToggleEditMode,
   });
 
   @override
@@ -86,6 +88,7 @@ class FarmDetailsWidget extends StatelessWidget {
         farmDetails: farmDetails,
         isEditingMode: isEditingMode,
         onSaveSuccess: onRefresh,
+        onToggleEditMode: onToggleEditMode,
       ),
     );
   }}

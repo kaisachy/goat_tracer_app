@@ -8,11 +8,13 @@ import '../../../../constants/app_colors.dart';
 class EducationalBackgroundModal extends StatefulWidget {
   final bool isEditingMode;
   final VoidCallback onSaveSuccess;
+  final VoidCallback onToggleEditMode;
 
   const EducationalBackgroundModal({
     super.key,
     required this.isEditingMode,
     required this.onSaveSuccess,
+    required this.onToggleEditMode,
   });
 
   @override
@@ -20,30 +22,41 @@ class EducationalBackgroundModal extends StatefulWidget {
 }
 
 class _EducationalBackgroundModalState extends State<EducationalBackgroundModal> {
+  bool _localEditingMode = false;
+  late Future<List<Map<String, dynamic>>> _educationFuture;
+
+  @override
+  void initState() {
+    super.initState();
+    _localEditingMode = widget.isEditingMode;
+    _educationFuture = EducationalBackgroundService.getEducationalBackground();
+  }
+
+  void _reloadEducationData() {
+    setState(() {
+      _educationFuture = EducationalBackgroundService.getEducationalBackground();
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
-    return Container(
+    return PopScope(
+      onPopInvokedWithResult: (bool didPop, dynamic result) {
+        if (didPop && _localEditingMode) {
+          // Exit edit mode when modal is closed
+          widget.onToggleEditMode();
+        }
+      },
+      child: Container(
       height: MediaQuery.of(context).size.height * 0.8,
       padding: const EdgeInsets.all(20),
       child: Column(
         children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              const Text(
-                'Educational Background',
-                style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-              ),
-              IconButton(
-                onPressed: () => Navigator.pop(context),
-                icon: const Icon(Icons.close),
-              ),
-            ],
-          ),
+          _buildHeader(),
           const SizedBox(height: 16),
           Expanded(
             child: FutureBuilder<List<Map<String, dynamic>>>(
-              future: EducationalBackgroundService.getEducationalBackground(),
+              future: _educationFuture,
               builder: (context, snapshot) {
                 if (snapshot.connectionState == ConnectionState.waiting) {
                   return const Center(child: CircularProgressIndicator());
@@ -87,7 +100,7 @@ class _EducationalBackgroundModalState extends State<EducationalBackgroundModal>
                           ],
                         )
                             : const Text('Not specified'),
-                        trailing: widget.isEditingMode
+                        trailing: _localEditingMode
                             ? Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
@@ -120,6 +133,80 @@ class _EducationalBackgroundModalState extends State<EducationalBackgroundModal>
           ),
         ],
       ),
+      ),
+    );
+  }
+
+  Widget _buildHeader() {
+    return Row(
+      children: [
+        Container(
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: AppColors.lightGreen.withValues(alpha: 0.2),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: const Icon(
+            Icons.school,
+            color: AppColors.primary,
+            size: 24,
+          ),
+        ),
+        const SizedBox(width: 16),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'Educational Background',
+                style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.textPrimary,
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                _localEditingMode ? 'Edit your education records' : 'View your academic achievements',
+                style: const TextStyle(
+                  fontSize: 14,
+                  color: AppColors.textSecondary,
+                ),
+              ),
+            ],
+          ),
+        ),
+        Tooltip(
+          message: _localEditingMode ? 'Exit Edit Mode' : 'Edit',
+          child: GestureDetector(
+            onTap: () {
+              setState(() {
+                _localEditingMode = !_localEditingMode;
+              });
+              widget.onToggleEditMode();
+            },
+            child: Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: _localEditingMode ? Colors.green : AppColors.accent,
+                borderRadius: BorderRadius.circular(8),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.1),
+                    blurRadius: 4,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
+              ),
+              child: Icon(
+                _localEditingMode ? Icons.check_rounded : Icons.edit_rounded,
+                color: Colors.white,
+                size: 20,
+              ),
+            ),
+          ),
+        ),
+      ],
     );
   }
 
@@ -138,7 +225,7 @@ class _EducationalBackgroundModalState extends State<EducationalBackgroundModal>
         eduMap: eduMap,
         onSaveSuccess: () {
           widget.onSaveSuccess();
-          // No need to call setState here as the parent modal will be rebuilt
+          _reloadEducationData(); // Reload data to show updated information
         },
       ),
     );
@@ -185,7 +272,7 @@ class _EducationalBackgroundModalState extends State<EducationalBackgroundModal>
 
       if (success) {
         widget.onSaveSuccess();
-        setState(() {}); // Refresh the modal content to show the deletion
+        _reloadEducationData(); // Reload data to show the deletion
       }
     }
   }

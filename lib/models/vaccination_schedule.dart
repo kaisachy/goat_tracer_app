@@ -416,7 +416,7 @@ class VaccinationProtocol {
 
   /// Check if goat matches stage requirements for pre-calving vaccines
   static bool _matchesPreCalvingStage(VaccineType vaccine, String classification, String sex, bool isDairy, String status) {
-    // Pre-calving vaccines are for pregnant Does and Doelings (both dairy and beef)
+    // Pre-calving vaccines are for pregnant Does and Doelings (both dairy and meat)
     return (classification == 'Doe' || classification == 'Doeling') &&
            sex == 'Female' &&
            (status.toLowerCase() == 'pregnant' || 

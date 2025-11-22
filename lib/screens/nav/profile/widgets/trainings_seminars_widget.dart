@@ -8,11 +8,13 @@ import '../../../../constants/app_colors.dart';
 class TrainingsSeminarsWidget extends StatelessWidget {
   final bool isEditingMode;
   final VoidCallback onRefresh;
+  final VoidCallback onToggleEditMode;
 
   const TrainingsSeminarsWidget({
     super.key,
     required this.isEditingMode,
     required this.onRefresh,
+    required this.onToggleEditMode,
   });
 
   @override
@@ -77,12 +79,12 @@ class TrainingsSeminarsWidget extends StatelessWidget {
                     ),
                   ),
                   const Icon(Icons.chevron_right, color: Colors.grey),
-                ],
-              ),
-            ),
+            ],
           ),
-        );
-      },
+        ),
+      ),
+    );
+  },
     );
   }
 
@@ -96,6 +98,7 @@ class TrainingsSeminarsWidget extends StatelessWidget {
       builder: (context) => TrainingsSeminarsModal(
         isEditingMode: isEditingMode,
         onSaveSuccess: onRefresh,
+        onToggleEditMode: onToggleEditMode,
       ),
     );
   }

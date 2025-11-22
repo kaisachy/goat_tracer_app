@@ -7,11 +7,13 @@ import 'package:goat_tracer_app/services/profile/personal_information_service.da
 class PersonalInformationModal extends StatefulWidget {
   final bool isEditingMode;
   final VoidCallback onSaveSuccess;
+  final VoidCallback onToggleEditMode;
 
   const PersonalInformationModal({
     super.key,
     required this.isEditingMode,
     required this.onSaveSuccess,
+    required this.onToggleEditMode,
   });
 
   @override
@@ -37,6 +39,7 @@ class _PersonalInformationModalState extends State<PersonalInformationModal> wit
 
   bool _isLoading = true;
   bool _isSaving = false;
+  bool _localEditingMode = false;
   Map<String, dynamic>? _personalInformation;
   String? _selectedSex;
   String? _selectedStatus;
@@ -47,6 +50,7 @@ class _PersonalInformationModalState extends State<PersonalInformationModal> wit
   @override
   void initState() {
     super.initState();
+    _localEditingMode = widget.isEditingMode;
     _initializeControllers();
     _initializeAnimations();
     _fetchData();
@@ -146,14 +150,21 @@ class _PersonalInformationModalState extends State<PersonalInformationModal> wit
 
   @override
   Widget build(BuildContext context) {
-    return AnimatedBuilder(
-      animation: _animationController,
-      builder: (context, child) {
-        return Transform.scale(
-          scale: _scaleAnimation.value,
-          child: FadeTransition(
-            opacity: _fadeAnimation,
-            child: Container(
+    return PopScope(
+      onPopInvokedWithResult: (bool didPop, dynamic result) {
+        if (didPop && _localEditingMode) {
+          // Exit edit mode when modal is closed
+          widget.onToggleEditMode();
+        }
+      },
+      child: AnimatedBuilder(
+        animation: _animationController,
+        builder: (context, child) {
+          return Transform.scale(
+            scale: _scaleAnimation.value,
+            child: FadeTransition(
+              opacity: _fadeAnimation,
+              child: Container(
               decoration: BoxDecoration(
                 color: AppColors.cardBackground,
                 borderRadius: const BorderRadius.only(
@@ -190,6 +201,7 @@ class _PersonalInformationModalState extends State<PersonalInformationModal> wit
           ),
         );
       },
+      ),
     );
   }
 
@@ -220,7 +232,7 @@ class _PersonalInformationModalState extends State<PersonalInformationModal> wit
                 size: 24,
               ),
             ),
-            const SizedBox(width: 16),
+            const SizedBox(width: 16            ),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -235,7 +247,7 @@ class _PersonalInformationModalState extends State<PersonalInformationModal> wit
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    widget.isEditingMode ? 'Edit your details' : 'View your information',
+                    _localEditingMode ? 'Edit your details' : 'View your information',
                     style: const TextStyle(
                       fontSize: 14,
                       color: AppColors.textSecondary,
@@ -244,43 +256,54 @@ class _PersonalInformationModalState extends State<PersonalInformationModal> wit
                 ],
               ),
             ),
-            if (widget.isEditingMode && !_isLoading)
-              _buildSaveButton(),
+            Tooltip(
+              message: _localEditingMode ? 'Save & Exit Edit Mode' : 'Edit',
+              child: GestureDetector(
+                onTap: () async {
+                  if (_localEditingMode) {
+                    // Save when exiting edit mode
+                    await _savePersonalInfo();
+                  } else {
+                    // Enter edit mode
+                    setState(() {
+                      _localEditingMode = true;
+                    });
+                    widget.onToggleEditMode();
+                  }
+                },
+                child: Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: _localEditingMode ? Colors.green : AppColors.accent,
+                    borderRadius: BorderRadius.circular(8),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.1),
+                        blurRadius: 4,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
+                  ),
+                  child: _localEditingMode && _isSaving
+                      ? const SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                          ),
+                        )
+                      : Icon(
+                          _localEditingMode ? Icons.check_rounded : Icons.edit_rounded,
+                          color: Colors.white,
+                          size: 20,
+                        ),
+                ),
+              ),
+            ),
           ],
         ),
       ],
-    );
-  }
-
-  Widget _buildSaveButton() {
-    return ElevatedButton.icon(
-      onPressed: _isSaving ? null : _savePersonalInfo,
-      style: ElevatedButton.styleFrom(
-        backgroundColor: AppColors.primary,
-        foregroundColor: Colors.white,
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        elevation: 2,
-        shadowColor: AppColors.primary.withValues(alpha: 0.2),
-      ),
-      icon: _isSaving
-          ? const SizedBox(
-              width: 16,
-              height: 16,
-              child: CircularProgressIndicator(
-                strokeWidth: 2,
-                valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-              ),
-            )
-          : const Icon(Icons.check_rounded, size: 18, color: Colors.white),
-      label: Text(
-        _isSaving ? 'Saving...' : 'Save',
-        style: const TextStyle(
-          color: Colors.white,
-          fontWeight: FontWeight.w600,
-          fontSize: 16,
-        ),
-      ),
     );
   }
 
@@ -330,7 +353,7 @@ class _PersonalInformationModalState extends State<PersonalInformationModal> wit
                 title: 'Personal Details',
                 icon: Icons.account_circle_outlined,
                 children: [
-                  if (widget.isEditingMode) ...[
+                  if (_localEditingMode) ...[
                     _buildSexDropdown(),
                     const SizedBox(height: 16),
                     _buildDateField(),
@@ -628,7 +651,10 @@ class _PersonalInformationModalState extends State<PersonalInformationModal> wit
   }
 
   Future<void> _savePersonalInfo() async {
-    if (!formKey.currentState!.validate()) return;
+    if (!formKey.currentState!.validate()) {
+      // If validation fails, don't exit edit mode
+      return;
+    }
 
     setState(() {
       _isSaving = true;
@@ -656,7 +682,12 @@ class _PersonalInformationModalState extends State<PersonalInformationModal> wit
 
         if (success) {
           HapticFeedback.lightImpact();
-          Navigator.pop(context);
+          // Reload data to show updated information
+          await _fetchData();
+          setState(() {
+            _localEditingMode = false;
+          });
+          widget.onToggleEditMode();
           _showSuccessSnackBar('Personal information saved successfully!');
           widget.onSaveSuccess();
         } else {
