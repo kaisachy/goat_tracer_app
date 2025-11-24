@@ -24,7 +24,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
   String searchQuery = '';
   String selectedHistoryType = 'All';
   Set<int> expandedCards = <int>{};
-  String _addTabCategoryFilter = 'All'; // All, Health, Breeding, Lifecycle
+  String _addTabCategoryFilter = 'Health'; // Health, Reproduction, Lifecycle
 
   // All possible history types
   List<String> get historyTypes {
@@ -81,23 +81,19 @@ class _HistoryScreenState extends State<HistoryScreen> {
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
-        if ((_addTabCategoryFilter == 'All' || _addTabCategoryFilter == 'Health') && healthTypes.isNotEmpty)
+        if (_addTabCategoryFilter == 'Health' && healthTypes.isNotEmpty)
           _buildHistoryCategorySection(
             title: 'Animal Health & Treatment',
             subtitle: 'Record sickness, treatments, vaccinations, weighing, and other health-related events.',
             types: healthTypes,
           ),
-        if ((_addTabCategoryFilter == 'All' || _addTabCategoryFilter == 'Breeding') && breedingTypes.isNotEmpty)
-          const SizedBox(height: 24),
-        if ((_addTabCategoryFilter == 'All' || _addTabCategoryFilter == 'Breeding') && breedingTypes.isNotEmpty)
+        if (_addTabCategoryFilter == 'Reproduction' && breedingTypes.isNotEmpty)
           _buildHistoryCategorySection(
             title: 'Breeding & Reproduction',
             subtitle: 'Log breeding, pregnancies, kidding, and reproductive events.',
             types: breedingTypes,
           ),
-        if ((_addTabCategoryFilter == 'All' || _addTabCategoryFilter == 'Lifecycle') && lifecycleTypes.isNotEmpty)
-          const SizedBox(height: 24),
-        if ((_addTabCategoryFilter == 'All' || _addTabCategoryFilter == 'Lifecycle') && lifecycleTypes.isNotEmpty)
+        if (_addTabCategoryFilter == 'Lifecycle' && lifecycleTypes.isNotEmpty)
           _buildHistoryCategorySection(
             title: 'Animal Lifecycle Management',
             subtitle: 'Track dry-off, weaning, sales, losses, and other lifecycle changes.',
@@ -124,19 +120,15 @@ class _HistoryScreenState extends State<HistoryScreen> {
       child: Row(
         children: [
           _buildCategoryNavItem(
-            label: 'All',
-            value: 'All',
-            icon: Icons.apps_rounded,
-          ),
-          _buildCategoryNavItem(
             label: 'Health',
             value: 'Health',
             icon: Icons.medical_services_rounded,
           ),
           _buildCategoryNavItem(
-            label: 'Breeding',
-            value: 'Breeding',
+            label: 'Reproduction',
+            value: 'Reproduction',
             icon: Icons.favorite_rounded,
+            imagePath: 'assets/images/goat-icons/lactating_pregnant.png',
           ),
           _buildCategoryNavItem(
             label: 'Lifecycle',
@@ -152,6 +144,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
     required String label,
     required String value,
     required IconData icon,
+    String? imagePath,
   }) {
     final bool selected = _addTabCategoryFilter == value;
     final Color activeColor = AppColors.vibrantGreen;
@@ -170,11 +163,27 @@ class _HistoryScreenState extends State<HistoryScreen> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(
-                icon,
-                size: 20,
-                color: selected ? activeColor : inactiveColor,
-              ),
+              imagePath != null
+                  ? Image.asset(
+                      imagePath,
+                      width: 20,
+                      height: 20,
+                      fit: BoxFit.contain,
+                      color: selected ? activeColor : inactiveColor,
+                      colorBlendMode: BlendMode.srcIn,
+                      errorBuilder: (context, error, stackTrace) {
+                        return Icon(
+                          icon,
+                          size: 20,
+                          color: selected ? activeColor : inactiveColor,
+                        );
+                      },
+                    )
+                  : Icon(
+                      icon,
+                      size: 20,
+                      color: selected ? activeColor : inactiveColor,
+                    ),
               const SizedBox(height: 2),
               Text(
                 label,
@@ -245,7 +254,6 @@ class _HistoryScreenState extends State<HistoryScreen> {
             itemBuilder: (gridContext, index) {
               final type = types[index];
               final color = HistoryTypeUtils.getHistoryColor(type);
-              final icon = HistoryTypeUtils.getHistoryIcon(type);
               return InkWell(
                 borderRadius: BorderRadius.circular(16),
                 onTap: () async {
@@ -281,7 +289,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
                           borderRadius: BorderRadius.circular(12),
                           border: Border.all(color: color.withValues(alpha: 0.2)),
                         ),
-                        child: Icon(icon, color: color, size: 28),
+                        child: _buildHistoryIconForGrid(type, color),
                       ),
                       const SizedBox(height: 8),
                       Text(
@@ -1250,7 +1258,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
                       borderRadius: BorderRadius.circular(12),
                       border: Border.all(color: historyColor.withValues(alpha: 0.3)),
                     ),
-                    child: Icon(HistoryTypeUtils.getHistoryIcon(historyType), color: historyColor, size: 24),
+                    child: _buildHistoryIcon(historyType, historyColor),
                   ),
                   const SizedBox(width: 16),
                   Expanded(
@@ -1376,6 +1384,46 @@ class _HistoryScreenState extends State<HistoryScreen> {
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildHistoryIcon(String historyType, Color color) {
+    final imagePath = HistoryTypeUtils.getHistoryImagePath(historyType);
+    if (imagePath != null) {
+      return Image.asset(
+        imagePath,
+        width: 18,
+        height: 18,
+        fit: BoxFit.contain,
+        color: color,
+        colorBlendMode: BlendMode.srcIn,
+        errorBuilder: (context, error, stackTrace) {
+          // Fallback to icon if image fails to load
+          return Icon(HistoryTypeUtils.getHistoryIcon(historyType), color: color, size: 24);
+        },
+      );
+    } else {
+      return Icon(HistoryTypeUtils.getHistoryIcon(historyType), color: color, size: 24);
+    }
+  }
+
+  Widget _buildHistoryIconForGrid(String historyType, Color color) {
+    final imagePath = HistoryTypeUtils.getHistoryImagePath(historyType);
+    return Center(
+      child: imagePath != null
+          ? Image.asset(
+              imagePath,
+              width: 24,
+              height: 24,
+              fit: BoxFit.contain,
+              color: color,
+              colorBlendMode: BlendMode.srcIn,
+              errorBuilder: (context, error, stackTrace) {
+                // Fallback to icon if image fails to load
+                return Icon(HistoryTypeUtils.getHistoryIcon(historyType), color: color, size: 24);
+              },
+            )
+          : Icon(HistoryTypeUtils.getHistoryIcon(historyType), color: color, size: 24),
     );
   }
 

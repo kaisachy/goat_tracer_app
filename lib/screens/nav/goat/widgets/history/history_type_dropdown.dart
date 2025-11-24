@@ -201,6 +201,28 @@ class HistoryTypeDropdownState extends State<HistoryTypeDropdown> {
 
   bool _attemptedValidation = false;
 
+  Widget _buildHistoryIcon(String historyType, Color color, {double size = 16}) {
+    final imagePath = HistoryTypeUtils.getHistoryImagePath(historyType);
+    if (imagePath != null) {
+      // Make images slightly smaller than icons
+      final imageSize = size * 0.85;
+      return Image.asset(
+        imagePath,
+        width: imageSize,
+        height: imageSize,
+        fit: BoxFit.contain,
+        color: color,
+        colorBlendMode: BlendMode.srcIn,
+        errorBuilder: (context, error, stackTrace) {
+          // Fallback to icon if image fails to load
+          return Icon(HistoryTypeUtils.getHistoryIcon(historyType), color: color, size: size);
+        },
+      );
+    } else {
+      return Icon(HistoryTypeUtils.getHistoryIcon(historyType), color: color, size: size);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Container(
@@ -285,10 +307,12 @@ class HistoryTypeDropdownState extends State<HistoryTypeDropdown> {
                         color: HistoryTypeUtils.getHistoryColor(type).withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(8),
                       ),
-                      child: Icon(
-                        HistoryTypeUtils.getHistoryIcon(type),
-                        size: 16,
-                        color: HistoryTypeUtils.getHistoryColor(type),
+                      child: Center(
+                        child: _buildHistoryIcon(
+                          type,
+                          HistoryTypeUtils.getHistoryColor(type),
+                          size: 16,
+                        ),
                       ),
                     ),
                     const SizedBox(width: 12),
@@ -362,17 +386,23 @@ class HistoryTypeDropdownState extends State<HistoryTypeDropdown> {
                 padding: const EdgeInsets.all(5),
                 child: Container(
                   decoration: BoxDecoration(
-                    color: HistoryTypeUtils.getHistoryColor(widget.selectedHistoryType).withValues(alpha: 0.1),
+                    color: widget.selectedHistoryType == 'Select type of history record'
+                        ? AppColors.textSecondary.withValues(alpha: 0.1)
+                        : HistoryTypeUtils.getHistoryColor(widget.selectedHistoryType).withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(6),
                   ),
-                  child: Icon(
-                    widget.selectedHistoryType == 'Select type of history record'
-                        ? Icons.history
-                        : HistoryTypeUtils.getHistoryIcon(widget.selectedHistoryType),
-                    color: widget.selectedHistoryType == 'Select type of history record'
-                        ? AppColors.textSecondary
-                        : HistoryTypeUtils.getHistoryColor(widget.selectedHistoryType),
-                    size: 16,
+                  child: Center(
+                    child: widget.selectedHistoryType == 'Select type of history record'
+                        ? Icon(
+                            Icons.history,
+                            color: AppColors.textSecondary,
+                            size: 16,
+                          )
+                        : _buildHistoryIcon(
+                            widget.selectedHistoryType,
+                            HistoryTypeUtils.getHistoryColor(widget.selectedHistoryType),
+                            size: 16,
+                          ),
                   ),
                 ),
               ),

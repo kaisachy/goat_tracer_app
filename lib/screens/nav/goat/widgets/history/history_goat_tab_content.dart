@@ -870,7 +870,7 @@ class _HistorygoatTabContentState extends State<HistorygoatTabContent> {
                       borderRadius: BorderRadius.circular(12),
                       border: Border.all(color: eventColor.withValues(alpha: 0.3)),
                     ),
-                    child: Icon(HistoryTypeUtils.getHistoryIcon(eventType), color: eventColor, size: 24),
+                    child: _buildHistoryIcon(eventType, eventColor),
                   ),
                   const SizedBox(width: 16),
                   Expanded(
@@ -980,6 +980,26 @@ class _HistorygoatTabContentState extends State<HistorygoatTabContent> {
         ],
       ),
     );
+  }
+
+  Widget _buildHistoryIcon(String historyType, Color color) {
+    final imagePath = HistoryTypeUtils.getHistoryImagePath(historyType);
+    if (imagePath != null) {
+      return Image.asset(
+        imagePath,
+        width: 18,
+        height: 18,
+        fit: BoxFit.contain,
+        color: color,
+        colorBlendMode: BlendMode.srcIn,
+        errorBuilder: (context, error, stackTrace) {
+          // Fallback to icon if image fails to load
+          return Icon(HistoryTypeUtils.getHistoryIcon(historyType), color: color, size: 24);
+        },
+      );
+    } else {
+      return Icon(HistoryTypeUtils.getHistoryIcon(historyType), color: color, size: 24);
+    }
   }
 
   Widget _buildDetailRow(String label, String value) {

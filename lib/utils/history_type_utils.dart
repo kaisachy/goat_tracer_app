@@ -217,6 +217,32 @@ class HistoryTypeUtils {
     }
   }
 
+  /// Returns the image asset path for history types that use custom images
+  /// Returns null if the history type should use an icon instead
+  static String? getHistoryImagePath(String historyType) {
+    // Normalize the history type: trim whitespace, normalize multiple spaces, and convert to lowercase
+    final normalized = historyType.trim().toLowerCase().replaceAll(RegExp(r'\s+'), ' ');
+    
+    // Handle "pregnant" history type
+    if (normalized == 'pregnant') {
+      return 'assets/images/goat-icons/pregnant_doe.png';
+    }
+    
+    // Handle "gives birth" with various spacing/casing
+    // Check for exact match first, then handle variations
+    if (normalized == 'gives birth') {
+      return 'assets/images/goat-icons/lactating.png';
+    }
+    
+    // Handle case where there's no space (e.g., "GivesBirth" from database)
+    final noSpace = normalized.replaceAll(' ', '');
+    if (noSpace == 'givesbirth') {
+      return 'assets/images/goat-icons/lactating.png';
+    }
+    
+    return null;
+  }
+
   String formatDate(String? dateString) {
     if (dateString == null || dateString.isEmpty) return 'N/A';
     try {
