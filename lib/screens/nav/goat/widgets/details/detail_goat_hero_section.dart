@@ -20,6 +20,7 @@ class GoatHeroSection extends StatefulWidget {
   final Function(Goat) onEditGoat;
   final VoidCallback onAddEvent;
   final VoidCallback? onGoatUpdated;
+  final VoidCallback? onStartUserGuide;
   final bool isUpdatingImage;
   final bool isArchived;
 
@@ -30,6 +31,7 @@ class GoatHeroSection extends StatefulWidget {
     required this.onEditGoat,
     required this.onAddEvent,
     this.onGoatUpdated,
+    this.onStartUserGuide,
     this.isUpdatingImage = false,
     this.isArchived = false,
   });
@@ -251,9 +253,21 @@ class _GoatHeroSectionState extends State<GoatHeroSection> {
         Positioned(
           top: 40,
           left: 20,
-          child: _buildFloatingButton(
-            icon: Icons.arrow_back_ios_new,
-            onTap: () => Navigator.pop(context),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _buildFloatingButton(
+                icon: Icons.arrow_back_ios_new,
+                onTap: () => Navigator.pop(context),
+              ),
+              if (widget.onStartUserGuide != null) ...[
+                const SizedBox(height: 12),
+                _buildFloatingButton(
+                  icon: Icons.help_outline_rounded,
+                  onTap: widget.onStartUserGuide!,
+                ),
+              ],
+            ],
           ),
         ),
         Positioned(

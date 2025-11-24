@@ -8,6 +8,9 @@ import 'package:goat_tracer_app/constants/app_colors.dart';
 import 'package:goat_tracer_app/screens/nav/goat/goat_history_form_screen.dart';
 import 'package:goat_tracer_app/screens/nav/goat/goat_form_screen.dart';
 import 'package:goat_tracer_app/services/goat/goat_service.dart';
+import 'package:goat_tracer_app/services/user_guide_service.dart';
+import 'package:showcaseview/showcaseview.dart';
+import 'dart:async';
 
 class GoatDetailScreen extends StatefulWidget {
   final Goat? goat;
@@ -22,10 +25,10 @@ class GoatDetailScreen extends StatefulWidget {
   }) : assert(goat != null || goatId != null, 'Either goat or goatId must be provided');
 
   @override
-  State<GoatDetailScreen> createState() => _GoatDetailScreenState();
+  State<GoatDetailScreen> createState() => GoatDetailScreenState();
 }
 
-class _GoatDetailScreenState extends State<GoatDetailScreen>
+class GoatDetailScreenState extends State<GoatDetailScreen>
     with TickerProviderStateMixin {
   late TabController _tabController;
   Goat? _currentGoat;
@@ -48,6 +51,17 @@ class _GoatDetailScreenState extends State<GoatDetailScreen>
   // GlobalKey for history tab content to trigger refresh
   final GlobalKey<State<HistorygoatTabContent>> _historyTabKey =
       GlobalKey<State<HistorygoatTabContent>>();
+
+  // User guide keys
+  final GlobalKey _heroSectionKey = GlobalKey();
+  final GlobalKey _tabBarKey = GlobalKey();
+  final GlobalKey _detailsTabKey = GlobalKey();
+  final GlobalKey _historyTabShowcaseKey = GlobalKey();
+  final GlobalKey _fabKey = GlobalKey();
+  
+  // Store the ShowCaseWidget context
+  BuildContext? _showCaseContext;
+  final ScrollController _scrollController = ScrollController();
 
   @override
   void initState() {
@@ -113,7 +127,91 @@ class _GoatDetailScreenState extends State<GoatDetailScreen>
     _fadeController.dispose();
     _slideController.dispose();
     _scaleController.dispose();
+    _scrollController.dispose();
     super.dispose();
+  }
+
+  /// Helper method to scroll to a showcase widget
+  Future<void> _scrollToShowcase(GlobalKey key) async {
+    final context = key.currentContext;
+    if (context != null && _scrollController.hasClients) {
+      try {
+        // Special handling for tab bar - it's sticky/pinned, so don't scroll
+        // The tab bar is always visible at the top, so no scrolling needed
+        if (key == _tabBarKey) {
+          debugPrint('Tab bar showcase - skipping scroll since it\'s sticky');
+          return; // Don't scroll for sticky tab bar
+        } else {
+          await Scrollable.ensureVisible(
+            context,
+            duration: const Duration(milliseconds: 400),
+            curve: Curves.easeInOut,
+            alignment: 0.2, // Show widget at 20% from top to leave room for tooltip
+          );
+        }
+      } catch (e) {
+        debugPrint('Error scrolling to showcase: $e');
+      }
+    }
+  }
+
+  /// Public method to start the user guide (can be called programmatically)
+  void startUserGuide() async {
+    if (_showCaseContext == null) {
+      debugPrint('ShowCase context not available yet');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Please wait a moment and try again.'),
+            duration: Duration(seconds: 2),
+          ),
+        );
+      }
+      return;
+    }
+    
+    // Reset the guide completion status
+    await UserGuideService.resetGuide('goat_detail');
+    debugPrint('User guide reset, starting showcase...');
+    
+    if (mounted && _showCaseContext != null) {
+      try {
+        // Wait for widgets to be fully rendered
+        await Future.delayed(const Duration(milliseconds: 300));
+        
+        // Build showcase list based on current tab
+        final List<GlobalKey> showcaseKeys = [
+          _heroSectionKey,
+          _tabBarKey,
+        ];
+        
+        // Add tab-specific showcases based on current tab
+        if (_tabController.index == 0) {
+          // Details tab is active
+          showcaseKeys.add(_detailsTabKey);
+        } else if (_tabController.index == 1) {
+          // History tab is active
+          showcaseKeys.add(_historyTabShowcaseKey);
+          if (!widget.isArchived) {
+            showcaseKeys.add(_fabKey);
+          }
+        }
+        
+        // Start the showcase - it will auto-scroll to each item
+        ShowCaseWidget.of(_showCaseContext!).startShowCase(showcaseKeys);
+      } catch (e) {
+        debugPrint('Error starting user guide: $e');
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: const Text('Unable to start user guide. Please try again.'),
+              backgroundColor: Colors.orange,
+              duration: const Duration(seconds: 2),
+            ),
+          );
+        }
+      }
+    }
   }
 
   void _navigateToAddEventForm() async {
@@ -477,18 +575,46 @@ class _GoatDetailScreenState extends State<GoatDetailScreen>
       );
     }
 
-    return Scaffold(
-      floatingActionButton: !widget.isArchived && _tabController.index == 1
-          ? FloatingActionButton.extended(
-              onPressed: _navigateToAddEventForm,
-              backgroundColor: AppColors.vibrantGreen,
-              foregroundColor: Colors.white,
-              icon: const Icon(Icons.add_rounded),
-              label: const Text('Add History Record'),
-              elevation: 4,
-            )
-          : null,
-      body: RefreshIndicator(
+    return ShowCaseWidget(
+      enableAutoScroll: true,
+      scrollDuration: const Duration(milliseconds: 300),
+      onFinish: () async {
+        debugPrint('User guide finished, marking as completed...');
+        await UserGuideService.markGuideCompleted('goat_detail');
+        debugPrint('User guide marked as completed');
+      },
+      onStart: (index, key) {
+        // Ensure the widget is scrolled into view
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          _scrollToShowcase(key);
+        });
+      },
+      builder: (showCaseContext) {
+        // Store the ShowCaseWidget context
+        _showCaseContext = showCaseContext;
+        
+        return Scaffold(
+          floatingActionButton: !widget.isArchived && _tabController.index == 1
+              ? Showcase(
+                  key: _fabKey,
+                  title: 'Add History Record',
+                  description: 'Quickly add a new history record for this goat. This button appears when you are on the History tab. Tap it to record events like vaccinations, treatments, or other important activities.',
+                  targetShapeBorder: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  tooltipBackgroundColor: AppColors.vibrantGreen,
+                  textColor: Colors.white,
+                  child: FloatingActionButton.extended(
+                    onPressed: _navigateToAddEventForm,
+                    backgroundColor: AppColors.vibrantGreen,
+                    foregroundColor: Colors.white,
+                    icon: const Icon(Icons.add_rounded),
+                    label: const Text('Add History Record'),
+                    elevation: 4,
+                  ),
+                )
+              : null,
+          body: RefreshIndicator(
         key: _refreshIndicatorKey,
         onRefresh: _onPullToRefresh,
         color: AppColors.vibrantGreen,
@@ -508,18 +634,30 @@ class _GoatDetailScreenState extends State<GoatDetailScreen>
             ),
           ),
           child: CustomScrollView(
+            controller: _scrollController,
             physics: const BouncingScrollPhysics(),
             slivers: [
               // Hero Section as a Sliver
               SliverToBoxAdapter(
-                child: GoatHeroSection(
-                  goat: _currentGoat!,
-                  onImageUpdate: _updategoatImage,
-                  onEditGoat: _navigateToEditGoat,
-                  onAddEvent: _navigateToAddEventForm,
-                  onGoatUpdated: _onGoatUpdated,
-                  isUpdatingImage: _isUpdatingImage,
-                  isArchived: widget.isArchived,
+                child: Showcase(
+                  key: _heroSectionKey,
+                  title: 'Goat Information',
+                  description: 'View comprehensive goat details including photo, tag number, classification, status, breed, weight, and other important information. Tap the edit button to modify goat details or the camera icon to update the photo.',
+                  targetShapeBorder: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  tooltipBackgroundColor: AppColors.primary,
+                  textColor: Colors.white,
+                  child: GoatHeroSection(
+                    goat: _currentGoat!,
+                    onImageUpdate: _updategoatImage,
+                    onEditGoat: _navigateToEditGoat,
+                    onAddEvent: _navigateToAddEventForm,
+                    onGoatUpdated: _onGoatUpdated,
+                    onStartUserGuide: startUserGuide,
+                    isUpdatingImage: _isUpdatingImage,
+                    isArchived: widget.isArchived,
+                  ),
                 ),
               ),
 
@@ -555,11 +693,32 @@ class _GoatDetailScreenState extends State<GoatDetailScreen>
                       opacity: _fadeAnimation,
                       child: SlideTransition(
                         position: _slideAnimation,
-                        child: GoatDetailTabs(
-                          controller: _tabController,
-                          fadeAnimation: _fadeAnimation,
-                          slideAnimation: _slideAnimation,
-                          onGoatUpdated: _onGoatUpdated,
+                        child: Builder(
+                          builder: (context) {
+                            final tabsWidget = GoatDetailTabs(
+                              controller: _tabController,
+                              fadeAnimation: _fadeAnimation,
+                              slideAnimation: _slideAnimation,
+                              onGoatUpdated: _onGoatUpdated,
+                            );
+                            return GoatDetailTabs(
+                              controller: _tabController,
+                              fadeAnimation: _fadeAnimation,
+                              slideAnimation: _slideAnimation,
+                              onGoatUpdated: _onGoatUpdated,
+                              tabBarWrapper: Showcase(
+                                key: _tabBarKey,
+                                title: 'Navigation Tabs',
+                                description: 'Switch between "Details" to view comprehensive goat information and "History" to see all recorded events and activities. Use these tabs to navigate between different views of the goat data.',
+                                targetShapeBorder: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                tooltipBackgroundColor: AppColors.primary,
+                                textColor: Colors.white,
+                                child: tabsWidget.buildTabBar(),
+                              ),
+                            );
+                          },
                         ),
                       ),
                     ),
@@ -574,22 +733,42 @@ class _GoatDetailScreenState extends State<GoatDetailScreen>
                   physics: const BouncingScrollPhysics(),
                   children: [
                     // Details Tab content
-                    ScaleTransition(
-                      scale: _scaleAnimation,
-                      child: GoatDetailsTabContent(
-                        goat: _currentGoat!,
-                        fadeAnimation: _fadeAnimation,
-                        slideAnimation: _slideAnimation,
+                    Showcase(
+                      key: _detailsTabKey,
+                      title: 'Goat Details',
+                      description: 'View detailed information about this goat including personal information, physical characteristics, breeding details, health records, and other relevant data. All information can be edited by tapping the edit button in the hero section.',
+                      targetShapeBorder: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                      tooltipBackgroundColor: AppColors.primary,
+                      textColor: Colors.white,
+                      child: ScaleTransition(
+                        scale: _scaleAnimation,
+                        child: GoatDetailsTabContent(
+                          goat: _currentGoat!,
+                          fadeAnimation: _fadeAnimation,
+                          slideAnimation: _slideAnimation,
+                        ),
                       ),
                     ),
 
                     // History Tab content
-                    ScaleTransition(
-                      scale: _scaleAnimation,
-                      child: HistorygoatTabContent(
-                        key: _historyTabKey,
-                        goat: _currentGoat!,
-                        onAddEvent: _navigateToAddEventForm,
+                    Showcase(
+                      key: _historyTabShowcaseKey,
+                      title: 'Goat History',
+                      description: 'View all recorded events and activities for this goat including vaccinations, treatments, breeding records, weight changes, and other important history. Pull down to refresh or use the floating action button to add a new history record.',
+                      targetShapeBorder: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                      tooltipBackgroundColor: AppColors.primary,
+                      textColor: Colors.white,
+                      child: ScaleTransition(
+                        scale: _scaleAnimation,
+                        child: HistorygoatTabContent(
+                          key: _historyTabKey,
+                          goat: _currentGoat!,
+                          onAddEvent: _navigateToAddEventForm,
+                        ),
                       ),
                     ),
                   ],
@@ -599,6 +778,8 @@ class _GoatDetailScreenState extends State<GoatDetailScreen>
           ),
         ),
       ),
+        );
+      },
     );
   }
 }

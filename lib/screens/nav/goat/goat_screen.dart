@@ -12,18 +12,21 @@ import 'package:goat_tracer_app/screens/nav/goat/modals/options/change_status_op
 import 'package:goat_tracer_app/screens/nav/goat/modals/options/archive_option.dart';
 import 'package:goat_tracer_app/screens/nav/goat/modals/options/delete_option.dart';
 import 'package:goat_tracer_app/constants/app_colors.dart';
+import 'package:goat_tracer_app/services/user_guide_service.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import 'package:showcaseview/showcaseview.dart';
+import 'dart:async';
 
 
 class GoatScreen extends StatefulWidget {
   const GoatScreen({super.key});
 
   @override
-  State<GoatScreen> createState() => _GoatScreenState();
+  State<GoatScreen> createState() => GoatScreenState();
 }
 
-// ✨ MODIFIED: Added the WidgetsBindingObserver mixin
-class _GoatScreenState extends State<GoatScreen>
+// ✨ MODIFIED: Added the WidgetsBindingObserver mixin and made state public
+class GoatScreenState extends State<GoatScreen>
     with TickerProviderStateMixin, WidgetsBindingObserver {
   List<Goat> _goatList = [];
   List<Goat> _filteredGoatList = [];
@@ -40,6 +43,19 @@ class _GoatScreenState extends State<GoatScreen>
   
   // FAB menu state
   AnimationController? _fabAnimationController;
+
+  // User guide keys
+  final GlobalKey _tabBarKey = GlobalKey();
+  final GlobalKey _addGoatGridKey = GlobalKey();
+  final GlobalKey _searchFilterKey = GlobalKey();
+  final GlobalKey _reportTypeKey = GlobalKey();
+  final GlobalKey _exportButtonsKey = GlobalKey();
+  final GlobalKey _goatListKey = GlobalKey();
+  final GlobalKey _goatCardOptionsKey = GlobalKey();
+  
+  // Store the ShowCaseWidget context
+  BuildContext? _showCaseContext;
+  final ScrollController _scrollController = ScrollController();
 
   @override
   void initState() {
@@ -65,6 +81,20 @@ class _GoatScreenState extends State<GoatScreen>
   }
 
   Widget _buildAddgoatGrid() {
+    return Showcase(
+      key: _addGoatGridKey,
+      title: 'Add Goat',
+      description: 'Select a goat type to add a new goat record. Choose from Buck, Doe, Buckling, Doeling, Growers, or Kid. Each type has specific classifications and can be male or female.',
+      targetShapeBorder: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+      ),
+      tooltipBackgroundColor: AppColors.primary,
+      textColor: Colors.white,
+      child: _buildAddGoatGridContent(),
+    );
+  }
+
+  Widget _buildAddGoatGridContent() {
     final List<Map<String, dynamic>> items = [
       {
         'label': 'Buck',
@@ -207,11 +237,78 @@ class _GoatScreenState extends State<GoatScreen>
   void dispose() {
     _animationController.dispose();
     _fabAnimationController?.dispose();
+    _scrollController.dispose();
 
     // ✨ ADDED: Remove the observer to prevent memory leaks
     WidgetsBinding.instance.removeObserver(this);
 
     super.dispose();
+  }
+
+  /// Helper method to scroll to a showcase widget
+  Future<void> _scrollToShowcase(GlobalKey key) async {
+    final context = key.currentContext;
+    if (context != null && _scrollController.hasClients) {
+      try {
+        await Scrollable.ensureVisible(
+          context,
+          duration: const Duration(milliseconds: 400),
+          curve: Curves.easeInOut,
+          alignment: 0.2, // Show widget at 20% from top to leave room for tooltip
+        );
+      } catch (e) {
+        debugPrint('Error scrolling to showcase: $e');
+      }
+    }
+  }
+
+  /// Public method to start the user guide (called from home screen)
+  void startUserGuide() async {
+    if (_showCaseContext == null) {
+      debugPrint('ShowCase context not available yet');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Please wait a moment and try again.'),
+            duration: Duration(seconds: 2),
+          ),
+        );
+      }
+      return;
+    }
+    
+    // Reset the guide completion status
+    await UserGuideService.resetGuide('goat');
+    debugPrint('User guide reset, starting showcase...');
+    
+    if (mounted && _showCaseContext != null) {
+      try {
+        // Wait for widgets to be fully rendered
+        await Future.delayed(const Duration(milliseconds: 300));
+        
+        // Start the showcase - it will auto-scroll to each item
+        ShowCaseWidget.of(_showCaseContext!).startShowCase([
+          _tabBarKey,
+          _addGoatGridKey,
+          _searchFilterKey,
+          _reportTypeKey,
+          _exportButtonsKey,
+          _goatListKey,
+          _goatCardOptionsKey,
+        ]);
+      } catch (e) {
+        debugPrint('Error starting user guide: $e');
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: const Text('Unable to start user guide. Please try again.'),
+              backgroundColor: Colors.orange,
+              duration: const Duration(seconds: 2),
+            ),
+          );
+        }
+      }
+    }
   }
 
   // ✨ ADDED: Override this method to listen for app lifecycle changes
@@ -416,8 +513,8 @@ class _GoatScreenState extends State<GoatScreen>
 
 
 
-  Widget _buildGoatOptionsMenu(Goat goat) {
-    return PopupMenuButton<String>(
+  Widget _buildGoatOptionsMenu(Goat goat, {bool isFirstCard = false}) {
+    final menuButton = PopupMenuButton<String>(
       icon: Icon(
         Icons.more_vert,
         color: AppColors.textSecondary.withValues(alpha: 0.8),
@@ -720,6 +817,23 @@ class _GoatScreenState extends State<GoatScreen>
         }
       },
     );
+
+    // Wrap the first card's menu button with showcase
+    if (isFirstCard) {
+      return Showcase(
+        key: _goatCardOptionsKey,
+        title: 'Goat Options Menu',
+        description: 'Access various actions for each goat: Edit details, add history records, change stage/status, export reports (Excel/PDF), archive, or delete. Tap the three-dot menu on any goat card.',
+        targetShapeBorder: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(8),
+        ),
+        tooltipBackgroundColor: AppColors.primary,
+        textColor: Colors.white,
+        child: menuButton,
+      );
+    }
+    
+    return menuButton;
   }
 
   Widget _buildGoatCard(Goat goat, int index) {
@@ -884,7 +998,7 @@ class _GoatScreenState extends State<GoatScreen>
                           ),
                         ),
                         // Replace the edit/delete buttons with options menu
-                        _buildGoatOptionsMenu(goat),
+                        _buildGoatOptionsMenu(goat, isFirstCard: index == 0),
                       ],
                     ),
                     const SizedBox(height: 12),
@@ -969,183 +1083,258 @@ class _GoatScreenState extends State<GoatScreen>
 
   @override
   Widget build(BuildContext context) {
-    return DefaultTabController(
-      length: 2,
-      child: Scaffold(
-      backgroundColor: AppColors.pageBackground.withValues(alpha: 0.1),
-        body: Column(
-          children: [
-            Container(
-              color: Colors.white,
-              child: const TabBar(
-                indicatorColor: AppColors.primary,
-                labelColor: AppColors.primary,
-                unselectedLabelColor: AppColors.textSecondary,
-                tabs: [
-                  Tab(text: 'Add Goat'),
-                  Tab(text: 'Goat List'),
-                ],
-              ),
-            ),
-            Expanded(
-        child: _isLoading
-          ? Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            CircularProgressIndicator(
-              valueColor: AlwaysStoppedAnimation<Color>(AppColors.primary),
-            ),
-            const SizedBox(height: 16),
-            Text(
-              'Loading goat data...',
-              style: TextStyle(
-                color: AppColors.textSecondary,
-                fontSize: 16,
-              ),
-            ),
-          ],
-        ),
-      )
-                  : TabBarView(
-                      children: [
-                        // Tab 1: Add Goat (classification grid)
-                        _buildAddgoatGrid(),
-                        // Tab 2: goat List
-                        Column(
-        children: [
-          if (_goatList.isNotEmpty) ...[
-            GoatSearchFilterWidget(
-              onSearchChanged: _handleSearchChanged,
-              onFiltersChanged: _handleFiltersChanged,
-              initialSex: _selectedSex,
-              initialClassification: _selectedClassification,
-              initialStatus: _selectedStatus,
-              initialBreed: _selectedBreed,
-              initialGroupName: _selectedGroupName,
-              breedOptions: _getUniqueBreedOptions(),
-              groupNameOptions: _getUniqueGroupNameOptions(),
-              onArchivePressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => const ArchivedgoatScreen(),
+    return ShowCaseWidget(
+      enableAutoScroll: true,
+      scrollDuration: const Duration(milliseconds: 300),
+      onFinish: () async {
+        debugPrint('User guide finished, marking as completed...');
+        await UserGuideService.markGuideCompleted('goat');
+        debugPrint('User guide marked as completed');
+      },
+      onStart: (index, key) {
+        // Ensure the widget is scrolled into view
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          _scrollToShowcase(key);
+        });
+      },
+      builder: (showCaseContext) {
+        // Store the ShowCaseWidget context
+        _showCaseContext = showCaseContext;
+        
+        return DefaultTabController(
+          length: 2,
+          child: Scaffold(
+            backgroundColor: AppColors.pageBackground.withValues(alpha: 0.1),
+            body: Column(
+              children: [
+                Showcase(
+                  key: _tabBarKey,
+                  title: 'Navigation Tabs',
+                  description: 'Switch between "Add Goat" to create new records and "Goat List" to view and manage existing goats. Use these tabs to navigate between different views.',
+                  targetShapeBorder: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(0),
                   ),
-                );
-              },
-            ),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 4, 16, 0),
-              child: Row(
-                children: [
-                  // Report type selector
-                  ConstrainedBox(
-                    constraints: const BoxConstraints(maxWidth: 215),
-                    child: DropdownButtonFormField<String>(
-                      value: _selectedReportType,
-                      items: const [
-                        DropdownMenuItem(value: 'All', child: Text('All')),
-                        DropdownMenuItem(value: 'Buck', child: Text('Buck')),
-                        DropdownMenuItem(value: 'Doe', child: Text('Doe')),
-                        DropdownMenuItem(value: 'Buckling', child: Text('Buckling')),
-                        DropdownMenuItem(value: 'Doeling', child: Text('Doeling')),
-                        DropdownMenuItem(value: 'Growers (Male)', child: Text('Growers (Male)')),
-                        DropdownMenuItem(value: 'Growers (Female)', child: Text('Growers (Female)')),
-                        DropdownMenuItem(value: 'Kid (Male)', child: Text('Kid (Male)')),
-                        DropdownMenuItem(value: 'Kid (Female)', child: Text('Kid (Female)')),
-                        DropdownMenuItem(value: 'Breeding', child: Text('Breeding')),
-                        DropdownMenuItem(value: 'Pregnant', child: Text('Pregnant')),
-                        DropdownMenuItem(value: 'Sick', child: Text('Sick')),
+                  tooltipBackgroundColor: AppColors.primary,
+                  textColor: Colors.white,
+                  child: Container(
+                    color: Colors.white,
+                    child: const TabBar(
+                      indicatorColor: AppColors.primary,
+                      labelColor: AppColors.primary,
+                      unselectedLabelColor: AppColors.textSecondary,
+                      tabs: [
+                        Tab(text: 'Add Goat'),
+                        Tab(text: 'Goat List'),
                       ],
-                      onChanged: (v) {
-                        setState(() { _selectedReportType = v ?? 'All'; });
-                      },
-                      decoration: const InputDecoration(
-                        labelText: 'Report type',
-                        border: OutlineInputBorder(),
-                        isDense: true,
-                        contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                      ),
                     ),
                   ),
-                  const SizedBox(width: 8),
-                  Container(
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF107C41),
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    child: IconButton(
-                      tooltip: 'Export Excel',
-                      icon: const FaIcon(FontAwesomeIcons.fileExcel, color: Colors.white, size: 20),
-                      onPressed: () async {
-                        final messenger = ScaffoldMessenger.of(context);
-                        messenger.hideCurrentSnackBar();
-                        final rt = _mapReportTypeToParam(_selectedReportType);
-                        final ok = await GoatExportService.downloadgoatListExcel(reportType: rt);
-                        if (!mounted) return;
-                        messenger.showSnackBar(
-                          SnackBar(
-                            content: Text(ok ? 'Excel report ready! Choose where to open/save.' : 'Failed to download Excel report.'),
-                            backgroundColor: ok ? Colors.green.shade600 : Colors.red.shade700,
-                            behavior: SnackBarBehavior.floating,
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                ),
+                Expanded(
+                  child: _isLoading
+                      ? Center(
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              CircularProgressIndicator(
+                                valueColor: AlwaysStoppedAnimation<Color>(AppColors.primary),
+                              ),
+                              const SizedBox(height: 16),
+                              Text(
+                                'Loading goat data...',
+                                style: TextStyle(
+                                  color: AppColors.textSecondary,
+                                  fontSize: 16,
+                                ),
+                              ),
+                            ],
                           ),
-                        );
-                      },
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  Container(
-                    decoration: BoxDecoration(
-                      color: Colors.red.shade600,
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    child: IconButton(
-                      tooltip: 'Export PDF',
-                      icon: const Icon(Icons.picture_as_pdf_rounded, color: Colors.white, size: 20),
-                      onPressed: () async {
-                        final messenger = ScaffoldMessenger.of(context);
-                        messenger.hideCurrentSnackBar();
-                        final rt = _mapReportTypeToParam(_selectedReportType);
-                        final ok = await GoatExportService.downloadgoatListPdf(reportType: rt);
-                        if (!mounted) return;
-                        messenger.showSnackBar(
-                          SnackBar(
-                            content: Text(ok ? 'PDF report ready! Choose where to open/save.' : 'Failed to generate PDF report.'),
-                            backgroundColor: ok ? Colors.green.shade600 : Colors.red.shade700,
-                            behavior: SnackBarBehavior.floating,
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                          ),
-                        );
-                      },
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-          Expanded(
-            child: _filteredGoatList.isEmpty
-                ? _buildEmptyState()
-                : RefreshIndicator(
-              onRefresh: _fetchGoat,
-              color: AppColors.primary,
-              child: ListView.builder(
-                                        padding: const EdgeInsets.only(bottom: 16),
-                itemCount: _filteredGoatList.length,
-                itemBuilder: (context, index) =>
-                    _buildGoatCard(_filteredGoatList[index], index),
-              ),
+                        )
+                      : TabBarView(
+                          children: [
+                            // Tab 1: Add Goat (classification grid)
+                            _buildAddgoatGrid(),
+                            // Tab 2: Goat List
+                            Column(
+                              children: [
+                                if (_goatList.isNotEmpty) ...[
+                                  Showcase(
+                                    key: _searchFilterKey,
+                                    title: 'Search & Filter',
+                                    description: 'Use the search bar to find goats by tag number. Apply filters by sex, classification, status, breed, or group name to narrow down your goat list. Access archived goats from here.',
+                                    targetShapeBorder: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                    tooltipBackgroundColor: AppColors.primary,
+                                    textColor: Colors.white,
+                                    child: GoatSearchFilterWidget(
+                                      onSearchChanged: _handleSearchChanged,
+                                      onFiltersChanged: _handleFiltersChanged,
+                                      initialSex: _selectedSex,
+                                      initialClassification: _selectedClassification,
+                                      initialStatus: _selectedStatus,
+                                      initialBreed: _selectedBreed,
+                                      initialGroupName: _selectedGroupName,
+                                      breedOptions: _getUniqueBreedOptions(),
+                                      groupNameOptions: _getUniqueGroupNameOptions(),
+                                      onArchivePressed: () {
+                                        Navigator.push(
+                                          context,
+                                          MaterialPageRoute(
+                                            builder: (context) => const ArchivedgoatScreen(),
+                                          ),
+                                        );
+                                      },
+                                    ),
+                                  ),
+                                  Padding(
+                                    padding: const EdgeInsets.fromLTRB(16, 4, 16, 0),
+                                    child: Row(
+                                      children: [
+                                        // Report type selector
+                                        Showcase(
+                                          key: _reportTypeKey,
+                                          title: 'Report Type Filter',
+                                          description: 'Select a specific goat type or status to filter reports. Choose from classifications like Buck, Doe, Buckling, Doeling, Growers, Kid, or statuses like Breeding, Pregnant, or Sick.',
+                                          targetShapeBorder: RoundedRectangleBorder(
+                                            borderRadius: BorderRadius.circular(4),
+                                          ),
+                                          tooltipBackgroundColor: AppColors.primary,
+                                          textColor: Colors.white,
+                                          child: ConstrainedBox(
+                                            constraints: const BoxConstraints(maxWidth: 215),
+                                            child: DropdownButtonFormField<String>(
+                                              value: _selectedReportType,
+                                              items: const [
+                                                DropdownMenuItem(value: 'All', child: Text('All')),
+                                                DropdownMenuItem(value: 'Buck', child: Text('Buck')),
+                                                DropdownMenuItem(value: 'Doe', child: Text('Doe')),
+                                                DropdownMenuItem(value: 'Buckling', child: Text('Buckling')),
+                                                DropdownMenuItem(value: 'Doeling', child: Text('Doeling')),
+                                                DropdownMenuItem(value: 'Growers (Male)', child: Text('Growers (Male)')),
+                                                DropdownMenuItem(value: 'Growers (Female)', child: Text('Growers (Female)')),
+                                                DropdownMenuItem(value: 'Kid (Male)', child: Text('Kid (Male)')),
+                                                DropdownMenuItem(value: 'Kid (Female)', child: Text('Kid (Female)')),
+                                                DropdownMenuItem(value: 'Breeding', child: Text('Breeding')),
+                                                DropdownMenuItem(value: 'Pregnant', child: Text('Pregnant')),
+                                                DropdownMenuItem(value: 'Sick', child: Text('Sick')),
+                                              ],
+                                              onChanged: (v) {
+                                                setState(() { _selectedReportType = v ?? 'All'; });
+                                              },
+                                              decoration: const InputDecoration(
+                                                labelText: 'Report type',
+                                                border: OutlineInputBorder(),
+                                                isDense: true,
+                                                contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                                              ),
+                                            ),
+                                          ),
+                                        ),
+                                        const SizedBox(width: 8),
+                                        Showcase(
+                                          key: _exportButtonsKey,
+                                          title: 'Export Options',
+                                          description: 'Export your goat list as Excel or PDF reports. The Excel button (green) downloads data in spreadsheet format, while the PDF button (red) generates a formatted document. Reports respect the selected report type filter.',
+                                          targetShapeBorder: RoundedRectangleBorder(
+                                            borderRadius: BorderRadius.circular(10),
+                                          ),
+                                          tooltipBackgroundColor: AppColors.primary,
+                                          textColor: Colors.white,
+                                          child: Row(
+                                            children: [
+                                              Container(
+                                                decoration: BoxDecoration(
+                                                  color: const Color(0xFF107C41),
+                                                  borderRadius: BorderRadius.circular(10),
+                                                ),
+                                                child: IconButton(
+                                                  tooltip: 'Export Excel',
+                                                  icon: const FaIcon(FontAwesomeIcons.fileExcel, color: Colors.white, size: 20),
+                                                  onPressed: () async {
+                                                    final messenger = ScaffoldMessenger.of(context);
+                                                    messenger.hideCurrentSnackBar();
+                                                    final rt = _mapReportTypeToParam(_selectedReportType);
+                                                    final ok = await GoatExportService.downloadgoatListExcel(reportType: rt);
+                                                    if (!mounted) return;
+                                                    messenger.showSnackBar(
+                                                      SnackBar(
+                                                        content: Text(ok ? 'Excel report ready! Choose where to open/save.' : 'Failed to download Excel report.'),
+                                                        backgroundColor: ok ? Colors.green.shade600 : Colors.red.shade700,
+                                                        behavior: SnackBarBehavior.floating,
+                                                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                                      ),
+                                                    );
+                                                  },
+                                                ),
+                                              ),
+                                              const SizedBox(width: 8),
+                                              Container(
+                                                decoration: BoxDecoration(
+                                                  color: Colors.red.shade600,
+                                                  borderRadius: BorderRadius.circular(10),
+                                                ),
+                                                child: IconButton(
+                                                  tooltip: 'Export PDF',
+                                                  icon: const Icon(Icons.picture_as_pdf_rounded, color: Colors.white, size: 20),
+                                                  onPressed: () async {
+                                                    final messenger = ScaffoldMessenger.of(context);
+                                                    messenger.hideCurrentSnackBar();
+                                                    final rt = _mapReportTypeToParam(_selectedReportType);
+                                                    final ok = await GoatExportService.downloadgoatListPdf(reportType: rt);
+                                                    if (!mounted) return;
+                                                    messenger.showSnackBar(
+                                                      SnackBar(
+                                                        content: Text(ok ? 'PDF report ready! Choose where to open/save.' : 'Failed to generate PDF report.'),
+                                                        backgroundColor: ok ? Colors.green.shade600 : Colors.red.shade700,
+                                                        behavior: SnackBarBehavior.floating,
+                                                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                                      ),
+                                                    );
+                                                  },
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ],
+                                Expanded(
+                                  child: Showcase(
+                                    key: _goatListKey,
+                                    title: 'Goat List',
+                                    description: 'View all your goat records in a scrollable list. Each card shows the goat tag number, classification, sex, status, breed, and weight. Tap any card to view detailed information. Pull down to refresh the list.',
+                                    targetShapeBorder: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(16),
+                                    ),
+                                    tooltipBackgroundColor: AppColors.primary,
+                                    textColor: Colors.white,
+                                    child: _filteredGoatList.isEmpty
+                                        ? _buildEmptyState()
+                                        : RefreshIndicator(
+                                            onRefresh: _fetchGoat,
+                                            color: AppColors.primary,
+                                            child: ListView.builder(
+                                              controller: _scrollController,
+                                              padding: const EdgeInsets.only(bottom: 16),
+                                              itemCount: _filteredGoatList.length,
+                                              itemBuilder: (context, index) =>
+                                                  _buildGoatCard(_filteredGoatList[index], index),
+                                            ),
+                                          ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                ),
+              ],
             ),
           ),
-        ],
-      ),
-                    ],
-                  ),
-                    ),
-                  ],
-            ),
-          ),
+        );
+      },
     );
   }
 }

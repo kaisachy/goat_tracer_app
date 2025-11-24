@@ -2,26 +2,73 @@
 import 'package:goat_tracer_app/constants/app_colors.dart';
 import 'package:goat_tracer_app/models/schedule.dart';
 import 'package:goat_tracer_app/services/scheduler/scheduler_service.dart';
+import 'package:goat_tracer_app/services/user_guide_service.dart';
+import 'package:showcaseview/showcaseview.dart';
 import 'widgets/web_scheduler_widget.dart';
 
 class FarmerSchedulerContentWidget extends StatefulWidget {
   const FarmerSchedulerContentWidget({super.key});
 
   @override
-  State<FarmerSchedulerContentWidget> createState() => _FarmerSchedulerContentWidgetState();
+  FarmerSchedulerContentWidgetState createState() =>
+      FarmerSchedulerContentWidgetState();
 }
 
-class _FarmerSchedulerContentWidgetState extends State<FarmerSchedulerContentWidget> {
+class FarmerSchedulerContentWidgetState
+    extends State<FarmerSchedulerContentWidget> {
   List<Schedule> _schedules = [];
   bool _isLoading = true;
   DateTime _selectedDate = DateTime.now();
   String _currentView = 'week'; // Default to week view like web version
+
+  final GlobalKey _navControlsKey = GlobalKey();
+  final GlobalKey _viewToggleKey = GlobalKey();
+  final GlobalKey _calendarKey = GlobalKey();
+  BuildContext? _showCaseContext;
 
   @override
   void initState() {
     super.initState();
     // Always show calendar first, then load events
     _loadSchedules();
+  }
+
+  void startUserGuide() async {
+    if (_showCaseContext == null) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Please wait a moment and try again.'),
+            duration: Duration(seconds: 2),
+          ),
+        );
+      }
+      return;
+    }
+
+    await UserGuideService.resetGuide('farmer_scheduler');
+
+    if (mounted) {
+      try {
+        await Future.delayed(const Duration(milliseconds: 200));
+        ShowCaseWidget.of(_showCaseContext!).startShowCase([
+          _navControlsKey,
+          _viewToggleKey,
+          _calendarKey,
+        ]);
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content:
+                  const Text('Unable to start user guide. Please try again.'),
+              backgroundColor: Colors.orange,
+              duration: const Duration(seconds: 2),
+            ),
+          );
+        }
+      }
+    }
   }
 
   Future<void> _loadSchedules() async {
@@ -477,93 +524,136 @@ class _FarmerSchedulerContentWidgetState extends State<FarmerSchedulerContentWid
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.1),
-            spreadRadius: 1,
-            blurRadius: 3,
-            offset: const Offset(0, 1),
-          ),
-        ],
-      ),
-      child: Column(
-        children: [
-          // Controls
-          Container(
-            padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
-            decoration: const BoxDecoration(
-              color: Color(0xFFF9FAFB),
-              border: Border(
-                bottom: BorderSide(color: Color(0xFFE5E7EB), width: 1),
+    return ShowCaseWidget(
+      enableAutoScroll: true,
+      scrollDuration: const Duration(milliseconds: 300),
+      onFinish: () async {
+        await UserGuideService.markGuideCompleted('farmer_scheduler');
+      },
+      builder: (showCaseContext) {
+        _showCaseContext = showCaseContext;
+
+        return Container(
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(12),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.1),
+                spreadRadius: 1,
+                blurRadius: 3,
+                offset: const Offset(0, 1),
               ),
-            ),
-            child: Column(
-              children: [
-                // Navigation controls with date label inline
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            ],
+          ),
+          child: Column(
+            children: [
+              // Controls
+              Container(
+                padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
+                decoration: const BoxDecoration(
+                  color: Color(0xFFF9FAFB),
+                  border: Border(
+                    bottom: BorderSide(color: Color(0xFFE5E7EB), width: 1),
+                  ),
+                ),
+                child: Column(
                   children: [
-                    Row(
-                      children: [
-                        _buildNavButton(Icons.chevron_left, () => _navigate(-1)),
-                        const SizedBox(width: 8),
-                        _buildNavButton(Icons.chevron_right, () => _navigate(1)),
-                        const SizedBox(width: 8),
-                        _buildTodayButton(),
-                      ],
-                    ),
-                    // Date label inline with navigation
-                    Expanded(
-                      child: Center(
-                        child: Text(
-                          _getCurrentWeekText(),
-                          style: const TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w600,
+                    Showcase(
+                      key: _navControlsKey,
+                      title: 'Navigate Schedule',
+                      description:
+                          'Use these arrows and the Today button to jump between dates.',
+                      targetShapeBorder: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      tooltipBackgroundColor: AppColors.primary,
+                      textColor: Colors.white,
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Row(
+                            children: [
+                              _buildNavButton(
+                                  Icons.chevron_left, () => _navigate(-1)),
+                              const SizedBox(width: 8),
+                              _buildNavButton(
+                                  Icons.chevron_right, () => _navigate(1)),
+                              const SizedBox(width: 8),
+                              _buildTodayButton(),
+                            ],
                           ),
-                          textAlign: TextAlign.center,
-                        ),
+                          Expanded(
+                            child: Center(
+                              child: Text(
+                                _getCurrentWeekText(),
+                                style: const TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                                textAlign: TextAlign.center,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    Showcase(
+                      key: _viewToggleKey,
+                      title: 'View Modes',
+                      description:
+                          'Switch between Day, Week, or Month view to see events the way you prefer.',
+                      targetShapeBorder: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      tooltipBackgroundColor: AppColors.primary,
+                      textColor: Colors.white,
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.start,
+                        children: [
+                          _buildViewToggle('day', 'Day'),
+                          const SizedBox(width: 8),
+                          _buildViewToggle('week', 'Week'),
+                          const SizedBox(width: 8),
+                          _buildViewToggle('month', 'Month'),
+                        ],
                       ),
                     ),
                   ],
                 ),
-                const SizedBox(height: 12),
-                // View toggles below navigation
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.start,
-                  children: [
-                    _buildViewToggle('day', 'Day'),
-                    const SizedBox(width: 8),
-                    _buildViewToggle('week', 'Week'),
-                    const SizedBox(width: 8),
-                    _buildViewToggle('month', 'Month'),
-                  ],
-                ),
-              ],
-            ),
-          ),
-          // Calendar content - always show calendar like web version
-          Expanded(
-            child: _isLoading
-                ? const Center(child: CircularProgressIndicator())
-                : RefreshIndicator(
-                    onRefresh: _loadSchedules,
-                    child: WebSchedulerWidget(
-                      schedules: _schedules,
-                      selectedDate: _selectedDate,
-                      currentView: _currentView,
-                      onDateSelected: _onDateSelected,
-                      onScheduleTapped: _onScheduleTapped,
-                      isMobile: MediaQuery.of(context).size.width < 600,
-                    ),
+              ),
+              // Calendar content - always show calendar like web version
+              Expanded(
+                child: Showcase(
+                  key: _calendarKey,
+                  title: 'Schedule Board',
+                  description:
+                      'This calendar shows all scheduled tasks. Tap entries to see full details.',
+                  targetShapeBorder: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
                   ),
+                  tooltipBackgroundColor: AppColors.primary,
+                  textColor: Colors.white,
+                  child: _isLoading
+                      ? const Center(child: CircularProgressIndicator())
+                      : RefreshIndicator(
+                          onRefresh: _loadSchedules,
+                          child: WebSchedulerWidget(
+                            schedules: _schedules,
+                            selectedDate: _selectedDate,
+                            currentView: _currentView,
+                            onDateSelected: _onDateSelected,
+                            onScheduleTapped: _onScheduleTapped,
+                            isMobile: MediaQuery.of(context).size.width < 600,
+                          ),
+                        ),
+                ),
+              ),
+            ],
           ),
-        ],
-      ),
+        );
+      },
     );
   }
 

@@ -1,5 +1,6 @@
 ﻿import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:showcaseview/showcaseview.dart';
 // import 'package:shared_preferences/shared_preferences.dart';
 // import 'dart:convert';
 import 'dart:math';
@@ -7,6 +8,7 @@ import '../../../constants/app_colors.dart';
 import '../../../models/goat.dart';
 import '../../../services/goat/goat_service.dart';
 import '../../../services/auth_service.dart';
+import '../../../services/user_guide_service.dart';
 import '../../../utils/goat_age_classification.dart';
 
 class GoatFormScreen extends StatefulWidget {
@@ -34,6 +36,13 @@ class _GoatFormScreenState extends State<GoatFormScreen> {
   // final _notesController = TextEditingController(); // Commented out: Notes field removed
 
   bool get _isEditing => widget.goat != null;
+
+  final ScrollController _scrollController = ScrollController();
+  final GlobalKey _basicInfoKey = GlobalKey();
+  final GlobalKey _sourceKey = GlobalKey();
+  final GlobalKey _parentalKey = GlobalKey();
+  final GlobalKey _submitKey = GlobalKey();
+  BuildContext? _showCaseContext;
 
 
   // State variables for dates and dropdowns
@@ -1260,6 +1269,43 @@ class _GoatFormScreenState extends State<GoatFormScreen> {
     );
   }
 
+  Future<void> startUserGuide() async {
+    if (_showCaseContext == null) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Please wait for the form to finish loading, then try again.'),
+            duration: Duration(seconds: 2),
+          ),
+        );
+      }
+      return;
+    }
+
+    FocusScope.of(context).unfocus();
+    await UserGuideService.resetGuide('goat_form');
+    await Future.delayed(const Duration(milliseconds: 300));
+    ShowCaseWidget.of(_showCaseContext!).startShowCase(_buildShowcaseSteps());
+  }
+
+  List<GlobalKey> _buildShowcaseSteps() => [
+        _basicInfoKey,
+        _sourceKey,
+        _parentalKey,
+        _submitKey,
+      ];
+
+  Future<void> _scrollToKey(GlobalKey key) async {
+    final context = key.currentContext;
+    if (context == null) return;
+    await Scrollable.ensureVisible(
+      context,
+      duration: const Duration(milliseconds: 350),
+      curve: Curves.easeInOut,
+      alignment: 0.1,
+    );
+  }
+
   // --- UI Helper Widgets ---
 
   Widget _buildSectionTitle(String title, IconData icon) {
@@ -1667,221 +1713,249 @@ class _GoatFormScreenState extends State<GoatFormScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.green[50] ?? const Color(0xFFF1F8E9),
-      appBar: AppBar(
-        title: Text(
-          widget.goat == null ? 'Add New goat' : 'Edit goat',
-          style: const TextStyle(fontWeight: FontWeight.w600, color: Colors.white),
-        ),
-        backgroundColor: AppColors.primary,
-        foregroundColor: Colors.white,
-        elevation: 0,
-        centerTitle: true,
-        flexibleSpace: Container(
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [AppColors.primary, AppColors.darkGreen],
+    return ShowCaseWidget(
+      enableAutoScroll: true,
+      scrollDuration: const Duration(milliseconds: 400),
+      onFinish: () async {
+        await UserGuideService.markGuideCompleted('goat_form');
+      },
+      onStart: (index, key) => _scrollToKey(key),
+      builder: (showCaseContext) {
+        _showCaseContext = showCaseContext;
+        return Scaffold(
+          backgroundColor: Colors.green[50] ?? const Color(0xFFF1F8E9),
+          appBar: AppBar(
+            title: Text(
+              widget.goat == null ? 'Add New goat' : 'Edit goat',
+              style: const TextStyle(fontWeight: FontWeight.w600, color: Colors.white),
             ),
-          ),
-        ),
-      ),
-      body: Form(
-        key: _formKey,
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Basic Information Section
-              _buildSectionTitle('Basic Information', Icons.info_outline),
-              _buildCard(
-                child: Column(
-                  children: [
-                    // Sex field (hidden in add mode for Doe/Buck/Doeling/Buckling; visible for Growers/Kid)
-                    if (!(
-                      widget.goat == null && (
-                        widget.preSelectedClassification == 'Doe' ||
-                        widget.preSelectedClassification == 'Buck' ||
-                        widget.preSelectedClassification == 'Doeling' ||
-                        widget.preSelectedClassification == 'Buckling'
-                      )
-                    ))
-                      _buildSexField(),
-                    const SizedBox(height: 16),
-                    // Classification field (read-only if pre-selected)
-                    _buildClassificationField(),
-                    _buildAgeWarning(),
-                    const SizedBox(height: 16),
-                    // Tag number field
-                    _buildAutoTagField(),
-                    const SizedBox(height: 16),
-                    // Date of Birth
-                    _buildDateField(
-        label: 'Date of Birth (Optional)',
-                      value: _dateOfBirth,
-                      icon: Icons.cake,
-                    ),
-                    _buildAgeWarning(),
-                    const SizedBox(height: 16),
-                    // Moved here: Breed and Weight fields
-                    _buildBreedField(),
-                    const SizedBox(height: 16),
-                    _buildTextField(
-                      controller: _weightController,
-        label: 'Weight (kg) (Optional)',
-                      icon: Icons.monitor_weight,
-                      keyboardType: TextInputType.number,
-                    ),
-                  ],
+            backgroundColor: AppColors.primary,
+            foregroundColor: Colors.white,
+            elevation: 0,
+            centerTitle: true,
+            flexibleSpace: Container(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [AppColors.primary, AppColors.darkGreen],
                 ),
               ),
-
-
-              // Source Details Section
-              _buildSectionTitle('Source Details', Icons.agriculture),
-              _buildCard(
-                child: Column(
-                  children: [
-                    // Custom source dropdown that can show combined information
-                    DropdownButtonFormField<String>(
-                      value: _source,
-                      autovalidateMode: AutovalidateMode.always,
-                      validator: (value) => value == null ? 'Source is required' : null,
-                      isExpanded: true,
-                      decoration: InputDecoration(
-                        labelText: 'Source (Required)',
-                        hintText: 'Select Source (Required)',
-                        prefixIcon: Icon(Icons.source, color: AppColors.primary),
-                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                        focusedBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          borderSide: BorderSide(color: AppColors.primary, width: 2),
-                        ),
-                        fillColor: AppColors.cardBackground,
-                        filled: true,
-                        // helperText removed; labeled as (Required)
-                      ),
-                      hint: const Text('Select Source (Required)'),
-                      items: const [
-                        DropdownMenuItem<String>(
-                          value: null,
-                          child: Text('None'),
-                        ),
-                      ] + [
-                        ...sourceOptions.map((option) => DropdownMenuItem<String>(
-                          value: option,
-                          child: Text(option),
-                        )),
-                      ],
-                      onChanged: (value) {
-                        setState(() {
-                          _source = value;
-                          if (value != 'Purchased' && value != 'Other') {
-                            _sourceDetails = null;
-                          }
-                        });
-                      },
-                    ),
-                    if (_source == 'Purchased' || _source == 'Other') ...[
-                      const SizedBox(height: 16),
-                      TextFormField(
-                        initialValue: _sourceDetails ?? '',
-                        onChanged: (val) => _sourceDetails = val.trim().isEmpty ? null : val.trim(),
-                        maxLines: 3,
-                        decoration: InputDecoration(
-                          labelText: '${_source == 'Purchased' ? 'Purchase Source' : 'Acquisition Details'} (Optional)',
-                          hintText: _source == 'Purchased'
-                              ? 'e.g., John Smith Farm, Market XYZ, Auction House ABC'
-                              : 'e.g., Gift from neighbor, Inheritance, Trade, etc.',
-                          prefixIcon: Icon(_source == 'Purchased' ? Icons.shopping_cart : Icons.info, color: AppColors.primary),
-                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                          focusedBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12),
-                            borderSide: BorderSide(color: AppColors.primary, width: 2),
-                          ),
-                          fillColor: AppColors.cardBackground,
-                          filled: true,
-                        ),
-                      ),
-                    ],
-                  ],
-                ),
+            ),
+            actions: [
+              IconButton(
+                icon: const Icon(Icons.help_outline_rounded),
+                tooltip: 'Start User Guide',
+                onPressed: startUserGuide,
               ),
-
-              // Parental Line Section
-              _buildSectionTitle('Parental Line', Icons.family_restroom),
-              _buildCard(
-                child: Column(
-                  children: [
-                    _buildSearchableDropdown(
-                      label: 'Dam Tag (Mother) (Optional)',
-                      value: _motherTag,
-                      options: _femaleGoat,
-                      onChanged: (value) => setState(() => _motherTag = value),
-                      icon: Icons.female,
-                    ),
-                    const SizedBox(height: 16),
-                    _buildSearchableDropdown(
-                      label: 'Sire Tag (Father) (Optional)',
-                      value: _fatherTag,
-                      options: _maleGoat,
-                      onChanged: (value) => setState(() => _fatherTag = value),
-                      icon: Icons.male,
-                    ),
-                  ],
-                ),
-              ),
-
-              // Additional Notes Section (removed)
-              // _buildSectionTitle('Additional Notes', Icons.note),
-              // _buildCard(
-              //   child: _buildTextField(
-              //     controller: _notesController,
-              //     label: 'Notes',
-              //     icon: Icons.notes,
-              //     maxLines: 4,
-              //   ),
-              // ),
-
-              const SizedBox(height: 32),
-
-              // Submit Button
-              SizedBox(
-                width: double.infinity,
-                height: 56,
-                child: ElevatedButton.icon(
-                  onPressed: _submitForm,
-                  icon: Icon(
-                    widget.goat == null ? Icons.add_circle : Icons.update,
-                    color: Colors.white,
-                  ),
-                  label: Text(
-                    widget.goat == null ? 'Submit' : 'Update goat',
-                    style: const TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
-                      color: Colors.white,
-                    ),
-                  ),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.primary,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 16),
             ],
           ),
-        ),
-      ),
+          body: Form(
+            key: _formKey,
+            child: SingleChildScrollView(
+              controller: _scrollController,
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Basic Information Section
+                  _buildSectionTitle('Basic Information', Icons.info_outline),
+                  Showcase(
+                    key: _basicInfoKey,
+                    title: 'Basic Details',
+                    description: 'Set the sex, classification, tag, birth date, breed, and weight for this goat.',
+                    tooltipBackgroundColor: AppColors.darkGreen,
+                    textColor: Colors.white,
+                    child: _buildCard(
+                      child: Column(
+                        children: [
+                          if (!(
+                            widget.goat == null &&
+                            (widget.preSelectedClassification == 'Doe' ||
+                                widget.preSelectedClassification == 'Buck' ||
+                                widget.preSelectedClassification == 'Doeling' ||
+                                widget.preSelectedClassification == 'Buckling')
+                          ))
+                            _buildSexField(),
+                          const SizedBox(height: 16),
+                          _buildClassificationField(),
+                          _buildAgeWarning(),
+                          const SizedBox(height: 16),
+                          _buildAutoTagField(),
+                          const SizedBox(height: 16),
+                          _buildDateField(
+                            label: 'Date of Birth (Optional)',
+                            value: _dateOfBirth,
+                            icon: Icons.cake,
+                          ),
+                          _buildAgeWarning(),
+                          const SizedBox(height: 16),
+                          _buildBreedField(),
+                          const SizedBox(height: 16),
+                          _buildTextField(
+                            controller: _weightController,
+                            label: 'Weight (kg) (Optional)',
+                            icon: Icons.monitor_weight,
+                            keyboardType: TextInputType.number,
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+
+                  // Source Details Section
+                  _buildSectionTitle('Source Details', Icons.agriculture),
+                  Showcase(
+                    key: _sourceKey,
+                    title: 'Source Information',
+                    description: 'Record how you acquired this goat and add purchase or other notes if needed.',
+                    tooltipBackgroundColor: AppColors.darkGreen,
+                    textColor: Colors.white,
+                    child: _buildCard(
+                      child: Column(
+                        children: [
+                          DropdownButtonFormField<String>(
+                            value: _source,
+                            autovalidateMode: AutovalidateMode.always,
+                            validator: (value) => value == null ? 'Source is required' : null,
+                            isExpanded: true,
+                            decoration: InputDecoration(
+                              labelText: 'Source (Required)',
+                              hintText: 'Select Source (Required)',
+                              prefixIcon: Icon(Icons.source, color: AppColors.primary),
+                              border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                              focusedBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                                borderSide: BorderSide(color: AppColors.primary, width: 2),
+                              ),
+                              fillColor: AppColors.cardBackground,
+                              filled: true,
+                            ),
+                            hint: const Text('Select Source (Required)'),
+                            items: const [
+                              DropdownMenuItem<String>(
+                                value: null,
+                                child: Text('None'),
+                              ),
+                            ] +
+                                [
+                                  ...sourceOptions.map((option) => DropdownMenuItem<String>(
+                                        value: option,
+                                        child: Text(option),
+                                      )),
+                                ],
+                            onChanged: (value) {
+                              setState(() {
+                                _source = value;
+                                if (value != 'Purchased' && value != 'Other') {
+                                  _sourceDetails = null;
+                                }
+                              });
+                            },
+                          ),
+                          if (_source == 'Purchased' || _source == 'Other') ...[
+                            const SizedBox(height: 16),
+                            TextFormField(
+                              initialValue: _sourceDetails ?? '',
+                              onChanged: (val) => _sourceDetails = val.trim().isEmpty ? null : val.trim(),
+                              maxLines: 3,
+                              decoration: InputDecoration(
+                                labelText: '${_source == 'Purchased' ? 'Purchase Source' : 'Acquisition Details'} (Optional)',
+                                hintText: _source == 'Purchased'
+                                    ? 'e.g., John Smith Farm, Market XYZ, Auction House ABC'
+                                    : 'e.g., Gift from neighbor, Inheritance, Trade, etc.',
+                                prefixIcon: Icon(_source == 'Purchased' ? Icons.shopping_cart : Icons.info, color: AppColors.primary),
+                                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                                focusedBorder: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                  borderSide: BorderSide(color: AppColors.primary, width: 2),
+                                ),
+                                fillColor: AppColors.cardBackground,
+                                filled: true,
+                              ),
+                            ),
+                          ],
+                        ],
+                      ),
+                    ),
+                  ),
+
+                  // Parental Line Section
+                  _buildSectionTitle('Parental Line', Icons.family_restroom),
+                  Showcase(
+                    key: _parentalKey,
+                    title: 'Parental Line',
+                    description: 'Link dam and sire tags so offspring and lineage stay accurate.',
+                    tooltipBackgroundColor: AppColors.darkGreen,
+                    textColor: Colors.white,
+                    child: _buildCard(
+                      child: Column(
+                        children: [
+                          _buildSearchableDropdown(
+                            label: 'Dam Tag (Mother) (Optional)',
+                            value: _motherTag,
+                            options: _femaleGoat,
+                            onChanged: (value) => setState(() => _motherTag = value),
+                            icon: Icons.female,
+                          ),
+                          const SizedBox(height: 16),
+                          _buildSearchableDropdown(
+                            label: 'Sire Tag (Father) (Optional)',
+                            value: _fatherTag,
+                            options: _maleGoat,
+                            onChanged: (value) => setState(() => _fatherTag = value),
+                            icon: Icons.male,
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+
+                  const SizedBox(height: 32),
+
+                  Showcase(
+                    key: _submitKey,
+                    title: widget.goat == null ? 'Submit' : 'Update',
+                    description: 'Save the goat once all required fields are complete.',
+                    tooltipBackgroundColor: AppColors.darkGreen,
+                    textColor: Colors.white,
+                    child: SizedBox(
+                      width: double.infinity,
+                      height: 56,
+                      child: ElevatedButton.icon(
+                        onPressed: _submitForm,
+                        icon: Icon(
+                          widget.goat == null ? Icons.add_circle : Icons.update,
+                          color: Colors.white,
+                        ),
+                        label: Text(
+                          widget.goat == null ? 'Submit' : 'Update goat',
+                          style: const TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                            color: Colors.white,
+                          ),
+                        ),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.primary,
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
     );
   }
 
   @override
   void dispose() {
+    _scrollController.dispose();
     _tagNoController.dispose();
     _weightController.dispose();
     // _notesController.dispose(); // Commented out: Notes field removed

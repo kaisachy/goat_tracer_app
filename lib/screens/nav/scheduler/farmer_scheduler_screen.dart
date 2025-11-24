@@ -5,15 +5,22 @@ class FarmerSchedulerScreen extends StatefulWidget {
   const FarmerSchedulerScreen({super.key});
 
   @override
-  State<FarmerSchedulerScreen> createState() => _FarmerSchedulerScreenState();
+  FarmerSchedulerScreenState createState() => FarmerSchedulerScreenState();
 }
 
-class _FarmerSchedulerScreenState extends State<FarmerSchedulerScreen> {
+class FarmerSchedulerScreenState extends State<FarmerSchedulerScreen> {
+  final GlobalKey<FarmerSchedulerContentWidgetState> _contentKey =
+      GlobalKey<FarmerSchedulerContentWidgetState>();
+
+  void startUserGuide() {
+    _contentKey.currentState?.startUserGuide();
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.grey[50],
-      body: const FarmerSchedulerContentWidget(),
+      body: FarmerSchedulerContentWidget(key: _contentKey),
     );
   }
 }

@@ -6,6 +6,8 @@ import 'package:goat_tracer_app/constants/app_colors.dart';
 import 'package:goat_tracer_app/screens/nav/goat/goat_detail_screen.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:goat_tracer_app/services/goat/goat_export_service.dart';
+import 'package:goat_tracer_app/services/user_guide_service.dart';
+import 'package:showcaseview/showcaseview.dart';
 
 class ArchivedgoatScreen extends StatefulWidget {
   const ArchivedgoatScreen({super.key});
@@ -19,6 +21,12 @@ class _ArchivedgoatScreenState extends State<ArchivedgoatScreen> {
   List<Goat> _filteredGoatList = [];
   Map<String, Map<String, dynamic>> _goatEventDetails = {};
   final Map<String, bool> _expandedCards = {};
+  final ScrollController _listScrollController = ScrollController();
+  final GlobalKey _searchFilterKey = GlobalKey();
+  final GlobalKey _exportRowKey = GlobalKey();
+  final GlobalKey _actionMenuKey = GlobalKey();
+  final GlobalKey _listKey = GlobalKey();
+  BuildContext? _showCaseContext;
   bool _isLoading = true;
   String _searchQuery = '';
   String _selectedStatus = 'All';
@@ -246,136 +254,76 @@ class _ArchivedgoatScreenState extends State<ArchivedgoatScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Archived goat'),
-        backgroundColor: AppColors.darkGreen,
-        foregroundColor: Colors.white,
-        elevation: 0,
-      ),
-      body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : _archivedGoat.isEmpty
-              ? const Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(
-                        Icons.archive_outlined,
-                        size: 64,
-                        color: Colors.grey,
-                      ),
-                      SizedBox(height: 16),
-                      Text(
-                        'No archived goat found',
-                        style: TextStyle(
-                          fontSize: 18,
-                          color: Colors.grey,
+    return ShowCaseWidget(
+      enableAutoScroll: true,
+      scrollDuration: const Duration(milliseconds: 400),
+      onStart: (index, key) => _scrollToKey(key),
+      onFinish: () async {
+        await UserGuideService.markGuideCompleted('goat_archived');
+      },
+      builder: (showCaseContext) {
+        _showCaseContext = showCaseContext;
+        return Scaffold(
+          appBar: AppBar(
+            title: const Text('Archived goat'),
+            backgroundColor: AppColors.darkGreen,
+            foregroundColor: Colors.white,
+            elevation: 0,
+            actions: [
+              IconButton(
+                icon: const Icon(Icons.help_outline_rounded),
+                tooltip: 'Start User Guide',
+                onPressed: startUserGuide,
+              ),
+            ],
+          ),
+          body: _isLoading
+              ? const Center(child: CircularProgressIndicator())
+              : _archivedGoat.isEmpty
+                  ? _buildEmptyState()
+                  : Column(
+                      children: [
+                        Showcase(
+                          key: _searchFilterKey,
+                          title: 'Search & Filters',
+                          description: 'Find archived goats by tag or limit the list to a specific status.',
+                          tooltipBackgroundColor: AppColors.darkGreen,
+                          textColor: Colors.white,
+                          child: _buildSearchAndFilterBar(),
                         ),
-                      ),
-                    ],
-                  ),
-                )
-              : Column(
-                  children: [
-                    // Search and Filter Bar
-                    _buildSearchAndFilterBar(),
-                    // Export controls row (below the filter bar)
-                    Padding(
-                      padding: const EdgeInsets.fromLTRB(16, 4, 16, 0),
-                      child: Row(
-                        children: [
-                          ConstrainedBox(
-                            constraints: const BoxConstraints(maxWidth: 215),
-                            child: DropdownButtonFormField<String>(
-                              value: _selectedReportType,
-                              items: const [
-                                DropdownMenuItem(value: 'Lost', child: Text('Lost')),
-                                DropdownMenuItem(value: 'Sold', child: Text('Sold')),
-                                DropdownMenuItem(value: 'Mortality', child: Text('Mortality')),
-                              ],
-                              onChanged: (v) {
-                                setState(() { _selectedReportType = v ?? 'Lost'; });
-                              },
-                              decoration: const InputDecoration(
-                                labelText: 'Report type',
-                                border: OutlineInputBorder(),
-                                isDense: true,
-                                contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                              ),
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          Container(
-                            decoration: BoxDecoration(
-                              color: const Color(0xFF107C41),
-                              borderRadius: BorderRadius.circular(10),
-                            ),
-                            child: IconButton(
-                              tooltip: 'Export Excel',
-                              icon: const FaIcon(FontAwesomeIcons.fileExcel, color: Colors.white, size: 20),
-                              onPressed: () async {
-                                final messenger = ScaffoldMessenger.of(context);
-                                final rt = _mapArchivedReportTypeToParam(_selectedReportType);
-                                final ok = await GoatExportService.downloadgoatListExcel(reportType: rt);
-                                if (!context.mounted) return;
-                                messenger.hideCurrentSnackBar();
-                                messenger.showSnackBar(
-                                  SnackBar(
-                                    content: Text(ok ? 'Excel report ready! Choose where to open/save.' : 'Failed to download Excel report.'),
-                                    backgroundColor: ok ? Colors.green.shade600 : Colors.red.shade700,
-                                    behavior: SnackBarBehavior.floating,
-                                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        Showcase(
+                          key: _exportRowKey,
+                          title: 'Export reports',
+                          description: 'Download Excel or PDF reports for the selected archive type.',
+                          tooltipBackgroundColor: AppColors.darkGreen,
+                          textColor: Colors.white,
+                          child: _buildExportRow(),
+                        ),
+                        Expanded(
+                          child: Showcase(
+                            key: _listKey,
+                            title: 'Archived list',
+                            description: 'Tap a card to view details or use the menu to restore a goat.',
+                            tooltipBackgroundColor: AppColors.darkGreen,
+                            textColor: Colors.white,
+                            child: _filteredGoatList.isEmpty
+                                ? _buildEmptyState()
+                                : RefreshIndicator(
+                                    onRefresh: _loadArchivedGoat,
+                                    child: ListView.builder(
+                                      controller: _listScrollController,
+                                      padding: const EdgeInsets.only(bottom: 80),
+                                      itemCount: _filteredGoatList.length,
+                                      itemBuilder: (context, index) =>
+                                          _buildGoatCard(_filteredGoatList[index], index),
+                                    ),
                                   ),
-                                );
-                              },
-                            ),
                           ),
-                          const SizedBox(width: 8),
-                          Container(
-                            decoration: BoxDecoration(
-                              color: Colors.red.shade600,
-                              borderRadius: BorderRadius.circular(10),
-                            ),
-                            child: IconButton(
-                              tooltip: 'Export PDF',
-                              icon: const Icon(Icons.picture_as_pdf_rounded, color: Colors.white, size: 20),
-                              onPressed: () async {
-                                final messenger = ScaffoldMessenger.of(context);
-                                final rt = _mapArchivedReportTypeToParam(_selectedReportType);
-                                final ok = await GoatExportService.downloadgoatListPdf(reportType: rt);
-                                if (!context.mounted) return;
-                                messenger.hideCurrentSnackBar();
-                                messenger.showSnackBar(
-                                  SnackBar(
-                                    content: Text(ok ? 'PDF report ready! Choose where to open/save.' : 'Failed to generate PDF report.'),
-                                    backgroundColor: ok ? Colors.green.shade600 : Colors.red.shade700,
-                                    behavior: SnackBarBehavior.floating,
-                                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                                  ),
-                                );
-                              },
-                            ),
-                          ),
-                        ],
-                      ),
+                        ),
+                      ],
                     ),
-                    // goat List
-                    Expanded(
-                      child: _filteredGoatList.isEmpty
-                          ? _buildEmptyState()
-                          : RefreshIndicator(
-                              onRefresh: _loadArchivedGoat,
-                              child: ListView.builder(
-                                padding: const EdgeInsets.only(bottom: 80),
-                                itemCount: _filteredGoatList.length,
-                                itemBuilder: (context, index) =>
-                                    _buildGoatCard(_filteredGoatList[index], index),
-                              ),
-                            ),
-                    ),
-                  ],
-                ),
+        );
+      },
     );
   }
 
@@ -465,6 +413,88 @@ class _ArchivedgoatScreenState extends State<ArchivedgoatScreen> {
     );
   }
 
+  Widget _buildExportRow() {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 4, 16, 0),
+      child: Row(
+        children: [
+          ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 215),
+            child: DropdownButtonFormField<String>(
+              value: _selectedReportType,
+              items: const [
+                DropdownMenuItem(value: 'Lost', child: Text('Lost')),
+                DropdownMenuItem(value: 'Sold', child: Text('Sold')),
+                DropdownMenuItem(value: 'Mortality', child: Text('Mortality')),
+              ],
+              onChanged: (v) {
+                setState(() => _selectedReportType = v ?? 'Lost');
+              },
+              decoration: const InputDecoration(
+                labelText: 'Report type',
+                border: OutlineInputBorder(),
+                isDense: true,
+                contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+              ),
+            ),
+          ),
+          const SizedBox(width: 8),
+          Container(
+            decoration: BoxDecoration(
+              color: const Color(0xFF107C41),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: IconButton(
+              tooltip: 'Export Excel',
+              icon: const FaIcon(FontAwesomeIcons.fileExcel, color: Colors.white, size: 20),
+              onPressed: () async {
+                final messenger = ScaffoldMessenger.of(context);
+                final rt = _mapArchivedReportTypeToParam(_selectedReportType);
+                final ok = await GoatExportService.downloadgoatListExcel(reportType: rt);
+                if (!context.mounted) return;
+                messenger.hideCurrentSnackBar();
+                messenger.showSnackBar(
+                  SnackBar(
+                    content: Text(ok ? 'Excel report ready! Choose where to open/save.' : 'Failed to download Excel report.'),
+                    backgroundColor: ok ? Colors.green.shade600 : Colors.red.shade700,
+                    behavior: SnackBarBehavior.floating,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  ),
+                );
+              },
+            ),
+          ),
+          const SizedBox(width: 8),
+          Container(
+            decoration: BoxDecoration(
+              color: Colors.red.shade600,
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: IconButton(
+              tooltip: 'Export PDF',
+              icon: const Icon(Icons.picture_as_pdf_rounded, color: Colors.white, size: 20),
+              onPressed: () async {
+                final messenger = ScaffoldMessenger.of(context);
+                final rt = _mapArchivedReportTypeToParam(_selectedReportType);
+                final ok = await GoatExportService.downloadgoatListPdf(reportType: rt);
+                if (!context.mounted) return;
+                messenger.hideCurrentSnackBar();
+                messenger.showSnackBar(
+                  SnackBar(
+                    content: Text(ok ? 'PDF report ready! Choose where to open/save.' : 'Failed to generate PDF report.'),
+                    backgroundColor: ok ? Colors.green.shade600 : Colors.red.shade700,
+                    behavior: SnackBarBehavior.floating,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  ),
+                );
+              },
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   String _mapArchivedReportTypeToParam(String value) {
     switch (value) {
       case 'Lost':
@@ -476,6 +506,57 @@ class _ArchivedgoatScreenState extends State<ArchivedgoatScreen> {
       default:
         return 'lost';
     }
+  }
+
+  Future<void> startUserGuide() async {
+    if (_showCaseContext == null || _isLoading) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Please wait for the archived list to finish loading, then try again.'),
+            duration: Duration(seconds: 2),
+          ),
+        );
+      }
+      return;
+    }
+
+    final steps = _buildShowcaseSteps();
+    if (steps.isEmpty) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Archive is empty, so there is nothing to showcase yet.'),
+            duration: Duration(seconds: 2),
+          ),
+        );
+      }
+      return;
+    }
+
+    FocusScope.of(context).unfocus();
+    await UserGuideService.resetGuide('goat_archived');
+    await Future.delayed(const Duration(milliseconds: 300));
+    ShowCaseWidget.of(_showCaseContext!).startShowCase(steps);
+  }
+
+  List<GlobalKey> _buildShowcaseSteps() {
+    final steps = <GlobalKey>[_searchFilterKey];
+    if (_archivedGoat.isNotEmpty) {
+      steps.addAll([_exportRowKey, _listKey, _actionMenuKey]);
+    }
+    return steps;
+  }
+
+  Future<void> _scrollToKey(GlobalKey key) async {
+    final ctx = key.currentContext;
+    if (ctx == null) return;
+    await Scrollable.ensureVisible(
+      ctx,
+      duration: const Duration(milliseconds: 350),
+      curve: Curves.easeInOut,
+      alignment: 0.1,
+    );
   }
 
   void _showStatusFilterDialog() {
@@ -666,48 +747,7 @@ class _ArchivedgoatScreenState extends State<ArchivedgoatScreen> {
                     const SizedBox(width: 8),
                     
                     // Action Button
-                    PopupMenuButton<String>(
-                      onSelected: (value) {
-                        if (value == 'restore') {
-                          _showUnarchiveDialog(goat);
-                        } else if (value == 'goat_info') {
-                          _navigateToGoatDetail(goat);
-                        }
-                      },
-                      itemBuilder: (context) => [
-                        const PopupMenuItem(
-                          value: 'goat_info',
-                          child: Row(
-                            children: [
-                              Icon(Icons.info_outline, color: AppColors.primary),
-                              SizedBox(width: 8),
-                              Text('goat Info'),
-                            ],
-                          ),
-                        ),
-                        const PopupMenuItem(
-                          value: 'restore',
-                          child: Row(
-                            children: [
-                              Icon(Icons.restore, color: AppColors.vibrantGreen),
-                              SizedBox(width: 8),
-                              Text('Restore'),
-                            ],
-                          ),
-                        ),
-                      ],
-                      child: Container(
-                        padding: const EdgeInsets.all(8),
-                        decoration: BoxDecoration(
-                          color: AppColors.lightGreen.withValues(alpha: 0.1),
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: Icon(
-                          Icons.more_vert,
-                          color: AppColors.primary,
-                        ),
-                      ),
-                    ),
+                    _buildActionMenu(goat, index),
                   ],
                 ),
               ),
@@ -887,6 +927,69 @@ class _ArchivedgoatScreenState extends State<ArchivedgoatScreen> {
     } catch (e) {
       return amount;
     }
+  }
+
+  @override
+  void dispose() {
+    _listScrollController.dispose();
+    super.dispose();
+  }
+
+  Widget _buildActionMenu(Goat goat, int index) {
+    final menu = PopupMenuButton<String>(
+      onSelected: (value) {
+        if (value == 'restore') {
+          _showUnarchiveDialog(goat);
+        } else if (value == 'goat_info') {
+          _navigateToGoatDetail(goat);
+        }
+      },
+      itemBuilder: (context) => [
+        const PopupMenuItem(
+          value: 'goat_info',
+          child: Row(
+            children: [
+              Icon(Icons.info_outline, color: AppColors.primary),
+              SizedBox(width: 8),
+              Text('goat Info'),
+            ],
+          ),
+        ),
+        const PopupMenuItem(
+          value: 'restore',
+          child: Row(
+            children: [
+              Icon(Icons.restore, color: AppColors.vibrantGreen),
+              SizedBox(width: 8),
+              Text('Restore'),
+            ],
+          ),
+        ),
+      ],
+      child: Container(
+        padding: const EdgeInsets.all(8),
+        decoration: BoxDecoration(
+          color: AppColors.lightGreen.withValues(alpha: 0.1),
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: Icon(
+          Icons.more_vert,
+          color: AppColors.primary,
+        ),
+      ),
+    );
+
+    if (index == 0) {
+      return Showcase(
+        key: _actionMenuKey,
+        title: 'Card actions',
+        description: 'Open here to view Goat Info or restore from archive.',
+        tooltipBackgroundColor: AppColors.darkGreen,
+        textColor: Colors.white,
+        child: menu,
+      );
+    }
+    return menu;
   }
 }
 

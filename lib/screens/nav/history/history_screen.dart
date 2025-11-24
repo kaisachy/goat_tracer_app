@@ -8,15 +8,18 @@ import 'package:goat_tracer_app/screens/nav/goat/modals/history_duplication_moda
 import 'package:goat_tracer_app/utils/history_type_utils.dart';
 import '../../../models/goat.dart';
 import 'goat_selection_modal.dart';
+import 'package:goat_tracer_app/services/user_guide_service.dart';
+import 'package:showcaseview/showcaseview.dart';
 
-  class HistoryScreen extends StatefulWidget {
+class HistoryScreen extends StatefulWidget {
   const HistoryScreen({super.key});
 
   @override
-  State<HistoryScreen> createState() => _HistoryScreenState();
+  HistoryScreenState createState() => HistoryScreenState();
 }
 
-class _HistoryScreenState extends State<HistoryScreen> {
+class HistoryScreenState extends State<HistoryScreen>
+    with TickerProviderStateMixin {
   List<Map<String, dynamic>> allHistoryRecords = [];
   bool isLoading = true;
   String? error;
@@ -25,6 +28,20 @@ class _HistoryScreenState extends State<HistoryScreen> {
   String selectedHistoryType = 'All';
   Set<int> expandedCards = <int>{};
   String _addTabCategoryFilter = 'Health'; // Health, Reproduction, Lifecycle
+  late TabController _tabController;
+
+  // User guide keys
+  final GlobalKey _tabBarKey = GlobalKey();
+  final GlobalKey _addGridKey = GlobalKey();
+  final GlobalKey _categoryNavKey = GlobalKey();
+  final GlobalKey _historySearchKey = GlobalKey();
+  final GlobalKey _historySummaryKey = GlobalKey();
+  final GlobalKey _historyListKey = GlobalKey();
+  final GlobalKey _historyMenuKey = GlobalKey();
+
+  BuildContext? _showCaseContext;
+  final ScrollController _addTabScrollController = ScrollController();
+  final ScrollController _historyListScrollController = ScrollController();
 
   // All possible history types
   List<String> get historyTypes {
@@ -33,41 +50,46 @@ class _HistoryScreenState extends State<HistoryScreen> {
     return [...doeTypes];
   }
 
-  Widget _buildAddHistoryGrid() {
+  List<String> get _healthTypes {
     final allTypes = historyTypes.where((t) => t != 'Select type of history record').toList();
-    // Ensure global list includes types that may only apply to specific sexes/classifications
-    if (!allTypes.contains('Castrated')) allTypes.add('Castrated');
-    if (!allTypes.contains('Weaned')) allTypes.add('Weaned');
+    return allTypes
+        .where((t) => {
+              'Vaccinated',
+              'Sick',
+              'Treated',
+              'Deworming',
+              'Hoof Trimming',
+            }.contains(t))
+        .toList();
+  }
 
-    // Define category sets
-    final healthSet = {
-      'Vaccinated',
-      'Sick',
-      'Treated',
-      'Deworming',
-      'Hoof Trimming',
-    };
-    final breedingSet = {
-      'Breeding',
-      'Pregnant',
-      'Gives Birth',
-      'Aborted Pregnancy',
-    };
-    final lifecycleSet = {
-      'Dry off',
-      'Weighed',
-      'Weaned',
-      'Castrated',
-      'Mortality',
-      'Lost',
-      'Sold',
-      'Other',
-    };
+  List<String> get _breedingTypes {
+    final allTypes = historyTypes.where((t) => t != 'Select type of history record').toList();
+    return allTypes
+        .where((t) => {
+              'Breeding',
+              'Pregnant',
+              'Gives Birth',
+              'Aborted Pregnancy',
+            }.contains(t))
+        .toList();
+  }
 
-    final healthTypes = allTypes.where((t) => healthSet.contains(t)).toList();
-    final breedingTypes = allTypes.where((t) => breedingSet.contains(t)).toList();
-    final lifecycleTypes = allTypes.where((t) => lifecycleSet.contains(t)).toList();
-    // Ensure Weaned and Castrated appear first (same row), and "Other" appears last
+  List<String> get _lifecycleTypes {
+    final allTypes = historyTypes.where((t) => t != 'Select type of history record').toList();
+    final lifecycleTypes = allTypes
+        .where((t) => {
+              'Dry off',
+              'Weighed',
+              'Weaned',
+              'Castrated',
+              'Mortality',
+              'Lost',
+              'Sold',
+              'Other',
+            }.contains(t))
+        .toList();
+
     final List<String> lifecyclePriority = ['Weaned', 'Castrated'];
     for (final p in lifecyclePriority.reversed) {
       if (lifecycleTypes.remove(p)) {
@@ -77,30 +99,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
     if (lifecycleTypes.remove('Other')) {
       lifecycleTypes.add('Other');
     }
-
-    return ListView(
-      padding: const EdgeInsets.all(16),
-      children: [
-        if (_addTabCategoryFilter == 'Health' && healthTypes.isNotEmpty)
-          _buildHistoryCategorySection(
-            title: 'Animal Health & Treatment',
-            subtitle: 'Record sickness, treatments, vaccinations, weighing, and other health-related events.',
-            types: healthTypes,
-          ),
-        if (_addTabCategoryFilter == 'Reproduction' && breedingTypes.isNotEmpty)
-          _buildHistoryCategorySection(
-            title: 'Breeding & Reproduction',
-            subtitle: 'Log breeding, pregnancies, kidding, and reproductive events.',
-            types: breedingTypes,
-          ),
-        if (_addTabCategoryFilter == 'Lifecycle' && lifecycleTypes.isNotEmpty)
-          _buildHistoryCategorySection(
-            title: 'Animal Lifecycle Management',
-            subtitle: 'Track dry-off, weaning, sales, losses, and other lifecycle changes.',
-            types: lifecycleTypes,
-          ),
-      ],
-    );
+    return lifecycleTypes;
   }
 
   Widget _buildAddTabBottomNav() {
@@ -330,7 +329,19 @@ class _HistoryScreenState extends State<HistoryScreen> {
   @override
   void initState() {
     super.initState();
+    _tabController = TabController(length: 2, vsync: this);
+    _tabController.addListener(() {
+      setState(() {});
+    });
     _loadAllgoatHistory();
+  }
+
+  @override
+  void dispose() {
+    _tabController.dispose();
+    _addTabScrollController.dispose();
+    _historyListScrollController.dispose();
+    super.dispose();
   }
 
   Future<void> _loadAllgoatHistory() async {
@@ -379,6 +390,73 @@ class _HistoryScreenState extends State<HistoryScreen> {
     debugPrint('DEBUG: _refreshHistory called');
     await _loadAllgoatHistory();
     debugPrint('DEBUG: _refreshHistory completed');
+  }
+
+  Future<void> _scrollToShowcase(GlobalKey key) async {
+    final context = key.currentContext;
+    if (context != null) {
+      try {
+        await Scrollable.ensureVisible(
+          context,
+          duration: const Duration(milliseconds: 400),
+          curve: Curves.easeInOut,
+          alignment: 0.2,
+        );
+      } catch (e) {
+        debugPrint('Error scrolling to showcase: $e');
+      }
+    }
+  }
+
+  void startUserGuide() async {
+    if (_showCaseContext == null) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Please wait a moment and try again.'),
+            duration: Duration(seconds: 2),
+          ),
+        );
+      }
+      return;
+    }
+
+    await UserGuideService.resetGuide('goat_history');
+
+    if (mounted && _showCaseContext != null) {
+      try {
+        await Future.delayed(const Duration(milliseconds: 300));
+
+        final showcaseKeys = <GlobalKey>[_tabBarKey];
+        if (_tabController.index == 0) {
+          showcaseKeys.addAll([
+            _addGridKey,
+            _categoryNavKey,
+          ]);
+        } else {
+          showcaseKeys.add(_historySearchKey);
+          if (allHistoryRecords.isNotEmpty) {
+            showcaseKeys.add(_historySummaryKey);
+          }
+          showcaseKeys.add(_historyListKey);
+          if (_filteredHistoryRecords.isNotEmpty) {
+            showcaseKeys.add(_historyMenuKey);
+          }
+        }
+
+        ShowCaseWidget.of(_showCaseContext!).startShowCase(showcaseKeys);
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: const Text('Unable to start user guide. Please try again.'),
+              backgroundColor: Colors.orange,
+              duration: const Duration(seconds: 2),
+            ),
+          );
+        }
+      }
+    }
   }
 
   // Helper method to remove duplicate history records and delete them from database
@@ -1025,90 +1103,201 @@ class _HistoryScreenState extends State<HistoryScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return DefaultTabController(
-      length: 2,
-      child: Scaffold(
-      backgroundColor: Colors.grey.shade50,
-        body: Column(
-          children: [
-            Container(
-              color: Colors.white,
-              child: const TabBar(
-                indicatorColor: AppColors.vibrantGreen,
-                labelColor: AppColors.vibrantGreen,
-                unselectedLabelColor: Colors.grey,
-                tabs: [
-                  Tab(text: 'Add History'),
-                  Tab(text: 'History List'),
-                ],
+    return ShowCaseWidget(
+      enableAutoScroll: true,
+      scrollDuration: const Duration(milliseconds: 300),
+      onFinish: () async {
+        await UserGuideService.markGuideCompleted('goat_history');
+      },
+      onStart: (index, key) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          _scrollToShowcase(key);
+        });
+      },
+      builder: (showCaseContext) {
+        _showCaseContext = showCaseContext;
+
+        return Scaffold(
+          backgroundColor: Colors.grey.shade50,
+          body: Column(
+            children: [
+              Container(
+                color: Colors.white,
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                child: Showcase(
+                  key: _tabBarKey,
+                  title: 'History Tabs',
+                  description:
+                      'Switch between adding new history entries or reviewing everything recorded.',
+                  targetShapeBorder: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  tooltipBackgroundColor: AppColors.primary,
+                  textColor: Colors.white,
+                  child: TabBar(
+                    controller: _tabController,
+                    indicatorColor: AppColors.vibrantGreen,
+                    labelColor: AppColors.vibrantGreen,
+                    unselectedLabelColor: Colors.grey,
+                    tabs: const [
+                      Tab(text: 'Add History'),
+                      Tab(text: 'History List'),
+                    ],
+                  ),
+                ),
               ),
-            ),
-            Expanded(
-              child: TabBarView(
-                children: [
-                  // Tab 1: Add History (grid of history types + sticky bottom filter)
-                  Column(
-                    children: [
-                      Expanded(child: _buildAddHistoryGrid()),
-                      Padding(
-                        padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-                        child: _buildAddTabBottomNav(),
+              Expanded(
+                child: TabBarView(
+                  controller: _tabController,
+                  children: [
+                    // Tab 1: Add History
+                    Column(
+                      children: [
+                        Expanded(
+                          child: Showcase(
+                            key: _addGridKey,
+                            title: 'History Type Grid',
+                            description:
+                                'Pick which goat history record you´d like to add. Each tile opens the matching form automatically.',
+                            targetShapeBorder: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(16),
+                            ),
+                            tooltipBackgroundColor: AppColors.primary,
+                            textColor: Colors.white,
+                            child: ListView(
+                              controller: _addTabScrollController,
+                              padding: const EdgeInsets.all(16),
+                              children: [
+                                if (_addTabCategoryFilter == 'Health' && _healthTypes.isNotEmpty)
+                                  _buildHistoryCategorySection(
+                                    title: 'Goat Health & Treatment',
+                                    subtitle:
+                                        'Record sickness, treatments, vaccinations, weighing, and other health-related events.',
+                                    types: _healthTypes,
+                                  ),
+                                if (_addTabCategoryFilter == 'Reproduction' && _breedingTypes.isNotEmpty)
+                                  _buildHistoryCategorySection(
+                                    title: 'Breeding & Reproduction',
+                                    subtitle: 'Log breeding, pregnancies, kidding, and reproductive events.',
+                                    types: _breedingTypes,
+                                  ),
+                                if (_addTabCategoryFilter == 'Lifecycle' && _lifecycleTypes.isNotEmpty)
+                                  _buildHistoryCategorySection(
+                                    title: 'Goat Lifecycle Management',
+                                    subtitle: 'Track dry-off, weaning, sales, losses, and other lifecycle changes.',
+                                    types: _lifecycleTypes,
+                                  ),
+                              ],
+                            ),
+                          ),
+                        ),
+                        Padding(
+                          padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+                          child: Showcase(
+                            key: _categoryNavKey,
+                            title: 'Category Filter',
+                            description: 'Toggle categories to quickly focus the grid.',
+                            targetShapeBorder: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(24),
+                            ),
+                            tooltipBackgroundColor: AppColors.primary,
+                            textColor: Colors.white,
+                            child: _buildAddTabBottomNav(),
+                          ),
+                        ),
+                      ],
+                    ),
+                    // Tab 2: History List
+                    Container(
+                      padding: const EdgeInsets.all(16),
+                      child: Column(
+                        children: [
+                          Showcase(
+                            key: _historySearchKey,
+                            title: 'Search & Filter',
+                            description:
+                                'Search by goat tag, history type, or notes. Filter to focus on a specific event type.',
+                            targetShapeBorder: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            tooltipBackgroundColor: AppColors.primary,
+                            textColor: Colors.white,
+                            child: Row(
+                              children: [
+                                Expanded(
+                                  child: HistorySearchFilterBar(
+                                    initialSearchQuery: searchQuery,
+                                    initialEventType: selectedHistoryType,
+                                    eventTypes: historyTypes,
+                                    onSearchChanged: _onSearchChanged,
+                                    onFilterChanged: _onFilterChanged,
+                                    onClearFilter: _onClearFilter,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(height: 16),
+                          if (allHistoryRecords.isNotEmpty) ...[
+                            Showcase(
+                              key: _historySummaryKey,
+                              title: 'History Insights',
+                              description:
+                                  'See totals, filtered counts, and the latest record date at a glance.',
+                              targetShapeBorder: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              tooltipBackgroundColor: AppColors.primary,
+                              textColor: Colors.white,
+                              child: _buildHistorySummary(),
+                            ),
+                            const SizedBox(height: 16),
+                          ],
+                          Expanded(
+                            child: Showcase(
+                              key: _historyListKey,
+                              title: 'History Timeline',
+                              description:
+                                  'Scroll through the complete goat history timeline. Tap any card to expand details or open quick actions.',
+                              targetShapeBorder: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(16),
+                              ),
+                              tooltipBackgroundColor: AppColors.primary,
+                              textColor: Colors.white,
+                              child: RefreshIndicator(
+                                onRefresh: _refreshHistory,
+                                color: AppColors.vibrantGreen,
+                                child: isLoading
+                                    ? const Center(
+                                        child: CircularProgressIndicator(color: AppColors.vibrantGreen),
+                                      )
+                                    : error != null
+                                        ? _buildErrorState()
+                                        : _filteredHistoryRecords.isEmpty
+                                            ? _buildEmptyState()
+                                            : ListView.separated(
+                                                controller: _historyListScrollController,
+                                                physics: const AlwaysScrollableScrollPhysics(),
+                                                padding: const EdgeInsets.only(bottom: 20),
+                                                itemCount: _filteredHistoryRecords.length,
+                                                separatorBuilder: (context, index) =>
+                                                    const SizedBox(height: 12),
+                                                itemBuilder: (context, index) =>
+                                                    _buildHistoryAccordion(_filteredHistoryRecords[index], index),
+                                              ),
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
-                    ],
-                  ),
-                  // Tab 2: History List (existing design)
-                  Container(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          children: [
-            Row(
-              children: [
-                Expanded(
-                  child: HistorySearchFilterBar(
-                    initialSearchQuery: searchQuery,
-                    initialEventType: selectedHistoryType,
-                    eventTypes: [
-                      'All',
-                      ...historyTypes.where((t) => t != 'Select type of history record'),
-                    ],
-                    onSearchChanged: _onSearchChanged,
-                    onFilterChanged: _onFilterChanged,
-                    onClearFilter: _onClearFilter,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 16),
-            _buildHistorySummary(),
-            const SizedBox(height: 16),
-            Expanded(
-              child: RefreshIndicator(
-                onRefresh: _refreshHistory,
-                color: AppColors.vibrantGreen,
-                child: isLoading
-                    ? const Center(child: CircularProgressIndicator(color: AppColors.vibrantGreen))
-                    : error != null
-                    ? _buildErrorState()
-                    : _filteredHistoryRecords.isEmpty
-                    ? _buildEmptyState()
-                    : ListView.separated(
-                  physics: const AlwaysScrollableScrollPhysics(),
-                  padding: const EdgeInsets.only(bottom: 20),
-                  itemCount: _filteredHistoryRecords.length,
-                  separatorBuilder: (context, index) => const SizedBox(height: 12),
-                  itemBuilder: (context, index) => _buildHistoryAccordion(_filteredHistoryRecords[index], index),
+                    ),
+                  ],
                 ),
               ),
-            ),
-          ],
-        ),
-      ),
-                ],
+            ],
           ),
-        ),
-          ],
-        ),
-      ),
+        );
+      },
     );
   }
 
@@ -1314,17 +1503,36 @@ class _HistoryScreenState extends State<HistoryScreen> {
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       Builder(
-                        builder: (context) => IconButton(
-                          onPressed: () => _showHistoryMenu(context, historyRecord, index),
-                          icon: Icon(
-                            Icons.more_vert_rounded,
-                            color: Colors.grey.shade600,
-                            size: 20,
-                          ),
-                          tooltip: 'More options',
-                          padding: EdgeInsets.zero,
-                          constraints: const BoxConstraints(),
-                        ),
+                        builder: (context) {
+                          final iconButton = IconButton(
+                            onPressed: () => _showHistoryMenu(context, historyRecord, index),
+                            icon: Icon(
+                              Icons.more_vert_rounded,
+                              color: Colors.grey.shade600,
+                              size: 20,
+                            ),
+                            tooltip: 'More options',
+                            padding: EdgeInsets.zero,
+                            constraints: const BoxConstraints(),
+                          );
+
+                          if (index == 0) {
+                            return Showcase(
+                              key: _historyMenuKey,
+                              title: 'Entry Actions',
+                              description:
+                                  'Tap here to duplicate, edit, or delete a goat history record. Every card has its own menu.',
+                              targetShapeBorder: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              tooltipBackgroundColor: AppColors.primary,
+                              textColor: Colors.white,
+                              child: iconButton,
+                            );
+                          }
+
+                          return iconButton;
+                        },
                       ),
                       const SizedBox(width: 8),
                       AnimatedRotation(

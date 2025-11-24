@@ -29,6 +29,13 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
+  final GlobalKey<DashboardScreenState> _dashboardKey = GlobalKey<DashboardScreenState>();
+  final GlobalKey<ProfileScreenState> _profileKey = GlobalKey<ProfileScreenState>();
+  final GlobalKey<GoatScreenState> _goatKey = GlobalKey<GoatScreenState>();
+  final GlobalKey<HistoryScreenState> _historyKey = GlobalKey<HistoryScreenState>();
+  final GlobalKey<FarmerSchedulerScreenState> _schedulerKey =
+      GlobalKey<FarmerSchedulerScreenState>();
+  final GlobalKey<SettingScreenState> _settingKey = GlobalKey<SettingScreenState>();
 
   int _selectedIndex = 0;
   late final List<Widget> _pages;
@@ -86,14 +93,104 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
 
   void _initializePages() {
     _pages = [
-      AuthGuard(child: ProfileScreen(userEmail: widget.userEmail ?? '')),
-      const AuthGuard(child: GoatScreen()),
-      AuthGuard(child: DashboardScreen()),
-      const AuthGuard(child: HistoryScreen()),
-      const AuthGuard(child: FarmerSchedulerScreen()),
+      AuthGuard(child: ProfileScreen(key: _profileKey, userEmail: widget.userEmail ?? '')),
+      AuthGuard(child: GoatScreen(key: _goatKey)),
+      AuthGuard(child: DashboardScreen(key: _dashboardKey)),
+      AuthGuard(child: HistoryScreen(key: _historyKey)),
+      AuthGuard(child: FarmerSchedulerScreen(key: _schedulerKey)),
       AuthGuard(child: MilkScreen()),
-      AuthGuard(child: SettingScreen()),
+      AuthGuard(child: SettingScreen(key: _settingKey)),
     ];
+  }
+  
+  void _startDashboardUserGuide() {
+    if (_dashboardKey.currentState != null) {
+      _dashboardKey.currentState!.startUserGuide();
+    } else {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Please wait for the dashboard to load, then try again.'),
+            duration: Duration(seconds: 2),
+          ),
+        );
+      }
+    }
+  }
+  
+  void _startProfileUserGuide() {
+    if (_profileKey.currentState != null) {
+      _profileKey.currentState!.startUserGuide();
+    } else {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Please wait for the profile to load, then try again.'),
+            duration: Duration(seconds: 2),
+          ),
+        );
+      }
+    }
+  }
+
+  void _startGoatUserGuide() {
+    if (_goatKey.currentState != null) {
+      _goatKey.currentState!.startUserGuide();
+    } else {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Please wait for the goat screen to load, then try again.'),
+            duration: Duration(seconds: 2),
+          ),
+        );
+      }
+    }
+  }
+
+  void _startHistoryUserGuide() {
+    if (_historyKey.currentState != null) {
+      _historyKey.currentState!.startUserGuide();
+    } else {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Please wait for the history screen to load, then try again.'),
+            duration: Duration(seconds: 2),
+          ),
+        );
+      }
+    }
+  }
+
+  void _startSchedulerUserGuide() {
+    if (_schedulerKey.currentState != null) {
+      _schedulerKey.currentState!.startUserGuide();
+    } else {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Please wait for the scheduler to load, then try again.'),
+            duration: Duration(seconds: 2),
+          ),
+        );
+      }
+    }
+  }
+
+  void _startSettingUserGuide() {
+    if (_settingKey.currentState != null) {
+      _settingKey.currentState!.startUserGuide();
+    } else {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Please wait for the settings screen to load, then try again.'),
+            duration: Duration(seconds: 2),
+          ),
+        );
+      }
+    }
   }
 
   Future<void> _checkAuthenticationStatus() async {
@@ -573,6 +670,45 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
             tooltip: 'Refresh All App Data',
             onPressed: _handleRefresh,
           ),
+          // Show help button on Profile
+          if (_selectedIndex == 0)
+            IconButton(
+              icon: const Icon(Icons.help_outline_rounded),
+              tooltip: 'Start User Guide',
+              onPressed: _startProfileUserGuide,
+            ),
+          // Show help button on Goat Screen
+          if (_selectedIndex == 1)
+            IconButton(
+              icon: const Icon(Icons.help_outline_rounded),
+              tooltip: 'Start User Guide',
+              onPressed: _startGoatUserGuide,
+            ),
+          // Show help button on Dashboard
+          if (_selectedIndex == 2)
+            IconButton(
+              icon: const Icon(Icons.help_outline_rounded),
+              tooltip: 'Start User Guide',
+              onPressed: _startDashboardUserGuide,
+            ),
+          if (_selectedIndex == 3)
+            IconButton(
+              icon: const Icon(Icons.help_outline_rounded),
+              tooltip: 'Start User Guide',
+              onPressed: _startHistoryUserGuide,
+            ),
+          if (_selectedIndex == 4)
+            IconButton(
+              icon: const Icon(Icons.help_outline_rounded),
+              tooltip: 'Start User Guide',
+              onPressed: _startSchedulerUserGuide,
+            ),
+          if (_selectedIndex == 6)
+            IconButton(
+              icon: const Icon(Icons.help_outline_rounded),
+              tooltip: 'Start User Guide',
+              onPressed: _startSettingUserGuide,
+            ),
         ],
       ),
       drawer: _buildDrawer(),

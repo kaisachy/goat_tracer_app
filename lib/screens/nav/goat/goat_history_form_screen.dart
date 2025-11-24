@@ -4,9 +4,11 @@ import 'package:goat_tracer_app/screens/nav/goat/widgets/history/history_specifi
 import 'package:goat_tracer_app/screens/nav/goat/widgets/history/history_type_dropdown.dart';
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import 'package:showcaseview/showcaseview.dart';
 import '../../../models/goat.dart';
 import '../../../services/goat/goat_history_service.dart';
 import '../../../services/goat/goat_service.dart';
+import '../../../services/user_guide_service.dart';
 import '../../../constants/app_colors.dart';
 import '../../../utils/history_type_utils.dart';
 import 'modals/Kid_registration_dialog.dart';
@@ -37,6 +39,13 @@ class _GoatHistoryFormScreenState extends State<GoatHistoryFormScreen>
   final Map<String, TextEditingController> _controllers = {};
   final GlobalKey<HistorySpecificFieldsState> _historySpecificFieldsKey =
   GlobalKey<HistorySpecificFieldsState>();
+  final ScrollController _scrollController = ScrollController();
+  final GlobalKey _infoCardKey = GlobalKey();
+  final GlobalKey _historyTypeKey = GlobalKey();
+  final GlobalKey _specificFieldsKey = GlobalKey();
+  final GlobalKey _notesKey = GlobalKey();
+  final GlobalKey _submitButtonKey = GlobalKey();
+  BuildContext? _showCaseContext;
   late bool isEditing;
   bool _isLoading = false;
 
@@ -802,8 +811,95 @@ class _GoatHistoryFormScreenState extends State<GoatHistoryFormScreen>
     }
   }
 
+  Future<void> startUserGuide() async {
+    if (_showCaseContext == null) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Please wait for the form to finish loading, then try again.'),
+            duration: Duration(seconds: 2),
+          ),
+        );
+      }
+      return;
+    }
+
+    FocusScope.of(context).unfocus();
+    final steps = _buildShowcaseSteps();
+    if (steps.isEmpty) {
+      return;
+    }
+
+    await UserGuideService.resetGuide('goat_history_form');
+    await Future.delayed(const Duration(milliseconds: 300));
+    ShowCaseWidget.of(_showCaseContext!).startShowCase(steps);
+  }
+
+  List<GlobalKey> _buildShowcaseSteps() {
+    final keys = <GlobalKey>[
+      _infoCardKey,
+      _historyTypeKey,
+    ];
+
+    if (_hasSpecificFieldsSection) {
+      keys.add(_specificFieldsKey);
+    }
+
+    keys
+      ..add(_notesKey)
+      ..add(_submitButtonKey);
+
+    return keys;
+  }
+
+  bool get _hasSpecificFieldsSection {
+    final value = selectedHistoryType.trim().toLowerCase();
+    if (value.isEmpty) return false;
+    if (value.startsWith('select type')) return false;
+    if (value.startsWith('loading')) return false;
+    if (value == 'other') return false;
+    return true;
+  }
+
+  String _specificFieldsTitle() {
+    if (!_hasSpecificFieldsSection) return 'History Details';
+    return '${selectedHistoryType.trim()} Details';
+  }
+
+  String _specificFieldsDescription() {
+    final value = selectedHistoryType.trim().toLowerCase();
+    switch (value) {
+      case 'breeding':
+        return 'Document the sire, semen or technician, and set a return-to-heat reminder.';
+      case 'pregnant':
+        return 'Review the auto-filled breeding date and verify the expected delivery timeline.';
+      case 'gives birth':
+        return 'Log every kid that was born, update the sire information, and confirm delivery details.';
+      case 'mortality':
+        return 'Capture the cause of death and any notes needed for farm records.';
+      case 'sold':
+        return 'Record the buyer, sale amount, and any important notes for this transaction.';
+      case 'sick':
+        return 'Select the disease type and note symptoms so you can track treatments later.';
+      default:
+        return 'These inputs change based on the selected history type. Complete the fields that appear here.';
+    }
+  }
+
+  Future<void> _scrollToKey(GlobalKey key) async {
+    final context = key.currentContext;
+    if (context == null) return;
+    await Scrollable.ensureVisible(
+      context,
+      duration: const Duration(milliseconds: 350),
+      curve: Curves.easeInOut,
+      alignment: 0.1,
+    );
+  }
+
   @override
   void dispose() {
+    _scrollController.dispose();
     _fadeController.dispose();
     _slideController.dispose();
     for (var controller in _controllers.values) {
@@ -2832,164 +2928,209 @@ class _GoatHistoryFormScreenState extends State<GoatHistoryFormScreen>
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.grey[50],
-      appBar: AppBar(
-        title: Text(
-          isEditing ? 'Edit Goat History' : 'Add Goat History',
-          style: const TextStyle(
-            fontWeight: FontWeight.bold,
-            color: Colors.white,
-          ),
-          overflow: TextOverflow.ellipsis,
-        ),
-        centerTitle: true,
-        elevation: 0,
-        backgroundColor: AppColors.darkGreen,
-        foregroundColor: Colors.white,
-        actions: isEditing
-            ? [
-          IconButton(
-            icon: const Icon(Icons.delete_forever),
-            onPressed: _deleteEvent,
-            tooltip: 'Delete Event',
-          )
-        ]
-            : null,
-      ),
-      body: SafeArea(
-        child: _isLoading && _goatDetails == null
-            ? Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              const CircularProgressIndicator(
-                color: AppColors.vibrantGreen,
+    return ShowCaseWidget(
+      enableAutoScroll: true,
+      scrollDuration: const Duration(milliseconds: 400),
+      onFinish: () async {
+        await UserGuideService.markGuideCompleted('goat_history_form');
+      },
+      onStart: (index, key) => _scrollToKey(key),
+      builder: (showCaseContext) {
+        _showCaseContext = showCaseContext;
+
+        final specificFields = HistorySpecificFields(
+          key: _historySpecificFieldsKey,
+          selectedEventType: selectedHistoryType,
+          controllers: _controllers,
+          goatTag: widget.goatTag ?? (isEditing && widget.historyRecord != null ? widget.historyRecord!.goatTag : null),
+          temporaryKidData: _temporaryKidData,
+          onEditKidPressed: _openKidRegistrationDialog,
+          showReturnToHeat: _shouldShowReturnToHeatField(),
+        );
+
+        final specificFieldsSection = _hasSpecificFieldsSection
+            ? Showcase(
+                key: _specificFieldsKey,
+                title: _specificFieldsTitle(),
+                description: _specificFieldsDescription(),
+                tooltipBackgroundColor: AppColors.darkGreen,
+                textColor: Colors.white,
+                child: specificFields,
+              )
+            : specificFields;
+
+        return Scaffold(
+          backgroundColor: Colors.grey[50],
+          appBar: AppBar(
+            title: Text(
+              isEditing ? 'Edit Goat History' : 'Add Goat History',
+              style: const TextStyle(
+                fontWeight: FontWeight.bold,
+                color: Colors.white,
               ),
-              const SizedBox(height: 16),
-              Text(
-                'Loading goat information...',
-                style: TextStyle(
-                  fontSize: 16,
-                  color: Colors.grey.shade600,
+              overflow: TextOverflow.ellipsis,
+            ),
+            centerTitle: true,
+            elevation: 0,
+            backgroundColor: AppColors.darkGreen,
+            foregroundColor: Colors.white,
+            actions: [
+              IconButton(
+                icon: const Icon(Icons.help_outline_rounded),
+                tooltip: 'Start User Guide',
+                onPressed: startUserGuide,
+              ),
+              if (isEditing)
+                IconButton(
+                  icon: const Icon(Icons.delete_forever),
+                  onPressed: _deleteEvent,
+                  tooltip: 'Delete Event',
                 ),
-              ),
             ],
           ),
-        )
-            : FadeTransition(
-          opacity: _fadeAnimation,
-          child: SlideTransition(
-            position: _slideAnimation,
-            child: LayoutBuilder(
-              builder: (context, constraints) {
-                return SingleChildScrollView(
-                  padding: const EdgeInsets.all(20),
-                  child: ConstrainedBox(
-                    constraints: BoxConstraints(
-                      minHeight: constraints.maxHeight - 40,
+          body: SafeArea(
+            child: _isLoading && _goatDetails == null
+                ? Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const CircularProgressIndicator(
+                          color: AppColors.vibrantGreen,
+                        ),
+                        const SizedBox(height: 16),
+                        Text(
+                          'Loading goat information...',
+                          style: TextStyle(
+                            fontSize: 16,
+                            color: Colors.grey.shade600,
+                          ),
+                        ),
+                      ],
                     ),
-                    child: IntrinsicHeight(
-                      child: Form(
-                        key: _formKey,
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            // goat Info Card
-                            HistorygoatInfoCard(
-                              goatDetails: _goatDetails,
-                              goatTag: widget.goatTag,
-                            ),
-                            const SizedBox(height: 30),
-
-                            // Event Type Section
-                            HistoryTypeDropdown(
-                              goatDetails: _goatDetails,
-                              selectedHistoryType: selectedHistoryType,
-                              controllers: _controllers,
-                              locked: !isEditing && widget.initialHistoryType != null,
-                              onHistoryTypeChanged: (value) {
-                                if (value != null) {
-                                  _handleHistoryTypeChanged(value);
-                                }
-                              },
-                              onHistoryDateSelected: _handleHistoryDateSelected,
-                            ),
-                            const SizedBox(height: 30),
-
-                            // History-specific fields
-                            HistorySpecificFields(
-                              key: _historySpecificFieldsKey,
-                              selectedEventType: selectedHistoryType,
-                              controllers: _controllers,
-                              goatTag: widget.goatTag ?? (isEditing && widget.historyRecord != null ? widget.historyRecord!.goatTag : null),
-                              temporaryKidData: _temporaryKidData,
-                              onEditKidPressed: _openKidRegistrationDialog,
-                              showReturnToHeat: _shouldShowReturnToHeatField(),
-                            ),
-
-                            // Notes Section
-                            HistoryNotesSection(
-                              controller: _controllers['notes']!,
-                            ),
-                            const SizedBox(height: 40),
-
-                            // Submit Button
-                            SizedBox(
-                              width: double.infinity,
-                              height: 56,
-                              child: ElevatedButton.icon(
-                                onPressed: _isLoading || _goatDetails == null
-                                    ? null
-                                    : _submitForm,
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: AppColors.vibrantGreen,
-                                  foregroundColor: Colors.white,
-                                  elevation: 2,
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(20),
-                                  ),
-                                  shadowColor:
-                                  AppColors.vibrantGreen.withValues(alpha: 0.3),
-                                ),
-                                icon: _isLoading
-                                    ? const SizedBox(
-                                  width: 20,
-                                  height: 20,
-                                  child: CircularProgressIndicator(
-                                    color: Colors.white,
-                                    strokeWidth: 2,
-                                  ),
-                                )
-                                    : Icon(
-                                  isEditing
-                                      ? FontAwesomeIcons.penToSquare
-                                      : FontAwesomeIcons.plus,
-                                  size: 18,
-                                ),
-                                label: Text(
-                                  _isLoading
-                                      ? 'Saving...'
-                                      : (isEditing ? 'Update Event' : 'Create Event'),
-                                  style: const TextStyle(
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                ),
+                  )
+                : FadeTransition(
+                    opacity: _fadeAnimation,
+                    child: SlideTransition(
+                      position: _slideAnimation,
+                      child: LayoutBuilder(
+                        builder: (context, constraints) {
+                          return SingleChildScrollView(
+                            controller: _scrollController,
+                            padding: const EdgeInsets.all(20),
+                            child: Form(
+                              key: _formKey,
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                      Showcase(
+                                        key: _infoCardKey,
+                                        title: 'Goat Overview',
+                                        description:
+                                            'Verify the goat tag, status, and basic info before logging a history record.',
+                                        tooltipBackgroundColor: AppColors.darkGreen,
+                                        textColor: Colors.white,
+                                        child: HistorygoatInfoCard(
+                                          goatDetails: _goatDetails,
+                                          goatTag: widget.goatTag,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 30),
+                                      Showcase(
+                                        key: _historyTypeKey,
+                                        title: 'History Type',
+                                        description:
+                                            'Pick what happened so the form reveals the matching set of fields.',
+                                        tooltipBackgroundColor: AppColors.darkGreen,
+                                        textColor: Colors.white,
+                                        child: HistoryTypeDropdown(
+                                          goatDetails: _goatDetails,
+                                          selectedHistoryType: selectedHistoryType,
+                                          controllers: _controllers,
+                                          locked: !isEditing && widget.initialHistoryType != null,
+                                          onHistoryTypeChanged: (value) {
+                                            if (value != null) {
+                                              _handleHistoryTypeChanged(value);
+                                            }
+                                          },
+                                          onHistoryDateSelected: _handleHistoryDateSelected,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 30),
+                                      specificFieldsSection,
+                                      Showcase(
+                                        key: _notesKey,
+                                        title: 'Notes',
+                                        description:
+                                            'Add any observations or reminders that should travel with this record.',
+                                        tooltipBackgroundColor: AppColors.darkGreen,
+                                        textColor: Colors.white,
+                                        child: HistoryNotesSection(
+                                          controller: _controllers['notes']!,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 40),
+                                      Showcase(
+                                        key: _submitButtonKey,
+                                        title: isEditing ? 'Update Event' : 'Create Event',
+                                        description:
+                                            'Save the history record once every required field looks good.',
+                                        tooltipBackgroundColor: AppColors.darkGreen,
+                                        textColor: Colors.white,
+                                        child: SizedBox(
+                                          width: double.infinity,
+                                          height: 56,
+                                          child: ElevatedButton.icon(
+                                            onPressed: _isLoading || _goatDetails == null
+                                                ? null
+                                                : _submitForm,
+                                            style: ElevatedButton.styleFrom(
+                                              backgroundColor: AppColors.vibrantGreen,
+                                              foregroundColor: Colors.white,
+                                              elevation: 2,
+                                              shape: RoundedRectangleBorder(
+                                                borderRadius: BorderRadius.circular(20),
+                                              ),
+                                              shadowColor: AppColors.vibrantGreen.withValues(alpha: 0.3),
+                                            ),
+                                            icon: _isLoading
+                                                ? const SizedBox(
+                                                    width: 20,
+                                                    height: 20,
+                                                    child: CircularProgressIndicator(
+                                                      color: Colors.white,
+                                                      strokeWidth: 2,
+                                                    ),
+                                                  )
+                                                : Icon(
+                                                    isEditing
+                                                        ? FontAwesomeIcons.penToSquare
+                                                        : FontAwesomeIcons.plus,
+                                                    size: 18,
+                                                  ),
+                                            label: Text(
+                                              _isLoading
+                                                  ? 'Saving...'
+                                                  : (isEditing ? 'Update Event' : 'Create Event'),
+                                              style: const TextStyle(
+                                                fontSize: 16,
+                                                fontWeight: FontWeight.w600,
+                                              ),
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                      const SizedBox(height: 20),
+                                ],
                               ),
                             ),
-                            const SizedBox(height: 20),
-                          ],
-                        ),
+                          );
+                        },
                       ),
                     ),
                   ),
-                );
-              },
-            ),
           ),
-        ),
-      ),
+        );
+      },
     );
   }
 }

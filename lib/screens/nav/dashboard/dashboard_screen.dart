@@ -1,10 +1,13 @@
-﻿import 'package:flutter/material.dart';
+﻿import 'dart:async';
+import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:goat_tracer_app/models/goat.dart';
 import 'package:goat_tracer_app/constants/app_colors.dart';
 import 'package:goat_tracer_app/services/goat/goat_service.dart';
 import 'package:goat_tracer_app/services/goat/goat_history_service.dart';
+import 'package:goat_tracer_app/services/user_guide_service.dart';
 import 'package:fl_chart/fl_chart.dart';
+import 'package:showcaseview/showcaseview.dart';
 import 'widgets/breeding_analytics_widget.dart';
 import 'package:goat_tracer_app/screens/nav/goat/goat_detail_screen.dart';
 
@@ -12,10 +15,11 @@ class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
 
   @override
-  State<DashboardScreen> createState() => _DashboardScreenState();
+  State<DashboardScreen> createState() => DashboardScreenState();
 }
 
-class _DashboardScreenState extends State<DashboardScreen>
+/// Public state class to allow access from outside
+class DashboardScreenState extends State<DashboardScreen>
     with TickerProviderStateMixin {
   List<Goat> allGoats = [];
   List<Map<String, dynamic>> allEvents = [];
@@ -30,6 +34,26 @@ class _DashboardScreenState extends State<DashboardScreen>
   late AnimationController _cardAnimationController;
   late Animation<double> _fadeAnimation;
   late Animation<Offset> _slideAnimation;
+
+  // User guide keys
+  final GlobalKey _overviewCardKey = GlobalKey();
+  final GlobalKey _classificationKey = GlobalKey();
+  final GlobalKey _statusBreakdownKey = GlobalKey();
+  final GlobalKey _breedingAnalyticsKey = GlobalKey();
+  final GlobalKey _weightAnalysisKey = GlobalKey();
+  final GlobalKey _expectedDeliveriesKey = GlobalKey();
+  final GlobalKey _recentEventsKey = GlobalKey();
+  final GlobalKey _breedDistributionKey = GlobalKey();
+  final GlobalKey _keepAnEyeOnKey = GlobalKey();
+  
+  // Store the ShowCaseWidget context
+  BuildContext? _showCaseContext;
+  
+  // ScrollController for auto-scrolling
+  final ScrollController _scrollController = ScrollController();
+  
+  // Timer for auto-advancing showcase
+  Timer? _autoAdvanceTimer;
 
   @override
   void initState() {
@@ -105,32 +129,197 @@ class _DashboardScreenState extends State<DashboardScreen>
 
   @override
   void dispose() {
+    _autoAdvanceTimer?.cancel();
+    _scrollController.dispose();
     _animationController.dispose();
     _cardAnimationController.dispose();
     super.dispose();
   }
+  
+  /// Helper method to scroll to a showcase widget
+  Future<void> _scrollToShowcase(GlobalKey key) async {
+    final context = key.currentContext;
+    if (context != null && _scrollController.hasClients) {
+      try {
+        await Scrollable.ensureVisible(
+          context,
+          duration: const Duration(milliseconds: 400),
+          curve: Curves.easeInOut,
+          alignment: 0.2, // Show widget at 20% from top to leave room for tooltip
+        );
+      } catch (e) {
+        debugPrint('Error scrolling to showcase: $e');
+      }
+    }
+  }
+
+  /// Public method to start the user guide (called from home screen)
+  void startUserGuide() async {
+    if (_showCaseContext == null) {
+      debugPrint('ShowCase context not available yet');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Please wait a moment and try again.'),
+            duration: Duration(seconds: 2),
+          ),
+        );
+      }
+      return;
+    }
+    
+    // Reset the guide completion status
+    await UserGuideService.resetGuide('dashboard');
+    debugPrint('User guide reset, starting showcase...');
+    
+    if (mounted && _showCaseContext != null) {
+      try {
+        // Wait for widgets to be fully rendered
+        await Future.delayed(const Duration(milliseconds: 300));
+        
+        // Start the showcase - it will auto-scroll to each item
+        ShowCaseWidget.of(_showCaseContext!).startShowCase([
+          _overviewCardKey,
+          _classificationKey,
+          _statusBreakdownKey,
+          _breedingAnalyticsKey,
+          _weightAnalysisKey,
+          _expectedDeliveriesKey,
+          _recentEventsKey,
+          _breedDistributionKey,
+          _keepAnEyeOnKey,
+        ]);
+      } catch (e) {
+        debugPrint('Error starting user guide: $e');
+        // Show a snackbar if guide fails to start
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: const Text('Unable to start user guide. Please try again.'),
+              backgroundColor: Colors.orange,
+              duration: const Duration(seconds: 2),
+            ),
+          );
+        }
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.grey.shade50,
-      body: SafeArea(
-        child: FadeTransition(
-          opacity: _fadeAnimation,
-          child: SlideTransition(
-            position: _slideAnimation,
-            child: RefreshIndicator(
-              onRefresh: _refreshData,
-              color: AppColors.vibrantGreen,
-              child: isLoading
-                  ? _buildLoadingState()
-                  : error != null
-                  ? _buildErrorState()
-                  : _buildDashboardContent(),
+    return ShowCaseWidget(
+      enableAutoScroll: true,
+      scrollDuration: const Duration(milliseconds: 300),
+      onFinish: () async {
+        debugPrint('User guide finished, marking as completed...');
+        await UserGuideService.markGuideCompleted('dashboard');
+        debugPrint('User guide marked as completed');
+      },
+      onStart: (index, key) {
+        // Cancel any existing auto-advance timer
+        _autoAdvanceTimer?.cancel();
+        
+        // Ensure the widget is scrolled into view
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          _scrollToShowcase(key);
+        });
+        
+        // Auto-advance after Breeding Analytics
+        if (key == _breedingAnalyticsKey) {
+          debugPrint('Breeding Analytics showcase started, setting up auto-advance...');
+          _autoAdvanceTimer = Timer(const Duration(seconds: 3), () {
+            debugPrint('Auto-advance timer fired for Breeding Analytics');
+            if (mounted && _showCaseContext != null) {
+              try {
+                // Get the list of all showcase keys in order
+                final allKeys = [
+                  _overviewCardKey,
+                  _classificationKey,
+                  _statusBreakdownKey,
+                  _breedingAnalyticsKey,
+                  _weightAnalysisKey,
+                  _expectedDeliveriesKey,
+                  _recentEventsKey,
+                  _breedDistributionKey,
+                  _keepAnEyeOnKey,
+                ];
+                
+                // Find the index of breeding analytics
+                final breedingIndex = allKeys.indexOf(_breedingAnalyticsKey);
+                debugPrint('Breeding Analytics is at index: $breedingIndex');
+                
+                if (breedingIndex >= 0 && breedingIndex < allKeys.length - 1) {
+                  // Get remaining keys after breeding analytics
+                  final remainingKeys = allKeys.sublist(breedingIndex + 1);
+                  debugPrint('Will continue with ${remainingKeys.length} remaining showcases');
+                  
+                  // Wait for next frame to ensure UI is stable
+                  WidgetsBinding.instance.addPostFrameCallback((_) {
+                    Future.delayed(const Duration(milliseconds: 100), () {
+                      if (mounted && _showCaseContext != null) {
+                        try {
+                          debugPrint('Dismissing current showcase...');
+                          // Dismiss the current showcase
+                          ShowCaseWidget.of(_showCaseContext!).dismiss();
+                          
+                          // Wait longer for dismiss animation to complete
+                          Future.delayed(const Duration(milliseconds: 800), () {
+                            if (mounted && _showCaseContext != null) {
+                              try {
+                                debugPrint('Starting next showcase sequence with ${remainingKeys.length} items');
+                                ShowCaseWidget.of(_showCaseContext!).startShowCase(remainingKeys);
+                              } catch (e) {
+                                debugPrint('Error starting next showcase: $e');
+                              }
+                            } else {
+                              debugPrint('Widget not mounted or context lost after delay');
+                            }
+                          });
+                        } catch (e) {
+                          debugPrint('Error dismissing showcase: $e');
+                        }
+                      } else {
+                        debugPrint('Widget not mounted or context is null');
+                      }
+                    });
+                  });
+                } else {
+                  debugPrint('Breeding Analytics is last item or not found in list');
+                }
+              } catch (e) {
+                debugPrint('Error in auto-advance logic: $e');
+              }
+            } else {
+              debugPrint('Cannot auto-advance: mounted=$mounted, hasContext=${_showCaseContext != null}');
+            }
+          });
+        }
+      },
+      builder: (showCaseContext) {
+        // Store the ShowCaseWidget context
+        _showCaseContext = showCaseContext;
+        
+        return Scaffold(
+          backgroundColor: Colors.grey.shade50,
+          body: SafeArea(
+            child: FadeTransition(
+              opacity: _fadeAnimation,
+              child: SlideTransition(
+                position: _slideAnimation,
+                child: RefreshIndicator(
+                  onRefresh: _refreshData,
+                  color: AppColors.vibrantGreen,
+                  child: isLoading
+                      ? _buildLoadingState()
+                      : error != null
+                      ? _buildErrorState()
+                      : _buildDashboardContent(),
+                ),
+              ),
             ),
           ),
-        ),
-      ),
+        );
+      },
     );
   }
 
@@ -262,6 +451,7 @@ class _DashboardScreenState extends State<DashboardScreen>
     }
 
     return CustomScrollView(
+      controller: _scrollController,
       physics: const AlwaysScrollableScrollPhysics(),
       slivers: [
         SliverPadding(
@@ -330,9 +520,18 @@ class _DashboardScreenState extends State<DashboardScreen>
         return ad.compareTo(bd);
       });
 
-    return _buildAnimatedCard(
-      delay: 225,
-      child: Container(
+    return Showcase(
+      key: _weightAnalysisKey,
+      title: 'Weight Analysis',
+      description: 'Track weight changes over time for individual goats. Use the search and dropdown to select a specific goat tag, then view its weight progression in the chart below.',
+      targetShapeBorder: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(20),
+      ),
+      tooltipBackgroundColor: AppColors.darkGreen,
+      textColor: Colors.white,
+      child: _buildAnimatedCard(
+        delay: 225,
+        child: Container(
         padding: const EdgeInsets.all(24),
         decoration: BoxDecoration(
           color: Colors.white,
@@ -467,6 +666,7 @@ class _DashboardScreenState extends State<DashboardScreen>
           ],
         ),
       ),
+      ),
     );
   }
 
@@ -477,9 +677,32 @@ class _DashboardScreenState extends State<DashboardScreen>
 
     final bool hasItems = sickGoat.isNotEmpty || lostGoat.isNotEmpty;
 
-    return _buildAnimatedCard(
-      delay: 700,
-      child: Container(
+    return Showcase(
+      key: _keepAnEyeOnKey,
+      title: 'Keep an Eye On',
+      description: 'Monitor goats that need immediate attention. This section highlights sick and lost goats, helping you quickly identify and address health issues or missing animals in your herd.',
+      targetShapeBorder: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(20),
+      ),
+      tooltipPosition: TooltipPosition.top,
+      tooltipBackgroundColor: AppColors.darkGreen,
+      textColor: Colors.white,
+      tooltipPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      titleTextStyle: const TextStyle(
+        fontSize: 16,
+        fontWeight: FontWeight.bold,
+        color: Colors.white,
+      ),
+      descTextStyle: const TextStyle(
+        fontSize: 13,
+        color: Colors.white,
+        height: 1.3,
+      ),
+      overlayOpacity: 0.4,
+      disableBarrierInteraction: false,
+      child: _buildAnimatedCard(
+        delay: 700,
+        child: Container(
         padding: const EdgeInsets.all(24),
         decoration: BoxDecoration(
           color: Colors.white,
@@ -548,6 +771,7 @@ class _DashboardScreenState extends State<DashboardScreen>
             ],
           ],
         ),
+      ),
       ),
     );
   }
@@ -766,9 +990,18 @@ class _DashboardScreenState extends State<DashboardScreen>
       }
     });
 
-    return _buildAnimatedCard(
-      delay: 175,
-      child: Container(
+    return Showcase(
+      key: _expectedDeliveriesKey,
+      title: 'Expected Deliveries',
+      description: 'Stay on top of upcoming kidding dates. This section lists all pregnant goats with their expected delivery dates, color-coded by urgency (red for overdue, orange for soon, green for later).',
+      targetShapeBorder: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(20),
+      ),
+      tooltipBackgroundColor: AppColors.darkGreen,
+      textColor: Colors.white,
+      child: _buildAnimatedCard(
+        delay: 175,
+        child: Container(
         padding: const EdgeInsets.all(24),
         decoration: BoxDecoration(
           color: Colors.white,
@@ -825,6 +1058,7 @@ class _DashboardScreenState extends State<DashboardScreen>
               ),
           ],
         ),
+      ),
       ),
     );
   }
@@ -928,14 +1162,24 @@ class _DashboardScreenState extends State<DashboardScreen>
     final activegoat = allGoats.where((c) => 
       c.status.toLowerCase() != 'sold' && c.status.toLowerCase() != 'mortality').length;
 
-    return _buildAnimatedCard(
-      delay: 0,
-      child: _buildOverviewCard(
-        title: 'TOTAL GOAT',
-        value: totalgoat.toString(),
-        icon: FontAwesomeIcons.cow,
-        color: AppColors.vibrantGreen,
-        subtitle: '$activegoat active',
+    return Showcase(
+      key: _overviewCardKey,
+      title: 'Total Goat Overview',
+      description: 'This card shows the total number of goats in your herd and how many are currently active. Active goats exclude those that are sold or have passed away.',
+      targetShapeBorder: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(20),
+      ),
+      tooltipBackgroundColor: AppColors.darkGreen,
+      textColor: Colors.white,
+      child: _buildAnimatedCard(
+        delay: 0,
+        child: _buildOverviewCard(
+          title: 'TOTAL GOAT',
+          value: totalgoat.toString(),
+          icon: FontAwesomeIcons.cow,
+          color: AppColors.vibrantGreen,
+          subtitle: '$activegoat active',
+        ),
       ),
     );
   }
@@ -1046,9 +1290,18 @@ class _DashboardScreenState extends State<DashboardScreen>
       statusCount[status] = (statusCount[status] ?? 0) + 1;
     }
 
-    return _buildAnimatedCard(
-      delay: 300,
-      child: Container(
+    return Showcase(
+      key: _statusBreakdownKey,
+      title: 'Status Breakdown',
+      description: 'Monitor the health and reproductive status of your goats. This grid shows counts for each status type including Healthy, Sick, Breeding, Pregnant, Lactating, and more.',
+      targetShapeBorder: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(20),
+      ),
+      tooltipBackgroundColor: AppColors.darkGreen,
+      textColor: Colors.white,
+      child: _buildAnimatedCard(
+        delay: 300,
+        child: Container(
         padding: const EdgeInsets.all(24),
         decoration: BoxDecoration(
           color: Colors.white,
@@ -1147,6 +1400,7 @@ class _DashboardScreenState extends State<DashboardScreen>
           ],
         ),
       ),
+      ),
     );
   }
 
@@ -1160,9 +1414,18 @@ class _DashboardScreenState extends State<DashboardScreen>
       }
     }).take(5).toList();
 
-    return _buildAnimatedCard(
-      delay: 400,
-      child: Container(
+    return Showcase(
+      key: _recentEventsKey,
+      title: 'Recent History Recorded',
+      description: 'Quickly view the most recent activities recorded in your herd. This shows the last 5 events from the past 7 days, including vaccinations, treatments, breeding, and other important events.',
+      targetShapeBorder: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(20),
+      ),
+      tooltipBackgroundColor: AppColors.darkGreen,
+      textColor: Colors.white,
+      child: _buildAnimatedCard(
+        delay: 400,
+        child: Container(
         padding: const EdgeInsets.all(24),
         decoration: BoxDecoration(
           color: Colors.white,
@@ -1219,6 +1482,7 @@ class _DashboardScreenState extends State<DashboardScreen>
               ),
           ],
         ),
+      ),
       ),
     );
   }
@@ -1297,9 +1561,18 @@ class _DashboardScreenState extends State<DashboardScreen>
       }
     }
 
-    return _buildAnimatedCard(
-      delay: 600,
-      child: Container(
+    return Showcase(
+      key: _breedDistributionKey,
+      title: 'Breed Distribution',
+      description: 'View the distribution of different breeds in your herd. This section shows the count of each breed type, helping you understand the genetic diversity of your goats.',
+      targetShapeBorder: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(20),
+      ),
+      tooltipBackgroundColor: AppColors.darkGreen,
+      textColor: Colors.white,
+      child: _buildAnimatedCard(
+        delay: 600,
+        child: Container(
         padding: const EdgeInsets.all(24),
         decoration: BoxDecoration(
           color: Colors.white,
@@ -1370,6 +1643,7 @@ class _DashboardScreenState extends State<DashboardScreen>
           ],
         ),
       ),
+      ),
     );
   }
 
@@ -1416,9 +1690,18 @@ class _DashboardScreenState extends State<DashboardScreen>
     final sortedClassifications = classificationCount.entries.toList()
       ..sort((a, b) => b.value.compareTo(a.value));
 
-    return _buildAnimatedCard(
-      delay: 650,
-      child: Container(
+    return Showcase(
+      key: _classificationKey,
+      title: 'Classification Distribution',
+      description: 'View how your goats are distributed across different classifications (Kid, Grower, Doeling, Buckling, Doe, Buck). Each bar shows the count and percentage of your total herd.',
+      targetShapeBorder: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(20),
+      ),
+      tooltipBackgroundColor: AppColors.darkGreen,
+      textColor: Colors.white,
+      child: _buildAnimatedCard(
+        delay: 650,
+        child: Container(
         padding: const EdgeInsets.all(24),
         decoration: BoxDecoration(
           color: Colors.white,
@@ -1556,6 +1839,7 @@ class _DashboardScreenState extends State<DashboardScreen>
               ),
           ],
         ),
+      ),
       ),
     );
   }
@@ -1702,9 +1986,62 @@ class _DashboardScreenState extends State<DashboardScreen>
   }
 
   Widget _buildBreedingAnalytics() {
-    return _buildAnimatedCard(
-      delay: 150,
-      child: const BreedingAnalyticsWidget(),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Small header widget to showcase instead of the entire large widget
+        Showcase(
+          key: _breedingAnalyticsKey,
+          title: 'Breeding Analytics',
+          description: 'Track breeding performance filtered by doe and buck. View conception rates, breeding history, and get insights into your breeding program success.',
+          targetShapeBorder: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+          tooltipBackgroundColor: AppColors.darkGreen,
+          textColor: Colors.white,
+          tooltipPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          titleTextStyle: const TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.bold,
+            color: Colors.white,
+          ),
+          descTextStyle: const TextStyle(
+            fontSize: 13,
+            color: Colors.white,
+            height: 1.3,
+          ),
+          overlayOpacity: 0.4,
+          disableBarrierInteraction: false,
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  Icons.analytics,
+                  color: AppColors.darkGreen,
+                  size: 20,
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  'Breeding Analytics',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.textPrimary,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+        const SizedBox(height: 12),
+        // The actual widget without showcase
+        _buildAnimatedCard(
+          delay: 150,
+          child: const BreedingAnalyticsWidget(),
+        ),
+      ],
     );
   }
 

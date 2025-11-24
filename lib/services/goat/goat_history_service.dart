@@ -100,23 +100,47 @@ class GoatHistoryService {
     // Extract the history record ID from the data
     final historyId = data['id'];
     if (historyId == null) {
+      log('updategoatHistory: Missing ID in data');
       return false;
     }
 
+    // Clean token: trim and remove only newlines and carriage returns (not spaces)
+    String cleanedToken = token.trim();
+    cleanedToken = cleanedToken.replaceAll('\r', '').replaceAll('\n', '').trim();
+
+    final uri = Uri.parse('$_baseUrl/goats/history');
+    final requestBody = jsonEncode(data);
+
     try {
-      // First, delete the existing history record
-      final deleteSuccess = await deletegoatHistory(historyId);
-      if (!deleteSuccess) {
+      final response = await http.put(
+        uri,
+        headers: {
+          'Content-Type': 'application/json; charset=UTF-8',
+          'Authorization': 'Bearer $cleanedToken',
+          'X-Auth-Token': cleanedToken, // Workaround for nginx + PHP-FPM
+        },
+        body: requestBody,
+      );
+
+      log('updategoatHistory: Response status: ${response.statusCode}');
+      log('updategoatHistory: Response body: ${response.body}');
+
+      if (response.statusCode == 200) {
+        try {
+          final responseData = jsonDecode(response.body);
+          if (responseData['success'] == true || responseData['status'] == 'success') {
+            return true;
+          }
+        } catch (parseError) {
+          // If response is 200, assume success even if parsing fails
+          log('updategoatHistory: Parse error but status 200: $parseError');
+          return true;
+        }
+        return true; // Assume success for 200 status
+      } else {
+        log('updategoatHistory: Failed with status ${response.statusCode}. Response: ${response.body}');
         return false;
       }
-
-      // Remove the ID from the data since we're creating a new history record
-      final newHistoryData = Map<String, dynamic>.from(data);
-      newHistoryData.remove('id');
-
-      // Create a new history record with the updated data
-      final createSuccess = await storegoatHistory(newHistoryData);
-      return createSuccess;
     } catch (e) {
       log('Exception in updategoatHistory: $e');
       return false;

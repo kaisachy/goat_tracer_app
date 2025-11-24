@@ -8,6 +8,7 @@ import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:goat_tracer_app/services/profile/personal_information_service.dart';
 import 'package:goat_tracer_app/services/profile/farm_details_service.dart';
+import 'package:goat_tracer_app/services/user_guide_service.dart';
 import 'package:goat_tracer_app/constants/app_colors.dart';
 import 'package:goat_tracer_app/screens/nav/profile/widgets/personal_information_widget.dart';
 import 'package:goat_tracer_app/screens/nav/profile/widgets/farm_details_widget.dart';
@@ -16,6 +17,7 @@ import 'package:goat_tracer_app/screens/nav/profile/widgets/trainings_seminars_w
 import 'package:goat_tracer_app/services/auth_service.dart';
 import 'package:goat_tracer_app/services/profile/profile_export_service.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import 'package:showcaseview/showcaseview.dart';
 
 class ProfileScreen extends StatefulWidget {
   final String userEmail;
@@ -23,10 +25,11 @@ class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key, required this.userEmail});
 
   @override
-  State<ProfileScreen> createState() => _ProfileScreenState();
+  State<ProfileScreen> createState() => ProfileScreenState();
 }
 
-class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateMixin {
+/// Public state class to allow access from outside
+class ProfileScreenState extends State<ProfileScreen> with TickerProviderStateMixin {
   Future<Map<String, dynamic>?> farmerProfileFuture = Future.value(null);
   Future<Map<String, dynamic>?> farmDetailsFuture = Future.value(null);
   bool isEditingMode = false;
@@ -40,6 +43,17 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
   bool _isHeaderCollapsed = false;
   String? _storedFirstName;
   String? _storedLastName;
+
+  // User guide keys
+  final GlobalKey _profileHeaderKey = GlobalKey();
+  final GlobalKey _personalInfoKey = GlobalKey();
+  final GlobalKey _farmDetailsKey = GlobalKey();
+  final GlobalKey _educationalBackgroundKey = GlobalKey();
+  final GlobalKey _trainingsSeminarsKey = GlobalKey();
+  final GlobalKey _exportButtonsKey = GlobalKey();
+  
+  // Store the ShowCaseWidget context
+  BuildContext? _showCaseContext;
 
   @override
   void initState() {
@@ -101,6 +115,72 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
     _scrollController.removeListener(_handleScroll);
     _scrollController.dispose();
     super.dispose();
+  }
+
+  /// Helper method to scroll to a showcase widget
+  Future<void> _scrollToShowcase(GlobalKey key) async {
+    final context = key.currentContext;
+    if (context != null && _scrollController.hasClients) {
+      try {
+        await Scrollable.ensureVisible(
+          context,
+          duration: const Duration(milliseconds: 400),
+          curve: Curves.easeInOut,
+          alignment: 0.2, // Show widget at 20% from top to leave room for tooltip
+        );
+      } catch (e) {
+        debugPrint('Error scrolling to showcase: $e');
+      }
+    }
+  }
+
+  /// Public method to start the user guide (called from home screen)
+  void startUserGuide() async {
+    if (_showCaseContext == null) {
+      debugPrint('ShowCase context not available yet');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Please wait a moment and try again.'),
+            duration: Duration(seconds: 2),
+          ),
+        );
+      }
+      return;
+    }
+    
+    // Reset the guide completion status
+    await UserGuideService.resetGuide('profile');
+    debugPrint('User guide reset, starting showcase...');
+    
+    if (mounted && _showCaseContext != null) {
+      try {
+        // Wait for widgets to be fully rendered
+        await Future.delayed(const Duration(milliseconds: 300));
+        
+        // Start the showcase - it will auto-scroll to each item
+        ShowCaseWidget.of(_showCaseContext!).startShowCase([
+          _profileHeaderKey,
+          _exportButtonsKey,
+          _personalInfoKey,
+          _farmDetailsKey,
+          _educationalBackgroundKey,
+          _trainingsSeminarsKey,
+        ]);
+      } catch (e) {
+        debugPrint('Error starting user guide: $e');
+        // Show a snackbar if guide fails to start
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: const Text('Unable to start user guide. Please try again.'),
+              backgroundColor: Colors.orange,
+              duration: const Duration(seconds: 2),
+            ),
+          );
+        }
+      }
+    }
   }
 
   void _loadData() async {
@@ -751,91 +831,101 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
     const SizedBox(height: 16),
 
     // Action Buttons Row - Below profile picture and name
-    Row(
-      mainAxisAlignment: MainAxisAlignment.end,
-      children: [
-        // Excel Export Button
-        Tooltip(
-          message: 'Download Excel Report',
-          child: GestureDetector(
-            onTap: () => _downloadExcelReport(profile),
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-              margin: const EdgeInsets.only(right: 8),
-              decoration: BoxDecoration(
-                color: const Color(0xFF107C41), // Excel official dark green color
-                borderRadius: BorderRadius.circular(8),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.1),
-                    blurRadius: 4,
-                    offset: const Offset(0, 2),
-                  ),
-                ],
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  FaIcon(
-                    FontAwesomeIcons.fileExcel,
-                    color: Colors.white,
-                    size: 16,
-                  ),
-                  const SizedBox(width: 6),
-                  const Text(
-                    'Excel Profile',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600,
+    Showcase(
+      key: _exportButtonsKey,
+      title: 'Export Options',
+      description: 'Download your profile data as Excel or PDF reports. Use these buttons to export your complete profile information for record-keeping or sharing purposes.',
+      targetShapeBorder: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(8),
+      ),
+      tooltipBackgroundColor: AppColors.primary,
+      textColor: Colors.white,
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.end,
+        children: [
+          // Excel Export Button
+          Tooltip(
+            message: 'Download Excel Report',
+            child: GestureDetector(
+              onTap: () => _downloadExcelReport(profile),
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                margin: const EdgeInsets.only(right: 8),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF107C41), // Excel official dark green color
+                  borderRadius: BorderRadius.circular(8),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.1),
+                      blurRadius: 4,
+                      offset: const Offset(0, 2),
                     ),
-                  ),
-                ],
+                  ],
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    FaIcon(
+                      FontAwesomeIcons.fileExcel,
+                      color: Colors.white,
+                      size: 16,
+                    ),
+                    const SizedBox(width: 6),
+                    const Text(
+                      'Excel Profile',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
           ),
-        ),
-        // PDF Export Button
-        Tooltip(
-          message: 'Generate PDF Report',
-          child: GestureDetector(
-            onTap: () => _downloadPdfReport(profile),
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-              decoration: BoxDecoration(
-                color: Colors.red[600],
-                borderRadius: BorderRadius.circular(8),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.1),
-                    blurRadius: 4,
-                    offset: const Offset(0, 2),
-                  ),
-                ],
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(
-                    Icons.picture_as_pdf_rounded,
-                    color: Colors.white,
-                    size: 16,
-                  ),
-                  const SizedBox(width: 6),
-                  const Text(
-                    'PDF Profile',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600,
+          // PDF Export Button
+          Tooltip(
+            message: 'Generate PDF Report',
+            child: GestureDetector(
+              onTap: () => _downloadPdfReport(profile),
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                decoration: BoxDecoration(
+                  color: Colors.red[600],
+                  borderRadius: BorderRadius.circular(8),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.1),
+                      blurRadius: 4,
+                      offset: const Offset(0, 2),
                     ),
-                  ),
-                ],
+                  ],
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      Icons.picture_as_pdf_rounded,
+                      color: Colors.white,
+                      size: 16,
+                    ),
+                    const SizedBox(width: 6),
+                    const Text(
+                      'PDF Profile',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
           ),
-        ),
-      ],
+        ],
+      ),
     ),
 
     const SizedBox(height: 24),
@@ -1088,178 +1178,248 @@ class _ProfileScreenState extends State<ProfileScreen> with TickerProviderStateM
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.grey[50],
-      body: RefreshIndicator(
-        onRefresh: _handleRefresh,
-        color: AppColors.primary,
-        child: FutureBuilder<Map<String, dynamic>?>(
-          future: farmerProfileFuture,
-          builder: (context, profileSnapshot) {
-            return FutureBuilder<Map<String, dynamic>?>(
-              future: farmDetailsFuture,
-              builder: (context, farmSnapshot) {
-                if (profileSnapshot.connectionState == ConnectionState.waiting ||
-                    farmSnapshot.connectionState == ConnectionState.waiting) {
-                  return Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.all(20),
-                          decoration: BoxDecoration(
-                            color: AppColors.primary.withValues(alpha: 0.1),
-                            shape: BoxShape.circle,
-                          ),
-                          child: CircularProgressIndicator(
-                            color: AppColors.primary,
-                            strokeWidth: 3,
+    return ShowCaseWidget(
+      enableAutoScroll: true,
+      scrollDuration: const Duration(milliseconds: 300),
+      onFinish: () async {
+        debugPrint('User guide finished, marking as completed...');
+        await UserGuideService.markGuideCompleted('profile');
+        debugPrint('User guide marked as completed');
+      },
+      onStart: (index, key) {
+        // Ensure the widget is scrolled into view
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          _scrollToShowcase(key);
+        });
+      },
+      builder: (showCaseContext) {
+        // Store the ShowCaseWidget context
+        _showCaseContext = showCaseContext;
+        
+        return Scaffold(
+          backgroundColor: Colors.grey[50],
+          body: RefreshIndicator(
+            onRefresh: _handleRefresh,
+            color: AppColors.primary,
+            child: FutureBuilder<Map<String, dynamic>?>(
+              future: farmerProfileFuture,
+              builder: (context, profileSnapshot) {
+                return FutureBuilder<Map<String, dynamic>?>(
+                  future: farmDetailsFuture,
+                  builder: (context, farmSnapshot) {
+                    if (profileSnapshot.connectionState == ConnectionState.waiting ||
+                        farmSnapshot.connectionState == ConnectionState.waiting) {
+                      return Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.all(20),
+                              decoration: BoxDecoration(
+                                color: AppColors.primary.withValues(alpha: 0.1),
+                                shape: BoxShape.circle,
+                              ),
+                              child: CircularProgressIndicator(
+                                color: AppColors.primary,
+                                strokeWidth: 3,
+                              ),
+                            ),
+                            const SizedBox(height: 24),
+                            Text(
+                              'Loading your profile...',
+                              style: TextStyle(
+                                color: Colors.grey[600],
+                                fontSize: 16,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ],
+                        ),
+                      );
+                    }
+
+                    final profile = profileSnapshot.data;
+                    final farmDetails = farmSnapshot.data;
+                    
+                    // Debug logging
+                    log('Profile data: $profile');
+                    log('Farm details data: $farmDetails');
+                    log('Stored first name: $_storedFirstName');
+                    log('Stored last name: $_storedLastName');
+                    
+                    // Check if we have any name data
+                    final firstName = profile?['first_name'] ?? _storedFirstName ?? 'Unknown';
+                    final lastName = profile?['last_name'] ?? _storedLastName ?? 'User';
+                    log('Final name display: $firstName $lastName');
+
+                    return CustomScrollView(
+                      controller: _scrollController,
+                      slivers: [
+                        SliverToBoxAdapter(
+                          child: Showcase(
+                            key: _profileHeaderKey,
+                            title: 'Profile Header',
+                            description: 'Your profile picture, name, and farm classification are displayed here. Tap the camera icon to update your profile picture. The farm classification badge shows your farm type.',
+                            targetShapeBorder: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(16),
+                            ),
+                            tooltipBackgroundColor: AppColors.primary,
+                            textColor: Colors.white,
+                            child: _buildModernProfileHeader(profile, farmDetails, firstName: firstName, lastName: lastName),
                           ),
                         ),
-                        const SizedBox(height: 24),
-                        Text(
-                          'Loading your profile...',
+                        SliverList(
+                          delegate: SliverChildListDelegate([
+                            const SizedBox(height: 8),
+                            Showcase(
+                              key: _personalInfoKey,
+                              title: 'Personal Information',
+                              description: 'View and edit your personal details including name, contact information, date of birth, and other personal data. Toggle edit mode to make changes to your information.',
+                              targetShapeBorder: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(20),
+                              ),
+                              tooltipBackgroundColor: AppColors.primary,
+                              textColor: Colors.white,
+                              child: _buildModernSectionCard(
+                                PersonalInformationWidget(
+                                  isEditingMode: isEditingMode,
+                                  onRefresh: _handleRefresh,
+                                  onToggleEditMode: _toggleEditMode,
+                                ),
+                                0,
+                              ),
+                            ),
+                            Showcase(
+                              key: _farmDetailsKey,
+                              title: 'Farm Details',
+                              description: 'Manage your farm information including location, size, classification, and other farm-related details. This information helps identify your farming operation.',
+                              targetShapeBorder: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(20),
+                              ),
+                              tooltipBackgroundColor: AppColors.primary,
+                              textColor: Colors.white,
+                              child: _buildModernSectionCard(
+                                FarmDetailsWidget(
+                                  isEditingMode: isEditingMode,
+                                  onRefresh: _handleRefresh,
+                                  onToggleEditMode: _toggleEditMode,
+                                ),
+                                1,
+                              ),
+                            ),
+                            Showcase(
+                              key: _educationalBackgroundKey,
+                              title: 'Educational Background',
+                              description: 'Record your educational qualifications and academic achievements. This section helps track your educational background relevant to farming.',
+                              targetShapeBorder: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(20),
+                              ),
+                              tooltipBackgroundColor: AppColors.primary,
+                              textColor: Colors.white,
+                              child: _buildModernSectionCard(
+                                EducationalBackgroundWidget(
+                                  isEditingMode: isEditingMode,
+                                  onRefresh: _handleRefresh,
+                                  onToggleEditMode: _toggleEditMode,
+                                ),
+                                2,
+                              ),
+                            ),
+                            Showcase(
+                              key: _trainingsSeminarsKey,
+                              title: 'Trainings & Seminars',
+                              description: 'Keep track of all training programs, seminars, and workshops you have attended. This helps document your continuous learning and skill development in farming.',
+                              targetShapeBorder: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(20),
+                              ),
+                              tooltipBackgroundColor: AppColors.primary,
+                              textColor: Colors.white,
+                              child: _buildModernSectionCard(
+                                TrainingsSeminarsWidget(
+                                  isEditingMode: isEditingMode,
+                                  onRefresh: _handleRefresh,
+                                  onToggleEditMode: _toggleEditMode,
+                                ),
+                                3,
+                              ),
+                            ),
+                            const SizedBox(height: 100), // Extra space for floating elements
+                          ]),
+                        ),
+                      ],
+                    );
+                  },
+                );
+              },
+            ),
+          ),
+          // Enhanced floating edit mode indicator
+          floatingActionButton: AnimatedBuilder(
+            animation: _editModeAnimation,
+            builder: (context, child) {
+              // Clamp the animation value
+              final clampedValue = _editModeAnimation.value.clamp(0.0, 1.0);
+
+              return isEditingMode
+                  ? SlideTransition(
+                position: Tween<Offset>(
+                  begin: const Offset(0, 2),
+                  end: Offset.zero,
+                ).animate(CurvedAnimation(
+                  parent: _editModeController,
+                  curve: Curves.elasticOut,
+                )),
+                child: Transform.scale(
+                  scale: clampedValue,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+                    decoration: BoxDecoration(
+                      color: Colors.amber[400],
+                      borderRadius: BorderRadius.circular(30),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.amber.withValues(alpha: 0.4),
+                          blurRadius: 15,
+                          offset: const Offset(0, 8),
+                        ),
+                      ],
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(4),
+                          decoration: const BoxDecoration(
+                            color: Colors.white24,
+                            shape: BoxShape.circle,
+                          ),
+                          child: const Icon(
+                            Icons.edit_rounded,
+                            color: Colors.white,
+                            size: 16,
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        const Text(
+                          'Edit Mode Active',
                           style: TextStyle(
-                            color: Colors.grey[600],
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
                             fontSize: 16,
-                            fontWeight: FontWeight.w500,
+                            letterSpacing: 0.5,
                           ),
                         ),
                       ],
                     ),
-                  );
-                }
-
-                final profile = profileSnapshot.data;
-                final farmDetails = farmSnapshot.data;
-                
-                // Debug logging
-                log('Profile data: $profile');
-                log('Farm details data: $farmDetails');
-                log('Stored first name: $_storedFirstName');
-                log('Stored last name: $_storedLastName');
-                
-                // Check if we have any name data
-                final firstName = profile?['first_name'] ?? _storedFirstName ?? 'Unknown';
-                final lastName = profile?['last_name'] ?? _storedLastName ?? 'User';
-                log('Final name display: $firstName $lastName');
-
-                return CustomScrollView(
-                  controller: _scrollController,
-                  slivers: [
-                    SliverToBoxAdapter(
-                      child: _buildModernProfileHeader(profile, farmDetails, firstName: firstName, lastName: lastName),
-                    ),
-                    SliverList(
-                      delegate: SliverChildListDelegate([
-                        const SizedBox(height: 8),
-                        _buildModernSectionCard(
-                          PersonalInformationWidget(
-                            isEditingMode: isEditingMode,
-                            onRefresh: _handleRefresh,
-                            onToggleEditMode: _toggleEditMode,
-                          ),
-                          0,
-                        ),
-                        _buildModernSectionCard(
-                          FarmDetailsWidget(
-                            isEditingMode: isEditingMode,
-                            onRefresh: _handleRefresh,
-                            onToggleEditMode: _toggleEditMode,
-                          ),
-                          1,
-                        ),
-                        _buildModernSectionCard(
-                          EducationalBackgroundWidget(
-                            isEditingMode: isEditingMode,
-                            onRefresh: _handleRefresh,
-                            onToggleEditMode: _toggleEditMode,
-                          ),
-                          2,
-                        ),
-                        _buildModernSectionCard(
-                          TrainingsSeminarsWidget(
-                            isEditingMode: isEditingMode,
-                            onRefresh: _handleRefresh,
-                            onToggleEditMode: _toggleEditMode,
-                          ),
-                          3,
-                        ),
-                        const SizedBox(height: 100), // Extra space for floating elements
-                      ]),
-                    ),
-                  ],
-                );
-              },
-            );
-          },
-        ),
-      ),
-      // Enhanced floating edit mode indicator
-      floatingActionButton: AnimatedBuilder(
-        animation: _editModeAnimation,
-        builder: (context, child) {
-          // Clamp the animation value
-          final clampedValue = _editModeAnimation.value.clamp(0.0, 1.0);
-
-          return isEditingMode
-              ? SlideTransition(
-            position: Tween<Offset>(
-              begin: const Offset(0, 2),
-              end: Offset.zero,
-            ).animate(CurvedAnimation(
-              parent: _editModeController,
-              curve: Curves.elasticOut,
-            )),
-            child: Transform.scale(
-              scale: clampedValue,
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-                decoration: BoxDecoration(
-                  color: Colors.amber[400],
-                  borderRadius: BorderRadius.circular(30),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.amber.withValues(alpha: 0.4),
-                      blurRadius: 15,
-                      offset: const Offset(0, 8),
-                    ),
-                  ],
+                  ),
                 ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(4),
-                      decoration: const BoxDecoration(
-                        color: Colors.white24,
-                        shape: BoxShape.circle,
-                      ),
-                      child: const Icon(
-                        Icons.edit_rounded,
-                        color: Colors.white,
-                        size: 16,
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    const Text(
-                      'Edit Mode Active',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 16,
-                        letterSpacing: 0.5,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          )
-              : const SizedBox.shrink();
-        },
-      ),
-      floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
+              )
+                  : const SizedBox.shrink();
+            },
+          ),
+          floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
+        );
+      },
     );
   }
 }

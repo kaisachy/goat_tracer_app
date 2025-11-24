@@ -3,18 +3,20 @@ import 'package:flutter/material.dart';
 import 'package:goat_tracer_app/services/user_service.dart';
 import 'package:goat_tracer_app/services/auth_service.dart';
 import 'package:goat_tracer_app/services/address_service.dart';
+import 'package:goat_tracer_app/services/user_guide_service.dart';
 import 'package:goat_tracer_app/models/user.dart';
 import 'package:goat_tracer_app/constants/app_colors.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import 'package:showcaseview/showcaseview.dart';
 
 class SettingScreen extends StatefulWidget {
   const SettingScreen({super.key});
 
   @override
-  State<SettingScreen> createState() => _SettingScreenState();
+  SettingScreenState createState() => SettingScreenState();
 }
 
-class _SettingScreenState extends State<SettingScreen> with TickerProviderStateMixin {
+class SettingScreenState extends State<SettingScreen> with TickerProviderStateMixin {
   final UserService _userService = UserService();
   final _formKey = GlobalKey<FormState>();
   final _passwordFormKey = GlobalKey<FormState>();
@@ -40,6 +42,11 @@ class _SettingScreenState extends State<SettingScreen> with TickerProviderStateM
   bool _personalInfoExpanded = false;
   bool _emailVerificationExpanded = false;
   bool _passwordExpanded = false;
+
+  final GlobalKey _personalInfoKey = GlobalKey();
+  final GlobalKey _emailVerificationKey = GlobalKey();
+  final GlobalKey _passwordKey = GlobalKey();
+  BuildContext? _showCaseContext;
 
   // Address-related variables
   List<dynamic> _regions = [];
@@ -79,6 +86,42 @@ class _SettingScreenState extends State<SettingScreen> with TickerProviderStateM
     });
 
     _initializeData();
+  }
+
+  void startUserGuide() async {
+    if (_showCaseContext == null) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Please wait for the screen to finish loading, then try again.'),
+            duration: Duration(seconds: 2),
+          ),
+        );
+      }
+      return;
+    }
+
+    await UserGuideService.resetGuide('settings');
+
+    if (!mounted) return;
+
+    try {
+      await Future.delayed(const Duration(milliseconds: 200));
+      ShowCaseWidget.of(_showCaseContext!).startShowCase([
+        _personalInfoKey,
+        _emailVerificationKey,
+        _passwordKey,
+      ]);
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Unable to start the user guide. Please try again.'),
+            duration: Duration(seconds: 2),
+          ),
+        );
+      }
+    }
   }
 
   @override
@@ -892,35 +935,68 @@ class _SettingScreenState extends State<SettingScreen> with TickerProviderStateM
   Widget _buildSettingsAccordion() {
     return Column(
       children: [
-        _buildAccordionCard(
-          title: 'Personal Information',
-          subtitle: _isEditingProfile
-              ? 'Editing enabled'
-              : 'View or update your profile details',
-          isExpanded: _personalInfoExpanded,
-          onToggle: () =>
-              setState(() => _personalInfoExpanded = !_personalInfoExpanded),
-          child: _buildPersonalInfoPanelBody(),
+        Showcase(
+          key: _personalInfoKey,
+          title: 'Personal Details',
+          description:
+              'Review or edit your name and address information from this section.',
+          targetShapeBorder: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+          ),
+          tooltipBackgroundColor: AppColors.primary,
+          textColor: Colors.white,
+          child: _buildAccordionCard(
+            title: 'Personal Information',
+            subtitle: _isEditingProfile
+                ? 'Editing enabled'
+                : 'View or update your profile details',
+            isExpanded: _personalInfoExpanded,
+            onToggle: () =>
+                setState(() => _personalInfoExpanded = !_personalInfoExpanded),
+            child: _buildPersonalInfoPanelBody(),
+          ),
         ),
-        _buildAccordionCard(
-          title: 'Email Verification',
-          subtitle: _currentUser?.emailVerified == true
-              ? 'Your email is verified'
-              : 'Verify your email to secure your account',
-          isExpanded: _emailVerificationExpanded,
-          onToggle: () => setState(
-                  () => _emailVerificationExpanded = !_emailVerificationExpanded),
-          child: _buildEmailVerificationPanelBody(),
+        Showcase(
+          key: _emailVerificationKey,
+          title: 'Verify Email',
+          description:
+              'Send yourself a verification code to confirm your contact email.',
+          targetShapeBorder: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+          ),
+          tooltipBackgroundColor: AppColors.primary,
+          textColor: Colors.white,
+          child: _buildAccordionCard(
+            title: 'Email Verification',
+            subtitle: _currentUser?.emailVerified == true
+                ? 'Your email is verified'
+                : 'Verify your email to secure your account',
+            isExpanded: _emailVerificationExpanded,
+            onToggle: () => setState(() =>
+                _emailVerificationExpanded = !_emailVerificationExpanded),
+            child: _buildEmailVerificationPanelBody(),
+          ),
         ),
-        _buildAccordionCard(
-          title: 'Reset Password',
-          subtitle: _isChangingPassword
-              ? 'Update your password below'
-              : 'Keep your account secure',
-          isExpanded: _passwordExpanded,
-          onToggle: () =>
-              setState(() => _passwordExpanded = !_passwordExpanded),
-          child: _buildPasswordPanelBody(),
+        Showcase(
+          key: _passwordKey,
+          title: 'Password Security',
+          description:
+              'Open this panel to change your password whenever you need to.',
+          targetShapeBorder: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+          ),
+          tooltipBackgroundColor: AppColors.primary,
+          textColor: Colors.white,
+          child: _buildAccordionCard(
+            title: 'Reset Password',
+            subtitle: _isChangingPassword
+                ? 'Update your password below'
+                : 'Keep your account secure',
+            isExpanded: _passwordExpanded,
+            onToggle: () =>
+                setState(() => _passwordExpanded = !_passwordExpanded),
+            child: _buildPasswordPanelBody(),
+          ),
         ),
       ],
     );
@@ -1721,80 +1797,91 @@ class _SettingScreenState extends State<SettingScreen> with TickerProviderStateM
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppColors.pageBackground,
-      body: _isLoading
-          ? Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            CircularProgressIndicator(color: AppColors.primary),
-            const SizedBox(height: 16),
-            Text(
-              'Loading account information...',
-              style: TextStyle(color: AppColors.textSecondary),
+    return ShowCaseWidget(
+      enableAutoScroll: true,
+      scrollDuration: const Duration(milliseconds: 400),
+      onFinish: () async {
+        await UserGuideService.markGuideCompleted('settings');
+      },
+      builder: (showCaseContext) {
+        _showCaseContext = showCaseContext;
+
+        return Scaffold(
+          backgroundColor: AppColors.pageBackground,
+          body: _isLoading
+              ? Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                CircularProgressIndicator(color: AppColors.primary),
+                const SizedBox(height: 16),
+                Text(
+                  'Loading account information...',
+                  style: TextStyle(color: AppColors.textSecondary),
+                ),
+              ],
             ),
-          ],
-        ),
-      )
-          : _currentUser == null
-          ? Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              Icons.error_outline,
-              size: 64,
-              color: AppColors.textSecondary,
+          )
+              : _currentUser == null
+              ? Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(
+                  Icons.error_outline,
+                  size: 64,
+                  color: AppColors.textSecondary,
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  'Unable to load user data',
+                  style: TextStyle(
+                    fontSize: 18,
+                    color: AppColors.textSecondary,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'Please try refreshing or login again',
+                  style: TextStyle(color: AppColors.textSecondary),
+                ),
+                const SizedBox(height: 24),
+                ElevatedButton.icon(
+                  onPressed: _loadUserData,
+                  icon: const Icon(Icons.refresh),
+                  label: const Text('Retry'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.primary,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                ),
+              ],
             ),
-            const SizedBox(height: 16),
-            Text(
-              'Unable to load user data',
-              style: TextStyle(
-                fontSize: 18,
-                color: AppColors.textSecondary,
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'Please try refreshing or login again',
-              style: TextStyle(color: AppColors.textSecondary),
-            ),
-            const SizedBox(height: 24),
-            ElevatedButton.icon(
-              onPressed: _loadUserData,
-              icon: const Icon(Icons.refresh),
-              label: const Text('Retry'),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.primary,
-                foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
+          )
+              : FadeTransition(
+            opacity: _fadeAnimation,
+            child: RefreshIndicator(
+              onRefresh: _loadUserData,
+              color: AppColors.primary,
+              child: SingleChildScrollView(
+                physics: const AlwaysScrollableScrollPhysics(),
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  children: [
+                    _buildSettingsAccordion(),
+                    const SizedBox(height: 32),
+                  ],
                 ),
               ),
             ),
-          ],
-        ),
-      )
-          : FadeTransition(
-        opacity: _fadeAnimation,
-        child: RefreshIndicator(
-          onRefresh: _loadUserData,
-          color: AppColors.primary,
-          child: SingleChildScrollView(
-            physics: const AlwaysScrollableScrollPhysics(),
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              children: [
-                _buildSettingsAccordion(),
-                const SizedBox(height: 32),
-              ],
-            ),
           ),
-        ),
-      ),
+        );
+      },
     );
   }
 }
