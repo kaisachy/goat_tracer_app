@@ -36,14 +36,33 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   // Profile data variables
   Map<String, dynamic>? _profile;
   bool _isLoadingProfile = true;
+  String? _userEmail;
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
     _selectedIndex = widget.initialSelectedIndex ?? 2; // Default to Dashboard
+    _userEmail = widget.userEmail;
     _initializePages();
     _loadProfileData();
+    _loadUserEmail();
+  }
+
+  Future<void> _loadUserEmail() async {
+    // If email is not provided, fetch it from token
+    if (_userEmail == null || _userEmail!.isEmpty) {
+      try {
+        final email = await AuthService.getCurrentUserEmail();
+        if (mounted) {
+          setState(() {
+            _userEmail = email ?? '';
+          });
+        }
+      } catch (e) {
+        debugPrint('Error loading user email: $e');
+      }
+    }
   }
 
   @override
@@ -60,6 +79,8 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
       _checkgoatStatusUpdates();
       // Refresh profile data when app resumes
       _loadProfileData();
+      // Refresh user email when app resumes
+      _loadUserEmail();
     }
   }
 
@@ -651,7 +672,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
         ),
       ),
       accountEmail: Text(
-        widget.userEmail ?? '',
+        _userEmail ?? widget.userEmail ?? '',
         style: const TextStyle(color: Colors.white70),
       ),
       currentAccountPicture: _buildProfilePicture(),

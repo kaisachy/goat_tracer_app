@@ -51,18 +51,23 @@ class MyApp extends StatelessWidget {
 class AuthWrapper extends StatelessWidget {
   const AuthWrapper({super.key});
 
-  Future<bool> _checkAuthStatus() async {
+  Future<Map<String, dynamic>> _checkAuthStatus() async {
     final token = await SecureStorageService().getToken();
-    if (token == null) return false;
+    if (token == null) return {'authenticated': false, 'email': null};
 
     // Verify token is still valid by checking user ID
     final userId = await AuthService.getCurrentUserId();
-    return userId != null;
+    if (userId == null) return {'authenticated': false, 'email': null};
+
+    // Get user email from token
+    final email = await AuthService.getCurrentUserEmail();
+    
+    return {'authenticated': true, 'email': email};
   }
 
   @override
   Widget build(BuildContext context) {
-    return FutureBuilder<bool>(
+    return FutureBuilder<Map<String, dynamic>>(
       future: _checkAuthStatus(),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
@@ -80,8 +85,9 @@ class AuthWrapper extends StatelessWidget {
           );
         }
 
-        if (snapshot.hasData && snapshot.data == true) {
-          return const HomeScreen(userEmail: 'Authenticated User');
+        if (snapshot.hasData && snapshot.data!['authenticated'] == true) {
+          final email = snapshot.data!['email'] as String?;
+          return HomeScreen(userEmail: email ?? '');
         } else {
           return const LoginScreen();
         }

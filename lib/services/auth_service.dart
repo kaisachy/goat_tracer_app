@@ -480,4 +480,24 @@ class AuthService {
       return null;
     }
   }
+
+  /// Get current user email from token claims
+  static Future<String?> getCurrentUserEmail() async {
+    final token = await getToken();
+    if (token == null) return null;
+
+    try {
+      final parts = token.split('.');
+      if (parts.length != 3) return null;
+
+      final payload = json.decode(
+          utf8.decode(base64Url.decode(base64Url.normalize(parts[1])))
+      );
+
+      return payload['email']?.toString();
+    } catch (e) {
+      debugPrint('Error decoding user email from token: $e');
+      return null;
+    }
+  }
 }
