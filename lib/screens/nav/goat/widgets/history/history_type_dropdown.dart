@@ -104,6 +104,14 @@ class HistoryTypeDropdownState extends State<HistoryTypeDropdown> {
         }
       }
     }
+    final currentType = widget.selectedHistoryType.trim();
+    final currentLower = currentType.toLowerCase();
+    if (currentType.isNotEmpty &&
+        !filtered.contains(currentType) &&
+        !currentLower.startsWith('select type') &&
+        !currentLower.startsWith('loading')) {
+      filtered = [currentType, ...filtered];
+    }
     filteredHistoryTypes = filtered;
     setState(() {});
   }

@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:showcaseview/showcaseview.dart';
 import '../../../models/goat.dart';
+import '../../../services/auth_service.dart';
 import '../../../services/goat/goat_history_service.dart';
 import '../../../services/goat/goat_service.dart';
 import '../../../services/user_guide_service.dart';
@@ -35,6 +36,7 @@ class GoatHistoryFormScreen extends StatefulWidget {
 
 class _GoatHistoryFormScreenState extends State<GoatHistoryFormScreen>
     with TickerProviderStateMixin {
+  static const String _reciprocalNoteMarker = 'breeding with';
   final _formKey = GlobalKey<FormState>();
   final Map<String, TextEditingController> _controllers = {};
   final GlobalKey<HistorySpecificFieldsState> _historySpecificFieldsKey =
@@ -48,6 +50,7 @@ class _GoatHistoryFormScreenState extends State<GoatHistoryFormScreen>
   BuildContext? _showCaseContext;
   late bool isEditing;
   bool _isLoading = false;
+  bool _hasAppliedInitialHistoryType = false;
 
   // goat details
   Goat? _goatDetails;
@@ -159,11 +162,15 @@ class _GoatHistoryFormScreenState extends State<GoatHistoryFormScreen>
       'Other',
     ];
 
+    Map<String, dynamic>? historyJson;
+    if (isEditing && widget.historyRecord != null) {
+      historyJson = widget.historyRecord!.toJson();
+    }
+
     for (var field in fields) {
       String initialValue = '';
-      if (isEditing && widget.historyRecord != null) {
-        final historyJson = widget.historyRecord!.toJson();
-        initialValue = historyJson[field]?.toString() ?? '';
+      if (historyJson != null) {
+        initialValue = _getRecordValue(historyJson, field) ?? '';
       }
       _controllers[field] = TextEditingController(text: initialValue);
     }
@@ -179,6 +186,18 @@ class _GoatHistoryFormScreenState extends State<GoatHistoryFormScreen>
         debugPrint('DEBUG: Found custom disease type "$diseaseType", setting disease_type to "Other" and disease_type_other to "$diseaseType"');
       }
     }
+  }
+
+  String? _getRecordValue(Map<String, dynamic>? record, String key) {
+    if (record == null || record.isEmpty) return null;
+    final target = key.toLowerCase();
+    for (final entry in record.entries) {
+      if (entry.key.toString().toLowerCase() == target) {
+        final value = entry.value?.toString().trim();
+        if (value != null && value.isNotEmpty) return value;
+      }
+    }
+    return null;
   }
 
   Future<Map<String, dynamic>?> _getLatestHistoryRecord({
@@ -247,9 +266,14 @@ class _GoatHistoryFormScreenState extends State<GoatHistoryFormScreen>
     final goatTag = _goatDetails!.tagNo;
     debugPrint('DEBUG: Processing history type change for goat: $goatTag');
 
-    // Clear autofill targets before applying
-    _controllers['breeding_date']?.text = _controllers['breeding_date']?.text ?? '';
-    _controllers['expected_delivery_date']?.text = _controllers['expected_delivery_date']?.text ?? '';
+    // Clear autofill targets before applying for brand-new records only
+    final isNewRecord = !isEditing || widget.historyRecord == null;
+    if (isNewRecord) {
+      _controllers['breeding_date']?.text = '';
+      _controllers['expected_delivery_date']?.text = '';
+      _controllers['Buck_tag']?.text = '';
+      _controllers['semen_used']?.text = '';
+    }
 
     // Pregnant requires latest Breeding; autofill breeding_date, expected_delivery_date, buck/semen
     if (value.toLowerCase() == 'pregnant') {
@@ -288,8 +312,8 @@ class _GoatHistoryFormScreenState extends State<GoatHistoryFormScreen>
         } catch (_) {}
       }
       // Autofill buck/semen and technician if present
-      final buckTag = latestBreeding['Buck_tag']?.toString();
-      final semen = latestBreeding['semen_used']?.toString();
+      final buckTag = _getRecordValue(latestBreeding, 'buck_tag');
+      final semen = _getRecordValue(latestBreeding, 'semen_used');
       debugPrint('DEBUG: Found Buck_tag: $buckTag, semen_used: $semen');
 
       // If semen is present (AI), treat semen's buck as the buck selection
@@ -361,15 +385,15 @@ class _GoatHistoryFormScreenState extends State<GoatHistoryFormScreen>
       }
 
       // Autofill sire info from latest Pregnant (preferred) or fallback to latest Breeding
-      String? semen = latestPregnant['semen_used']?.toString();
-      String? buck = latestPregnant['Buck_tag']?.toString();
+      String? semen = _getRecordValue(latestPregnant, 'semen_used');
+      String? buck = _getRecordValue(latestPregnant, 'buck_tag');
       debugPrint('DEBUG: Found in pregnant history record - Buck_tag: $buck, semen_used: $semen');
       if ((semen == null || semen.isEmpty) && (buck == null || buck.isEmpty)) {
         debugPrint('DEBUG: No sire info in pregnant history record, falling back to latest breeding');
         final latestBreeding = await _getLatestHistoryRecord(goatTag: goatTag, historyType: 'Breeding');
         debugPrint('DEBUG: Latest breeding history record for fallback: $latestBreeding');
-        semen = latestBreeding?['semen_used']?.toString();
-        buck = latestBreeding?['Buck_tag']?.toString();
+        semen = _getRecordValue(latestBreeding, 'semen_used');
+        buck = _getRecordValue(latestBreeding, 'buck_tag');
         debugPrint('DEBUG: Fallback values - Buck_tag: $buck, semen_used: $semen');
       }
 
@@ -435,15 +459,15 @@ class _GoatHistoryFormScreenState extends State<GoatHistoryFormScreen>
         _controllers['expected_delivery_date']?.text = due;
       }
 
-      String? semen = latestPregnant['semen_used']?.toString();
-      String? buck = latestPregnant['Buck_tag']?.toString();
+      String? semen = _getRecordValue(latestPregnant, 'semen_used');
+      String? buck = _getRecordValue(latestPregnant, 'buck_tag');
       if ((semen == null || semen.isEmpty) && (buck == null || buck.isEmpty)) {
         final latestBreeding = await _getLatestHistoryRecord(
           goatTag: goatTag,
           historyType: 'Breeding',
         );
-        semen = latestBreeding?['semen_used']?.toString();
-        buck = latestBreeding?['Buck_tag']?.toString();
+        semen = _getRecordValue(latestBreeding, 'semen_used');
+        buck = _getRecordValue(latestBreeding, 'buck_tag');
       }
 
       if (semen != null && semen.isNotEmpty) {
@@ -578,7 +602,7 @@ class _GoatHistoryFormScreenState extends State<GoatHistoryFormScreen>
       debugPrint('DEBUG: Available fields in history record: ${eventJson.keys.toList()}');
       
       // Set breeding type (map human-readable <-> snake_case)
-      final breedingType = eventJson['breeding_type']?.toString();
+      final breedingType = _getRecordValue(eventJson, 'breeding_type');
       debugPrint('DEBUG: Found breeding_type in history record: $breedingType');
       if (breedingType != null && breedingType.isNotEmpty) {
         final btLower = breedingType.toLowerCase().trim();
@@ -596,8 +620,8 @@ class _GoatHistoryFormScreenState extends State<GoatHistoryFormScreen>
       } else {
         debugPrint('DEBUG: No breeding_type found in history record data');
         // Fallback inference based on available fields
-        final semenUsedVal = eventJson['semen_used']?.toString() ?? '';
-        final buckTagVal = eventJson['Buck_tag']?.toString() ?? '';
+        final semenUsedVal = _getRecordValue(eventJson, 'semen_used') ?? '';
+        final buckTagVal = _getRecordValue(eventJson, 'buck_tag') ?? '';
         if (semenUsedVal.isNotEmpty) {
           _controllers['breeding_type']?.text = 'artificial_insemination';
           debugPrint('DEBUG: Inferred breeding_type as artificial_insemination from semen_used');
@@ -608,7 +632,7 @@ class _GoatHistoryFormScreenState extends State<GoatHistoryFormScreen>
       }
       
       // Set semen used
-      final semenUsed = eventJson['semen_used']?.toString();
+      final semenUsed = _getRecordValue(eventJson, 'semen_used');
       debugPrint('DEBUG: Found semen_used in history record: $semenUsed');
       if (semenUsed != null && semenUsed.isNotEmpty) {
         _controllers['semen_used']?.text = semenUsed;
@@ -617,7 +641,7 @@ class _GoatHistoryFormScreenState extends State<GoatHistoryFormScreen>
         debugPrint('DEBUG: No semen_used found in history record data');
         // Fallback for AI: if breeding_type is AI and Buck_tag exists, use Buck_tag as semen_used
         final currentBreedingType = _controllers['breeding_type']?.text ?? '';
-        final buckTagVal = eventJson['Buck_tag']?.toString() ?? '';
+        final buckTagVal = _getRecordValue(eventJson, 'buck_tag') ?? '';
         if (currentBreedingType == 'artificial_insemination' && buckTagVal.isNotEmpty) {
           _controllers['semen_used']?.text = buckTagVal;
           debugPrint('DEBUG: Inferred semen_used from Buck_tag for AI: $buckTagVal');
@@ -625,7 +649,7 @@ class _GoatHistoryFormScreenState extends State<GoatHistoryFormScreen>
       }
       
       // Set buck tag
-      final buckTag = eventJson['Buck_tag']?.toString();
+      final buckTag = _getRecordValue(eventJson, 'buck_tag');
       debugPrint('DEBUG: Found Buck_tag in history record: $buckTag');
       if (buckTag != null && buckTag.isNotEmpty) {
         _controllers['Buck_tag']?.text = buckTag;
@@ -635,7 +659,7 @@ class _GoatHistoryFormScreenState extends State<GoatHistoryFormScreen>
       }
       
       // Set technician
-      final technician = eventJson['technician']?.toString();
+      final technician = _getRecordValue(eventJson, 'technician');
       debugPrint('DEBUG: Found technician in history record: $technician');
       if (technician != null && technician.isNotEmpty) {
         _controllers['technician']?.text = technician;
@@ -934,6 +958,21 @@ class _GoatHistoryFormScreenState extends State<GoatHistoryFormScreen>
           _goatDetails = goat;
         });
 
+        if (!isEditing &&
+            widget.initialHistoryType != null &&
+            !_hasAppliedInitialHistoryType) {
+          _hasAppliedInitialHistoryType = true;
+          final initialType = widget.initialHistoryType!;
+          setState(() {
+            selectedHistoryType = initialType;
+          });
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (mounted) {
+              _handleHistoryTypeChanged(initialType);
+            }
+          });
+        }
+
         if (isEditing && widget.historyRecord != null && _goatDetails != null) {
           await _setEditEventType(_goatDetails!);
           // Ensure breeding data hydration runs after goat details are available
@@ -1079,11 +1118,35 @@ class _GoatHistoryFormScreenState extends State<GoatHistoryFormScreen>
     }
   }
 
+  String? _getDoeBreed() {
+    final breed = _goatDetails?.breed?.trim();
+    if (breed == null || breed.isEmpty) {
+      return null;
+    }
+    return breed;
+  }
+
+  void _ensureKidBreed(Map<String, dynamic>? kidData) {
+    if (kidData == null) return;
+    final damBreed = _getDoeBreed();
+    if (damBreed == null) return;
+    final existing = kidData['breed']?.toString().trim() ?? '';
+    if (existing.isEmpty) {
+      kidData['breed'] = damBreed;
+    }
+  }
+
   Future<void> _handleGivesBirthEvent() async {
     try {
       bool kidHandled = false;
       bool motherStatusUpdated = false;
       String kidStatus = '';
+
+      // Ensure any pending single-kid payload inherits the dam's breed
+      final pendingFullKidData = _temporaryKidData?['fullKidData'];
+      if (pendingFullKidData is Map<String, dynamic>) {
+        _ensureKidBreed(pendingFullKidData);
+      }
 
       // Execute kid operations
       // Prefer multi-kid from HistorySpecificFields if available
@@ -1108,6 +1171,7 @@ class _GoatHistoryFormScreenState extends State<GoatHistoryFormScreen>
           full['father_tag'] = _controllers['Buck_tag']?.text.isNotEmpty == true
               ? _controllers['Buck_tag']!.text
               : full['father_tag'];
+          _ensureKidBreed(full);
           
           // Ensure required fields for new kids
           final String pending = (kid['pendingOperation'] ?? 'create').toString();
@@ -1297,6 +1361,9 @@ class _GoatHistoryFormScreenState extends State<GoatHistoryFormScreen>
     );
 
     if (result != null && mounted) {
+      if (result['fullKidData'] is Map<String, dynamic>) {
+        _ensureKidBreed(result['fullKidData'] as Map<String, dynamic>);
+      }
       setState(() {
         _temporaryKidData = result;
         // Update the Kid_tag controller
@@ -2043,149 +2110,86 @@ class _GoatHistoryFormScreenState extends State<GoatHistoryFormScreen>
   Future<void> _createReciprocalBreedingEvent() async {
     debugPrint('🔥🔥🔥 _createReciprocalBreedingEvent() CALLED! 🔥🔥🔥');
     try {
-      final breedingType = _controllers['breeding_type']?.text ?? '';
-      String? partnergoatTag;
-      
-      debugPrint('DEBUG: Creating reciprocal breeding event');
-      debugPrint('DEBUG: Breeding type: $breedingType');
-      debugPrint('DEBUG: All controller values:');
-      debugPrint('  - breeding_type: ${_controllers['breeding_type']?.text}');
-      debugPrint('  - semen_used: ${_controllers['semen_used']?.text}');
-      debugPrint('  - Buck_tag: ${_controllers['Buck_tag']?.text}');
-      debugPrint('  - history_date: ${_controllers['history_date']?.text}');
-      
-      // Determine the partner goat based on breeding type
-      if (breedingType == 'artificial_insemination') {
-        final semenUsed = _controllers['semen_used']?.text ?? '';
-        debugPrint('DEBUG: Semen used: $semenUsed');
-        if (semenUsed.isNotEmpty) {
-          // We now store pure tag. If any old label format slips through, fall back to parsing.
-          if (semenUsed.contains(' Semen')) {
-            String tagPart = semenUsed.replaceAll(' Semen', '');
-            if (tagPart.contains(' (') && tagPart.contains(')')) {
-              partnergoatTag = tagPart.split(' (')[0];
-            } else {
-              partnergoatTag = tagPart;
-            }
-            debugPrint('DEBUG: Extracted buck tag from semen label: $partnergoatTag');
-          } else {
-            partnergoatTag = semenUsed.trim();
-            debugPrint('DEBUG: Using semen_used as pure tag for partner: $partnergoatTag');
-          }
-        }
-      } else if (breedingType == 'natural_breeding') {
-        partnergoatTag = _controllers['Buck_tag']?.text ?? '';
-        debugPrint('DEBUG: buck tag from natural breeding: $partnergoatTag');
+      final breedingType = (_historySpecificFieldsKey.currentState?.getBreedingType() ??
+              _controllers['breeding_type']?.text ??
+              '')
+          .trim();
+      final normalizedBreedingType =
+          breedingType.isEmpty ? 'natural_breeding' : breedingType;
+
+      String? partnerTag;
+      if (normalizedBreedingType == 'natural_breeding') {
+        partnerTag = _controllers['Buck_tag']?.text.trim();
       } else {
-        // Fallback: try to determine from available fields
-        debugPrint('DEBUG: Unknown breeding type, trying fallback detection');
-        final semenUsed = _controllers['semen_used']?.text ?? '';
-        final buckTag = _controllers['Buck_tag']?.text ?? '';
-        
-        if (semenUsed.isNotEmpty) {
-          debugPrint('DEBUG: Fallback - using semen field');
-          if (semenUsed.contains(' Semen')) {
-            String tagPart = semenUsed.replaceAll(' Semen', '');
-            if (tagPart.contains(' (') && tagPart.contains(')')) {
-              partnergoatTag = tagPart.split(' (')[0];
-            } else {
-              partnergoatTag = tagPart;
-            }
-          }
-        } else if (buckTag.isNotEmpty) {
-          debugPrint('DEBUG: Fallback - using buck tag field');
-          partnergoatTag = buckTag;
+        partnerTag = _controllers['semen_used']?.text.trim();
+      }
+
+      if (partnerTag == null || partnerTag.isEmpty) {
+        debugPrint('DEBUG: No partner goat tag found, skipping reciprocal record');
+        return;
+      }
+
+      final eventDate = _controllers['history_date']?.text.trim();
+      if (eventDate == null || eventDate.isEmpty) {
+        debugPrint('DEBUG: No event date for reciprocal record');
+        return;
+      }
+
+      final existing = await GoatHistoryService.getgoatHistoryByTag(partnerTag);
+      final alreadyExists = existing.any((event) {
+        final type = (event['history_type'] ?? '').toString().toLowerCase();
+        final date = event['history_date']?.toString();
+        final notes = (event['notes'] ?? '').toString().toLowerCase();
+        final isAutoNote = notes.contains(_reciprocalNoteMarker);
+        return type == 'breeding' && date == eventDate && isAutoNote;
+      });
+      if (alreadyExists) {
+        debugPrint('DEBUG: Reciprocal breeding record already exists for $partnerTag on $eventDate');
+        return;
+      }
+
+      int? userId;
+      try {
+        final userIdStr = await AuthService.getCurrentUserId();
+        if (userIdStr != null && userIdStr.isNotEmpty) {
+          userId = int.tryParse(userIdStr);
         }
-      }
-      
-      if (partnergoatTag == null || partnergoatTag.isEmpty) {
-        debugPrint('DEBUG: No partner goat found for reciprocal breeding event');
-        debugPrint('DEBUG: Breeding type was: $breedingType');
-        debugPrint('DEBUG: Semen used was: ${_controllers['semen_used']?.text}');
-        debugPrint('DEBUG: buck tag was: ${_controllers['Buck_tag']?.text}');
-        return;
-      }
-      
-      // Find the partner goat
-      final partnergoat = await GoatService.getGoatByTag(partnergoatTag);
-      if (partnergoat == null) {
-        debugPrint('Partner goat not found: $partnergoatTag');
-        return;
-      }
-      
-      // Check if partner goat is male (buck)
-      final partnerSex = partnergoat.sex.toLowerCase().trim();
-      if (partnerSex != 'male') {
-        debugPrint('Partner goat is not male, skipping reciprocal breeding event');
-        return;
-      }
-      
-      // Check if a breeding event already exists for this partner on the same date
-      final eventDate = _controllers['history_date']?.text ?? '';
-      if (eventDate.isNotEmpty) {
-        final existingEvents = await GoatHistoryService.getgoatHistoryByTag(partnergoatTag);
-        debugPrint('DEBUG: Checking for existing history for partner: $partnergoatTag');
-        debugPrint('DEBUG: Found ${existingEvents.length} history for partner');
-        
-        // Filter history to only include those for the specific partner goat
-        final partnerEvents = existingEvents.where((event) => 
-          event['goat_tag']?.toString() == partnergoatTag
-        ).toList();
-        
-        debugPrint('DEBUG: Filtered to ${partnerEvents.length} history for partner goat');
-        
-        final hasExistingBreedingEvent = partnerEvents.any((event) => 
-          event['history_type']?.toString().toLowerCase() == 'breeding' && 
-          event['history_date']?.toString() == eventDate
-        );
-        
-        if (hasExistingBreedingEvent) {
-          debugPrint('DEBUG: Breeding event already exists for partner goat on this date');
-          return;
-        } else {
-          debugPrint('DEBUG: No existing breeding event found for partner on this date');
-        }
-      }
-      
-      // Create reciprocal breeding event for the male
-      final reciprocalEventData = {
-        'goat_tag': partnergoatTag,
-        // Use proper case to match backend ENUM
+      } catch (_) {}
+
+      final payload = <String, dynamic>{
+        'goat_tag': partnerTag,
         'history_type': 'Breeding',
-        'history_date': _controllers['history_date']?.text ?? '',
-        // Map to human-readable for backend storage
-        'breeding_type': (breedingType == 'artificial_insemination')
-            ? 'Artificial Insemination'
-            : (breedingType == 'natural_breeding')
-                ? 'Natural Breeding'
-                : breedingType,
-        'notes': 'Breeding with ${_goatDetails?.tagNo ?? 'unknown'}',
-        'user_id': 1, // Use default user ID for now
+        'history_date': eventDate,
+        'breeding_type': normalizedBreedingType,
+        'notes': 'Breeding with ${_goatDetails?.tagNo ?? 'unknown'}.',
       };
-      
-      // Add breeding-specific fields
-      if (breedingType == 'artificial_insemination') {
-        // Do not include semen_used for reciprocal buck event
-        reciprocalEventData['technician'] = _controllers['technician']?.text ?? '';
-      } else if (breedingType == 'natural_breeding') {
-        reciprocalEventData['Buck_tag'] = _controllers['Buck_tag']?.text ?? '';
+      if (userId != null) {
+        payload['user_id'] = userId;
       }
-      
-      final result = await GoatHistoryService.storegoatHistory(reciprocalEventData);
-      
+      if (normalizedBreedingType == 'artificial_insemination') {
+        payload['semen_used'] = _controllers['semen_used']?.text.trim() ?? '';
+        payload['technician'] = _controllers['technician']?.text.trim() ?? '';
+      }
+
+      final result = await GoatHistoryService.storegoatHistory(payload);
       if (result) {
-        debugPrint('Successfully created reciprocal breeding event for $partnergoatTag');
-        
-        // Update partner goat status to Breeding
-        final partnerUpdateData = Map<String, dynamic>.from(partnergoat.toJson());
-        partnerUpdateData['status'] = 'Breeding';
-        await GoatService.updateGoatInformation(partnerUpdateData);
-        
-        // Show success message
+        debugPrint('Successfully created reciprocal breeding event for $partnerTag');
+
+        try {
+          final partnerGoat = await GoatService.getGoatByTag(partnerTag);
+          if (partnerGoat != null) {
+            final updateData = Map<String, dynamic>.from(partnerGoat.toJson());
+            updateData['status'] = 'Breeding';
+            await GoatService.updateGoatInformation(updateData);
+          }
+        } catch (e) {
+          debugPrint('Failed to update reciprocal buck status: $e');
+        }
+
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('Reciprocal breeding history record created for $partnergoatTag'),
+              content: Text('Reciprocal breeding history recorded for $partnerTag'),
               backgroundColor: Colors.blue[600],
               behavior: SnackBarBehavior.floating,
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
@@ -2194,12 +2198,10 @@ class _GoatHistoryFormScreenState extends State<GoatHistoryFormScreen>
           );
         }
       } else {
-        debugPrint('Failed to create reciprocal breeding event for $partnergoatTag');
+        debugPrint('Failed to create reciprocal breeding event for $partnerTag');
       }
-      
     } catch (e) {
       debugPrint('Error creating reciprocal breeding event: $e');
-      // Don't show error to user as this is a secondary operation
     }
   }
 

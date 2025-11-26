@@ -195,6 +195,7 @@ class GoatHistoryRecord {
   final double? weighedResult;
   final String? breedingDate;
   final String? expectedDeliveryDate;
+  final String? breedingType;
   final String? notes;
   final String? lastKnownLocation;
   final double? soldAmount;
@@ -220,6 +221,7 @@ class GoatHistoryRecord {
     this.weighedResult,
     this.breedingDate,
     this.expectedDeliveryDate,
+    this.breedingType,
     this.notes,
     this.lastKnownLocation,
     this.soldAmount,
@@ -230,34 +232,45 @@ class GoatHistoryRecord {
   });
 
   factory GoatHistoryRecord.fromJson(Map<String, dynamic> json) {
+    String? pickString(List<String> keys) {
+      for (final key in keys) {
+        final value = json[key];
+        if (value != null && value.toString().isNotEmpty) {
+          return value.toString();
+        }
+      }
+      return null;
+    }
+
     return GoatHistoryRecord(
       id: json['id'],
       userId: json['user_id'],
-      goatTag: json['goat_tag'],
-      buckTag: json['buck_tag'],
-      kidTag: json['kid_tag'] ?? json['KidTag'],
+      goatTag: pickString(['goat_tag', 'Goat_tag', 'goatTag']) ?? '',
+      buckTag: pickString(['buck_tag', 'Buck_tag', 'buckTag']),
+      kidTag: pickString(['kid_tag', 'Kid_tag', 'KidTag']),
       historyType: json['history_type'],
       historyDate: json['history_date'],
       sicknessSymptoms: json['sickness_symptoms'],
       diagnosis: json['diagnosis'],
-      technician: json['technician'],
-      medicineGiven: json['medicine_given'],
-      semenUsed: json['semen_used'],
-      estimatedReturnDate: json['estimated_return_date'],
+      technician: pickString(['technician', 'Technician']),
+      medicineGiven: pickString(['medicine_given', 'Medicine_given']),
+      semenUsed: pickString(['semen_used', 'Semen_used', 'semenUsed']),
+      estimatedReturnDate: pickString(['estimated_return_date', 'Estimated_return_date']),
       weighedResult: json['weighed_result'] != null
           ? double.tryParse(json['weighed_result'].toString())
           : null,
-      breedingDate: json['breeding_date'],
-      expectedDeliveryDate: json['expected_delivery_date'],
-      notes: json['notes'],
-      lastKnownLocation: json['last_known_location'],
+      breedingDate: pickString(['breeding_date', 'Breeding_date']),
+      expectedDeliveryDate: pickString(['expected_delivery_date', 'Expected_delivery_date']),
+      breedingType: pickString(['breeding_type', 'Breeding_type', 'breedingType']),
+      notes: pickString(['notes', 'Notes']),
+      lastKnownLocation: pickString(['last_known_location', 'Last_known_location']),
       soldAmount: json['sold_amount'] != null
           ? double.tryParse(json['sold_amount'].toString())
           : null,
-      buyer: json['buyer'],
-      diseaseType: json['disease_type'],
-      diseaseTypeOther: json['disease_type_other'],
-      createdAt: json['created_at'],
+      buyer: pickString(['buyer', 'Buyer']),
+      diseaseType: pickString(['disease_type', 'Disease_type']),
+      diseaseTypeOther: pickString(['disease_type_other', 'Disease_type_other']),
+      createdAt: pickString(['created_at', 'Created_at']),
     );
   }
 
@@ -279,6 +292,7 @@ class GoatHistoryRecord {
       'weighed_result': weighedResult,
       'breeding_date': breedingDate,
       'expected_delivery_date': expectedDeliveryDate,
+      'breeding_type': breedingType,
       'notes': notes,
       'last_known_location': lastKnownLocation,
       'sold_amount': soldAmount,

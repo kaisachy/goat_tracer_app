@@ -239,6 +239,11 @@ class HistoryTypeUtils {
     if (noSpace == 'givesbirth') {
       return 'assets/images/goat-icons/lactating.png';
     }
+
+    // Use kid.png for weaned events
+    if (normalized == 'weaned') {
+      return 'assets/images/goat-icons/kid.png';
+    }
     
     return null;
   }
