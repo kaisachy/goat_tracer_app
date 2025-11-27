@@ -415,12 +415,12 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     textInputAction: TextInputAction.next,
                   ),
                   const SizedBox(height: 20),
-
-                  _buildAddressFields(),
-                  const SizedBox(height: 20),
                   _buildPasswordField(),
                   const SizedBox(height: 20),
                   _buildConfirmPasswordField(),
+                  const SizedBox(height: 20),
+
+                  _buildAddressFields(),
                   const SizedBox(height: 40),
 
                   // Register Button
@@ -484,7 +484,20 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
   Widget _buildAddressFields() {
     return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        // Residential Address Label
+        Padding(
+          padding: const EdgeInsets.only(bottom: 8.0),
+          child: Text(
+            'Residential Address',
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+              color: AppColors.textPrimary,
+            ),
+          ),
+        ),
         // Region Dropdown
         _buildRegionDropdown(),
         const SizedBox(height: 20),
