@@ -34,6 +34,7 @@ class _TrainingsSeminarsModalState extends State<TrainingsSeminarsModal> {
     'Goat Enterprise Development',
     'Forage Production',
     'Health Management',
+    'FLS for Goat',
   ];
 
   final Set<String> _selectedTitles = <String>{};

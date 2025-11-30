@@ -115,8 +115,6 @@ class _EducationalBackgroundModalState extends State<EducationalBackgroundModal>
                             IconButton(
                               icon: const Icon(Icons.edit, color: Colors.green),
                               onPressed: () {
-                                // Pop this modal before showing the form modal
-                                Navigator.pop(context);
                                 _showEducationFormModal(context, level: level, eduMap: eduMap);
                               },
                               tooltip: eduMap.isNotEmpty ? 'Edit' : 'Add',

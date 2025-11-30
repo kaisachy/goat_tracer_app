@@ -2,7 +2,6 @@
 
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
-import 'dart:math';
 import '../../../../constants/app_colors.dart';
 import '../../../../services/goat/goat_service.dart';
 
@@ -32,7 +31,6 @@ class _KidRegistrationDialogState extends State<KidRegistrationDialog> {
 
   String _selectedSex = 'Female';
   bool _isLoading = false;
-  bool _isGeneratingTag = false;
   List<String> _existingTags = [];
   int? _existingKidId; // Store the Kid ID for updates
 
@@ -72,11 +70,6 @@ class _KidRegistrationDialogState extends State<KidRegistrationDialog> {
         _selectedSex = 'Female';
         _existingKidId = null;
       }
-    } else {
-      // For new Kid registration, generate a tag after loading existing tags
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        _generateNewTag();
-      });
     }
   }
 
@@ -117,80 +110,11 @@ class _KidRegistrationDialogState extends State<KidRegistrationDialog> {
       debugPrint('Error loading existing tags: $e');
     }
   }
-
-  String _generateNextKidTag() {
-    // Use web admin logic: generate random 6-digit numbers (100000 to 999999)
-    const int maxAttempts = 1000;
-    int attempts = 0;
-    
-    while (attempts < maxAttempts) {
-      // Generate a random 6-digit number (100000 to 999999)
-      final random = Random();
-      final randomNumber = random.nextInt(900000) + 100000; // 100000 to 999999
-      
-      // Format as 6-digit string with leading zeros
-      final tagNumber = randomNumber.toString().padLeft(6, '0');
-      
-      // Check if this random number is unique
-      if (_isTagNumberUnique(tagNumber)) {
-        return tagNumber;
-      }
-      
-      attempts++;
-    }
-    
-    // If we can't find a random unique number after many attempts,
-    // fall back to sequential approach starting from a random point
-    final random = Random();
-    final randomStart = random.nextInt(999999) + 1;
-    int nextNumber = randomStart;
-    
-    for (int i = 0; i < 999999; i++) {
-      final tagNumber = nextNumber.toString().padLeft(6, '0');
-      
-      if (_isTagNumberUnique(tagNumber)) {
-        return tagNumber;
-      }
-      
-      nextNumber++;
-      if (nextNumber > 999999) {
-        nextNumber = 1;
-      }
-    }
-    
-    // Final fallback - use timestamp-based number
-    final timestamp = DateTime.now().millisecondsSinceEpoch;
-    final fallbackTag = (timestamp % 900000 + 100000).toString().padLeft(6, '0');
-    
-    return fallbackTag;
-  }
   
   /// Check if tag number is unique (not in existing tags)
   bool _isTagNumberUnique(String tagNumber) {
     final lowerTag = tagNumber.toLowerCase();
     return !_existingTags.contains(lowerTag);
-  }
-
-  Future<void> _generateNewTag() async {
-    setState(() => _isGeneratingTag = true);
-
-    try {
-      // Reload existing tags to get the most current data
-      await _loadExistingTags();
-
-      // Generate new tag
-      final newTag = _generateNextKidTag();
-      setState(() {
-        _tagController.text = newTag;
-      });
-
-      debugPrint('Generated new Kid tag: $newTag');
-    } catch (e) {
-      debugPrint('Error generating new tag: $e');
-      _showError('Error generating tag number');
-    } finally {
-      setState(() => _isGeneratingTag = false);
-    }
   }
 
   String? _getCurrentTag() {
@@ -506,36 +430,13 @@ class _KidRegistrationDialogState extends State<KidRegistrationDialog> {
 
                       const SizedBox(height: 20),
 
-                      // Kid Tag Number with Refresh Button
+                      // Kid Tag Number
                       TextFormField(
                         controller: _tagController,
                         validator: _validateTagNumber,
-                        readOnly: !widget.isEditMode, // Make read-only for new calves, editable for existing
                         decoration: InputDecoration(
                           labelText: 'Kid Tag Number *',
                           prefixIcon: const Icon(Icons.label, color: AppColors.primary),
-                          suffixIcon: !widget.isEditMode ? Container(
-                            margin: const EdgeInsets.all(4),
-                            decoration: BoxDecoration(
-                              color: AppColors.primary,
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            child: IconButton(
-                              onPressed: _isGeneratingTag ? null : _generateNewTag,
-                              icon: _isGeneratingTag
-                                  ? const SizedBox(
-                                width: 16,
-                                height: 16,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                                ),
-                              )
-                                  : const Icon(Icons.refresh, color: Colors.white, size: 20),
-                              tooltip: 'Generate new tag number',
-                              splashRadius: 20,
-                            ),
-                          ) : null,
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(12),
                             borderSide: const BorderSide(color: AppColors.lightGreen),
@@ -545,8 +446,8 @@ class _KidRegistrationDialogState extends State<KidRegistrationDialog> {
                             borderSide: const BorderSide(color: AppColors.primary, width: 2),
                           ),
                           filled: true,
-                          fillColor: widget.isEditMode ? AppColors.cardBackground : Colors.grey.shade50,
-                          helperText: widget.isEditMode ? null : 'Auto-generated 6-digit tag number',
+                          fillColor: AppColors.cardBackground,
+                          helperText: 'Enter 6-digit tag number',
                           helperStyle: TextStyle(
                             color: Colors.grey.shade600,
                             fontSize: 12,

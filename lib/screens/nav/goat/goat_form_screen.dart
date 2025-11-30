@@ -3,7 +3,6 @@ import 'package:intl/intl.dart';
 import 'package:showcaseview/showcaseview.dart';
 // import 'package:shared_preferences/shared_preferences.dart';
 // import 'dart:convert';
-import 'dart:math';
 import '../../../constants/app_colors.dart';
 import '../../../models/goat.dart';
 import '../../../services/goat/goat_service.dart';
@@ -77,10 +76,8 @@ class _GoatFormScreenState extends State<GoatFormScreen> {
   List<Goat> _maleGoat = [];
   bool _isLoadingParents = true;
 
-  // NEW: For tag generation
-  bool _isGeneratingTag = false;
+  // For tag validation
   List<String> _existingTags = [];
-  final List<String> _recentlyGeneratedTags = []; // Track tags generated in current session
 
   // NEW: Dynamic options from user preferences
   List<String> _breedOptions = [];
@@ -116,15 +113,6 @@ class _GoatFormScreenState extends State<GoatFormScreen> {
     _populateFormFields();
     _fetchParentData();
     _loadExistingTags();
-
-    // Auto-generate tag for new goat
-    if (widget.goat == null) {
-      _generateUniqueTag();
-    }
-
-    if (!_isEditing) {
-      _generateUniqueTag();
-    }
   }
 
   /// Load existing tags from all goat
@@ -138,89 +126,6 @@ class _GoatFormScreenState extends State<GoatFormScreen> {
     } catch (e) {
       debugPrint('Error loading existing tags: $e');
     }
-  }
-
-  /// Generate a unique tag number
-  Future<void> _generateUniqueTag() async {
-    setState(() => _isGeneratingTag = true);
-
-    try {
-      // Reload existing tags to ensure we have the latest data
-      await _loadExistingTags();
-
-      String newTag;
-      if (_classification != null) {
-        // Generate based on classification
-        newTag = _generateTagForClassificationType(_classification!);
-      } else {
-        // Fallback to old method
-        newTag = _generateRandomTag();
-      }
-
-      setState(() {
-        _tagNoController.text = newTag;
-        _isGeneratingTag = false;
-      });
-
-    } catch (e) {
-      debugPrint('Error generating tag: $e');
-      setState(() => _isGeneratingTag = false);
-      _showErrorSnackBar('Failed to generate tag number');
-    }
-  }
-
-  /// Generate different tag number options (fallback when no classification is selected)
-  String _generateRandomTag() {
-    // Use web admin logic: generate random 6-digit numbers (100000 to 999999)
-    const int maxAttempts = 1000;
-    int attempts = 0;
-    
-    while (attempts < maxAttempts) {
-      // Generate a random 6-digit number (100000 to 999999)
-      final random = Random();
-      final randomNumber = random.nextInt(900000) + 100000; // 100000 to 999999
-      
-      // Format as 6-digit string with leading zeros
-      final tagNumber = randomNumber.toString().padLeft(6, '0');
-      
-      // Check if this random number is unique
-      if (_isTagNumberUnique(tagNumber)) {
-        // Add to recently generated tags
-        _recentlyGeneratedTags.add(tagNumber.toLowerCase());
-        return tagNumber;
-      }
-      
-      attempts++;
-    }
-    
-    // If we can't find a random unique number after many attempts,
-    // fall back to sequential approach starting from a random point
-    final random = Random();
-    final randomStart = random.nextInt(999999) + 1;
-    int nextNumber = randomStart;
-    
-    for (int i = 0; i < 999999; i++) {
-      final tagNumber = nextNumber.toString().padLeft(6, '0');
-      
-      if (_isTagNumberUnique(tagNumber)) {
-        // Add to recently generated tags
-        _recentlyGeneratedTags.add(tagNumber.toLowerCase());
-        return tagNumber;
-      }
-      
-      nextNumber++;
-      if (nextNumber > 999999) {
-        nextNumber = 1;
-      }
-    }
-    
-    // Final fallback - use timestamp-based number
-    final timestamp = DateTime.now().millisecondsSinceEpoch;
-    final fallbackTag = (timestamp % 900000 + 100000).toString().padLeft(6, '0');
-    
-    // Add to recently generated tags
-    _recentlyGeneratedTags.add(fallbackTag.toLowerCase());
-    return fallbackTag;
   }
 
   /// Get the current logged-in user ID from AuthService
@@ -682,96 +587,10 @@ class _GoatFormScreenState extends State<GoatFormScreen> {
         // For Growers and Kid, sex remains null for user selection
       }
       
-      // Generate tag based on classification (only for new goat)
-      if (widget.goat == null) {
-        _generateTagForClassification(classification);
-      }
     });
     _validateAgeClassificationMatch();
   }
 
-  /// Generate tag number based on classification
-  Future<void> _generateTagForClassification(String classification) async {
-    setState(() => _isGeneratingTag = true);
-
-    try {
-      // Reload existing tags to ensure we have the latest data
-      await _loadExistingTags();
-
-      String newTag = _generateTagForClassificationType(classification);
-
-      setState(() {
-        _tagNoController.text = newTag;
-        _isGeneratingTag = false;
-      });
-
-    } catch (e) {
-      debugPrint('Error generating tag: $e');
-      setState(() => _isGeneratingTag = false);
-      _showErrorSnackBar('Failed to generate tag number');
-    }
-  }
-
-  /// Generate tag number using web admin logic (random 6-digit numbers)
-  String _generateTagForClassificationType(String classification) {
-    // Use web admin logic: generate random 6-digit numbers (100000 to 999999)
-    const int maxAttempts = 1000;
-    int attempts = 0;
-    
-    while (attempts < maxAttempts) {
-      // Generate a random 6-digit number (100000 to 999999)
-      final random = Random();
-      final randomNumber = random.nextInt(900000) + 100000; // 100000 to 999999
-      
-      // Format as 6-digit string with leading zeros
-      final tagNumber = randomNumber.toString().padLeft(6, '0');
-      
-      // Check if this random number is unique
-      if (_isTagNumberUnique(tagNumber)) {
-        // Add to recently generated tags
-        _recentlyGeneratedTags.add(tagNumber.toLowerCase());
-        return tagNumber;
-      }
-      
-      attempts++;
-    }
-    
-    // If we can't find a random unique number after many attempts,
-    // fall back to sequential approach starting from a random point
-    final random = Random();
-    final randomStart = random.nextInt(999999) + 1;
-    int nextNumber = randomStart;
-    
-    for (int i = 0; i < 999999; i++) {
-      final tagNumber = nextNumber.toString().padLeft(6, '0');
-      
-      if (_isTagNumberUnique(tagNumber)) {
-        // Add to recently generated tags
-        _recentlyGeneratedTags.add(tagNumber.toLowerCase());
-        return tagNumber;
-      }
-      
-      nextNumber++;
-      if (nextNumber > 999999) {
-        nextNumber = 1;
-      }
-    }
-    
-    // Final fallback - use timestamp-based number
-    final timestamp = DateTime.now().millisecondsSinceEpoch;
-    final fallbackTag = (timestamp % 900000 + 100000).toString().padLeft(6, '0');
-    
-    // Add to recently generated tags
-    _recentlyGeneratedTags.add(fallbackTag.toLowerCase());
-    return fallbackTag;
-  }
-  
-  /// Check if tag number is unique (not in existing tags or recently generated)
-  bool _isTagNumberUnique(String tagNumber) {
-    final lowerTag = tagNumber.toLowerCase();
-    return !_existingTags.contains(lowerTag) && 
-           !_recentlyGeneratedTags.contains(lowerTag);
-  }
 
   /// Fetches all goat from the service and filters them by gender for parent selection
   Future<void> _fetchParentData() async {
@@ -1073,9 +892,6 @@ class _GoatFormScreenState extends State<GoatFormScreen> {
       _dateOfBirth = null;
       _source = null;
       _sourceDetails = null;
-      
-      // Clear recently generated tags for new goat
-      _recentlyGeneratedTags.clear();
       
       // Keep the same classification and pre-fill sex if applicable
       if (widget.preSelectedClassification != null) {
@@ -1672,7 +1488,7 @@ class _GoatFormScreenState extends State<GoatFormScreen> {
     );
   }
 
-  /// NEW: Build auto-generated tag field with refresh button
+  /// Build tag field for manual input
   Widget _buildAutoTagField() {
     return TextFormField(
       controller: _tagNoController,
@@ -1690,23 +1506,6 @@ class _GoatFormScreenState extends State<GoatFormScreen> {
         fillColor: AppColors.cardBackground,
         filled: true,
         // helperText removed; labeled as (Required)
-        suffixIcon: _isGeneratingTag
-            ? const Padding(
-          padding: EdgeInsets.all(12.0),
-          child: SizedBox(
-            width: 20,
-            height: 20,
-            child: CircularProgressIndicator(strokeWidth: 2),
-          ),
-        )
-            : IconButton(
-          onPressed: _generateUniqueTag,
-          icon: Icon(
-            Icons.refresh,
-            color: AppColors.primary,
-          ),
-          tooltip: 'Generate new tag number',
-        ),
       ),
     );
   }

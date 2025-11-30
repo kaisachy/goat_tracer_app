@@ -168,38 +168,20 @@ class _EducationFormModalState extends State<EducationFormModal> {
                   hint: 'Enter your school or institution name',
                 ),
 
-                const SizedBox(height: 20),
-
-                if (widget.level.toLowerCase() != 'elementary')
+                if (widget.level.toLowerCase() != 'elementary' && widget.level.toLowerCase() != 'secondary')
+                  Column(
+                    children: [
+                      const SizedBox(height: 16),
                   _buildTextField(
                     controller: courseController,
                     label: 'Course/Program',
                     icon: Icons.menu_book_outlined,
                     hint: 'Enter your course or program',
-                  ),
-
-                const SizedBox(height: 20),
-
-                // Start/End Year (year-only picker)
-                Row(
-                  children: [
-                    Expanded(
-                      child: _buildYearPickerField(
-                        controller: startYearController,
-                        label: 'Start Year',
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: _buildYearPickerField(
-                        controller: endYearController,
-                        label: 'End Year',
-                      ),
                     ),
                   ],
                 ),
 
-                const SizedBox(height: 20),
+                const SizedBox(height: 16),
 
                 _buildYearPickerField(
                   controller: yearController,
@@ -256,7 +238,7 @@ class _EducationFormModalState extends State<EducationFormModal> {
                                 ),
                               )
                             : const Text(
-                                'Save Education',
+                                'Save',
                                 style: TextStyle(
                                   fontSize: 16,
                                   fontWeight: FontWeight.w600,
@@ -591,11 +573,13 @@ class _EducationFormModalState extends State<EducationFormModal> {
   Future<void> _saveEducation() async {
     if (formKey.currentState!.validate()) {
       // Check if all fields are empty
-      final allFieldsEmpty = schoolController.text.isEmpty &&
+      // For Elementary and Secondary levels, only check school_name and year_graduated
+      final isElementaryOrSecondary = widget.level.toLowerCase() == 'elementary' || widget.level.toLowerCase() == 'secondary';
+      final allFieldsEmpty = isElementaryOrSecondary
+          ? (schoolController.text.isEmpty && yearController.text.isEmpty)
+          : (schoolController.text.isEmpty &&
           courseController.text.isEmpty &&
-          yearController.text.isEmpty &&
-          startYearController.text.isEmpty &&
-          endYearController.text.isEmpty;
+              yearController.text.isEmpty);
 
       // Don't save if all fields are empty
       if (allFieldsEmpty) {
@@ -634,8 +618,8 @@ class _EducationFormModalState extends State<EducationFormModal> {
       final Map<String, dynamic> updateData = {
         'level': widget.level,
         'school_name': schoolController.text,
-        // Only send course when level is not Elementary
-        if (widget.level.toLowerCase() != 'elementary') 'course': courseController.text,
+        // Only send course when level is not Elementary and not Secondary
+        if (widget.level.toLowerCase() != 'elementary' && widget.level.toLowerCase() != 'secondary') 'course': courseController.text,
       };
 
       // Add year only if it's non-empty and valid
@@ -643,20 +627,6 @@ class _EducationFormModalState extends State<EducationFormModal> {
         final year = int.tryParse(yearController.text);
         if (year != null && year > 0) {
           updateData['year_graduated'] = year.toString();
-        }
-      }
-
-      // Add start/end year if valid
-      if (startYearController.text.isNotEmpty) {
-        final sy = int.tryParse(startYearController.text);
-        if (sy != null && sy > 0) {
-          updateData['start_year'] = sy.toString();
-        }
-      }
-      if (endYearController.text.isNotEmpty) {
-        final ey = int.tryParse(endYearController.text);
-        if (ey != null && ey > 0) {
-          updateData['end_year'] = ey.toString();
         }
       }
 
