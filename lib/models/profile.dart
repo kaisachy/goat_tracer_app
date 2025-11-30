@@ -91,8 +91,6 @@ class EducationalBackground {
   final int userId;
   final String level;
   final String schoolName;
-  final int? startYear;
-  final int? endYear;
   final int? yearGraduated;
   final String? course;
 
@@ -101,8 +99,6 @@ class EducationalBackground {
     required this.userId,
     required this.level,
     required this.schoolName,
-    this.startYear,
-    this.endYear,
     this.yearGraduated,
     this.course,
   });
@@ -113,8 +109,6 @@ class EducationalBackground {
       userId: json['user_id'],
       level: json['level'],
       schoolName: json['school_name'],
-      startYear: json['start_year'] != null ? int.tryParse(json['start_year'].toString()) : null,
-      endYear: json['end_year'] != null ? int.tryParse(json['end_year'].toString()) : null,
       yearGraduated: json['year_graduated'] != null ? int.tryParse(json['year_graduated'].toString()) : null,
       course: json['course'],
     );
