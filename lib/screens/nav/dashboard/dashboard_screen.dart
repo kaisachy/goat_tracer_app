@@ -677,7 +677,7 @@ class DashboardScreenState extends State<DashboardScreen>
 
     return Showcase(
       key: _keepAnEyeOnKey,
-      title: 'Goats Need Attention',
+      title: 'Keep an Eye On',
       description: 'Monitor goats that need immediate attention. This section highlights sick and lost goats, helping you quickly identify and address health issues or missing animals in your herd.',
       targetShapeBorder: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(20),
@@ -721,7 +721,7 @@ class DashboardScreenState extends State<DashboardScreen>
                 Icon(Icons.visibility_rounded, color: AppColors.darkGreen, size: 24),
                 SizedBox(width: 12),
                 Text(
-                  'Goats Need Attention',
+                  'Keep an Eye On',
                   style: TextStyle(
                     fontSize: 20,
                     fontWeight: FontWeight.bold,
