@@ -61,7 +61,7 @@ class _GoatSelectionModalState extends State<GoatSelectionModal> {
 
   Future<void> _maybeLoadHistoryEligibility() async {
     final type = (widget.historyType ?? '').toLowerCase();
-    if (type != 'pregnant' && type != 'gives birth' && type != 'aborted pregnancy' && type != 'treated') return;
+    if (type != 'pregnant' && type != 'kidding' && type != 'aborted' && type != 'treated') return;
 
     try {
       final events = await GoatHistoryService.getgoatHistory();
@@ -88,7 +88,7 @@ class _GoatSelectionModalState extends State<GoatSelectionModal> {
         DateTime? latestClosure;
         for (final event in tagEvents) {
           final evType = (event['history_type'] ?? '').toString().toLowerCase();
-          if (evType == 'gives birth' || evType == 'aborted pregnancy') {
+          if (evType == 'kidding' || evType == 'aborted') {
             final raw = event['history_date']?.toString();
             final date = DateTime.tryParse(raw ?? '');
             if (date == null) continue;
@@ -161,7 +161,7 @@ class _GoatSelectionModalState extends State<GoatSelectionModal> {
 
     // Female-only history types
     const femaleOnly = {
-      'dry off', 'gives birth', 'pregnant', 'aborted pregnancy', 'breeding'
+      'dry off', 'kidding', 'pregnant', 'aborted', 'breeding'
     };
     // Male-only history types
     const maleOnly = {
@@ -180,11 +180,11 @@ class _GoatSelectionModalState extends State<GoatSelectionModal> {
         // Require an existing Breeding record
         return _tagsWithBreeding.contains(goat.tagNo);
       }
-      if (type == 'gives birth' || type == 'aborted pregnancy') {
+      if (type == 'kidding' || type == 'aborted') {
         // Require an existing Pregnant record
         return _tagsWithPregnant.contains(goat.tagNo);
       }
-      return true; // breeding/dry off/aborted pregnancy baseline
+      return true; // breeding/dry off/aborted baseline
     }
     if (maleOnly.contains(type)) {
       return sex == 'male';
@@ -421,7 +421,7 @@ class _GoatSelectionModalState extends State<GoatSelectionModal> {
                             elevation: selectedGoat != null ? 2 : 0,
                           ),
                           child: Text(
-                            'Select',
+                            'Continue',
                             style: TextStyle(
                               fontSize: 14,
                               fontWeight: FontWeight.w600,

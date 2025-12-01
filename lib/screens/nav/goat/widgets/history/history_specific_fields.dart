@@ -10,7 +10,7 @@ import 'history-fields/treated_history_fields.dart';
 import 'history-fields/sick_history_fields.dart';
 import 'history-fields/breeding_history_fields.dart';
 import 'history-fields/weighed_history_fields.dart';
-import 'history-fields/gives_birth_history_fields.dart';
+import 'history-fields/gives_birth_history_fields.dart'; // File name kept for compatibility
 import 'history-fields/vaccinated_history_fields.dart';
 import 'history-fields/pregnant_history_fields.dart';
 import 'history-fields/deworming_history_fields.dart';
@@ -46,7 +46,7 @@ class HistorySpecificFieldsState extends State<HistorySpecificFields> {
   Map<String, dynamic>? _newKidData;
   final GlobalKey<BreedingEventFieldsState> _breedingFieldsKey = GlobalKey<BreedingEventFieldsState>();
   final GlobalKey<PregnantEventFieldsState> _pregnantFieldsKey = GlobalKey<PregnantEventFieldsState>();
-  final GlobalKey<GivesBirthEventFieldsState> _givesBirthFieldsKey = GlobalKey<GivesBirthEventFieldsState>();
+  final GlobalKey<KiddingEventFieldsState> _kiddingFieldsKey = GlobalKey<KiddingEventFieldsState>();
 
   @override
   void initState() {
@@ -80,7 +80,7 @@ class HistorySpecificFieldsState extends State<HistorySpecificFields> {
   Widget _buildEventSpecificFields() {
     switch (widget.selectedEventType.toLowerCase()) {
       case 'dry off':
-      case 'aborted pregnancy':
+      case 'aborted':
       case 'hoof trimming':
       case 'weaned':
         return const SizedBox.shrink();
@@ -107,9 +107,9 @@ class HistorySpecificFieldsState extends State<HistorySpecificFields> {
           controllers: widget.controllers,
         );
 
-      case 'gives birth':
-        return GivesBirthEventFields(
-          key: _givesBirthFieldsKey,
+      case 'kidding':
+        return KiddingEventFields(
+          key: _kiddingFieldsKey,
           controllers: widget.controllers,
           goatTag: widget.goatTag,
           temporaryKidData: _newKidData,
@@ -198,15 +198,15 @@ class HistorySpecificFieldsState extends State<HistorySpecificFields> {
     }
   }
 
-  // Expose kids collected in Gives Birth fields
+  // Expose kids collected in Kidding fields
   List<Map<String, dynamic>>? getKids() {
-    if (widget.selectedEventType.toLowerCase() == 'gives birth') {
-      debugPrint('DEBUG: history_specific_fields getKids() - event type is gives birth');
-      final kids = _givesBirthFieldsKey.currentState?.getKids();
+    if (widget.selectedEventType.toLowerCase() == 'kidding') {
+      debugPrint('DEBUG: history_specific_fields getKids() - event type is kidding');
+      final kids = _kiddingFieldsKey.currentState?.getKids();
       debugPrint('DEBUG: history_specific_fields getKids() - returned ${kids?.length ?? 0} kids');
       return kids;
     }
-    debugPrint('DEBUG: history_specific_fields getKids() - event type is NOT gives birth: ${widget.selectedEventType}');
+    debugPrint('DEBUG: history_specific_fields getKids() - event type is NOT kidding: ${widget.selectedEventType}');
     return null;
   }
   

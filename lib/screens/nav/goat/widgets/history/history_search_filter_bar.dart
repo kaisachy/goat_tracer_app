@@ -320,7 +320,7 @@ IconData _getEventIcon(String eventType) {
       return Icons.favorite_rounded;
     case 'weighed':
       return Icons.monitor_weight_rounded;
-    case 'gives birth':
+    case 'kidding':
       return Icons.child_care_rounded;
     case 'vaccinated':
       return Icons.vaccines_rounded;
@@ -338,7 +338,7 @@ IconData _getEventIcon(String eventType) {
       return Icons.minor_crash_rounded;
     case 'weaned':
       return Icons.rss_feed_rounded;
-    case 'aborted pregnancy':
+    case 'aborted':
       return Icons.heart_broken_rounded;
     case 'other':
       return Icons.more_horiz_rounded;
@@ -355,7 +355,7 @@ Color _getEventColor(String eventType) {
       return Colors.pink.shade400;
     case 'weighed':
       return Colors.orange.shade500;
-    case 'gives birth':
+    case 'kidding':
       return Colors.blue.shade400;
     case 'vaccinated':
       return Colors.green.shade500;
@@ -373,7 +373,7 @@ Color _getEventColor(String eventType) {
       return Colors.indigo.shade400;
     case 'weaned':
       return Colors.teal.shade400;
-    case 'aborted pregnancy':
+    case 'aborted':
       return Colors.red.shade600;
     case 'other':
       return Colors.blueGrey.shade400;

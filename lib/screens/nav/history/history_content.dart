@@ -29,8 +29,8 @@ class _HistoryContentState extends State<HistoryContent> {
   // All possible event types - comprehensive list including all event types from HistoryTypeUtils
   List<String> get eventTypes {
     return [
-      'All', 'Dry off', 'Sick', 'Treated', 'Breeding', 'Weighed', 'Gives Birth',
-      'Vaccinated', 'Pregnant', 'Aborted Pregnancy', 'Deworming',
+      'All', 'Dry off', 'Sick', 'Treated', 'Breeding', 'Weighed', 'Kidding',
+      'Vaccinated', 'Pregnant', 'Aborted', 'Deworming',
       'Hoof Trimming', 'Castrated', 'Weaned', 'Mortality', 'Lost', 'Other',
     ];
   }
@@ -735,7 +735,7 @@ class _HistoryContentState extends State<HistoryContent> {
       case 'weighed':
         if (event['weighed_result'] != null) details.add({'label': 'Weight', 'value': '${event['weighed_result']} kg'});
         break;
-      case 'gives birth':
+      case 'kidding':
         if (event['Buck_tag'] != null) details.add({'label': 'Buck Tag (Father)', 'value': event['Buck_tag']});
         
         // Handle Kid tags and calculate litter size

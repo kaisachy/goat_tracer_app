@@ -16,6 +16,7 @@ class ChangeStatusOption {
     'Lactating',
     'Pregnant',
     'Lactating & Pregnant',
+    'Kidding',
     'Sold',
     'Mortality',
     'Lost',
@@ -338,6 +339,10 @@ class ChangeStatusOption {
       case 'lactating & pregnant':
         iconData = Icons.double_arrow_rounded;
         iconColor = Colors.deepPurple;
+        break;
+      case 'kidding':
+        iconData = FontAwesomeIcons.baby;
+        iconColor = Colors.blue;
         break;
       case 'sold':
         iconData = FontAwesomeIcons.moneyBill;

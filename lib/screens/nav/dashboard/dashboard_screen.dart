@@ -1900,7 +1900,7 @@ class DashboardScreenState extends State<DashboardScreen>
         return Colors.pink.shade400;
       case 'weighed':
         return Colors.orange.shade500;
-      case 'gives birth':
+      case 'kidding':
         return Colors.blue.shade400;
       case 'vaccinated':
         return Colors.green.shade500;
@@ -1918,7 +1918,7 @@ class DashboardScreenState extends State<DashboardScreen>
         return Colors.indigo.shade400;
       case 'weaned':
         return Colors.teal.shade400;
-      case 'aborted pregnancy':
+      case 'aborted':
         return Colors.red.shade600;
       case 'lost':
         return Colors.amber.shade600;
@@ -1937,7 +1937,7 @@ class DashboardScreenState extends State<DashboardScreen>
         return Icons.favorite_rounded;
       case 'weighed':
         return Icons.monitor_weight_rounded;
-      case 'gives birth':
+      case 'kidding':
         return Icons.child_care_rounded;
       case 'vaccinated':
         return Icons.vaccines_rounded;
@@ -1955,7 +1955,7 @@ class DashboardScreenState extends State<DashboardScreen>
         return Icons.minor_crash_rounded;
       case 'weaned':
         return Icons.rss_feed_rounded;
-      case 'aborted pregnancy':
+      case 'aborted':
         return Icons.heart_broken_rounded;
       case 'lost':
         return Icons.search_rounded;

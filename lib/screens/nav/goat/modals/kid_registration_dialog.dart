@@ -111,11 +111,6 @@ class _KidRegistrationDialogState extends State<KidRegistrationDialog> {
     }
   }
   
-  /// Check if tag number is unique (not in existing tags)
-  bool _isTagNumberUnique(String tagNumber) {
-    final lowerTag = tagNumber.toLowerCase();
-    return !_existingTags.contains(lowerTag);
-  }
 
   String? _getCurrentTag() {
     if (widget.existingKidData == null) return null;

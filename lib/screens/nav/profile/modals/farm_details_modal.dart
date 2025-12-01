@@ -1749,7 +1749,9 @@ class _FarmDetailsModalState extends State<FarmDetailsModal> {
           // Reinitialize address from updated data
           await _initializeAddressFromStructuredData(updatedFarmDetails);
         }
+        if (!mounted) return;
         widget.onToggleEditMode();
+        if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Row(
@@ -1780,6 +1782,7 @@ class _FarmDetailsModalState extends State<FarmDetailsModal> {
         );
         widget.onSaveSuccess();
       } else {
+        if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Row(

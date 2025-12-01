@@ -45,7 +45,7 @@ class BreedingAnalysisService {
 
       // Get birth events (female doe/Doeling only, align with web)
       final birthEvents = allEvents.where((event) {
-        if (event['history_type']?.toString().toLowerCase() != 'gives birth') return false;
+        if (event['history_type']?.toString().toLowerCase() != 'kidding') return false;
         final tag = event['goat_tag']?.toString() ?? '';
         final prof = tagToProfile[tag];
         if (prof == null) return false;

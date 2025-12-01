@@ -1,4 +1,5 @@
 ﻿import 'package:flutter/material.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:intl/intl.dart';
 import 'package:showcaseview/showcaseview.dart';
 // import 'package:shared_preferences/shared_preferences.dart';
@@ -75,9 +76,16 @@ class _GoatFormScreenState extends State<GoatFormScreen> {
   List<Goat> _femaleGoat = [];
   List<Goat> _maleGoat = [];
   bool _isLoadingParents = true;
+  
+  // Toggle states for parent tag fields (default to manual input)
+  bool _useMotherTagTextInput = true;
+  bool _useFatherTagTextInput = true;
+  
+  // Controllers for manual parent tag input
+  final _motherTagTextController = TextEditingController();
+  final _fatherTagTextController = TextEditingController();
 
   // For tag validation
-  List<String> _existingTags = [];
 
   // NEW: Dynamic options from user preferences
   List<String> _breedOptions = [];
@@ -118,10 +126,9 @@ class _GoatFormScreenState extends State<GoatFormScreen> {
   /// Load existing tags from all goat
   Future<void> _loadExistingTags() async {
     try {
-      final allGoats = await GoatService.getAllGoats();
+      final _ = await GoatService.getAllGoats();
       setState(() {
         // For web admin compatibility, store tags as-is (6-digit numbers)
-        _existingTags = allGoats.map((goat) => goat.tagNo.toLowerCase()).toList();
       });
     } catch (e) {
       debugPrint('Error loading existing tags: $e');
@@ -541,6 +548,15 @@ class _GoatFormScreenState extends State<GoatFormScreen> {
       // Set initial parent tags
       _motherTag = c.motherTag;
       _fatherTag = c.fatherTag;
+      
+      // Set text controllers if parent tags exist
+      // Note: We'll check if tags exist in dropdown after _fetchParentData completes
+      if (c.motherTag != null && c.motherTag!.isNotEmpty) {
+        _motherTagTextController.text = c.motherTag!;
+      }
+      if (c.fatherTag != null && c.fatherTag!.isNotEmpty) {
+        _fatherTagTextController.text = c.fatherTag!;
+      }
 
       // NEW: Store original parent tags for the update request
       _originalMotherTag = c.motherTag;
@@ -604,6 +620,25 @@ class _GoatFormScreenState extends State<GoatFormScreen> {
       setState(() {
         _femaleGoat = potentialParents.where((c) => c.sex == 'Female').toList();
         _maleGoat = potentialParents.where((c) => c.sex == 'Male').toList();
+
+        // When editing, check if existing parent tags are in the dropdown
+        // If they exist, use dropdown mode; otherwise, use text input mode
+        if (widget.goat != null) {
+          if (widget.goat!.motherTag != null && widget.goat!.motherTag!.isNotEmpty) {
+            final existsInDropdown = _femaleGoat.any((c) => c.tagNo == widget.goat!.motherTag);
+            _useMotherTagTextInput = !existsInDropdown;
+            if (existsInDropdown) {
+              _motherTag = widget.goat!.motherTag;
+            }
+          }
+          if (widget.goat!.fatherTag != null && widget.goat!.fatherTag!.isNotEmpty) {
+            final existsInDropdown = _maleGoat.any((c) => c.tagNo == widget.goat!.fatherTag);
+            _useFatherTagTextInput = !existsInDropdown;
+            if (existsInDropdown) {
+              _fatherTag = widget.goat!.fatherTag;
+            }
+          }
+        }
 
         // Validate parent tags - if they don't exist in the current goat list, set them to null
         if (_motherTag != null && !_femaleGoat.any((c) => c.tagNo == _motherTag)) {
@@ -735,8 +770,8 @@ class _GoatFormScreenState extends State<GoatFormScreen> {
       // 'group_name': textOrNull(_groupName), // Commented out: Group Name removed from payload
       'source': _source,
       'source_details': _sourceDetails,
-      'mother_tag': _motherTag,
-      'father_tag': _fatherTag,
+      'mother_tag': _useMotherTagTextInput ? _motherTagTextController.text.trim().isEmpty ? null : _motherTagTextController.text.trim() : _motherTag,
+      'father_tag': _useFatherTagTextInput ? _fatherTagTextController.text.trim().isEmpty ? null : _fatherTagTextController.text.trim() : _fatherTag,
       // 'notes': textOrNull(_notesController.text), // Commented out: Notes removed from payload
       'status': widget.goat?.status ?? 'Healthy',
     };
@@ -914,19 +949,123 @@ class _GoatFormScreenState extends State<GoatFormScreen> {
     return classification[0].toUpperCase() + classification.substring(1).toLowerCase();
   }
 
-  /// Builds a searchable dropdown for parent selection
-  Widget _buildSearchableDropdown({
+  /// Builds a toggleable field for parent selection (dropdown or manual input)
+  Widget _buildParentTagField({
     required String label,
     required String? value,
     required List<Goat> options,
     required Function(String?) onChanged,
     required IconData icon,
+    required bool useTextInput,
+    required Function(bool) onToggleMode,
+    required TextEditingController textController,
   }) {
+    if (useTextInput) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Expanded(
+                child: Text(
+                  label,
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w500,
+                    color: Colors.grey[700],
+                  ),
+                ),
+              ),
+              TextButton.icon(
+                onPressed: () {
+                  onToggleMode(false);
+                  // Copy current text value to dropdown if switching
+                  if (textController.text.isNotEmpty) {
+                    onChanged(textController.text);
+                  } else {
+                    textController.clear();
+                  }
+                },
+                icon: const Icon(FontAwesomeIcons.rightLeft, size: 16),
+                label: const Text(
+                  'Select from list',
+                  style: TextStyle(fontSize: 12),
+                ),
+                style: TextButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  minimumSize: Size.zero,
+                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          TextFormField(
+            controller: textController,
+            decoration: InputDecoration(
+              labelText: label,
+              prefixIcon: Icon(icon, color: AppColors.primary),
+              border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide(color: AppColors.primary, width: 2),
+              ),
+              fillColor: AppColors.cardBackground,
+              filled: true,
+            ),
+            onChanged: (newValue) {
+              onChanged(newValue.isEmpty ? null : newValue);
+            },
+          ),
+        ],
+      );
+    }
+    
     // Check if the current value exists in the options
     bool valueExists = value == null || options.any((goat) => goat.tagNo == value);
     String? safeValue = valueExists ? value : null;
 
-    return DropdownButtonFormField<String>(
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Expanded(
+              child: Text(
+                label,
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w500,
+                  color: Colors.grey[700],
+                ),
+              ),
+            ),
+            TextButton.icon(
+              onPressed: () {
+                onToggleMode(true);
+                if (value != null) {
+                  textController.text = value;
+                } else {
+                  textController.clear();
+                }
+              },
+              icon: const Icon(FontAwesomeIcons.rightLeft, size: 16),
+              label: const Text(
+                'Enter manually',
+                style: TextStyle(fontSize: 12),
+              ),
+              style: TextButton.styleFrom(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                minimumSize: Size.zero,
+                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 8),
+        DropdownButtonFormField<String>(
       value: safeValue,
       isExpanded: true,
       decoration: InputDecoration(
@@ -991,6 +1130,8 @@ class _GoatFormScreenState extends State<GoatFormScreen> {
           }),
         ];
       },
+        ),
+      ],
     );
   }
 
@@ -1690,20 +1831,26 @@ class _GoatFormScreenState extends State<GoatFormScreen> {
                     child: _buildCard(
                       child: Column(
                         children: [
-                          _buildSearchableDropdown(
+                          _buildParentTagField(
                             label: 'Dam Tag (Mother) (Optional)',
                             value: _motherTag,
                             options: _femaleGoat,
                             onChanged: (value) => setState(() => _motherTag = value),
                             icon: Icons.female,
+                            useTextInput: _useMotherTagTextInput,
+                            onToggleMode: (useText) => setState(() => _useMotherTagTextInput = useText),
+                            textController: _motherTagTextController,
                           ),
                           const SizedBox(height: 16),
-                          _buildSearchableDropdown(
+                          _buildParentTagField(
                             label: 'Sire Tag (Father) (Optional)',
                             value: _fatherTag,
                             options: _maleGoat,
                             onChanged: (value) => setState(() => _fatherTag = value),
                             icon: Icons.male,
+                            useTextInput: _useFatherTagTextInput,
+                            onToggleMode: (useText) => setState(() => _useFatherTagTextInput = useText),
+                            textController: _fatherTagTextController,
                           ),
                         ],
                       ),
@@ -1757,6 +1904,8 @@ class _GoatFormScreenState extends State<GoatFormScreen> {
     _scrollController.dispose();
     _tagNoController.dispose();
     _weightController.dispose();
+    _motherTagTextController.dispose();
+    _fatherTagTextController.dispose();
     // _notesController.dispose(); // Commented out: Notes field removed
     super.dispose();
   }

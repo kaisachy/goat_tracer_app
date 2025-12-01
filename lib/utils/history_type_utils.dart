@@ -48,8 +48,8 @@ class HistoryTypeUtils {
           'Treated',
           'Breeding',
           'Pregnant',
-          'Gives Birth',
-          'Aborted Pregnancy',
+          'Kidding',
+          'Aborted',
           'Weighed',
           'Deworming',
           'Hoof Trimming',
@@ -68,8 +68,8 @@ class HistoryTypeUtils {
           'Treated',
           'Breeding',
           'Pregnant',
-          'Gives Birth',
-          'Aborted Pregnancy',
+          'Kidding',
+          'Aborted',
           'Dry off',
           'Weighed',
           'Deworming',
@@ -162,13 +162,13 @@ class HistoryTypeUtils {
         return FontAwesomeIcons.syringe;
       case 'weighed':
         return FontAwesomeIcons.weightScale;
-      case 'gives birth':
+      case 'kidding':
         return FontAwesomeIcons.baby;
       case 'pregnant':
         return FontAwesomeIcons.personPregnant;
       case 'dry off':
         return FontAwesomeIcons.pause;
-      case 'aborted pregnancy':
+      case 'aborted':
         return FontAwesomeIcons.heartCrack;
       case 'deworming':
         return FontAwesomeIcons.pills;
@@ -198,7 +198,7 @@ class HistoryTypeUtils {
       case 'sick': return Colors.red.shade600;
       case 'breeding': return Colors.pink.shade400;
       case 'weighed': return Colors.orange.shade500;
-      case 'gives birth': return Colors.blue.shade400;
+      case 'kidding': return Colors.blue.shade400;
       case 'vaccinated': return Colors.green.shade500;
       case 'pregnant': return Colors.purple.shade400;
       case 'treated': return Colors.red.shade400;
@@ -207,7 +207,7 @@ class HistoryTypeUtils {
       case 'hoof trimming': return Colors.brown.shade400;
       case 'castrated': return Colors.indigo.shade400;
       case 'weaned': return Colors.teal.shade400;
-      case 'aborted pregnancy': return Colors.red.shade600;
+      case 'aborted': return Colors.red.shade600;
       case 'mortality': return Colors.grey.shade700;
       case 'lost': return Colors.amber.shade600;
       case 'sold': return Colors.green.shade600;
@@ -228,15 +228,15 @@ class HistoryTypeUtils {
       return 'assets/images/goat-icons/pregnant_doe.png';
     }
     
-    // Handle "gives birth" with various spacing/casing
+    // Handle "kidding" with various spacing/casing
     // Check for exact match first, then handle variations
-    if (normalized == 'gives birth') {
+    if (normalized == 'kidding') {
       return 'assets/images/goat-icons/lactating.png';
     }
     
-    // Handle case where there's no space (e.g., "GivesBirth" from database)
+    // Handle case where there's no space (e.g., "Kidding" from database)
     final noSpace = normalized.replaceAll(' ', '');
-    if (noSpace == 'givesbirth') {
+    if (noSpace == 'kidding') {
       return 'assets/images/goat-icons/lactating.png';
     }
 

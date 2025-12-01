@@ -36,8 +36,8 @@ class _HistorygoatTabContentState extends State<HistorygoatTabContent> {
   List<String> get eventTypes {
     // Comprehensive event types for female goat - includes all available event types
     final femaleEventTypes = [
-      'All', 'Dry off', 'Sick', 'Treated', 'Breeding', 'Weighed', 'Gives Birth',
-      'Vaccinated', 'Pregnant', 'Aborted Pregnancy', 'Deworming',
+      'All', 'Dry off', 'Sick', 'Treated', 'Breeding', 'Weighed', 'Kidding',
+      'Vaccinated', 'Pregnant', 'Aborted', 'Deworming',
       'Hoof Trimming', 'Weaned', 'Mortality', 'Lost', 'Sold', 'Other',
     ];
 
@@ -227,7 +227,7 @@ class _HistorygoatTabContentState extends State<HistorygoatTabContent> {
       case 'weighed':
         return _compareFieldValues(event1['weighed_result'], event2['weighed_result']);
 
-      case 'gives birth':
+      case 'kidding':
         return _compareFieldValues(event1['Buck_tag'], event2['Buck_tag']) &&
             _compareFieldValues(event1['Kid_tag'], event2['Kid_tag']);
 
@@ -240,8 +240,8 @@ class _HistorygoatTabContentState extends State<HistorygoatTabContent> {
             _compareFieldValues(event1['expected_delivery_date'], event2['expected_delivery_date']) &&
             _compareFieldValues(event1['Buck_tag'], event2['Buck_tag']);
 
-      case 'aborted pregnancy':
-      // Only basic fields matter for aborted pregnancy
+      case 'aborted':
+      // Only basic fields matter for aborted
         return true;
 
       case 'deworming':
@@ -1275,7 +1275,7 @@ class _HistorygoatTabContentState extends State<HistorygoatTabContent> {
         }
         break;
 
-      case 'gives birth':
+      case 'kidding':
         final buckTag = _getEventFieldValue(
           event,
           [
@@ -1324,8 +1324,8 @@ class _HistorygoatTabContentState extends State<HistorygoatTabContent> {
         }
         break;
 
-      case 'aborted pregnancy':
-      // No additional fields for aborted pregnancy
+      case 'aborted':
+      // No additional fields for aborted
         break;
 
       case 'deworming':

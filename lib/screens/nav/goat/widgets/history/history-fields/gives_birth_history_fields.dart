@@ -1,4 +1,4 @@
-﻿// lib/screens/nav/goat/widgets/event_fields/gives_birth_event_fields.dart
+﻿// lib/screens/nav/goat/widgets/event_fields/kidding_event_fields.dart
 
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
@@ -7,13 +7,13 @@ import '../../../../../../services/goat/goat_service.dart';
 import '../../../modals/Kid_registration_dialog.dart';
 import 'base_history_fields.dart';
 
-class GivesBirthEventFields extends BaseEventFields {
+class KiddingEventFields extends BaseEventFields {
   final String? goatTag;
   final Map<String, dynamic>? temporaryKidData;
   final VoidCallback? onEditKidPressed;
   final Function(Map<String, dynamic>?) onKidDataChanged;
 
-  const GivesBirthEventFields({
+  const KiddingEventFields({
     super.key,
     required super.controllers,
     this.goatTag,
@@ -23,10 +23,10 @@ class GivesBirthEventFields extends BaseEventFields {
   });
 
   @override
-  GivesBirthEventFieldsState createState() => GivesBirthEventFieldsState();
+  KiddingEventFieldsState createState() => KiddingEventFieldsState();
 }
 
-class GivesBirthEventFieldsState extends BaseEventFieldsState<GivesBirthEventFields> {
+class KiddingEventFieldsState extends BaseEventFieldsState<KiddingEventFields> {
   Map<String, dynamic>? _newKidData;
   final List<Map<String, dynamic>> _kids = [];
 
@@ -52,14 +52,14 @@ class GivesBirthEventFieldsState extends BaseEventFieldsState<GivesBirthEventFie
 
   @override
   void onBucksLoaded() {
-    debugPrint('DEBUG: GivesBirthEventFields onBucksLoaded called');
+    debugPrint('DEBUG: KiddingEventFields onBucksLoaded called');
     // If semen_used has a value but Buck_tag is empty, try to derive Buck tag from semen label
     final semenText = widget.controllers['semen_used']?.text ?? '';
     final buckText = widget.controllers['Buck_tag']?.text ?? '';
     debugPrint('DEBUG: Current semen: $semenText, Buck: $buckText');
     
     if (semenText.isNotEmpty && buckText.isEmpty) {
-      debugPrint('DEBUG: Extracting Buck tag from semen in onBucksLoaded for Gives Birth');
+      debugPrint('DEBUG: Extracting Buck tag from semen in onBucksLoaded for Kidding');
       // Expected semen format examples:
       // - "TAG123 (Name) Semen"
       // - "TAG123 Semen"
@@ -74,17 +74,17 @@ class GivesBirthEventFieldsState extends BaseEventFieldsState<GivesBirthEventFie
         stop = paren;
       }
       final buckTag = stop == -1 ? extracted : extracted.substring(0, stop).trim();
-      debugPrint('DEBUG: Extracted Buck tag for Gives Birth: $buckTag');
-      if (buckTag.isNotEmpty) {
-        widget.controllers['Buck_tag']?.text = buckTag;
-        debugPrint('DEBUG: Set Buck_tag controller for Gives Birth to: $buckTag');
+        debugPrint('DEBUG: Extracted Buck tag for Kidding: $buckTag');
+        if (buckTag.isNotEmpty) {
+          widget.controllers['Buck_tag']?.text = buckTag;
+          debugPrint('DEBUG: Set Buck_tag controller for Kidding to: $buckTag');
         if (mounted) setState(() {});
       }
     }
   }
 
   @override
-  void didUpdateWidget(GivesBirthEventFields oldWidget) {
+  void didUpdateWidget(KiddingEventFields oldWidget) {
     super.didUpdateWidget(oldWidget);
     // Only update if temporaryKidData changed AND we're in edit mode
     // For new kids being added, we manage the list internally via _openAddKidDialog

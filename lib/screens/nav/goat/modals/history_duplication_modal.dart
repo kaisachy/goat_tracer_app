@@ -142,18 +142,18 @@ class _HistoryDuplicationModalState extends State<HistoryDuplicationModal> {
         // Dry off is only for Doe (matching PHP logic)
         return classificationLower == 'Doe';
 
-      case 'gives birth':
-        // Gives Birth is only for Doeling and Doe (matching PHP logic)
-        final allowedForGivesBirth = ['Doeling', 'Doe'];
-        return allowedForGivesBirth.contains(classificationLower);
+      case 'kidding':
+        // Kidding is only for Doeling and Doe (matching PHP logic)
+        final allowedForKidding = ['Doeling', 'Doe'];
+        return allowedForKidding.contains(classificationLower);
 
       case 'pregnant':
         // Pregnant is only for Doeling and Doe (matching PHP logic)
         final allowedForPregnant = ['Doeling', 'Doe'];
         return allowedForPregnant.contains(classificationLower);
 
-      case 'aborted pregnancy':
-        // Aborted Pregnancy is only for Doeling and Doe (matching PHP logic)
+      case 'aborted':
+        // Aborted is only for Doeling and Doe (matching PHP logic)
         final allowedForAborted = ['Doeling', 'Doe'];
         return allowedForAborted.contains(classificationLower);
 

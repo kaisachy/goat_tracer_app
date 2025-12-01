@@ -60,7 +60,7 @@ class HistoryTypeDropdownState extends State<HistoryTypeDropdown> {
       DateTime? latestClosureDate;
       for (final event in eventsForTag) {
         final type = (event['history_type']?.toString().toLowerCase() ?? '');
-        if (type != 'gives birth' && type != 'aborted pregnancy') continue;
+        if (type != 'kidding' && type != 'aborted') continue;
         final rawDate = event['history_date']?.toString();
         final parsedDate = DateTime.tryParse(rawDate ?? '');
         if (parsedDate == null) continue;
@@ -93,14 +93,14 @@ class HistoryTypeDropdownState extends State<HistoryTypeDropdown> {
       if (filtered.contains('Pregnant') && !hasBreedingAfterClosure) {
         filtered = filtered.where((type) => type != 'Pregnant').toList();
       }
-      if (filtered.contains('Gives Birth') && !hasPregnantAfterClosure) {
-        filtered = filtered.where((type) => type != 'Gives Birth').toList();
+      if (filtered.contains('Kidding') && !hasPregnantAfterClosure) {
+        filtered = filtered.where((type) => type != 'Kidding').toList();
       }
-      if (filtered.contains('Aborted Pregnancy')) {
+      if (filtered.contains('Aborted')) {
         final classification = widget.goatDetails!.classification.toLowerCase();
         final isEligibleClass = classification == 'doe' || classification == 'doeling';
         if (!isEligibleClass || !hasPregnantAfterClosure) {
-          filtered = filtered.where((type) => type != 'Aborted Pregnancy').toList();
+          filtered = filtered.where((type) => type != 'Aborted').toList();
         }
       }
     }

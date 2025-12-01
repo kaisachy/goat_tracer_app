@@ -71,8 +71,8 @@ class HistoryScreenState extends State<HistoryScreen>
         .where((t) => {
               'Breeding',
               'Pregnant',
-              'Gives Birth',
-              'Aborted Pregnancy',
+              'Kidding',
+              'Aborted',
             }.contains(t))
         .toList();
   }
@@ -555,7 +555,7 @@ class HistoryScreenState extends State<HistoryScreen>
     // Compare history-specific fields based on history type
     switch (historyType1) {
       case 'dry off':
-      case 'aborted pregnancy':
+      case 'aborted':
       case 'hoof trimming':
       case 'weaned':
         return true;
@@ -574,7 +574,7 @@ class HistoryScreenState extends State<HistoryScreen>
       case 'weighed':
         return _compareFieldValues(historyRecord1['weighed_result'], historyRecord2['weighed_result']);
 
-      case 'gives birth':
+      case 'kidding':
         return _compareFieldValues(historyRecord1['Buck_tag'], historyRecord2['Buck_tag']) &&
             _compareFieldValues(historyRecord1['Kid_tag'], historyRecord2['Kid_tag']);
 
@@ -1810,8 +1810,8 @@ class HistoryScreenState extends State<HistoryScreen>
       relevantDetails['Notes'] = historyRecord['notes'].toString();
     }
 
-    // Special handling for Gives Birth history records (check both lowercase and original case)
-    if (historyType == 'gives birth' || originalHistoryType?.toLowerCase() == 'gives birth') {
+    // Special handling for Kidding history records (check both lowercase and original case)
+    if (historyType == 'kidding' || originalHistoryType?.toLowerCase() == 'kidding') {
       final buckTag = _getFieldValue(
         historyRecord,
         [
@@ -1842,7 +1842,7 @@ class HistoryScreenState extends State<HistoryScreen>
     // Add history-specific fields based on history type
     switch (historyType) {
       case 'dry off':
-      case 'aborted pregnancy':
+      case 'aborted':
       case 'hoof trimming':
       case 'weaned':
       // No additional fields for these history types
@@ -1881,8 +1881,8 @@ class HistoryScreenState extends State<HistoryScreen>
         }
         break;
 
-      case 'gives birth':
-        // Already handled above in the special Gives Birth section
+      case 'kidding':
+        // Already handled above in the special Kidding section
         break;
 
       case 'vaccinated':
