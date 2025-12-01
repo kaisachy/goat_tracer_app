@@ -176,9 +176,8 @@ class _HistoryDuplicationModalState extends State<HistoryDuplicationModal> {
       case 'hoof trimming':
       case 'mortality':
       case 'lost':
-      case 'other':
       default:
-        // Other history are valid for all classifications
+        // Remaining history types are valid for all classifications
         return true;
     }
   }

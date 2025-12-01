@@ -286,72 +286,53 @@ class _GoatHistoryFormScreenState extends State<GoatHistoryFormScreen>
       );
       debugPrint('DEBUG: Latest breeding history record found: $latestBreeding');
       if (latestBreeding == null) {
-        debugPrint('DEBUG: No breeding history record found, showing warning');
-        _showWarningMessage(
-          'No Breeding history record has been logged since the last Kidding/Aborted event. '
-          'Please add a new Breeding record before marking this goat as Pregnant.',
-        );
-        setState(() => selectedHistoryType = 'Select type of history record');
-        return;
-      }
+        debugPrint('DEBUG: No breeding history record found, skipping auto-fill for Pregnant.');
+      } else {
+        final breedingDateStr = latestBreeding['history_date']?.toString();
+        if (breedingDateStr != null && breedingDateStr.isNotEmpty) {
+          _controllers['breeding_date']?.text = breedingDateStr;
+          try {
+            final breedingDate = DateTime.parse(breedingDateStr);
+            final expectedDelivery = breedingDate.add(const Duration(days: 150));
+            final formatted = '${expectedDelivery.year.toString().padLeft(4, '0')}-'
+                '${expectedDelivery.month.toString().padLeft(2, '0')}-'
+                '${expectedDelivery.day.toString().padLeft(2, '0')}';
+            _controllers['expected_delivery_date']?.text = formatted;
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              _historySpecificFieldsKey.currentState?.calculateAndDisplayDeliveryDate(breedingDate);
+            });
+          } catch (_) {}
+        }
+        final buckTag = _getRecordValue(latestBreeding, 'buck_tag');
+        final semen = _getRecordValue(latestBreeding, 'semen_used');
 
-      final breedingDateStr = latestBreeding['history_date']?.toString();
-      if (breedingDateStr != null && breedingDateStr.isNotEmpty) {
-        _controllers['breeding_date']?.text = breedingDateStr;
-        try {
-          final breedingDate = DateTime.parse(breedingDateStr);
-          final expectedDelivery = breedingDate.add(const Duration(days: 150));
-          final formatted = '${expectedDelivery.year.toString().padLeft(4, '0')}-'
-              '${expectedDelivery.month.toString().padLeft(2, '0')}-'
-              '${expectedDelivery.day.toString().padLeft(2, '0')}';
-          _controllers['expected_delivery_date']?.text = formatted;
-          // Also trigger UI-side calculation to refresh dependent widgets
-          WidgetsBinding.instance.addPostFrameCallback((_) {
-            _historySpecificFieldsKey.currentState?.calculateAndDisplayDeliveryDate(breedingDate);
-          });
-        } catch (_) {}
-      }
-      // Autofill buck/semen and technician if present
-      final buckTag = _getRecordValue(latestBreeding, 'buck_tag');
-      final semen = _getRecordValue(latestBreeding, 'semen_used');
-      debugPrint('DEBUG: Found Buck_tag: $buckTag, semen_used: $semen');
+        if (semen != null && semen.isNotEmpty) {
+          _controllers['semen_used']?.text = semen;
+          String extractedBuckTag = semen.trim();
+          if (extractedBuckTag.toLowerCase().endsWith('semen')) {
+            extractedBuckTag = extractedBuckTag.substring(0, extractedBuckTag.length - 5).trim();
+          }
+          int stop = extractedBuckTag.indexOf(' ');
+          int paren = extractedBuckTag.indexOf('(');
+          if (stop == -1 || (paren != -1 && paren < stop)) {
+            stop = paren;
+          }
+          final finalBuckTag = stop == -1 ? extractedBuckTag : extractedBuckTag.substring(0, stop).trim();
+          if (finalBuckTag.isNotEmpty) {
+            _controllers['Buck_tag']?.text = finalBuckTag;
+          }
+        } else if (buckTag != null && buckTag.isNotEmpty) {
+          _controllers['Buck_tag']?.text = buckTag;
+          _controllers['semen_used']?.text = '';
+        }
 
-      // If semen is present (AI), treat semen's buck as the buck selection
-      if (semen != null && semen.isNotEmpty) {
-        debugPrint('DEBUG: Processing semen: $semen');
-        _controllers['semen_used']?.text = semen;
-        // Try to extract the buck tag from semen label like "TAG123 (Name) Semen"
-        String extractedBuckTag = semen.trim();
-        if (extractedBuckTag.toLowerCase().endsWith('semen')) {
-          extractedBuckTag = extractedBuckTag.substring(0, extractedBuckTag.length - 5).trim();
+        final tech = latestBreeding['technician']?.toString();
+        if (tech != null && tech.isNotEmpty) {
+          _controllers['technician']?.text = tech;
         }
-        // Extract tag from format like "TAG123 (Name)" or just "TAG123"
-        int stop = extractedBuckTag.indexOf(' ');
-        int paren = extractedBuckTag.indexOf('(');
-        if (stop == -1 || (paren != -1 && paren < stop)) {
-          stop = paren;
+        if (mounted) {
+          setState(() {});
         }
-        final finalBuckTag = stop == -1 ? extractedBuckTag : extractedBuckTag.substring(0, stop).trim();
-        debugPrint('DEBUG: Extracted buck tag from semen: $finalBuckTag');
-        if (finalBuckTag.isNotEmpty) {
-          _controllers['Buck_tag']?.text = finalBuckTag;
-          debugPrint('DEBUG: Set Buck_tag controller to: $finalBuckTag');
-        }
-      } else if (buckTag != null && buckTag.isNotEmpty) {
-        debugPrint('DEBUG: Using direct Buck_tag: $buckTag');
-        _controllers['Buck_tag']?.text = buckTag;
-        _controllers['semen_used']?.text = '';
-        debugPrint('DEBUG: Set Buck_tag controller to: $buckTag');
-      }
-      final tech = latestBreeding['technician']?.toString();
-      if (tech != null && tech.isNotEmpty) {
-        _controllers['technician']?.text = tech;
-      }
-      
-      // Force UI refresh to ensure dropdowns pick up the controller values
-      if (mounted) {
-        setState(() {});
-        debugPrint('DEBUG: Triggered setState after Pregnant auto-fill');
       }
     }
 
@@ -366,70 +347,49 @@ class _GoatHistoryFormScreenState extends State<GoatHistoryFormScreen>
       );
       debugPrint('DEBUG: Latest pregnant history record found: $latestPregnant');
       if (latestPregnant == null) {
-        debugPrint('DEBUG: No pregnant history record found, showing warning');
-        _showWarningMessage(
-          'No Pregnant history record has been logged since the last Kidding/Aborted event. '
-          'Please record a new Pregnant entry before logging Kidding.',
-        );
-        setState(() => selectedHistoryType = 'Select type of history record');
-        return;
-      }
-
-      final breedingDate = latestPregnant['breeding_date']?.toString();
-      if (breedingDate != null && breedingDate.isNotEmpty) {
-        _controllers['breeding_date']?.text = breedingDate;
-      }
-      final due = latestPregnant['expected_delivery_date']?.toString();
-      if (due != null && due.isNotEmpty) {
-        _controllers['expected_delivery_date']?.text = due;
-      }
-
-      // Autofill sire info from latest Pregnant (preferred) or fallback to latest Breeding
-      String? semen = _getRecordValue(latestPregnant, 'semen_used');
-      String? buck = _getRecordValue(latestPregnant, 'buck_tag');
-      debugPrint('DEBUG: Found in pregnant history record - Buck_tag: $buck, semen_used: $semen');
-      if ((semen == null || semen.isEmpty) && (buck == null || buck.isEmpty)) {
-        debugPrint('DEBUG: No sire info in pregnant history record, falling back to latest breeding');
-        final latestBreeding = await _getLatestHistoryRecord(goatTag: goatTag, historyType: 'Breeding');
-        debugPrint('DEBUG: Latest breeding history record for fallback: $latestBreeding');
-        semen = _getRecordValue(latestBreeding, 'semen_used');
-        buck = _getRecordValue(latestBreeding, 'buck_tag');
-        debugPrint('DEBUG: Fallback values - Buck_tag: $buck, semen_used: $semen');
-      }
-
-      if (semen != null && semen.isNotEmpty) {
-        debugPrint('DEBUG: Processing semen for Kidding: $semen');
-        _controllers['semen_used']?.text = semen;
-        // Extract buck tag from semen label like "TAG123 (Name) Semen"
-        String extracted = semen.trim();
-        if (extracted.toLowerCase().endsWith('semen')) {
-          extracted = extracted.substring(0, extracted.length - 5).trim();
+        debugPrint('DEBUG: No pregnant history record found, skipping auto-fill for Kidding.');
+      } else {
+        final breedingDate = latestPregnant['breeding_date']?.toString();
+        if (breedingDate != null && breedingDate.isNotEmpty) {
+          _controllers['breeding_date']?.text = breedingDate;
         }
-        int stop = extracted.indexOf(' ');
-        int paren = extracted.indexOf('(');
-        if (stop == -1 || (paren != -1 && paren < stop)) {
-          stop = paren;
+        final due = latestPregnant['expected_delivery_date']?.toString();
+        if (due != null && due.isNotEmpty) {
+          _controllers['expected_delivery_date']?.text = due;
         }
-        final buckTag = stop == -1 ? extracted : extracted.substring(0, stop).trim();
-        debugPrint('DEBUG: Extracted buck tag from semen for Kidding: $buckTag');
-        if (buckTag.isNotEmpty) {
-          _controllers['Buck_tag']?.text = buckTag;
-          debugPrint('DEBUG: Set Buck_tag controller for Kidding to: $buckTag');
+
+        String? semen = _getRecordValue(latestPregnant, 'semen_used');
+        String? buck = _getRecordValue(latestPregnant, 'buck_tag');
+        if ((semen == null || semen.isEmpty) && (buck == null || buck.isEmpty)) {
+          final latestBreeding = await _getLatestHistoryRecord(goatTag: goatTag, historyType: 'Breeding');
+          semen = _getRecordValue(latestBreeding, 'semen_used');
+          buck = _getRecordValue(latestBreeding, 'buck_tag');
         }
-      } else if (buck != null && buck.isNotEmpty) {
-        debugPrint('DEBUG: Using direct Buck_tag for Kidding: $buck');
-        _controllers['Buck_tag']?.text = buck;
-        _controllers['semen_used']?.text = '';
-        debugPrint('DEBUG: Set Buck_tag controller for Kidding to: $buck');
-      }
 
-      // Force UI refresh so dropdowns pick up controller values
-      if (mounted) {
-        setState(() {});
-        debugPrint('DEBUG: Triggered setState after Kidding auto-fill');
-      }
+        if (semen != null && semen.isNotEmpty) {
+          _controllers['semen_used']?.text = semen;
+          String extracted = semen.trim();
+          if (extracted.toLowerCase().endsWith('semen')) {
+            extracted = extracted.substring(0, extracted.length - 5).trim();
+          }
+          int stop = extracted.indexOf(' ');
+          int paren = extracted.indexOf('(');
+          if (stop == -1 || (paren != -1 && paren < stop)) {
+            stop = paren;
+          }
+          final buckTag = stop == -1 ? extracted : extracted.substring(0, stop).trim();
+          if (buckTag.isNotEmpty) {
+            _controllers['Buck_tag']?.text = buckTag;
+          }
+        } else if (buck != null && buck.isNotEmpty) {
+          _controllers['Buck_tag']?.text = buck;
+          _controllers['semen_used']?.text = '';
+        }
 
-      // If no kid data yet, prompt user to add kid when saving
+        if (mounted) {
+          setState(() {});
+        }
+      }
     }
 
     if (value.toLowerCase() == 'aborted') {
@@ -442,56 +402,51 @@ class _GoatHistoryFormScreenState extends State<GoatHistoryFormScreen>
       );
       debugPrint('DEBUG: Latest pregnant history record for aborted: $latestPregnant');
       if (latestPregnant == null) {
-        _showWarningMessage(
-          'No Pregnant history record has been logged since the last Kidding/Aborted event. '
-          'Record a new Pregnant entry before logging an Aborted.',
-        );
-        setState(() => selectedHistoryType = 'Select type of history record');
-        return;
-      }
-
-      final breedingDate = latestPregnant['breeding_date']?.toString();
-      if (breedingDate != null && breedingDate.isNotEmpty) {
-        _controllers['breeding_date']?.text = breedingDate;
-      }
-      final due = latestPregnant['expected_delivery_date']?.toString();
-      if (due != null && due.isNotEmpty) {
-        _controllers['expected_delivery_date']?.text = due;
-      }
-
-      String? semen = _getRecordValue(latestPregnant, 'semen_used');
-      String? buck = _getRecordValue(latestPregnant, 'buck_tag');
-      if ((semen == null || semen.isEmpty) && (buck == null || buck.isEmpty)) {
-        final latestBreeding = await _getLatestHistoryRecord(
-          goatTag: goatTag,
-          historyType: 'Breeding',
-        );
-        semen = _getRecordValue(latestBreeding, 'semen_used');
-        buck = _getRecordValue(latestBreeding, 'buck_tag');
-      }
-
-      if (semen != null && semen.isNotEmpty) {
-        _controllers['semen_used']?.text = semen;
-        String extracted = semen.trim();
-        if (extracted.toLowerCase().endsWith('semen')) {
-          extracted = extracted.substring(0, extracted.length - 5).trim();
+        debugPrint('DEBUG: No pregnant history record found, skipping auto-fill for Aborted.');
+      } else {
+        final breedingDate = latestPregnant['breeding_date']?.toString();
+        if (breedingDate != null && breedingDate.isNotEmpty) {
+          _controllers['breeding_date']?.text = breedingDate;
         }
-        int stop = extracted.indexOf(' ');
-        int paren = extracted.indexOf('(');
-        if (stop == -1 || (paren != -1 && paren < stop)) {
-          stop = paren;
+        final due = latestPregnant['expected_delivery_date']?.toString();
+        if (due != null && due.isNotEmpty) {
+          _controllers['expected_delivery_date']?.text = due;
         }
-        final buckTag = stop == -1 ? extracted : extracted.substring(0, stop).trim();
-        if (buckTag.isNotEmpty) {
-          _controllers['Buck_tag']?.text = buckTag;
-        }
-      } else if (buck != null && buck.isNotEmpty) {
-        _controllers['Buck_tag']?.text = buck;
-        _controllers['semen_used']?.text = '';
-      }
 
-      if (mounted) {
-        setState(() {});
+        String? semen = _getRecordValue(latestPregnant, 'semen_used');
+        String? buck = _getRecordValue(latestPregnant, 'buck_tag');
+        if ((semen == null || semen.isEmpty) && (buck == null || buck.isEmpty)) {
+          final latestBreeding = await _getLatestHistoryRecord(
+            goatTag: goatTag,
+            historyType: 'Breeding',
+          );
+          semen = _getRecordValue(latestBreeding, 'semen_used');
+          buck = _getRecordValue(latestBreeding, 'buck_tag');
+        }
+
+        if (semen != null && semen.isNotEmpty) {
+          _controllers['semen_used']?.text = semen;
+          String extracted = semen.trim();
+          if (extracted.toLowerCase().endsWith('semen')) {
+            extracted = extracted.substring(0, extracted.length - 5).trim();
+          }
+          int stop = extracted.indexOf(' ');
+          int paren = extracted.indexOf('(');
+          if (stop == -1 || (paren != -1 && paren < stop)) {
+            stop = paren;
+          }
+          final buckTag = stop == -1 ? extracted : extracted.substring(0, stop).trim();
+          if (buckTag.isNotEmpty) {
+            _controllers['Buck_tag']?.text = buckTag;
+          }
+        } else if (buck != null && buck.isNotEmpty) {
+          _controllers['Buck_tag']?.text = buck;
+          _controllers['semen_used']?.text = '';
+        }
+
+        if (mounted) {
+          setState(() {});
+        }
       }
     }
   }
@@ -881,7 +836,6 @@ class _GoatHistoryFormScreenState extends State<GoatHistoryFormScreen>
     if (value.isEmpty) return false;
     if (value.startsWith('select type')) return false;
     if (value.startsWith('loading')) return false;
-    if (value == 'other') return false;
     return true;
   }
 
@@ -1580,55 +1534,6 @@ class _GoatHistoryFormScreenState extends State<GoatHistoryFormScreen>
         }
       }
       // Enforce prerequisite: Pregnant requires latest Breeding
-      if (selectedHistoryType.toLowerCase() == 'pregnant') {
-        final latestClosure = await _getLatestClosureDate(data['goat_tag']);
-        final latestBreeding = await _getLatestHistoryRecord(
-          goatTag: data['goat_tag'],
-          historyType: 'Breeding',
-          mustBeAfter: latestClosure,
-        );
-        if (latestBreeding == null) {
-          _showErrorMessage(
-            'Cannot create Pregnant history record: no Breeding history has been logged since the last Kidding/Aborted event.',
-          );
-          setState(() => _isLoading = false);
-          return;
-        }
-      }
-
-      // Enforce prerequisite: Kidding requires latest Pregnant
-      if (selectedHistoryType.toLowerCase() == 'kidding') {
-        final latestClosure = await _getLatestClosureDate(data['goat_tag']);
-        final latestPregnant = await _getLatestHistoryRecord(
-          goatTag: data['goat_tag'],
-          historyType: 'Pregnant',
-          mustBeAfter: latestClosure,
-        );
-        if (latestPregnant == null) {
-          _showErrorMessage(
-            'Cannot create Kidding history record: no Pregnant history has been logged since the last Kidding/Aborted event.',
-          );
-          setState(() => _isLoading = false);
-          return;
-        }
-      }
-
-      if (selectedHistoryType.toLowerCase() == 'aborted') {
-        final latestClosure = await _getLatestClosureDate(data['goat_tag']);
-        final latestPregnant = await _getLatestHistoryRecord(
-          goatTag: data['goat_tag'],
-          historyType: 'Pregnant',
-          mustBeAfter: latestClosure,
-        );
-        if (latestPregnant == null) {
-          _showErrorMessage(
-            'Cannot create Aborted history record: no Pregnant history has been logged since the last Kidding/Aborted event.',
-          );
-          setState(() => _isLoading = false);
-          return;
-        }
-      }
-
       if (selectedHistoryType.toLowerCase() == 'kidding') {
         final multiKids = _historySpecificFieldsKey.currentState?.getKids();
         final hasMulti = multiKids != null && multiKids.isNotEmpty;
@@ -1855,9 +1760,6 @@ class _GoatHistoryFormScreenState extends State<GoatHistoryFormScreen>
           } else if (selectedHistoryType.toLowerCase() == 'weaned') {
             debugPrint('🎯 Handling Weaned event');
             await _handleWeanedEvent();
-          } else if (selectedHistoryType.toLowerCase() == 'other') {
-            debugPrint('🎯 Handling Other event');
-            await _handleOtherEvent();
           } else {
             debugPrint('🎯 No specific event handler for: "$selectedHistoryType"');
           }
@@ -2754,28 +2656,6 @@ class _GoatHistoryFormScreenState extends State<GoatHistoryFormScreen>
       }
     } catch (e) {
       debugPrint('Error in _handleWeanedEvent: $e');
-    }
-  }
-
-  Future<void> _handleOtherEvent() async {
-    try {
-      // Other event doesn't require status update, just log
-      debugPrint('Other event recorded for goat ${_goatDetails?.tagNo}');
-      
-      // Optional: Show success feedback to user
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('History record saved successfully'),
-            backgroundColor: Colors.blueGrey[600],
-            behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
-            duration: const Duration(seconds: 2),
-          ),
-        );
-      }
-    } catch (e) {
-      debugPrint('Error in _handleOtherEvent: $e');
     }
   }
 

@@ -31,7 +31,7 @@ class _HistoryContentState extends State<HistoryContent> {
     return [
       'All', 'Dry off', 'Sick', 'Treated', 'Breeding', 'Weighed', 'Kidding',
       'Vaccinated', 'Pregnant', 'Aborted', 'Deworming',
-      'Hoof Trimming', 'Castrated', 'Weaned', 'Mortality', 'Lost', 'Other',
+      'Hoof Trimming', 'Castrated', 'Weaned', 'Mortality', 'Lost',
     ];
   }
 

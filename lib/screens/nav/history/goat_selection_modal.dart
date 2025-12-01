@@ -2,7 +2,6 @@
 import 'package:goat_tracer_app/constants/app_colors.dart';
 import 'package:goat_tracer_app/models/goat.dart';
 import 'package:goat_tracer_app/services/goat/goat_service.dart';
-import 'package:goat_tracer_app/services/goat/goat_history_service.dart';
 
 class GoatSelectionModal extends StatefulWidget {
   final String? historyType; // Optional: filter goat by history type applicability
@@ -20,9 +19,6 @@ class _GoatSelectionModalState extends State<GoatSelectionModal> {
   String? error;
   String searchQuery = '';
   Goat? selectedGoat;
-  final Set<String> _tagsWithBreeding = {};
-  final Set<String> _tagsWithPregnant = {};
-  final Set<String> _tagsWithSick = {};
 
   @override
   void initState() {
@@ -34,8 +30,6 @@ class _GoatSelectionModalState extends State<GoatSelectionModal> {
     try {
       setState(() => isLoading = true);
       final goat = await GoatService.getAllGoats();
-      // Optionally load history to support type-specific eligibility
-      await _maybeLoadHistoryEligibility();
 
       if (mounted) {
         setState(() {
@@ -56,78 +50,6 @@ class _GoatSelectionModalState extends State<GoatSelectionModal> {
           isLoading = false;
         });
       }
-    }
-  }
-
-  Future<void> _maybeLoadHistoryEligibility() async {
-    final type = (widget.historyType ?? '').toLowerCase();
-    if (type != 'pregnant' && type != 'kidding' && type != 'aborted' && type != 'treated') return;
-
-    try {
-      final events = await GoatHistoryService.getgoatHistory();
-      _tagsWithBreeding.clear();
-      _tagsWithPregnant.clear();
-      _tagsWithSick.clear();
-      for (final e in events) {
-        final tag = (e['goat_tag'] ?? '').toString().trim();
-        if (tag.isEmpty) continue;
-        final evType = (e['history_type'] ?? '').toString().toLowerCase();
-        if (evType == 'sick') {
-          _tagsWithSick.add(tag);
-        }
-      }
-
-      final Map<String, List<Map<String, dynamic>>> eventsByTag = {};
-      for (final event in events) {
-        final tag = (event['goat_tag'] ?? '').toString().trim();
-        if (tag.isEmpty) continue;
-        eventsByTag.putIfAbsent(tag, () => []).add(event);
-      }
-
-      eventsByTag.forEach((tag, tagEvents) {
-        DateTime? latestClosure;
-        for (final event in tagEvents) {
-          final evType = (event['history_type'] ?? '').toString().toLowerCase();
-          if (evType == 'kidding' || evType == 'aborted') {
-            final raw = event['history_date']?.toString();
-            final date = DateTime.tryParse(raw ?? '');
-            if (date == null) continue;
-            if (latestClosure == null || date.isAfter(latestClosure)) {
-              latestClosure = date;
-            }
-          }
-        }
-
-        bool hasOpenBreeding = false;
-        bool hasOpenPregnant = false;
-
-        for (final event in tagEvents) {
-          final evType = (event['history_type'] ?? '').toString().toLowerCase();
-          final raw = event['history_date']?.toString();
-          final date = DateTime.tryParse(raw ?? '');
-          if (date == null) continue;
-
-          if (evType == 'breeding') {
-            if (latestClosure == null || date.isAfter(latestClosure)) {
-              hasOpenBreeding = true;
-              hasOpenPregnant = false;
-            }
-          } else if (evType == 'pregnant') {
-            if (hasOpenBreeding && (latestClosure == null || date.isAfter(latestClosure))) {
-              hasOpenPregnant = true;
-            }
-          }
-        }
-
-        if (hasOpenBreeding) {
-          _tagsWithBreeding.add(tag);
-        }
-        if (hasOpenPregnant) {
-          _tagsWithPregnant.add(tag);
-        }
-      });
-    } catch (_) {
-      // If history cannot be loaded, leave sets empty and fall back to basic filters
     }
   }
 
@@ -174,28 +96,13 @@ class _GoatSelectionModalState extends State<GoatSelectionModal> {
 
     if (femaleOnly.contains(type)) {
       final isFemaleEligible = sex == 'female' && (cls == 'doe' || cls == 'doeling');
-      if (!isFemaleEligible) return false;
-      // Extra eligibility rules
-      if (type == 'pregnant') {
-        // Require an existing Breeding record
-        return _tagsWithBreeding.contains(goat.tagNo);
-      }
-      if (type == 'kidding' || type == 'aborted') {
-        // Require an existing Pregnant record
-        return _tagsWithPregnant.contains(goat.tagNo);
-      }
-      return true; // breeding/dry off/aborted baseline
+      return isFemaleEligible;
     }
     if (maleOnly.contains(type)) {
       return sex == 'male';
     }
     if (kidOnly.contains(type)) {
       return cls == 'kid';
-    }
-
-    // Treated requires an existing Sick record
-    if (type == 'treated') {
-      return _tagsWithSick.contains(goat.tagNo);
     }
 
     // Default: applicable to all classifications

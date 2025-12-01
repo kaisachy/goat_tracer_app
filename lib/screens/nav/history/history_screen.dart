@@ -89,7 +89,6 @@ class HistoryScreenState extends State<HistoryScreen>
               'Lost',
               'Sold',
               'Slaughtered',
-              'Other',
             }.contains(t))
         .toList();
 
@@ -98,9 +97,6 @@ class HistoryScreenState extends State<HistoryScreen>
       if (lifecycleTypes.remove(p)) {
         lifecycleTypes.insert(0, p);
       }
-    }
-    if (lifecycleTypes.remove('Other')) {
-      lifecycleTypes.add('Other');
     }
     return lifecycleTypes;
   }
@@ -607,9 +603,7 @@ class HistoryScreenState extends State<HistoryScreen>
       case 'lost':
         return _compareFieldValues(historyRecord1['last_known_location'], historyRecord2['last_known_location']);
 
-      case 'other':
       default:
-      // For 'other' history records, compare all potentially relevant fields
         return _compareFieldValues(historyRecord1['Buck_tag'], historyRecord2['Buck_tag']) &&
             _compareFieldValues(historyRecord1['Kid_tag'], historyRecord2['Kid_tag']) &&
             _compareFieldValues(historyRecord1['technician'], historyRecord2['technician']) &&
@@ -1566,8 +1560,8 @@ class HistoryScreenState extends State<HistoryScreen>
           AnimatedContainer(
             duration: const Duration(milliseconds: 300),
             curve: Curves.easeInOut,
-            height: isExpanded && details.isNotEmpty && historyType.toLowerCase() != 'other' ? null : 0,
-            child: isExpanded && details.isNotEmpty && historyType.toLowerCase() != 'other'
+            height: isExpanded && details.isNotEmpty ? null : 0,
+            child: isExpanded && details.isNotEmpty
                 ? Container(
               width: double.infinity,
               padding: const EdgeInsets.all(16),
@@ -1944,10 +1938,6 @@ class HistoryScreenState extends State<HistoryScreen>
         if (historyRecord['last_known_location'] != null && historyRecord['last_known_location'].toString().isNotEmpty && historyRecord['last_known_location'].toString() != 'N/A') {
           relevantDetails['Last Known Location'] = historyRecord['last_known_location'].toString();
         }
-        break;
-
-      case 'other':
-        // For 'other' history records, only show notes (no additional details)
         break;
 
       default:

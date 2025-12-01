@@ -1968,8 +1968,6 @@ class DashboardScreenState extends State<DashboardScreen>
         return Colors.red.shade600;
       case 'lost':
         return Colors.amber.shade600;
-      case 'other':
-        return Colors.blueGrey.shade400;
       default:
         return AppColors.lightGreen;
     }
@@ -2005,8 +2003,6 @@ class DashboardScreenState extends State<DashboardScreen>
         return Icons.heart_broken_rounded;
       case 'lost':
         return Icons.search_rounded;
-      case 'other':
-        return Icons.more_horiz_rounded;
       default:
         return Icons.event_note_rounded;
     }

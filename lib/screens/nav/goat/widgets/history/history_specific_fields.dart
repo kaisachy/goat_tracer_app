@@ -18,7 +18,6 @@ import 'history-fields/castrated_history_fields.dart';
 import 'history-fields/mortality_history_fields.dart';
 import 'history-fields/lost_history_fields.dart';
 import 'history-fields/sold_history_fields.dart';
-import 'history-fields/other_history_fields.dart';
 
 class HistorySpecificFields extends StatefulWidget {
   final String selectedEventType;
@@ -154,11 +153,8 @@ class HistorySpecificFieldsState extends State<HistorySpecificFields> {
           controllers: widget.controllers,
         );
 
-      case 'other':
       default:
-        return OtherEventFields(
-          controllers: widget.controllers,
-        );
+        return const SizedBox.shrink();
     }
   }
 
@@ -228,11 +224,6 @@ class HistorySpecificFieldsState extends State<HistorySpecificFields> {
   Widget build(BuildContext context) {
     if (widget.selectedEventType == 'Select type of history record' ||
         widget.selectedEventType == 'Loading goat information...') {
-      return const SizedBox.shrink();
-    }
-
-    // Don't show the details container for "Other" history
-    if (widget.selectedEventType.toLowerCase() == 'other') {
       return const SizedBox.shrink();
     }
 

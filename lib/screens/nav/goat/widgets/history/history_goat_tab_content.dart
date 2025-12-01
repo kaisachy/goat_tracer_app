@@ -38,13 +38,13 @@ class _HistorygoatTabContentState extends State<HistorygoatTabContent> {
     final femaleEventTypes = [
       'All', 'Dry off', 'Sick', 'Treated', 'Breeding', 'Weighed', 'Kidding',
       'Vaccinated', 'Pregnant', 'Aborted', 'Deworming',
-      'Hoof Trimming', 'Weaned', 'Mortality', 'Lost', 'Sold', 'Other',
+      'Hoof Trimming', 'Weaned', 'Mortality', 'Lost', 'Sold',
     ];
 
     // Comprehensive event types for male goat - includes all available event types
     final maleEventTypes = [
       'All', 'Sick', 'Treated', 'Breeding', 'Weighed', 'Vaccinated', 'Deworming',
-      'Hoof Trimming', 'Castrated', 'Weaned', 'Mortality', 'Lost', 'Sold', 'Other',
+      'Hoof Trimming', 'Castrated', 'Weaned', 'Mortality', 'Lost', 'Sold',
     ];
 
     // Check goat sex and return appropriate event types
@@ -268,9 +268,7 @@ class _HistorygoatTabContentState extends State<HistorygoatTabContent> {
       case 'lost':
         return _compareFieldValues(event1['last_known_location'], event2['last_known_location']);
 
-      case 'other':
       default:
-      // For 'other' history records, compare all potentially relevant fields
         return _compareFieldValues(event1['Buck_tag'], event2['Buck_tag']) &&
             _compareFieldValues(event1['Kid_tag'], event2['Kid_tag']) &&
             _compareFieldValues(event1['technician'], event2['technician']) &&
@@ -1369,9 +1367,6 @@ class _HistorygoatTabContentState extends State<HistorygoatTabContent> {
         }
         break;
 
-      case 'other':
-      // For 'other' history records, only show notes (no additional details)
-        break;
       default:
         // For any other history types, show basic information
         break;
