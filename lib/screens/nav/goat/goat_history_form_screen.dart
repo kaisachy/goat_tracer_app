@@ -1825,6 +1825,9 @@ class _GoatHistoryFormScreenState extends State<GoatHistoryFormScreen>
           } else if (selectedHistoryType.toLowerCase() == 'sold') {
             debugPrint('🎯 Handling Sold event');
             await _handleSoldEvent();
+          } else if (selectedHistoryType.toLowerCase() == 'slaughtered') {
+            debugPrint('🎯 Handling Slaughtered event');
+            await _handleSlaughteredEvent();
           } else if (selectedHistoryType.toLowerCase() == 'weighed') {
             debugPrint('🎯 Handling Weighed event');
             await _handleWeighedEvent();
@@ -2444,6 +2447,75 @@ class _GoatHistoryFormScreenState extends State<GoatHistoryFormScreen>
     }
   }
 
+  Future<void> _handleSlaughteredEvent() async {
+    try {
+      bool goatStatusUpdated = false;
+      bool goatArchived = false;
+      String goatStatus = '';
+
+      // Update goat status to Slaughtered
+      if (_goatDetails != null) {
+        final goatUpdateData = Map<String, dynamic>.from(_goatDetails!.toJson());
+        goatUpdateData['status'] = 'Slaughtered';
+        goatStatusUpdated = await GoatService.updateGoatInformation(goatUpdateData);
+        goatStatus = goatStatusUpdated
+            ? 'goat ${_goatDetails!.tagNo} status updated to Slaughtered'
+            : 'Failed to update goat ${_goatDetails!.tagNo} status to Slaughtered';
+
+        // Auto-archive the goat after updating status
+        if (goatStatusUpdated) {
+          final notes = _controllers['notes']?.text.trim() ?? '';
+          final archiveNotes = notes.isNotEmpty ? notes : null;
+          
+          goatArchived = await GoatService.archivegoat(
+            _goatDetails!.id, 
+            'Slaughtered',
+            notes: archiveNotes,
+          );
+          
+          debugPrint('Auto-archive result for slaughtered goat: $goatArchived');
+        }
+      }
+
+      // Log the result for debugging
+      debugPrint('Slaughtered event result: $goatStatus');
+
+      // Show success feedback to user
+      if (mounted && goatStatusUpdated) {
+        final message = goatArchived 
+            ? 'goat status updated to Slaughtered and moved to archive'
+            : 'goat status updated to Slaughtered';
+        
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(message),
+            backgroundColor: goatArchived ? Colors.green[600] : Colors.red[600],
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+            duration: const Duration(seconds: 3),
+          ),
+        );
+      }
+
+    } catch (e) {
+      // Log any errors that occur during the process
+      debugPrint('Error in _handleSlaughteredEvent: $e');
+
+      // Optional: Show error message to user
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Warning: Failed to update goat status to Slaughtered'),
+            backgroundColor: Colors.orange[600],
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+            duration: const Duration(seconds: 3),
+          ),
+        );
+      }
+    }
+  }
+
   Future<void> _handleSickEvent() async {
     try {
       bool goatStatusUpdated = false;
@@ -2823,6 +2895,11 @@ class _GoatHistoryFormScreenState extends State<GoatHistoryFormScreen>
           shouldArchive = true;
           archiveReason = 'Mortality';
           break;
+        case 'slaughtered':
+          newStatus = 'Slaughtered';
+          shouldArchive = true;
+          archiveReason = 'Slaughtered';
+          break;
         case 'aborted':
           newStatus = 'Healthy';
           break;
@@ -2889,6 +2966,8 @@ class _GoatHistoryFormScreenState extends State<GoatHistoryFormScreen>
           if (lastLocation.isNotEmpty) {
             archiveNotes += 'Last known location: $lastLocation';
           }
+        } else if (archiveReason == 'Slaughtered') {
+          // Slaughtered doesn't have specific fields, just use notes if available
         }
         if (notes.isNotEmpty) {
           archiveNotes += archiveNotes.isNotEmpty ? '\nNotes: $notes' : 'Notes: $notes';

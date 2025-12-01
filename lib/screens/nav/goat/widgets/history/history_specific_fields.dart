@@ -83,6 +83,7 @@ class HistorySpecificFieldsState extends State<HistorySpecificFields> {
       case 'aborted':
       case 'hoof trimming':
       case 'weaned':
+      case 'slaughtered':
         return const SizedBox.shrink();
 
       case 'treated':

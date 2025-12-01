@@ -462,8 +462,6 @@ class DashboardScreenState extends State<DashboardScreen>
               const SizedBox(height: 20),
               _buildClassificationDistribution(),
               const SizedBox(height: 20),
-              _buildKidGrowerSexCharts(),
-              const SizedBox(height: 20),
               _buildStatusBreakdown(),
               const SizedBox(height: 20),
               _buildBreedingAnalytics(),
@@ -1275,7 +1273,7 @@ class DashboardScreenState extends State<DashboardScreen>
 
   Widget _buildStatusBreakdown() {
     // Define all 8 status types
-    final allStatuses = ['Healthy', 'Sick', 'Breeding', 'Pregnant', 'Lactating', 'Lactating & Pregnant', 'Sold', 'Mortality', 'Lost'];
+    final allStatuses = ['Healthy', 'Sick', 'Breeding', 'Pregnant', 'Lactating', 'Lactating & Pregnant', 'Sold', 'Mortality', 'Lost', 'Slaughtered'];
     
     final statusCount = <String, int>{};
     
@@ -1647,29 +1645,9 @@ class DashboardScreenState extends State<DashboardScreen>
     );
   }
 
-  Widget _buildKidGrowerSexCharts() {
-    return Row(
-      children: [
-        Expanded(
-          child: _buildAnimatedCard(
-            delay: 100,
-            child: _buildKidChart(),
-          ),
-        ),
-        const SizedBox(width: 16),
-        Expanded(
-          child: _buildAnimatedCard(
-            delay: 200,
-            child: _buildGrowerChart(),
-          ),
-        ),
-      ],
-    );
-  }
-
   Widget _buildClassificationDistribution() {
     // Define all 6 classifications
-    final allClassifications = ['Kid', 'Grower', 'Doeling', 'Buckling', 'Doe', 'Buck'];
+    final allClassifications = ['Buck', 'Doe', 'Buckling', 'Doeling', 'Grower', 'Kid'];
     
     final classificationCount = <String, int>{};
     
@@ -1678,17 +1656,76 @@ class DashboardScreenState extends State<DashboardScreen>
       classificationCount[classification] = 0;
     }
     
-    // Count actual goat classifications
+    String normalizeClassification(String raw) {
+      final lower = raw.toLowerCase();
+      if (lower == 'kid') return 'Kid';
+      if (lower == 'grower' || lower == 'growers') return 'Grower';
+      if (lower == 'doeling') return 'Doeling';
+      if (lower == 'buckling') return 'Buckling';
+      if (lower == 'doe') return 'Doe';
+      if (lower == 'buck') return 'Buck';
+      return raw.isNotEmpty ? raw : 'Unclassified';
+    }
+
+    // Count actual goat classifications and track sex breakdown for Kid & Grower
+    final Map<String, Map<String, int>> sexByClassification = {};
     for (var goat in allGoats) {
-      final classification = goat.classification.isNotEmpty
+      final rawClass = goat.classification.isNotEmpty
           ? goat.classification
           : 'Unclassified';
-      classificationCount[classification] = (classificationCount[classification] ?? 0) + 1;
+      final classification = normalizeClassification(rawClass);
+
+      classificationCount[classification] =
+          (classificationCount[classification] ?? 0) + 1;
+
+      final sexKey = goat.sex.toLowerCase() == 'female' ? 'female' : 'male';
+      sexByClassification.putIfAbsent(classification, () => {'male': 0, 'female': 0});
+      sexByClassification[classification]![sexKey] =
+          (sexByClassification[classification]![sexKey] ?? 0) + 1;
     }
 
     final total = allGoats.length;
+    final orderMap = {
+      'Buck': 0,
+      'Doe': 1,
+      'Buckling': 2,
+      'Doeling': 3,
+      'Male Grower': 4,
+      'Female Grower': 5,
+      'Male Kid': 6,
+      'Female Kid': 7,
+      'Grower': 8,
+      'Kid': 9,
+    };
+
     final sortedClassifications = classificationCount.entries.toList()
-      ..sort((a, b) => b.value.compareTo(a.value));
+      ..sort((a, b) {
+        final ai = orderMap[a.key] ?? 999;
+        final bi = orderMap[b.key] ?? 999;
+        return ai.compareTo(bi);
+      });
+
+    // Build display entries so Kid/Grower become separate Male/Female bars (non-zero only)
+    final List<MapEntry<String, int>> displayClassifications = [];
+    for (final entry in sortedClassifications) {
+      final keyLower = entry.key.toLowerCase();
+      final sex = sexByClassification[entry.key] ??
+          sexByClassification[entry.key.toLowerCase()] ??
+          {'male': 0, 'female': 0};
+
+      if (keyLower == 'kid' || keyLower == 'grower') {
+        final maleCount = sex['male'] ?? 0;
+        final femaleCount = sex['female'] ?? 0;
+        if (maleCount > 0) {
+          displayClassifications.add(MapEntry('Male ${entry.key}', maleCount));
+        }
+        if (femaleCount > 0) {
+          displayClassifications.add(MapEntry('Female ${entry.key}', femaleCount));
+        }
+      } else {
+        displayClassifications.add(entry);
+      }
+    }
 
     return Showcase(
       key: _classificationKey,
@@ -1732,12 +1769,21 @@ class DashboardScreenState extends State<DashboardScreen>
               ],
             ),
             const SizedBox(height: 20),
-            if (sortedClassifications.isNotEmpty)
+            if (displayClassifications.isNotEmpty)
               Column(
-                children: sortedClassifications.map((entry) {
+                children: displayClassifications.map((entry) {
                   final percentage = total > 0 ? (entry.value / total * 100) : 0.0;
-                  final color = _getClassificationColor(entry.key);
 
+                  // For "Male Kid" / "Female Kid" etc, derive base classification for color
+                  String baseKey = entry.key;
+                  final lower = baseKey.toLowerCase();
+                  if (lower.startsWith('male ')) {
+                    baseKey = baseKey.substring(5);
+                  } else if (lower.startsWith('female ')) {
+                    baseKey = baseKey.substring(7);
+                  }
+
+                  final color = _getClassificationColor(baseKey);
                   return Padding(
                     padding: const EdgeInsets.only(bottom: 16),
                     child: Column(
@@ -2045,294 +2091,4 @@ class DashboardScreenState extends State<DashboardScreen>
     );
   }
 
-  Widget _buildKidChart() {
-    final kidMales = allGoats.where((c) => 
-      c.classification.toLowerCase() == 'Kid' && c.sex.toLowerCase() == 'male').length;
-    final kidFemales = allGoats.where((c) => 
-      c.classification.toLowerCase() == 'Kid' && c.sex.toLowerCase() == 'female').length;
-    final totalCalves = kidMales + kidFemales;
-
-    if (totalCalves == 0) {
-      return Container(
-        padding: const EdgeInsets.all(20),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(20),
-          boxShadow: [
-            BoxShadow(
-              color: AppColors.darkGreen.withValues(alpha: 0.1),
-              blurRadius: 20,
-              offset: const Offset(0, 8),
-            ),
-          ],
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              'Kid Sex',
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w600,
-                color: AppColors.textPrimary,
-              ),
-            ),
-            const SizedBox(height: 8),
-            SizedBox(
-              height: 80, // Same height as pie chart
-              child: Center(
-                child: Text(
-                  'No calves',
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: Colors.grey[600],
-                  ),
-                ),
-              ),
-            ),
-            const SizedBox(height: 12),
-            // Empty legend space to maintain same height
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              children: [
-                _buildLegendItem('M', 0, AppColors.darkGreen),
-                _buildLegendItem('F', 0, AppColors.gold),
-              ],
-            ),
-          ],
-        ),
-      );
-    }
-
-    final malePercentage = ((kidMales / totalCalves) * 100).toStringAsFixed(0);
-    final femalePercentage = ((kidFemales / totalCalves) * 100).toStringAsFixed(0);
-
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(
-            color: AppColors.darkGreen.withValues(alpha: 0.1),
-            blurRadius: 20,
-            offset: const Offset(0, 8),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text(
-            'Kid Sex',
-            style: TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.w600,
-              color: AppColors.textPrimary,
-            ),
-          ),
-          const SizedBox(height: 8),
-          SizedBox(
-            height: 80,
-            child: PieChart(
-              PieChartData(
-                sections: [
-                  PieChartSectionData(
-                    color: AppColors.darkGreen,
-                    value: kidMales.toDouble(),
-                    title: '$malePercentage%',
-                    radius: 25,
-                    titleStyle: const TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white,
-                    ),
-                  ),
-                  PieChartSectionData(
-                    color: AppColors.gold,
-                    value: kidFemales.toDouble(),
-                    title: '$femalePercentage%',
-                    radius: 25,
-                    titleStyle: const TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white,
-                    ),
-                  ),
-                ],
-                centerSpaceRadius: 12,
-                sectionsSpace: 2,
-              ),
-            ),
-          ),
-          const SizedBox(height: 12),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-            children: [
-              _buildLegendItem('M', kidMales, AppColors.darkGreen),
-              _buildLegendItem('F', kidFemales, AppColors.gold),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildGrowerChart() {
-    final growerMales = allGoats.where((c) => 
-      c.classification.toLowerCase() == 'grower' && c.sex.toLowerCase() == 'male').length;
-    final growerFemales = allGoats.where((c) => 
-      c.classification.toLowerCase() == 'grower' && c.sex.toLowerCase() == 'female').length;
-    final totalGrowers = growerMales + growerFemales;
-
-    if (totalGrowers == 0) {
-      return Container(
-        padding: const EdgeInsets.all(20),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(20),
-          boxShadow: [
-            BoxShadow(
-              color: AppColors.darkGreen.withValues(alpha: 0.1),
-              blurRadius: 20,
-              offset: const Offset(0, 8),
-            ),
-          ],
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              'Grower Sex',
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w600,
-                color: AppColors.textPrimary,
-              ),
-            ),
-            const SizedBox(height: 8),
-            SizedBox(
-              height: 80, // Same height as pie chart
-              child: Center(
-                child: Text(
-                  'No growers',
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: Colors.grey[600],
-                  ),
-                ),
-              ),
-            ),
-            const SizedBox(height: 12),
-            // Empty legend space to maintain same height
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              children: [
-                _buildLegendItem('M', 0, AppColors.darkGreen),
-                _buildLegendItem('F', 0, AppColors.gold),
-              ],
-            ),
-          ],
-        ),
-      );
-    }
-
-    final malePercentage = ((growerMales / totalGrowers) * 100).toStringAsFixed(0);
-    final femalePercentage = ((growerFemales / totalGrowers) * 100).toStringAsFixed(0);
-
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(
-            color: AppColors.darkGreen.withValues(alpha: 0.1),
-            blurRadius: 20,
-            offset: const Offset(0, 8),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text(
-            'Grower Sex',
-            style: TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.w600,
-              color: AppColors.textPrimary,
-            ),
-          ),
-          const SizedBox(height: 8),
-          SizedBox(
-            height: 80,
-            child: PieChart(
-              PieChartData(
-                sections: [
-                  PieChartSectionData(
-                    color: AppColors.darkGreen,
-                    value: growerMales.toDouble(),
-                    title: '$malePercentage%',
-                    radius: 25,
-                    titleStyle: const TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white,
-                    ),
-                  ),
-                  PieChartSectionData(
-                    color: AppColors.gold,
-                    value: growerFemales.toDouble(),
-                    title: '$femalePercentage%',
-                    radius: 25,
-                    titleStyle: const TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white,
-                    ),
-                  ),
-                ],
-                centerSpaceRadius: 12,
-                sectionsSpace: 2,
-              ),
-            ),
-          ),
-          const SizedBox(height: 12),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-            children: [
-              _buildLegendItem('M', growerMales, AppColors.darkGreen),
-              _buildLegendItem('F', growerFemales, AppColors.gold),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildLegendItem(String label, int count, Color color) {
-    return Row(
-      children: [
-        Container(
-          width: 12,
-          height: 12,
-          decoration: BoxDecoration(
-            color: color,
-            shape: BoxShape.circle,
-          ),
-        ),
-        const SizedBox(width: 6),
-        Text(
-          '$label: $count',
-          style: TextStyle(
-            fontSize: 12,
-            fontWeight: FontWeight.w500,
-            color: AppColors.textSecondary,
-          ),
-        ),
-      ],
-    );
-  }
 }
-

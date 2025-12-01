@@ -20,6 +20,7 @@ class ChangeStatusOption {
     'Sold',
     'Mortality',
     'Lost',
+    'Slaughtered',
   ];
 
   static final List<String> _maleStatuses = [
@@ -29,6 +30,7 @@ class ChangeStatusOption {
     'Sold',
     'Mortality',
     'Lost',
+    'Slaughtered',
   ];
 
   static void show(BuildContext context, Goat goat, VoidCallback? onGoatUpdated) {
@@ -355,6 +357,10 @@ class ChangeStatusOption {
       case 'lost':
         iconData = FontAwesomeIcons.magnifyingGlass;
         iconColor = Colors.amber;
+        break;
+      case 'slaughtered':
+        iconData = Icons.restaurant_menu;
+        iconColor = Colors.red.shade800;
         break;
       default:
         iconData = Icons.circle_outlined;

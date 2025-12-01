@@ -88,6 +88,7 @@ class HistoryScreenState extends State<HistoryScreen>
               'Mortality',
               'Lost',
               'Sold',
+              'Slaughtered',
               'Other',
             }.contains(t))
         .toList();

@@ -67,7 +67,8 @@ class _GoatSearchFilterWidgetState extends State<GoatSearchFilterWidget> {
     'Lactating & Pregnant',
     'Sold',
     'Mortality',
-    'Lost'
+    'Lost',
+    'Slaughtered'
   ];
 
   @override

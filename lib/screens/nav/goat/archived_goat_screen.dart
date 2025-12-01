@@ -114,7 +114,7 @@ class _ArchivedgoatScreenState extends State<ArchivedgoatScreen> {
           // Find the most recent archive-related event
           final archiveEvent = goatEvents.where((event) {
             final eventType = (event['history_type']?.toString().toLowerCase() ?? '');
-            return eventType == 'sold' || eventType == 'mortality' || eventType == 'lost';
+            return eventType == 'sold' || eventType == 'mortality' || eventType == 'lost' || eventType == 'slaughtered';
           }).toList();
           
           if (archiveEvent.isNotEmpty) {
@@ -426,6 +426,7 @@ class _ArchivedgoatScreenState extends State<ArchivedgoatScreen> {
                 DropdownMenuItem(value: 'Lost', child: Text('Lost')),
                 DropdownMenuItem(value: 'Sold', child: Text('Sold')),
                 DropdownMenuItem(value: 'Mortality', child: Text('Mortality')),
+                DropdownMenuItem(value: 'Slaughtered', child: Text('Slaughtered')),
               ],
               onChanged: (v) {
                 setState(() => _selectedReportType = v ?? 'Lost');
@@ -503,6 +504,8 @@ class _ArchivedgoatScreenState extends State<ArchivedgoatScreen> {
         return 'sold';
       case 'Mortality':
         return 'dead';
+      case 'Slaughtered':
+        return 'slaughtered';
       default:
         return 'lost';
     }
@@ -572,6 +575,7 @@ class _ArchivedgoatScreenState extends State<ArchivedgoatScreen> {
               _buildStatusOption('Sold'),
               _buildStatusOption('Mortality'),
               _buildStatusOption('Lost'),
+              _buildStatusOption('Slaughtered'),
             ],
           ),
         );
@@ -818,6 +822,8 @@ class _ArchivedgoatScreenState extends State<ArchivedgoatScreen> {
         return Colors.red;
       case 'lost':
         return Colors.orange;
+      case 'slaughtered':
+        return Colors.red.shade800;
       default:
         return AppColors.vibrantGreen;
     }
@@ -831,6 +837,8 @@ class _ArchivedgoatScreenState extends State<ArchivedgoatScreen> {
         return FaIcon(FontAwesomeIcons.skull, color: _getStatusColor(status), size: 20);
       case 'lost':
         return FaIcon(FontAwesomeIcons.locationDot, color: _getStatusColor(status), size: 20);
+      case 'slaughtered':
+        return Icon(Icons.restaurant_menu, color: _getStatusColor(status), size: 20);
       default:
         return Image.asset(
           'assets/images/goat-icons/goat.png',
@@ -853,6 +861,8 @@ class _ArchivedgoatScreenState extends State<ArchivedgoatScreen> {
         return 'Mortality (no detailed history record found).';
       } else if (status == 'lost') {
         return 'Lost (no detailed history record found).';
+      } else if (status == 'slaughtered') {
+        return 'Slaughtered (no detailed history record found).';
       }
       return 'This goat has been archived. Event details not available.';
     }
@@ -895,6 +905,13 @@ class _ArchivedgoatScreenState extends State<ArchivedgoatScreen> {
         if (lastLocation != null && lastLocation.isNotEmpty) {
           details += '\nLast Location: $lastLocation';
         }
+        if (notes.isNotEmpty) {
+          details += '\nNotes: $notes';
+        }
+        return details;
+        
+      case 'slaughtered':
+        String details = 'Slaughtered on $eventDate';
         if (notes.isNotEmpty) {
           details += '\nNotes: $notes';
         }

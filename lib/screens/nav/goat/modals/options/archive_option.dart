@@ -88,6 +88,17 @@ class ArchiveOption {
                 _archiveAsLost(context, goat: goat, onGoatUpdated: onGoatUpdated);
               },
             ),
+            _buildArchiveOption(
+              context,
+              icon: Icons.restaurant_menu,
+              title: 'Slaughtered',
+              subtitle: 'goat has been slaughtered',
+              color: Colors.red.shade800,
+              onTap: () {
+                Navigator.pop(context);
+                _archiveAsSlaughtered(context, goat: goat, onGoatUpdated: onGoatUpdated);
+              },
+            ),
             const SizedBox(height: 24),
           ],
         ),
@@ -298,6 +309,58 @@ class ArchiveOption {
             Icons.location_off,
             'Lost event created and goat archived',
             Colors.orange[600]!,
+            isSuccess: true,
+          );
+          onGoatUpdated?.call();
+        } else {
+          if (!context.mounted) return;
+          UIHelpers.showEnhancedSnackbar(
+            context,
+            Icons.error,
+            'Event created but failed to archive goat',
+            Colors.red[600]!,
+            isSuccess: false,
+          );
+        }
+      } catch (e) {
+        if (!context.mounted) return;
+        UIHelpers.showEnhancedSnackbar(
+          context,
+          Icons.error,
+          'Error archiving goat: $e',
+          Colors.red[600]!,
+          isSuccess: false,
+        );
+      }
+    }
+  }
+
+  static void _archiveAsSlaughtered(BuildContext context, {required Goat goat, VoidCallback? onGoatUpdated}) async {
+    // Navigate to event form with "Slaughtered" pre-selected
+    final result = await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => GoatHistoryFormScreen(
+          goatTag: goat.tagNo,
+          initialHistoryType: 'Slaughtered',
+        ),
+      ),
+    );
+
+    if (!context.mounted) return;
+
+    // If event was successfully created, archive the goat
+    if (result == true) {
+      try {
+        final success = await GoatService.archivegoat(goat.id, 'Slaughtered');
+        if (!context.mounted) return;
+        
+        if (success) {
+          UIHelpers.showEnhancedSnackbar(
+            context,
+            Icons.restaurant_menu,
+            'Slaughtered event created and goat archived',
+            Colors.red.shade800,
             isSuccess: true,
           );
           onGoatUpdated?.call();

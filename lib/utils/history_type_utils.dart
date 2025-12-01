@@ -36,6 +36,7 @@ class HistoryTypeUtils {
           'Sold',
           'Mortality',
           'Lost',
+          'Slaughtered',
           'Other',
         ];
         debugPrint('DEBUG: Using Kid history types');
@@ -56,6 +57,7 @@ class HistoryTypeUtils {
           'Sold',
           'Mortality',
           'Lost',
+          'Slaughtered',
           'Other',
         ];
         debugPrint('DEBUG: Using Doeling history types');
@@ -77,6 +79,7 @@ class HistoryTypeUtils {
           'Sold',
           'Mortality',
           'Lost',
+          'Slaughtered',
           'Other',
         ];
         debugPrint('DEBUG: Using Doe history types');
@@ -93,6 +96,7 @@ class HistoryTypeUtils {
           'Sold',
           'Mortality',
           'Lost',
+          'Slaughtered',
           'Other',
         ];
         debugPrint('DEBUG: Using Buck history types');
@@ -109,6 +113,7 @@ class HistoryTypeUtils {
           'Sold',
           'Mortality',
           'Lost',
+          'Slaughtered',
           'Other',
         ];
         debugPrint('DEBUG: Using Buckling history types');
@@ -125,6 +130,7 @@ class HistoryTypeUtils {
           'Sold',
           'Mortality',
           'Lost',
+          'Slaughtered',
           'Other',
         ];
         debugPrint('DEBUG: Using Growers history types');
@@ -140,6 +146,7 @@ class HistoryTypeUtils {
           'Sold',
           'Mortality',
           'Lost',
+          'Slaughtered',
           'Other',
         ];
         debugPrint('DEBUG: Using default history types for classification: $classificationLower');
@@ -184,6 +191,8 @@ class HistoryTypeUtils {
         return FontAwesomeIcons.magnifyingGlass;
       case 'sold':
         return FontAwesomeIcons.coins;
+      case 'slaughtered':
+        return Icons.restaurant_menu;
       case 'other':
         return FontAwesomeIcons.ellipsis;
       case 'loading goat information...':
@@ -211,6 +220,7 @@ class HistoryTypeUtils {
       case 'mortality': return Colors.grey.shade700;
       case 'lost': return Colors.amber.shade600;
       case 'sold': return Colors.green.shade600;
+      case 'slaughtered': return Colors.red.shade800;
       case 'other': return Colors.blueGrey.shade400;
       case 'loading goat information...': return Colors.grey.shade400;
       default: return AppColors.lightGreen;
