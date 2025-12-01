@@ -54,6 +54,17 @@ class BreedingAnalysisService {
         return sex == 'female' && (cls == 'doe' || cls == 'Doeling');
       }).toList();
 
+      // Get abortion events (female doe/Doeling only)
+      final abortionEvents = allEvents.where((event) {
+        if (event['history_type']?.toString().toLowerCase() != 'aborted') return false;
+        final tag = event['goat_tag']?.toString() ?? '';
+        final prof = tagToProfile[tag];
+        if (prof == null) return false;
+        final sex = prof['sex']?.toLowerCase();
+        final cls = prof['classification']?.toLowerCase();
+        return sex == 'female' && (cls == 'doe' || cls == 'Doeling');
+      }).toList();
+
       // Filter by selected parameters
       List<Map<String, dynamic>> filteredBreedingEvents = breedingEvents;
       // Apply date range to breeding events (retain same logic as web)
@@ -113,11 +124,12 @@ class BreedingAnalysisService {
         debugPrint('DEBUG: Events after filter: ${filteredBreedingEvents.length}');
       }
 
-      // Analyze breeding success
+      // Analyze breeding success (shared logic with web: kidding/abortion based)
       final analysis = await _analyzeBreedingSuccess(
         filteredBreedingEvents,
         pregnancyEvents,
         birthEvents,
+        abortionEvents,
       );
 
       return {
@@ -143,10 +155,12 @@ class BreedingAnalysisService {
     List<Map<String, dynamic>> breedingEvents,
     List<Map<String, dynamic>> pregnancyEvents,
     List<Map<String, dynamic>> birthEvents,
+    List<Map<String, dynamic>> abortionEvents,
   ) async {
     final Map<String, List<Map<String, dynamic>>> doeBreedingHistory = {};
     final Map<String, List<Map<String, dynamic>>> doePregnancyHistory = {};
     final Map<String, List<Map<String, dynamic>>> doeBirthHistory = {};
+    final Map<String, List<Map<String, dynamic>>> doeAbortionHistory = {};
 
     // Group events by doe
     for (final event in breedingEvents) {
@@ -173,6 +187,14 @@ class BreedingAnalysisService {
       }
     }
 
+    for (final event in abortionEvents) {
+      final doeTag = event['goat_tag']?.toString() ?? '';
+      if (doeTag.isNotEmpty) {
+        doeAbortionHistory.putIfAbsent(doeTag, () => []);
+        doeAbortionHistory[doeTag]!.add(event);
+      }
+    }
+
     // Analyze each doe's breeding success
     final List<Map<String, dynamic>> doeAnalysis = [];
     final Map<String, Map<String, dynamic>> buckPerformance = {};
@@ -181,23 +203,57 @@ class BreedingAnalysisService {
     for (final doeTag in doeBreedingHistory.keys) {
       final doeBreedings = doeBreedingHistory[doeTag]!;
       final doePregnancies = doePregnancyHistory[doeTag] ?? [];
+      final doeBirths = doeBirthHistory[doeTag] ?? [];
+      final doeAbortions = doeAbortionHistory[doeTag] ?? [];
 
-      // Sort events by date
-      doeBreedings.sort((a, b) => DateTime.parse(a['history_date'] ?? '1900-01-01')
-          .compareTo(DateTime.parse(b['history_date'] ?? '1900-01-01')));
+      // Sort events by date for deterministic evaluation
+      DateTime? parseDateForDoe(Map<String, dynamic> e) {
+        final raw = e['history_date']?.toString();
+        if (raw == null || raw.isEmpty) return null;
+        return DateTime.tryParse(raw);
+      }
+
+      int compareEventsForDoe(Map<String, dynamic> a, Map<String, dynamic> b) {
+        final ad = parseDateForDoe(a) ?? DateTime.fromMillisecondsSinceEpoch(0);
+        final bd = parseDateForDoe(b) ?? DateTime.fromMillisecondsSinceEpoch(0);
+        return ad.compareTo(bd);
+      }
+
+      doeBreedings.sort(compareEventsForDoe);
+      doePregnancies.sort(compareEventsForDoe);
+      doeBirths.sort(compareEventsForDoe);
+      doeAbortions.sort(compareEventsForDoe);
 
       final List<Map<String, dynamic>> successfulBreedings = [];
       final List<Map<String, dynamic>> failedBreedings = [];
       final List<Map<String, dynamic>> pendingBreedings = [];
 
-      for (int i = 0; i < doeBreedings.length; i++) {
-        final breeding = doeBreedings[i];
-        final breedingDate = DateTime.parse(breeding['history_date'] ?? '1900-01-01');
-        final today = DateTime.now();
-        final daysSinceBreeding = today.difference(breedingDate).inDays;
-        
-        // Look for pregnancy within 25-60 days after breeding
-        bool foundPregnancy = false;
+      Map<String, dynamic>? firstEventMapAfterForDoe(List<Map<String, dynamic>> events, DateTime breedingDate) {
+        for (final e in events) {
+          final d = parseDateForDoe(e);
+          if (d != null && d.isAfter(breedingDate)) return e;
+        }
+        return null;
+      }
+
+      Map<String, dynamic>? firstEventMapBetweenForDoe(
+        List<Map<String, dynamic>> events,
+        DateTime breedingDate,
+        DateTime? before,
+      ) {
+        for (final e in events) {
+          final d = parseDateForDoe(e);
+          if (d == null) continue;
+          if (!d.isAfter(breedingDate)) continue;
+          if (before != null && !d.isBefore(before)) continue;
+          return e;
+        }
+        return null;
+      }
+
+      for (final breeding in doeBreedings) {
+        final breedingDate = parseDateForDoe(breeding) ?? DateTime.fromMillisecondsSinceEpoch(0);
+
         String? responsibleBuck = _getResponsibleBuck(breeding);
         String breedingType = breeding['breeding_type']?.toString() ?? '';
         // If breeding_type is empty, try to determine from other fields
@@ -222,68 +278,53 @@ class BreedingAnalysisService {
           }
         }
 
-        debugPrint('DEBUG: Analyzing breeding for doe $doeTag on ${breeding['history_date']} ($daysSinceBreeding days ago)');
+        debugPrint('DEBUG: Analyzing breeding for doe $doeTag on ${breeding['history_date']}');
         debugPrint('DEBUG: Responsible buck: $responsibleBuck');
         debugPrint('DEBUG: Breeding type: $breedingType');
 
-        // Check if breeding is too recent to determine success/failure
-        if (daysSinceBreeding < 25) {
-          debugPrint('DEBUG: ⏳ Breeding too recent ($daysSinceBreeding days) - marking as pending');
+        // Find first kidding (birth) and abortion after this breeding
+        final kiddingEvent = firstEventMapAfterForDoe(doeBirths, breedingDate);
+        final abortionEvent = firstEventMapAfterForDoe(doeAbortions, breedingDate);
+
+        // Optional pregnancy context (first pregnancy after breeding, before kidding if exists)
+        Map<String, dynamic>? pregnancyEvent;
+        if (kiddingEvent != null) {
+          final kiddingDate = parseDateForDoe(kiddingEvent);
+          pregnancyEvent = firstEventMapBetweenForDoe(doePregnancies, breedingDate, kiddingDate);
+        } else {
+          pregnancyEvent = firstEventMapAfterForDoe(doePregnancies, breedingDate);
+        }
+
+        // Rule:
+        // - Success  => any kidding after breeding (even if abortions exist).
+        // - Failed   => no kidding, but at least one abortion after breeding.
+        // - Pending  => neither kidding nor abortion yet.
+        bool isSuccess = false;
+
+        if (kiddingEvent != null) {
+          isSuccess = true;
+          successfulBreedings.add({
+            'history_date': breeding['history_date'],
+            'breeding_type': breedingType,
+            'kidding_date': kiddingEvent['history_date'],
+            'pregnancy_date': pregnancyEvent?['history_date'],
+            'status': 'successful',
+          });
+        } else if (abortionEvent != null) {
+          failedBreedings.add({
+            'history_date': breeding['history_date'],
+            'breeding_type': breedingType,
+            'abortion_date': abortionEvent['history_date'],
+            'pregnancy_date': pregnancyEvent?['history_date'],
+            'status': 'failed',
+          });
+        } else {
           pendingBreedings.add({
             'history_date': breeding['history_date'],
             'breeding_type': breedingType,
-            'days_since_breeding': daysSinceBreeding,
+            'pregnancy_date': pregnancyEvent?['history_date'],
             'status': 'pending',
           });
-          continue; // Skip to next breeding event
-        }
-
-        // Check pregnancy events
-        for (final pregnancy in doePregnancies) {
-          final pregnancyDate = DateTime.parse(pregnancy['history_date'] ?? '1900-01-01');
-          final daysDifference = pregnancyDate.difference(breedingDate).inDays;
-          final pregnancyBuck = _getResponsibleBuck(pregnancy);
-          
-          debugPrint('DEBUG: Checking pregnancy on ${pregnancy['history_date']} ($daysDifference days later)');
-          debugPrint('DEBUG: Pregnancy buck: $pregnancyBuck');
-          
-          if (daysDifference >= 25 && daysDifference <= 60) {
-            // Check if the same buck is responsible
-            if (_isSameBuck(responsibleBuck, pregnancyBuck)) {
-              foundPregnancy = true;
-              debugPrint('DEBUG: ✅ Pregnancy match found!');
-              successfulBreedings.add({
-                'history_date': breeding['history_date'],
-                'breeding_type': breeding['breeding_type'],
-                'pregnancy_date': pregnancy['history_date'],
-                'days_to_pregnancy': daysDifference,
-              });
-              break;
-            }
-          }
-        }
-
-        // Success is determined by pregnancy only; do not use birth events to mark success
-
-        if (!foundPregnancy) {
-          // Only mark as failed if enough time has passed (more than 60 days)
-          if (daysSinceBreeding > 60) {
-            debugPrint('DEBUG: ❌ No pregnancy/birth match found after $daysSinceBreeding days - marking as failed');
-            failedBreedings.add({
-              'history_date': breeding['history_date'],
-              'breeding_type': breedingType,
-              'days_since_breeding': daysSinceBreeding,
-              'status': 'failed',
-            });
-          } else {
-            debugPrint('DEBUG: ⏳ No pregnancy/birth match found but only $daysSinceBreeding days passed - marking as pending');
-            pendingBreedings.add({
-              'history_date': breeding['history_date'],
-              'breeding_type': breedingType,
-              'days_since_breeding': daysSinceBreeding,
-              'status': 'pending',
-            });
-          }
         }
 
         // Track buck performance
@@ -300,7 +341,7 @@ class BreedingAnalysisService {
               (buckPerformance[responsibleBuck]!['total_breedings'] as int) + 1;
           (buckPerformance[responsibleBuck]!['Does_served'] as Set<String>).add(doeTag);
           
-          if (foundPregnancy) {
+          if (isSuccess) {
             buckPerformance[responsibleBuck]!['successful_breedings'] = 
                 (buckPerformance[responsibleBuck]!['successful_breedings'] as int) + 1;
           }
@@ -317,7 +358,7 @@ class BreedingAnalysisService {
         breedingTypePerformance[breedingType]!['total_breedings'] = 
             (breedingTypePerformance[breedingType]!['total_breedings'] as int) + 1;
         
-        if (foundPregnancy) {
+        if (isSuccess) {
           breedingTypePerformance[breedingType]!['successful_breedings'] = 
               (breedingTypePerformance[breedingType]!['successful_breedings'] as int) + 1;
         }
@@ -412,16 +453,6 @@ class BreedingAnalysisService {
     return null;
   }
 
-  static bool _isSameBuck(String? buck1, String? buck2) {
-    // If both are null, consider them the same (no buck specified)
-    if (buck1 == null && buck2 == null) return true;
-    
-    // If one is null and the other isn't, they're different
-    if (buck1 == null || buck2 == null) return false;
-    
-    // Compare the buck tags (case-insensitive)
-    return buck1.toLowerCase().trim() == buck2.toLowerCase().trim();
-  }
 
   // Get available does for filtering (only actual does, not Bucks)
   static Future<List<String>> getAvailableDoes() async {

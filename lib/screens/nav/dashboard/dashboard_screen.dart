@@ -677,7 +677,7 @@ class DashboardScreenState extends State<DashboardScreen>
 
     return Showcase(
       key: _keepAnEyeOnKey,
-      title: 'Keep an Eye On',
+      title: 'Goats Need Attention',
       description: 'Monitor goats that need immediate attention. This section highlights sick and lost goats, helping you quickly identify and address health issues or missing animals in your herd.',
       targetShapeBorder: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(20),
@@ -721,7 +721,7 @@ class DashboardScreenState extends State<DashboardScreen>
                 Icon(Icons.visibility_rounded, color: AppColors.darkGreen, size: 24),
                 SizedBox(width: 12),
                 Text(
-                  'Keep an Eye On',
+                  'Goats Need Attention',
                   style: TextStyle(
                     fontSize: 20,
                     fontWeight: FontWeight.bold,
@@ -2035,7 +2035,7 @@ class DashboardScreenState extends State<DashboardScreen>
         Showcase(
           key: _breedingAnalyticsKey,
           title: 'Breeding Analytics',
-          description: 'Track breeding performance filtered by doe and buck. View conception rates, breeding history, and get insights into your breeding program success.',
+          description: 'Track overall breeding performance. A breeding is counted as successful when there is a kidding recorded after it (with or without a pregnancy in between), and as failed only when there is at least one abortion after breeding and no kidding recorded afterwards.',
           targetShapeBorder: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
           ),

@@ -288,50 +288,50 @@ class _GoatHistoryFormScreenState extends State<GoatHistoryFormScreen>
       if (latestBreeding == null) {
         debugPrint('DEBUG: No breeding history record found, skipping auto-fill for Pregnant.');
       } else {
-        final breedingDateStr = latestBreeding['history_date']?.toString();
-        if (breedingDateStr != null && breedingDateStr.isNotEmpty) {
-          _controllers['breeding_date']?.text = breedingDateStr;
-          try {
-            final breedingDate = DateTime.parse(breedingDateStr);
-            final expectedDelivery = breedingDate.add(const Duration(days: 150));
-            final formatted = '${expectedDelivery.year.toString().padLeft(4, '0')}-'
-                '${expectedDelivery.month.toString().padLeft(2, '0')}-'
-                '${expectedDelivery.day.toString().padLeft(2, '0')}';
-            _controllers['expected_delivery_date']?.text = formatted;
-            WidgetsBinding.instance.addPostFrameCallback((_) {
-              _historySpecificFieldsKey.currentState?.calculateAndDisplayDeliveryDate(breedingDate);
-            });
-          } catch (_) {}
-        }
-        final buckTag = _getRecordValue(latestBreeding, 'buck_tag');
-        final semen = _getRecordValue(latestBreeding, 'semen_used');
+      final breedingDateStr = latestBreeding['history_date']?.toString();
+      if (breedingDateStr != null && breedingDateStr.isNotEmpty) {
+        _controllers['breeding_date']?.text = breedingDateStr;
+        try {
+          final breedingDate = DateTime.parse(breedingDateStr);
+          final expectedDelivery = breedingDate.add(const Duration(days: 150));
+          final formatted = '${expectedDelivery.year.toString().padLeft(4, '0')}-'
+              '${expectedDelivery.month.toString().padLeft(2, '0')}-'
+              '${expectedDelivery.day.toString().padLeft(2, '0')}';
+          _controllers['expected_delivery_date']?.text = formatted;
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            _historySpecificFieldsKey.currentState?.calculateAndDisplayDeliveryDate(breedingDate);
+          });
+        } catch (_) {}
+      }
+      final buckTag = _getRecordValue(latestBreeding, 'buck_tag');
+      final semen = _getRecordValue(latestBreeding, 'semen_used');
 
-        if (semen != null && semen.isNotEmpty) {
-          _controllers['semen_used']?.text = semen;
-          String extractedBuckTag = semen.trim();
-          if (extractedBuckTag.toLowerCase().endsWith('semen')) {
-            extractedBuckTag = extractedBuckTag.substring(0, extractedBuckTag.length - 5).trim();
-          }
-          int stop = extractedBuckTag.indexOf(' ');
-          int paren = extractedBuckTag.indexOf('(');
-          if (stop == -1 || (paren != -1 && paren < stop)) {
-            stop = paren;
-          }
-          final finalBuckTag = stop == -1 ? extractedBuckTag : extractedBuckTag.substring(0, stop).trim();
-          if (finalBuckTag.isNotEmpty) {
-            _controllers['Buck_tag']?.text = finalBuckTag;
-          }
-        } else if (buckTag != null && buckTag.isNotEmpty) {
-          _controllers['Buck_tag']?.text = buckTag;
-          _controllers['semen_used']?.text = '';
+      if (semen != null && semen.isNotEmpty) {
+        _controllers['semen_used']?.text = semen;
+        String extractedBuckTag = semen.trim();
+        if (extractedBuckTag.toLowerCase().endsWith('semen')) {
+          extractedBuckTag = extractedBuckTag.substring(0, extractedBuckTag.length - 5).trim();
         }
+        int stop = extractedBuckTag.indexOf(' ');
+        int paren = extractedBuckTag.indexOf('(');
+        if (stop == -1 || (paren != -1 && paren < stop)) {
+          stop = paren;
+        }
+        final finalBuckTag = stop == -1 ? extractedBuckTag : extractedBuckTag.substring(0, stop).trim();
+        if (finalBuckTag.isNotEmpty) {
+          _controllers['Buck_tag']?.text = finalBuckTag;
+        }
+      } else if (buckTag != null && buckTag.isNotEmpty) {
+        _controllers['Buck_tag']?.text = buckTag;
+        _controllers['semen_used']?.text = '';
+      }
 
-        final tech = latestBreeding['technician']?.toString();
-        if (tech != null && tech.isNotEmpty) {
-          _controllers['technician']?.text = tech;
-        }
-        if (mounted) {
-          setState(() {});
+      final tech = latestBreeding['technician']?.toString();
+      if (tech != null && tech.isNotEmpty) {
+        _controllers['technician']?.text = tech;
+      }
+      if (mounted) {
+        setState(() {});
         }
       }
     }
@@ -349,46 +349,46 @@ class _GoatHistoryFormScreenState extends State<GoatHistoryFormScreen>
       if (latestPregnant == null) {
         debugPrint('DEBUG: No pregnant history record found, skipping auto-fill for Kidding.');
       } else {
-        final breedingDate = latestPregnant['breeding_date']?.toString();
-        if (breedingDate != null && breedingDate.isNotEmpty) {
-          _controllers['breeding_date']?.text = breedingDate;
-        }
-        final due = latestPregnant['expected_delivery_date']?.toString();
-        if (due != null && due.isNotEmpty) {
-          _controllers['expected_delivery_date']?.text = due;
-        }
+      final breedingDate = latestPregnant['breeding_date']?.toString();
+      if (breedingDate != null && breedingDate.isNotEmpty) {
+        _controllers['breeding_date']?.text = breedingDate;
+      }
+      final due = latestPregnant['expected_delivery_date']?.toString();
+      if (due != null && due.isNotEmpty) {
+        _controllers['expected_delivery_date']?.text = due;
+      }
 
-        String? semen = _getRecordValue(latestPregnant, 'semen_used');
-        String? buck = _getRecordValue(latestPregnant, 'buck_tag');
-        if ((semen == null || semen.isEmpty) && (buck == null || buck.isEmpty)) {
-          final latestBreeding = await _getLatestHistoryRecord(goatTag: goatTag, historyType: 'Breeding');
-          semen = _getRecordValue(latestBreeding, 'semen_used');
-          buck = _getRecordValue(latestBreeding, 'buck_tag');
-        }
+      String? semen = _getRecordValue(latestPregnant, 'semen_used');
+      String? buck = _getRecordValue(latestPregnant, 'buck_tag');
+      if ((semen == null || semen.isEmpty) && (buck == null || buck.isEmpty)) {
+        final latestBreeding = await _getLatestHistoryRecord(goatTag: goatTag, historyType: 'Breeding');
+        semen = _getRecordValue(latestBreeding, 'semen_used');
+        buck = _getRecordValue(latestBreeding, 'buck_tag');
+      }
 
-        if (semen != null && semen.isNotEmpty) {
-          _controllers['semen_used']?.text = semen;
-          String extracted = semen.trim();
-          if (extracted.toLowerCase().endsWith('semen')) {
-            extracted = extracted.substring(0, extracted.length - 5).trim();
-          }
-          int stop = extracted.indexOf(' ');
-          int paren = extracted.indexOf('(');
-          if (stop == -1 || (paren != -1 && paren < stop)) {
-            stop = paren;
-          }
-          final buckTag = stop == -1 ? extracted : extracted.substring(0, stop).trim();
-          if (buckTag.isNotEmpty) {
-            _controllers['Buck_tag']?.text = buckTag;
-          }
-        } else if (buck != null && buck.isNotEmpty) {
-          _controllers['Buck_tag']?.text = buck;
-          _controllers['semen_used']?.text = '';
+      if (semen != null && semen.isNotEmpty) {
+        _controllers['semen_used']?.text = semen;
+        String extracted = semen.trim();
+        if (extracted.toLowerCase().endsWith('semen')) {
+          extracted = extracted.substring(0, extracted.length - 5).trim();
         }
+        int stop = extracted.indexOf(' ');
+        int paren = extracted.indexOf('(');
+        if (stop == -1 || (paren != -1 && paren < stop)) {
+          stop = paren;
+        }
+        final buckTag = stop == -1 ? extracted : extracted.substring(0, stop).trim();
+        if (buckTag.isNotEmpty) {
+          _controllers['Buck_tag']?.text = buckTag;
+        }
+      } else if (buck != null && buck.isNotEmpty) {
+        _controllers['Buck_tag']?.text = buck;
+        _controllers['semen_used']?.text = '';
+      }
 
-        if (mounted) {
-          setState(() {});
-        }
+      if (mounted) {
+        setState(() {});
+      }
       }
     }
 
@@ -404,48 +404,48 @@ class _GoatHistoryFormScreenState extends State<GoatHistoryFormScreen>
       if (latestPregnant == null) {
         debugPrint('DEBUG: No pregnant history record found, skipping auto-fill for Aborted.');
       } else {
-        final breedingDate = latestPregnant['breeding_date']?.toString();
-        if (breedingDate != null && breedingDate.isNotEmpty) {
-          _controllers['breeding_date']?.text = breedingDate;
-        }
-        final due = latestPregnant['expected_delivery_date']?.toString();
-        if (due != null && due.isNotEmpty) {
-          _controllers['expected_delivery_date']?.text = due;
-        }
+      final breedingDate = latestPregnant['breeding_date']?.toString();
+      if (breedingDate != null && breedingDate.isNotEmpty) {
+        _controllers['breeding_date']?.text = breedingDate;
+      }
+      final due = latestPregnant['expected_delivery_date']?.toString();
+      if (due != null && due.isNotEmpty) {
+        _controllers['expected_delivery_date']?.text = due;
+      }
 
-        String? semen = _getRecordValue(latestPregnant, 'semen_used');
-        String? buck = _getRecordValue(latestPregnant, 'buck_tag');
-        if ((semen == null || semen.isEmpty) && (buck == null || buck.isEmpty)) {
-          final latestBreeding = await _getLatestHistoryRecord(
-            goatTag: goatTag,
-            historyType: 'Breeding',
-          );
-          semen = _getRecordValue(latestBreeding, 'semen_used');
-          buck = _getRecordValue(latestBreeding, 'buck_tag');
-        }
+      String? semen = _getRecordValue(latestPregnant, 'semen_used');
+      String? buck = _getRecordValue(latestPregnant, 'buck_tag');
+      if ((semen == null || semen.isEmpty) && (buck == null || buck.isEmpty)) {
+        final latestBreeding = await _getLatestHistoryRecord(
+          goatTag: goatTag,
+          historyType: 'Breeding',
+        );
+        semen = _getRecordValue(latestBreeding, 'semen_used');
+        buck = _getRecordValue(latestBreeding, 'buck_tag');
+      }
 
-        if (semen != null && semen.isNotEmpty) {
-          _controllers['semen_used']?.text = semen;
-          String extracted = semen.trim();
-          if (extracted.toLowerCase().endsWith('semen')) {
-            extracted = extracted.substring(0, extracted.length - 5).trim();
-          }
-          int stop = extracted.indexOf(' ');
-          int paren = extracted.indexOf('(');
-          if (stop == -1 || (paren != -1 && paren < stop)) {
-            stop = paren;
-          }
-          final buckTag = stop == -1 ? extracted : extracted.substring(0, stop).trim();
-          if (buckTag.isNotEmpty) {
-            _controllers['Buck_tag']?.text = buckTag;
-          }
-        } else if (buck != null && buck.isNotEmpty) {
-          _controllers['Buck_tag']?.text = buck;
-          _controllers['semen_used']?.text = '';
+      if (semen != null && semen.isNotEmpty) {
+        _controllers['semen_used']?.text = semen;
+        String extracted = semen.trim();
+        if (extracted.toLowerCase().endsWith('semen')) {
+          extracted = extracted.substring(0, extracted.length - 5).trim();
         }
+        int stop = extracted.indexOf(' ');
+        int paren = extracted.indexOf('(');
+        if (stop == -1 || (paren != -1 && paren < stop)) {
+          stop = paren;
+        }
+        final buckTag = stop == -1 ? extracted : extracted.substring(0, stop).trim();
+        if (buckTag.isNotEmpty) {
+          _controllers['Buck_tag']?.text = buckTag;
+        }
+      } else if (buck != null && buck.isNotEmpty) {
+        _controllers['Buck_tag']?.text = buck;
+        _controllers['semen_used']?.text = '';
+      }
 
-        if (mounted) {
-          setState(() {});
+      if (mounted) {
+        setState(() {});
         }
       }
     }
