@@ -4,10 +4,12 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:goat_tracer_app/constants/app_colors.dart';
 import 'package:goat_tracer_app/services/goat/goat_history_service.dart';
+import 'package:goat_tracer_app/services/goat/goat_history_export_service.dart';
 import 'package:goat_tracer_app/screens/nav/goat/widgets/history/history_search_filter_bar.dart';
 import 'package:goat_tracer_app/screens/nav/goat/goat_history_form_screen.dart';
 import 'package:goat_tracer_app/screens/nav/goat/modals/history_duplication_modal.dart';
 import 'package:goat_tracer_app/utils/history_type_utils.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import '../../../models/goat.dart';
 import 'goat_selection_modal.dart';
 import 'package:goat_tracer_app/services/user_guide_service.dart';
@@ -31,6 +33,9 @@ class HistoryScreenState extends State<HistoryScreen>
   Set<int> expandedCards = <int>{};
   String _addTabCategoryFilter = 'Health'; // Health, Reproduction, Lifecycle
   late TabController _tabController;
+
+  // History report export
+  String? _selectedReportHistoryType;
 
   // User guide keys
   final GlobalKey _tabBarKey = GlobalKey();
@@ -1258,6 +1263,149 @@ class HistoryScreenState extends State<HistoryScreen>
                               child: _buildHistorySummary(),
                             ),
                             const SizedBox(height: 16),
+                            // History report type & export buttons (Excel / PDF)
+                            Padding(
+                              padding: const EdgeInsets.fromLTRB(0, 0, 0, 4),
+                              child: Row(
+                                children: [
+                                  Expanded(
+                                    child: DropdownButtonFormField<String>(
+                                      value: _selectedReportHistoryType,
+                                      items: [
+                                        const DropdownMenuItem<String>(
+                                          value: null,
+                                          child: Text('Select history type'),
+                                        ),
+                                        ...historyTypes
+                                            .where((t) => t != 'Select type of history record')
+                                            .map(
+                                              (t) => DropdownMenuItem<String>(
+                                                value: t,
+                                                child: Text(t),
+                                              ),
+                                            ),
+                                      ],
+                                      onChanged: (value) {
+                                        setState(() {
+                                          _selectedReportHistoryType = value;
+                                        });
+                                      },
+                                      decoration: const InputDecoration(
+                                        labelText: 'History report type',
+                                        border: OutlineInputBorder(),
+                                        isDense: true,
+                                        contentPadding: EdgeInsets.symmetric(
+                                          horizontal: 12,
+                                          vertical: 10,
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Row(
+                                    children: [
+                                      Container(
+                                        decoration: BoxDecoration(
+                                          color: const Color(0xFF107C41),
+                                          borderRadius: BorderRadius.circular(10),
+                                        ),
+                                        child: IconButton(
+                                          tooltip: 'Export Excel',
+                                          icon: const FaIcon(
+                                            FontAwesomeIcons.fileExcel,
+                                            color: Colors.white,
+                                            size: 20,
+                                          ),
+                                          onPressed: () async {
+                                            if (_selectedReportHistoryType == null ||
+                                                _selectedReportHistoryType!.isEmpty) {
+                                              ScaffoldMessenger.of(context).showSnackBar(
+                                                const SnackBar(
+                                                  content: Text('Please select a history type first.'),
+                                                  duration: Duration(seconds: 2),
+                                                ),
+                                              );
+                                              return;
+                                            }
+
+                                            final messenger = ScaffoldMessenger.of(context);
+                                            messenger.hideCurrentSnackBar();
+                                            final ok = await GoatHistoryExportService
+                                                .downloadHistoryExcel(_selectedReportHistoryType!);
+                                            if (!mounted) return;
+                                            messenger.showSnackBar(
+                                              SnackBar(
+                                                content: Text(
+                                                  ok
+                                                      ? 'Excel history report ready! Choose where to open/save.'
+                                                      : 'Failed to download Excel history report.',
+                                                ),
+                                                backgroundColor: ok
+                                                    ? Colors.green.shade600
+                                                    : Colors.red.shade700,
+                                                behavior: SnackBarBehavior.floating,
+                                                shape: RoundedRectangleBorder(
+                                                  borderRadius: BorderRadius.circular(12),
+                                                ),
+                                              ),
+                                            );
+                                          },
+                                        ),
+                                      ),
+                                      const SizedBox(width: 8),
+                                      Container(
+                                        decoration: BoxDecoration(
+                                          color: Colors.red.shade600,
+                                          borderRadius: BorderRadius.circular(10),
+                                        ),
+                                        child: IconButton(
+                                          tooltip: 'Export PDF',
+                                          icon: const Icon(
+                                            Icons.picture_as_pdf_rounded,
+                                            color: Colors.white,
+                                            size: 20,
+                                          ),
+                                          onPressed: () async {
+                                            if (_selectedReportHistoryType == null ||
+                                                _selectedReportHistoryType!.isEmpty) {
+                                              ScaffoldMessenger.of(context).showSnackBar(
+                                                const SnackBar(
+                                                  content: Text('Please select a history type first.'),
+                                                  duration: Duration(seconds: 2),
+                                                ),
+                                              );
+                                              return;
+                                            }
+
+                                            final messenger = ScaffoldMessenger.of(context);
+                                            messenger.hideCurrentSnackBar();
+                                            final ok = await GoatHistoryExportService
+                                                .downloadHistoryPdf(_selectedReportHistoryType!);
+                                            if (!mounted) return;
+                                            messenger.showSnackBar(
+                                              SnackBar(
+                                                content: Text(
+                                                  ok
+                                                      ? 'PDF history report ready! Choose where to open/save.'
+                                                      : 'Failed to generate PDF history report.',
+                                                ),
+                                                backgroundColor: ok
+                                                    ? Colors.green.shade600
+                                                    : Colors.red.shade700,
+                                                behavior: SnackBarBehavior.floating,
+                                                shape: RoundedRectangleBorder(
+                                                  borderRadius: BorderRadius.circular(12),
+                                                ),
+                                              ),
+                                            );
+                                          },
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ],
+                              ),
+                            ),
                           ],
                           Expanded(
                             child: Showcase(
