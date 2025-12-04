@@ -142,12 +142,6 @@ class _KidRegistrationDialogState extends State<KidRegistrationDialog> {
       return 'This tag number already exists';
     }
 
-    // Validate tag format (should be 6-digit number)
-    final tagPattern = RegExp(r'^\d{6}$');
-    if (!tagPattern.hasMatch(trimmedValue)) {
-      return 'Tag must be a 6-digit number (e.g., 123456)';
-    }
-
     return null;
   }
 
@@ -334,10 +328,24 @@ class _KidRegistrationDialogState extends State<KidRegistrationDialog> {
                       color: Colors.white.withValues(alpha: 0.2),
                       borderRadius: BorderRadius.circular(12),
                     ),
-                    child: const Icon(
-                      FontAwesomeIcons.baby,
-                      color: Colors.white,
-                      size: 24,
+                    child: ColorFiltered(
+                      colorFilter: const ColorFilter.mode(
+                        Colors.white,
+                        BlendMode.srcIn,
+                      ),
+                      child: Image.asset(
+                        'assets/images/goat-icons/kid.png',
+                        width: 24,
+                        height: 24,
+                        fit: BoxFit.contain,
+                        errorBuilder: (context, error, stackTrace) {
+                          return const Icon(
+                            FontAwesomeIcons.baby,
+                            color: Colors.white,
+                            size: 24,
+                          );
+                        },
+                      ),
                     ),
                   ),
                   const SizedBox(width: 16),
@@ -442,7 +450,7 @@ class _KidRegistrationDialogState extends State<KidRegistrationDialog> {
                           ),
                           filled: true,
                           fillColor: AppColors.cardBackground,
-                          helperText: 'Enter 6-digit tag number',
+                          helperText: 'Enter tag number',
                           helperStyle: TextStyle(
                             color: Colors.grey.shade600,
                             fontSize: 12,
