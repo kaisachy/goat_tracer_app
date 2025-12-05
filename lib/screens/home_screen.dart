@@ -13,6 +13,7 @@ import 'nav/profile/profile_screen.dart';
 import 'nav/milk/milk_screen.dart';
 import 'nav/history/history_screen.dart';
 import 'nav/scheduler/farmer_scheduler_screen.dart';
+import 'nav/messages/messages_screen.dart';
 import 'nav/setting/setting_screen.dart';
 import 'package:goat_tracer_app/services/goat/goat_status_service.dart';
 import 'package:goat_tracer_app/services/goat/goat_service.dart';
@@ -36,6 +37,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   final GlobalKey<FarmerSchedulerScreenState> _schedulerKey =
       GlobalKey<FarmerSchedulerScreenState>();
   final GlobalKey<SettingScreenState> _settingKey = GlobalKey<SettingScreenState>();
+  final GlobalKey<MessagesScreenState> _messagesKey = GlobalKey<MessagesScreenState>();
 
   int _selectedIndex = 0;
   late final List<Widget> _pages;
@@ -99,6 +101,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
       AuthGuard(child: HistoryScreen(key: _historyKey)),
       AuthGuard(child: FarmerSchedulerScreen(key: _schedulerKey)),
       AuthGuard(child: MilkScreen()),
+      AuthGuard(child: MessagesScreen(key: _messagesKey)),
       AuthGuard(child: SettingScreen(key: _settingKey)),
     ];
   }
@@ -707,6 +710,14 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
             IconButton(
               icon: const Icon(Icons.help_outline_rounded),
               tooltip: 'Start User Guide',
+              onPressed: () {
+                // No user guide for messages yet
+              },
+            ),
+          if (_selectedIndex == 7)
+            IconButton(
+              icon: const Icon(Icons.help_outline_rounded),
+              tooltip: 'Start User Guide',
               onPressed: _startSettingUserGuide,
             ),
         ],
@@ -731,6 +742,8 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
       case 5:
         return 'Milk Production';
       case 6:
+        return 'Messages';
+      case 7:
         return 'Settings';
       default:
         return '';
@@ -777,10 +790,16 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                   onTap: () => _onNavItemTapped(4),
                 ),
                 _buildDrawerItem(
-                  icon: Icons.settings_rounded,
-                  text: 'Settings',
+                  icon: Icons.message_rounded,
+                  text: 'Messages',
                   index: 6,
                   onTap: () => _onNavItemTapped(6),
+                ),
+                _buildDrawerItem(
+                  icon: Icons.settings_rounded,
+                  text: 'Settings',
+                  index: 7,
+                  onTap: () => _onNavItemTapped(7),
                 ),
                 _buildDrawerItem(
                   icon: Icons.logout_rounded,

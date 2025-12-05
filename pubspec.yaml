@@ -48,6 +48,7 @@ dependencies:
   url_launcher: ^6.3.0
   share_plus: ^7.2.1
   showcaseview: ^3.0.0
+  mime: ^1.0.6
 
 dev_dependencies:
   flutter_test:

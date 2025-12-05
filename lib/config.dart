@@ -4,7 +4,7 @@
 
 
 class AppConfig {
-  static const String baseUrl = 'http://192.168.254.106/goat-tracer/public';
+  static const String baseUrl = 'http://192.168.100.20/goat-tracer/public';
 }
 
 // class AppConfig {
