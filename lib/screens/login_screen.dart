@@ -60,34 +60,56 @@ class _LoginScreenState extends State<LoginScreen> {
         if (!mounted) return;
 
         if (response.statusCode == 200) {
-          final data = jsonDecode(response.body);
+          try {
+            final data = jsonDecode(response.body);
 
-          if (data['success'] == true) {
-            await SecureStorageService().saveToken(data['token']);
+            if (data['success'] == true) {
+              await SecureStorageService().saveToken(data['token']);
 
-            if (!mounted) return;
-            _showMessage('Login Successful!', AppColors.vibrantGreen);
+              if (!mounted) return;
+              _showMessage('Login Successful!', AppColors.vibrantGreen);
 
-            Navigator.pushAndRemoveUntil(
-              context,
-              MaterialPageRoute(
-                builder: (_) => HomeScreen(userEmail: _emailController.text.trim()),
-              ),
-                  (route) => false,
-            );
-          } else {
-            _showMessage(data['message'] ?? 'Login failed', Colors.red);
+              Navigator.pushAndRemoveUntil(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => HomeScreen(userEmail: _emailController.text.trim()),
+                ),
+                    (route) => false,
+              );
+            } else {
+              _showMessage(data['message'] ?? 'Login failed', Colors.red);
+            }
+          } catch (e) {
+            print('JSON decode error: $e');
+            _showMessage('Invalid server response. Please try again.', Colors.red);
           }
         } else {
-          final data = jsonDecode(response.body);
-          String errorMessage = data['message'] ?? 'Server error: ${response.statusCode}';
-
-          // Show server-provided error message directly (no email verification gating)
-          _showMessage(errorMessage, Colors.red);
+          try {
+            final data = jsonDecode(response.body);
+            String errorMessage = data['message'] ?? 'Server error: ${response.statusCode}';
+            _showMessage(errorMessage, Colors.red);
+          } catch (e) {
+            // If response body is not valid JSON, show a generic error
+            String errorMessage = 'Server error: ${response.statusCode}';
+            if (response.body.isNotEmpty) {
+              errorMessage = 'Error: ${response.body.substring(0, response.body.length > 100 ? 100 : response.body.length)}';
+            }
+            _showMessage(errorMessage, Colors.red);
+          }
         }
       } catch (e) {
         if (mounted) {
-          _showMessage('Connection error. Please try again.', Colors.red);
+          // Show more specific error message
+          String errorMessage = 'Connection error. Please try again.';
+          if (e is FormatException) {
+            errorMessage = 'Invalid server response. Please try again.';
+          } else if (e.toString().contains('SocketException') || e.toString().contains('Failed host lookup')) {
+            errorMessage = 'Network error. Please check your internet connection.';
+          } else {
+            // Log the actual error for debugging
+            print('Login error: $e');
+          }
+          _showMessage(errorMessage, Colors.red);
         }
       } finally {
         if (mounted) {
