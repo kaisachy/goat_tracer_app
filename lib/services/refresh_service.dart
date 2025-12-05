@@ -2,8 +2,10 @@
 import 'goat/goat_status_service.dart';
 import 'profile/personal_information_service.dart';
 import 'goat/goat_service.dart';
+import 'goat/goat_history_service.dart';
 import 'milk/milk_production_service.dart';
 import 'schedule/schedule_service.dart';
+import 'message_service.dart';
 
 class RefreshService {
   /// Comprehensive refresh for all app data
@@ -14,6 +16,8 @@ class RefreshService {
       'goatDataRefreshed': false,
       'milkDataRefreshed': false,
       'scheduleDataRefreshed': false,
+      'historyDataRefreshed': false,
+      'messagesDataRefreshed': false,
       'errors': [],
     };
 
@@ -68,6 +72,26 @@ class RefreshService {
         log('RefreshService: Error refreshing schedule data: $e');
       }
 
+      // 6. Refresh history data
+      try {
+        await GoatHistoryService.getgoatHistory();
+        results['historyDataRefreshed'] = true;
+        log('RefreshService: History data refreshed');
+      } catch (e) {
+        results['errors'].add('History data refresh failed: $e');
+        log('RefreshService: Error refreshing history data: $e');
+      }
+
+      // 7. Refresh messages data
+      try {
+        await MessageService.getMyMessages();
+        results['messagesDataRefreshed'] = true;
+        log('RefreshService: Messages data refreshed');
+      } catch (e) {
+        results['errors'].add('Messages data refresh failed: $e');
+        log('RefreshService: Error refreshing messages data: $e');
+      }
+
     } catch (e) {
       results['errors'].add('General refresh error: $e');
       log('RefreshService: General error during refresh: $e');
@@ -77,7 +101,11 @@ class RefreshService {
   }
 
   /// Refresh data for a specific page
-  static Future<Map<String, dynamic>> refreshPageData(int pageIndex) async {
+  /// Optionally accepts screen state keys to trigger screen refreshes
+  static Future<Map<String, dynamic>> refreshPageData(
+    int pageIndex, {
+    Map<String, dynamic>? screenKeys,
+  }) async {
     Map<String, dynamic> results = {
       'success': false,
       'message': '',
@@ -90,6 +118,14 @@ class RefreshService {
         case 0: // Profile
           try {
             await PersonalInformationService.getPersonalInformation();
+            // Refresh profile screen if key provided
+            if (screenKeys?['profile']?.currentState != null) {
+              try {
+                await (screenKeys!['profile']!.currentState as dynamic).refresh();
+              } catch (e) {
+                log('RefreshService: Error refreshing profile screen: $e');
+              }
+            }
             results['success'] = true;
             results['message'] = 'Profile data refreshed';
           } catch (e) {
@@ -101,6 +137,14 @@ class RefreshService {
           try {
             await GoatService.getGoatInformation();
             final updatedgoat = await GoatStatusService.checkAndUpdateBreedingStatus();
+            // Refresh goat screen if key provided
+            if (screenKeys?['goat']?.currentState != null) {
+              try {
+                await (screenKeys!['goat']!.currentState as dynamic).refresh();
+              } catch (e) {
+                log('RefreshService: Error refreshing goat screen: $e');
+              }
+            }
             results['success'] = true;
             results['message'] = 'goat data refreshed';
             results['data'] = updatedgoat;
@@ -115,6 +159,14 @@ class RefreshService {
             await GoatService.getGoatInformation();
             await MilkProductionService.getMilkProductions();
             await ScheduleService.getSchedules();
+            // Refresh dashboard screen if key provided
+            if (screenKeys?['dashboard']?.currentState != null) {
+              try {
+                await (screenKeys!['dashboard']!.currentState as dynamic).refresh();
+              } catch (e) {
+                log('RefreshService: Error refreshing dashboard screen: $e');
+              }
+            }
             results['success'] = true;
             results['message'] = 'Dashboard data refreshed';
           } catch (e) {
@@ -122,21 +174,35 @@ class RefreshService {
           }
           break;
           
-        case 3: // Events
+        case 3: // History/Events
           try {
-            // Events don't have a specific service refresh, but we can refresh goat data
-            // since history are related to goat
-            await GoatService.getGoatInformation();
+            await GoatHistoryService.getgoatHistory();
+            // Refresh history screen if key provided
+            if (screenKeys?['history']?.currentState != null) {
+              try {
+                await (screenKeys!['history']!.currentState as dynamic).refresh();
+              } catch (e) {
+                log('RefreshService: Error refreshing history screen: $e');
+              }
+            }
             results['success'] = true;
-            results['message'] = 'Events data refreshed';
+            results['message'] = 'History data refreshed';
           } catch (e) {
-            results['errors'].add('Events refresh failed: $e');
+            results['errors'].add('History refresh failed: $e');
           }
           break;
           
         case 4: // Schedule
           try {
             await ScheduleService.getSchedules();
+            // Refresh scheduler screen if key provided
+            if (screenKeys?['scheduler']?.currentState != null) {
+              try {
+                await (screenKeys!['scheduler']!.currentState as dynamic).refresh();
+              } catch (e) {
+                log('RefreshService: Error refreshing scheduler screen: $e');
+              }
+            }
             results['success'] = true;
             results['message'] = 'Schedule data refreshed';
           } catch (e) {
@@ -154,7 +220,33 @@ class RefreshService {
           }
           break;
           
-        case 6: // Settings
+        case 6: // Messages
+          try {
+            await MessageService.getMyMessages();
+            // Refresh messages screen if key provided
+            if (screenKeys?['messages']?.currentState != null) {
+              try {
+                await (screenKeys!['messages']!.currentState as dynamic).refresh();
+              } catch (e) {
+                log('RefreshService: Error refreshing messages screen: $e');
+              }
+            }
+            results['success'] = true;
+            results['message'] = 'Messages data refreshed';
+          } catch (e) {
+            results['errors'].add('Messages refresh failed: $e');
+          }
+          break;
+          
+        case 7: // Settings
+          // Refresh settings screen if key provided
+          if (screenKeys?['settings']?.currentState != null) {
+            try {
+              await (screenKeys!['settings']!.currentState as dynamic).refresh();
+            } catch (e) {
+              log('RefreshService: Error refreshing settings screen: $e');
+            }
+          }
           results['success'] = true;
           results['message'] = 'Settings refreshed';
           break;

@@ -125,6 +125,11 @@ class DashboardScreenState extends State<DashboardScreen>
     }
   }
 
+  /// Public method to refresh dashboard (called from refresh service)
+  Future<void> refresh() async {
+    await _loadDashboardData();
+  }
+
   Future<void> _refreshData() async => await _loadDashboardData();
 
   @override

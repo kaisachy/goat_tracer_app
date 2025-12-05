@@ -390,6 +390,11 @@ class HistoryScreenState extends State<HistoryScreen>
     }
   }
 
+  /// Public method to refresh history (called from refresh service)
+  Future<void> refresh() async {
+    await _loadAllgoatHistory();
+  }
+
   Future<void> _refreshHistory() async {
     debugPrint('DEBUG: _refreshHistory called');
     await _loadAllgoatHistory();

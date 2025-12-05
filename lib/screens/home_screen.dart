@@ -181,6 +181,21 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     }
   }
 
+  void _startMessagesUserGuide() {
+    if (_messagesKey.currentState != null) {
+      _messagesKey.currentState!.startUserGuide();
+    } else {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Please wait for the messages screen to load, then try again.'),
+            duration: Duration(seconds: 2),
+          ),
+        );
+      }
+    }
+  }
+
   void _startSettingUserGuide() {
     if (_settingKey.currentState != null) {
       _settingKey.currentState!.startUserGuide();
@@ -366,6 +381,60 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
         ),
       );
 
+      // Refresh the current screen
+      try {
+        final screenKeys = {
+          'profile': _profileKey,
+          'goat': _goatKey,
+          'dashboard': _dashboardKey,
+          'history': _historyKey,
+          'scheduler': _schedulerKey,
+          'messages': _messagesKey,
+          'settings': _settingKey,
+        };
+        
+        // Refresh current screen based on selected index
+        switch (_selectedIndex) {
+          case 0: // Profile
+            if (screenKeys['profile']?.currentState != null) {
+              await (screenKeys['profile']!.currentState as dynamic).refresh();
+            }
+            break;
+          case 1: // Goat
+            if (screenKeys['goat']?.currentState != null) {
+              await (screenKeys['goat']!.currentState as dynamic).refresh();
+            }
+            break;
+          case 2: // Dashboard
+            if (screenKeys['dashboard']?.currentState != null) {
+              await (screenKeys['dashboard']!.currentState as dynamic).refresh();
+            }
+            break;
+          case 3: // History
+            if (screenKeys['history']?.currentState != null) {
+              await (screenKeys['history']!.currentState as dynamic).refresh();
+            }
+            break;
+          case 4: // Scheduler
+            if (screenKeys['scheduler']?.currentState != null) {
+              await (screenKeys['scheduler']!.currentState as dynamic).refresh();
+            }
+            break;
+          case 6: // Messages
+            if (screenKeys['messages']?.currentState != null) {
+              await (screenKeys['messages']!.currentState as dynamic).refresh();
+            }
+            break;
+          case 7: // Settings
+            if (screenKeys['settings']?.currentState != null) {
+              await (screenKeys['settings']!.currentState as dynamic).refresh();
+            }
+            break;
+        }
+      } catch (e) {
+        debugPrint('Error refreshing current screen: $e');
+      }
+      
       // Force refresh of the current page by triggering a rebuild
       setState(() {
         // This will trigger a rebuild of the current page
@@ -710,9 +779,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
             IconButton(
               icon: const Icon(Icons.help_outline_rounded),
               tooltip: 'Start User Guide',
-              onPressed: () {
-                // No user guide for messages yet
-              },
+              onPressed: _startMessagesUserGuide,
             ),
           if (_selectedIndex == 7)
             IconButton(

@@ -6,11 +6,13 @@ import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
 import 'package:mime/mime.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:showcaseview/showcaseview.dart';
 
 import '../../../config.dart';
 import '../../../constants/app_colors.dart';
 import '../../../models/message.dart';
 import '../../../services/message_service.dart';
+import '../../../services/user_guide_service.dart';
 
 class MessagesScreen extends StatefulWidget {
   const MessagesScreen({super.key});
@@ -32,10 +34,24 @@ class MessagesScreenState extends State<MessagesScreen> {
   bool _sending = false;
   List<MessageModel> _messages = [];
 
+  // User guide keys
+  final GlobalKey _messageListKey = GlobalKey();
+  final GlobalKey _textInputKey = GlobalKey();
+  final GlobalKey _attachButtonKey = GlobalKey();
+  final GlobalKey _sendButtonKey = GlobalKey();
+
+  // Showcase context
+  BuildContext? _showCaseContext;
+
   @override
   void initState() {
     super.initState();
     _loadMessages();
+  }
+
+  /// Public method to refresh messages (called from refresh service)
+  Future<void> refresh() async {
+    await _loadMessages();
   }
 
   Future<void> _loadMessages() async {
@@ -180,20 +196,71 @@ class MessagesScreenState extends State<MessagesScreen> {
     });
   }
 
+  /// Public method to start the user guide (called from home screen)
+  void startUserGuide() async {
+    if (_showCaseContext == null) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Please wait a moment and try again.'),
+            duration: Duration(seconds: 2),
+          ),
+        );
+      }
+      return;
+    }
+
+    await UserGuideService.resetGuide('messages');
+
+    if (mounted && _showCaseContext != null) {
+      try {
+        await Future.delayed(const Duration(milliseconds: 300));
+
+        ShowCaseWidget.of(_showCaseContext!).startShowCase([
+          _messageListKey,
+          _textInputKey,
+          _attachButtonKey,
+          _sendButtonKey,
+        ]);
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: const Text('Unable to start user guide. Please try again.'),
+              backgroundColor: Colors.orange,
+              duration: const Duration(seconds: 2),
+            ),
+          );
+        }
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    return Column(
-      children: [
-        Expanded(
-          child: RefreshIndicator(
-            onRefresh: _loadMessages,
-            child: _loading && _messages.isEmpty
-                ? const Center(child: CircularProgressIndicator())
-                : ListView.builder(
-                    controller: _scrollController,
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 16, vertical: 12),
-                    itemCount: _messages.length,
+    return ShowCaseWidget(
+      enableAutoScroll: true,
+      scrollDuration: const Duration(milliseconds: 300),
+      onFinish: () async {
+        await UserGuideService.markGuideCompleted('messages');
+      },
+      builder: (showCaseContext) {
+        _showCaseContext = showCaseContext;
+        return Column(
+          children: [
+            Expanded(
+              child: RefreshIndicator(
+                onRefresh: _loadMessages,
+                child: _loading && _messages.isEmpty
+                    ? const Center(child: CircularProgressIndicator())
+                    : Showcase(
+                        key: _messageListKey,
+                        description: 'View your conversation history with admin. Long press on any message to copy, reply, edit, or delete.',
+                        child: ListView.builder(
+                          controller: _scrollController,
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 16, vertical: 12),
+                          itemCount: _messages.length,
                     itemBuilder: (context, index) {
                       final msg = _messages[index];
                       // In the app the logged-in user is the farmer, so treat farmer
@@ -261,187 +328,202 @@ class MessagesScreenState extends State<MessagesScreen> {
                         ],
                       );
                     },
-                  ),
-          ),
-        ),
-        const Divider(height: 1),
-        SafeArea(
-          top: false,
-          child: Padding(
-            padding:
-                const EdgeInsets.symmetric(horizontal: 12.0, vertical: 8.0),
-            child: Row(
-              children: [
-                Expanded(
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      if (_attachmentBytes != null && _attachmentName != null)
-                        Container(
-                          margin: const EdgeInsets.only(bottom: 6),
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 8, vertical: 6),
-                          decoration: BoxDecoration(
-                            color: Colors.grey.shade100,
-                            borderRadius: BorderRadius.circular(8),
-                            border: Border.all(color: Colors.grey.shade300),
-                          ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              if (_attachmentMime != null &&
-                                  _attachmentMime!.startsWith('image/'))
-                                Container(
-                                  width: 28,
-                                  height: 28,
-                                  margin: const EdgeInsets.only(right: 8),
-                                  decoration: BoxDecoration(
-                                    borderRadius: BorderRadius.circular(6),
-                                    color: Colors.grey.shade200,
-                                  ),
-                                  clipBehavior: Clip.antiAlias,
-                                  child: Image.memory(
-                                    _attachmentBytes!,
-                                    fit: BoxFit.cover,
-                                  ),
-                                )
-                              else
-                                Container(
-                                  width: 28,
-                                  height: 28,
-                                  alignment: Alignment.center,
-                                  margin: const EdgeInsets.only(right: 8),
-                                  decoration: BoxDecoration(
-                                    borderRadius: BorderRadius.circular(6),
-                                    color: Colors.grey.shade200,
-                                  ),
-                                  child: Text(
-                                    (_attachmentName!.split('.').last)
-                                        .toUpperCase(),
-                                    style: const TextStyle(fontSize: 10),
-                                  ),
-                                ),
-                              Expanded(
-                                child: Text(
-                                  _attachmentName!,
-                                  style: const TextStyle(fontSize: 12),
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                              ),
-                              IconButton(
-                                visualDensity: VisualDensity.compact,
-                                padding: EdgeInsets.zero,
-                                icon: const Icon(Icons.close, size: 18),
-                                onPressed: () {
-                                  setState(() {
-                                    _attachmentBytes = null;
-                                    _attachmentName = null;
-                                    _attachmentMime = null;
-                                  });
-                                },
-                              ),
-                            ],
-                          ),
                         ),
-                      if (_replyingTo != null)
-                        Container(
-                          margin: const EdgeInsets.only(bottom: 4),
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 8, vertical: 6),
-                          decoration: BoxDecoration(
-                            color: Colors.grey.shade100,
-                            borderRadius: BorderRadius.circular(8),
-                            border: Border.all(color: Colors.grey.shade300),
-                          ),
-                          child: Row(
-                            crossAxisAlignment: CrossAxisAlignment.center,
-                            children: [
-                              const Icon(Icons.reply, size: 16),
-                              const SizedBox(width: 6),
-                              if (_replyImageUrl(_replyingTo!) != null)
-                                Padding(
-                                  padding: const EdgeInsets.only(right: 8),
-                                  child: ClipRRect(
-                                    borderRadius: BorderRadius.circular(4),
-                                    child: SizedBox(
-                                      width: 32,
-                                      height: 32,
-                                      child: Image.network(
-                                        _replyImageUrl(_replyingTo!)!,
+                      ),
+              ),
+            ),
+            const Divider(),
+            SafeArea(
+              top: false,
+              child: Padding(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 12.0, vertical: 8.0),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          if (_attachmentBytes != null && _attachmentName != null)
+                            Container(
+                              margin: const EdgeInsets.only(bottom: 6),
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 8, vertical: 6),
+                              decoration: BoxDecoration(
+                                color: Colors.grey.shade100,
+                                borderRadius: BorderRadius.circular(8),
+                                border: Border.all(color: Colors.grey.shade300),
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  if (_attachmentMime != null &&
+                                      _attachmentMime!.startsWith('image/'))
+                                    Container(
+                                      width: 28,
+                                      height: 28,
+                                      margin: const EdgeInsets.only(right: 8),
+                                      decoration: BoxDecoration(
+                                        borderRadius: BorderRadius.circular(6),
+                                        color: Colors.grey.shade200,
+                                      ),
+                                      clipBehavior: Clip.antiAlias,
+                                      child: Image.memory(
+                                        _attachmentBytes!,
                                         fit: BoxFit.cover,
-                                        errorBuilder: (context, _, __) =>
-                                            const Icon(Icons.image, size: 18),
+                                      ),
+                                    )
+                                  else
+                                    Container(
+                                      width: 28,
+                                      height: 28,
+                                      alignment: Alignment.center,
+                                      margin: const EdgeInsets.only(right: 8),
+                                      decoration: BoxDecoration(
+                                        borderRadius: BorderRadius.circular(6),
+                                        color: Colors.grey.shade200,
+                                      ),
+                                      child: Text(
+                                        (_attachmentName!.split('.').last)
+                                            .toUpperCase(),
+                                        style: const TextStyle(fontSize: 10),
+                                      ),
+                                    ),
+                                  Expanded(
+                                    child: Text(
+                                      _attachmentName!,
+                                      style: const TextStyle(fontSize: 12),
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ),
+                                  IconButton(
+                                    visualDensity: VisualDensity.compact,
+                                    padding: EdgeInsets.zero,
+                                    icon: const Icon(Icons.close, size: 18),
+                                    onPressed: () {
+                                      setState(() {
+                                        _attachmentBytes = null;
+                                        _attachmentName = null;
+                                        _attachmentMime = null;
+                                      });
+                                    },
+                                  ),
+                                ],
+                              ),
+                            ),
+                          if (_replyingTo != null)
+                            Container(
+                              margin: const EdgeInsets.only(bottom: 4),
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 8, vertical: 6),
+                              decoration: BoxDecoration(
+                                color: Colors.grey.shade100,
+                                borderRadius: BorderRadius.circular(8),
+                                border: Border.all(color: Colors.grey.shade300),
+                              ),
+                              child: Row(
+                                crossAxisAlignment: CrossAxisAlignment.center,
+                                children: [
+                                  const Icon(Icons.reply, size: 16),
+                                  const SizedBox(width: 6),
+                                  if (_replyImageUrl(_replyingTo!) != null)
+                                    Padding(
+                                      padding: const EdgeInsets.only(right: 8),
+                                      child: ClipRRect(
+                                        borderRadius: BorderRadius.circular(4),
+                                        child: SizedBox(
+                                          width: 32,
+                                          height: 32,
+                                          child: Image.network(
+                                            _replyImageUrl(_replyingTo!)!,
+                                            fit: BoxFit.cover,
+                                            errorBuilder: (context, _, __) =>
+                                                const Icon(Icons.image, size: 18),
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  Expanded(
+                                    child: Text(
+                                      _buildReplySnippet(_replyingTo!),
+                                      style: const TextStyle(
+                                        fontSize: 12,
+                                        fontStyle: FontStyle.italic,
                                       ),
                                     ),
                                   ),
-                                ),
-                              Expanded(
-                                child: Text(
-                                  _buildReplySnippet(_replyingTo!),
-                                  style: const TextStyle(
-                                    fontSize: 12,
-                                    fontStyle: FontStyle.italic,
+                                  IconButton(
+                                    visualDensity: VisualDensity.compact,
+                                    padding: EdgeInsets.zero,
+                                    icon: const Icon(Icons.close, size: 16),
+                                    onPressed: () {
+                                      setState(() {
+                                        _replyingTo = null;
+                                      });
+                                    },
                                   ),
+                                ],
+                              ),
+                            ),
+                          Showcase(
+                            key: _textInputKey,
+                            description: 'Type your message here. You can send text messages or attach images.',
+                            child: TextField(
+                              controller: _controller,
+                              minLines: 1,
+                              maxLines: 4,
+                              decoration: InputDecoration(
+                                hintText: _editingMessageId != null
+                                    ? 'Edit message…'
+                                    : 'Type a message to admin…',
+                                border: const OutlineInputBorder(
+                                  borderRadius: BorderRadius.all(Radius.circular(20)),
                                 ),
+                                contentPadding: const EdgeInsets.symmetric(
+                                    horizontal: 12, vertical: 8),
                               ),
-                              IconButton(
-                                visualDensity: VisualDensity.compact,
-                                padding: EdgeInsets.zero,
-                                icon: const Icon(Icons.close, size: 16),
-                                onPressed: () {
-                                  setState(() {
-                                    _replyingTo = null;
-                                  });
-                                },
-                              ),
-                            ],
+                            ),
                           ),
-                        ),
-                      TextField(
-                        controller: _controller,
-                        minLines: 1,
-                        maxLines: 4,
-                        decoration: InputDecoration(
-                          hintText: _editingMessageId != null
-                              ? 'Edit message…'
-                              : 'Type a message to admin…',
-                          border: const OutlineInputBorder(
-                            borderRadius: BorderRadius.all(Radius.circular(20)),
-                          ),
-                          contentPadding: const EdgeInsets.symmetric(
-                              horizontal: 12, vertical: 8),
-                        ),
+                        ],
                       ),
-                    ],
-                  ),
+                    ),
+                    const SizedBox(width: 8),
+                    Showcase(
+                      key: _attachButtonKey,
+                      description: 'Attach an image to your message by tapping this button.',
+                      child: IconButton(
+                        icon: const Icon(Icons.attach_file_rounded),
+                        color: Colors.grey.shade700,
+                        onPressed: _sending ? null : _pickAttachment,
+                      ),
+                    ),
+                    Showcase(
+                      key: _sendButtonKey,
+                      description: 'Send your message by tapping this button. Long press any message to reply, edit, or delete.',
+                      child: IconButton(
+                        icon: _sending
+                            ? const SizedBox(
+                                width: 20,
+                                height: 20,
+                                child: CircularProgressIndicator(strokeWidth: 2),
+                              )
+                            : Icon(
+                                _editingMessageId != null
+                                    ? Icons.check_rounded
+                                    : Icons.send_rounded,
+                              ),
+                        color: AppColors.primary,
+                        onPressed: _sending ? null : _send,
+                      ),
+                    ),
+                  ],
                 ),
-                const SizedBox(width: 8),
-                IconButton(
-                  icon: const Icon(Icons.attach_file_rounded),
-                  color: Colors.grey.shade700,
-                  onPressed: _sending ? null : _pickAttachment,
-                ),
-                IconButton(
-                  icon: _sending
-                      ? const SizedBox(
-                          width: 20,
-                          height: 20,
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        )
-                      : Icon(
-                          _editingMessageId != null
-                              ? Icons.check_rounded
-                              : Icons.send_rounded,
-                        ),
-                  color: AppColors.primary,
-                  onPressed: _sending ? null : _send,
-                ),
-              ],
+              ),
             ),
-          ),
-        ),
-      ],
+          ],
+        );
+      },
     );
   }
 
