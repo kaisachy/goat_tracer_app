@@ -1202,18 +1202,22 @@ class HistoryScreenState extends State<HistoryScreen>
                             ),
                           ),
                         ),
-                        Padding(
-                          padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-                          child: Showcase(
-                            key: _categoryNavKey,
-                            title: 'Category Filter',
-                            description: 'Toggle categories to quickly focus the grid.',
-                            targetShapeBorder: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(24),
+                        SafeArea(
+                          top: false,
+                          minimum: const EdgeInsets.only(bottom: 16),
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 16),
+                            child: Showcase(
+                              key: _categoryNavKey,
+                              title: 'Category Filter',
+                              description: 'Toggle categories to quickly focus the grid.',
+                              targetShapeBorder: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(24),
+                              ),
+                              tooltipBackgroundColor: AppColors.primary,
+                              textColor: Colors.white,
+                              child: _buildAddTabBottomNav(),
                             ),
-                            tooltipBackgroundColor: AppColors.primary,
-                            textColor: Colors.white,
-                            child: _buildAddTabBottomNav(),
                           ),
                         ),
                       ],
