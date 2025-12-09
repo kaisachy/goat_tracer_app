@@ -54,6 +54,7 @@ class _GoatSearchFilterWidgetState extends State<GoatSearchFilterWidget> {
     'Buck',
     'Buckling',
     'Kid',
+    'Weanling',
     'Growers'
   ];
 
@@ -92,9 +93,9 @@ class _GoatSearchFilterWidgetState extends State<GoatSearchFilterWidget> {
   List<String> _getFilteredClassificationOptions() {
     switch (_selectedSex) {
       case 'Male':
-        return ['All', 'Buck', 'Buckling', 'Kid', 'Growers'];
+        return ['All', 'Buck', 'Buckling', 'Kid', 'Weanling', 'Growers'];
       case 'Female':
-        return ['All', 'Doeling', 'Doe', 'Kid', 'Growers'];
+        return ['All', 'Doeling', 'Doe', 'Kid', 'Weanling', 'Growers'];
       default:
         return _allClassificationOptions;
     }

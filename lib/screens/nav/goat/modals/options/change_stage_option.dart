@@ -9,10 +9,10 @@ import 'package:goat_tracer_app/screens/nav/goat/modals/options/common/ui_helper
 
 class ChangeStageOption {
   // 🔧 MODIFIED: Defined separate, gender-specific stage lists
-  static final List<String> _maleStages = ['Kid', 'Growers', 'Buck', 'Buckling'];
-  static final List<String> _femaleStages = ['Kid', 'Growers', 'Doeling', 'Doe'];
+  static final List<String> _maleStages = ['Kid', 'Weanling', 'Growers', 'Buck', 'Buckling'];
+  static final List<String> _femaleStages = ['Kid', 'Weanling', 'Growers', 'Doeling', 'Doe'];
   static final List<String> _allStages = [
-    'Kid', 'Growers', 'Doeling', 'Doe', 'Buck', 'Buckling'
+    'Kid', 'Weanling', 'Growers', 'Doeling', 'Doe', 'Buck', 'Buckling'
   ];
 
   static void show(BuildContext context, Goat goat, VoidCallback? onGoatUpdated) {

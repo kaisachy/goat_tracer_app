@@ -3,10 +3,12 @@ import 'package:flutter/foundation.dart';
 
 class GoatAgeClassification {
   // Age ranges in months
-  static const int kidMaxAge = 8;
-  static const int growerMinAge = 8;
+  static const int kidMaxAge = 2;
+  static const int weanlingMinAge = 3;
+  static const int weanlingMaxAge = 5;
+  static const int growerMinAge = 5;
   static const int growerMaxAge = 18;
-  static const int doelingBucklingMinAge = 18;
+  static const int doelingBucklingMinAge = 19;
   static const int doelingBucklingMaxAge = 24; // Upper bound is exclusive in logic below
   static const int doeBuckMinAge = 24; // Inclusive: >= 24 months is Doe/Buck
 
@@ -14,9 +16,11 @@ class GoatAgeClassification {
   static String getExpectedClassification(int ageInMonths, String sex) {
     if (ageInMonths <= kidMaxAge) {
       return 'Kid';
-    } else if (ageInMonths > growerMinAge && ageInMonths <= growerMaxAge) {
+    } else if (ageInMonths >= weanlingMinAge && ageInMonths <= weanlingMaxAge) {
+      return 'Weanling';
+    } else if (ageInMonths >= growerMinAge && ageInMonths <= growerMaxAge) {
       return 'Growers';
-    } else if (ageInMonths > doelingBucklingMinAge && ageInMonths < doelingBucklingMaxAge) {
+    } else if (ageInMonths >= doelingBucklingMinAge && ageInMonths < doelingBucklingMaxAge) {
       if (sex == 'Female') {
         return 'Doeling';
       } else if (sex == 'Male') {

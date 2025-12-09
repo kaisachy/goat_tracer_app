@@ -87,7 +87,7 @@ class GoatScreenState extends State<GoatScreen>
     return Showcase(
       key: _addGoatGridKey,
       title: 'Add Goat',
-      description: 'Select a goat type to add a new goat record. Choose from Buck, Doe, Buckling, Doeling, Growers, or Kid. Each type has specific classifications and can be male or female.',
+      description: 'Select a goat type to add a new goat record. Choose from Buck, Doe, Buckling, Doeling, Growers, Weanling, or Kid. Each type has specific classifications and can be male or female.',
       targetShapeBorder: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
       ),
@@ -140,6 +140,22 @@ class GoatScreenState extends State<GoatScreen>
         'fallback': Icons.trending_up,
       },
       {
+        'label': 'Weanling (M)',
+        'classification': 'Weanling',
+        'sex': 'Male',
+        'iconPath': 'assets/images/goat-icons/kid.png',
+        'color': Colors.purple,
+        'fallback': Icons.child_care,
+      },
+      {
+        'label': 'Weanling (F)',
+        'classification': 'Weanling',
+        'sex': 'Female',
+        'iconPath': 'assets/images/goat-icons/kid.png',
+        'color': Colors.purple,
+        'fallback': Icons.child_care,
+      },
+      {
         'label': 'Kid (M)',
         'classification': 'Kid',
         'sex': 'Male',
@@ -181,7 +197,7 @@ class GoatScreenState extends State<GoatScreen>
             borderRadius: BorderRadius.circular(16),
             onTap: () {
               final String label = item['label'] as String;
-              if (label.contains('Grower') || label.contains('Kid')) {
+              if (label.contains('Grower') || label.contains('Kid') || label.contains('Weanling')) {
                 _navigateToForm(
                   preSelectedClassification: item['classification'] as String,
                   preSelectedSex: item['sex'] as String,
@@ -413,7 +429,7 @@ class GoatScreenState extends State<GoatScreen>
 
   int _classificationSortKey(Goat goat) {
     // Desired order:
-    // 0 Buck, 1 Doe, 2 Buckling, 3 Doeling, 4 Male Growers, 5 Female Growers, 6 Male Kid, 7 Female Kid
+    // 0 Buck, 1 Doe, 2 Buckling, 3 Doeling, 4 Male Growers, 5 Female Growers, 6 Male Weanling, 7 Female Weanling, 8 Male Kid, 9 Female Kid
     switch (goat.classification) {
       case 'Buck':
         return 0;
@@ -425,8 +441,10 @@ class GoatScreenState extends State<GoatScreen>
         return 3;
       case 'Growers':
         return goat.sex == 'Female' ? 5 : 4;
-      case 'Kid':
+      case 'Weanling':
         return goat.sex == 'Female' ? 7 : 6;
+      case 'Kid':
+        return goat.sex == 'Female' ? 9 : 8;
       default:
         return 99;
     }
@@ -503,6 +521,10 @@ class GoatScreenState extends State<GoatScreen>
         return 'growers_male';
       case 'Growers (Female)':
         return 'growers_female';
+      case 'Weanling (Male)':
+        return 'weanling_male';
+      case 'Weanling (Female)':
+        return 'weanling_female';
       case 'Kid (Male)':
         return 'Kid_male';
       case 'Kid (Female)':
@@ -1227,7 +1249,7 @@ class GoatScreenState extends State<GoatScreen>
                                       Showcase(
                                         key: _reportTypeKey,
                                         title: 'Report Type Filter',
-                                        description: 'Select a specific goat type or status to filter reports. Choose from classifications like Buck, Doe, Buckling, Doeling, Growers, Kid, or statuses like Breeding, Pregnant, or Sick.',
+                                        description: 'Select a specific goat type or status to filter reports. Choose from classifications like Buck, Doe, Buckling, Doeling, Growers, Weanling, Kid, or statuses like Breeding, Pregnant, or Sick.',
                                         targetShapeBorder: RoundedRectangleBorder(
                                           borderRadius: BorderRadius.circular(4),
                                         ),
@@ -1245,6 +1267,8 @@ class GoatScreenState extends State<GoatScreen>
                                               DropdownMenuItem(value: 'Doeling', child: Text('Doeling')),
                                               DropdownMenuItem(value: 'Growers (Male)', child: Text('Growers (Male)')),
                                               DropdownMenuItem(value: 'Growers (Female)', child: Text('Growers (Female)')),
+                                              DropdownMenuItem(value: 'Weanling (Male)', child: Text('Weanling (Male)')),
+                                              DropdownMenuItem(value: 'Weanling (Female)', child: Text('Weanling (Female)')),
                                               DropdownMenuItem(value: 'Kid (Male)', child: Text('Kid (Male)')),
                                               DropdownMenuItem(value: 'Kid (Female)', child: Text('Kid (Female)')),
                                               DropdownMenuItem(value: 'Breeding', child: Text('Breeding')),

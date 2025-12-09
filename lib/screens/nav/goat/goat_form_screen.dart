@@ -93,8 +93,8 @@ class _GoatFormScreenState extends State<GoatFormScreen> {
 
   // Options for dropdowns
   final List<String> sexOptions = ['Male', 'Female'];
-  final List<String> maleClassificationOptions = ['Kid', 'Buckling', 'Growers', 'Buck'];
-  final List<String> femaleClassificationOptions = ['Kid', 'Growers', 'Doeling', 'Doe'];
+  final List<String> maleClassificationOptions = ['Kid', 'Weanling', 'Buckling', 'Growers', 'Buck'];
+  final List<String> femaleClassificationOptions = ['Kid', 'Weanling', 'Growers', 'Doeling', 'Doe'];
   final List<String> sourceOptions = ['Born on farm', 'Purchased', 'Other'];
 
   // Helper to get correct classification options based on selected sex
@@ -104,12 +104,12 @@ class _GoatFormScreenState extends State<GoatFormScreen> {
       if (_sex == 'Male') return maleClassificationOptions;
       if (_sex == 'Female') return femaleClassificationOptions;
       // If sex is not selected yet, return all options for pre-selected classification
-      return ['Doe', 'Buck', 'Doeling', 'Buckling', 'Growers', 'Kid'];
+      return ['Doe', 'Buck', 'Doeling', 'Buckling', 'Growers', 'Weanling', 'Kid'];
     }
     
     if (_sex == 'Male') return maleClassificationOptions;
     if (_sex == 'Female') return femaleClassificationOptions;
-    return ['Doe', 'Buck', 'Doeling', 'Buckling', 'Growers', 'Kid']; // Return all options when no sex selected
+    return ['Doe', 'Buck', 'Doeling', 'Buckling', 'Growers', 'Weanling', 'Kid']; // Return all options when no sex selected
   }
 
   @override
@@ -582,7 +582,7 @@ class _GoatFormScreenState extends State<GoatFormScreen> {
       _classification = widget.preSelectedClassification;
       _handleClassificationSelection(widget.preSelectedClassification!);
       // If a pre-selected sex was provided (e.g., Male Growers), prefill it
-      if (widget.preSelectedSex != null && (widget.preSelectedClassification == 'Growers' || widget.preSelectedClassification == 'Kid')) {
+      if (widget.preSelectedSex != null && (widget.preSelectedClassification == 'Growers' || widget.preSelectedClassification == 'Kid' || widget.preSelectedClassification == 'Weanling')) {
         _sex = widget.preSelectedSex;
       }
     }
@@ -1557,7 +1557,7 @@ class _GoatFormScreenState extends State<GoatFormScreen> {
           child: Text('None'),
         ),
         ...((widget.preSelectedClassification != null && !isEditing
-            ? ['Doe', 'Buck', 'Doeling', 'Buckling', 'Growers', 'Kid']
+            ? ['Doe', 'Buck', 'Doeling', 'Buckling', 'Growers', 'Weanling', 'Kid']
             : classificationOptions)).map((option) => DropdownMenuItem(
               value: option,
               child: Text(option),
@@ -1579,10 +1579,10 @@ class _GoatFormScreenState extends State<GoatFormScreen> {
     
     // For editing existing goat, always allow sex selection
     // For new goat with pre-selected classification:
-    // - Allow sex selection for Growers and Kid
+    // - Allow sex selection for Growers, Kid, and Weanling
     // - Auto-fill and lock for Doe, Buck, Doeling, Buckling
-    final isGrowersOrKid = preSelectedClassification == 'Growers' || preSelectedClassification == 'Kid';
-    final allowSexSelection = isEditing || (!hasPreSelectedSex && (isGrowersOrKid || preSelectedClassification == null));
+    final isGrowersKidOrWeanling = preSelectedClassification == 'Growers' || preSelectedClassification == 'Kid' || preSelectedClassification == 'Weanling';
+    final allowSexSelection = isEditing || (!hasPreSelectedSex && (isGrowersKidOrWeanling || preSelectedClassification == null));
     
     return DropdownButtonFormField<String>(
       value: _sex,
