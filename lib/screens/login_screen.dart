@@ -80,7 +80,7 @@ class _LoginScreenState extends State<LoginScreen> {
               _showMessage(data['message'] ?? 'Login failed', Colors.red);
             }
           } catch (e) {
-            print('JSON decode error: $e');
+            debugPrint('JSON decode error: $e');
             _showMessage('Invalid server response. Please try again.', Colors.red);
           }
         } else {
@@ -107,7 +107,7 @@ class _LoginScreenState extends State<LoginScreen> {
             errorMessage = 'Network error. Please check your internet connection.';
           } else {
             // Log the actual error for debugging
-            print('Login error: $e');
+            debugPrint('Login error: $e');
           }
           _showMessage(errorMessage, Colors.red);
         }

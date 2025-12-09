@@ -1,5 +1,4 @@
 ﻿import 'package:flutter/material.dart';
-import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:goat_tracer_app/constants/app_colors.dart';
 import 'package:goat_tracer_app/services/breeding_analysis_service.dart';
 
@@ -16,14 +15,6 @@ class _BreedingAnalyticsWidgetState extends State<BreedingAnalyticsWidget>
   String? _error;
   Map<String, dynamic>? _analysisData;
 
-  // Filter controllers
-  String? _selectedDoe;
-  String? _selectedBuck;
-  DateTimeRange? _selectedDateRange;
-
-  // Available options for filters
-  List<String> _availableDoes = [];
-  List<String> _availableBucks = [];
 
   // Animation controllers
   late AnimationController _fadeController;
@@ -62,18 +53,7 @@ class _BreedingAnalyticsWidgetState extends State<BreedingAnalyticsWidget>
     try {
       setState(() => _isLoading = true);
 
-      // Load available options for filters
-      final does = await BreedingAnalysisService.getAvailableDoes();
-      final bucks = await BreedingAnalysisService.getAvailableBucks();
-
-      if (mounted) {
-        setState(() {
-          _availableDoes = does;
-          _availableBucks = bucks;
-        });
-      }
-
-      // Load analysis with current filters
+      // Load analysis
       await _performAnalysis();
 
     } catch (e) {
@@ -89,9 +69,9 @@ class _BreedingAnalyticsWidgetState extends State<BreedingAnalyticsWidget>
   Future<void> _performAnalysis() async {
     try {
       final result = await BreedingAnalysisService.getBreedingSuccessAnalysis(
-        selectedDoeTag: _selectedDoe,
-        selectedBuckTag: _selectedBuck,
-        dateRange: _selectedDateRange,
+        selectedDoeTag: null,
+        selectedBuckTag: null,
+        dateRange: null,
       );
 
       if (mounted) {
@@ -122,20 +102,6 @@ class _BreedingAnalyticsWidgetState extends State<BreedingAnalyticsWidget>
     }
   }
 
-  void _onFilterChanged() {
-    _fadeController.reset();
-    _slideController.reset();
-    _performAnalysis();
-  }
-
-  void _clearAllFilters() {
-    setState(() {
-      _selectedDoe = null;
-      _selectedBuck = null;
-      _selectedDateRange = null;
-    });
-    _onFilterChanged();
-  }
 
   @override
   void dispose() {
@@ -285,10 +251,6 @@ class _BreedingAnalyticsWidgetState extends State<BreedingAnalyticsWidget>
         ),
         const SizedBox(height: 20),
 
-        // Filters Section
-        _buildFiltersSection(),
-        const SizedBox(height: 20),
-
         // Overall Statistics
         _buildOverallStats(overallStats),
         const SizedBox(height: 20),
@@ -299,305 +261,6 @@ class _BreedingAnalyticsWidgetState extends State<BreedingAnalyticsWidget>
     );
   }
 
-  Widget _buildFiltersSection() {
-    final hasActiveFilters = _selectedDoe != null ||
-        _selectedBuck != null ||
-        _selectedDateRange != null;
-
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.grey.shade50,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.grey.shade200),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Row(
-                children: [
-                  Icon(Icons.tune, color: AppColors.darkGreen, size: 16),
-                  const SizedBox(width: 8),
-                  Text(
-                    'Filters',
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w600,
-                      color: AppColors.textPrimary,
-                    ),
-                  ),
-                  if (hasActiveFilters) ...[
-                    const SizedBox(width: 8),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                      decoration: BoxDecoration(
-                        color: AppColors.darkGreen.withValues(alpha: 0.1),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Text(
-                        'Active',
-                        style: TextStyle(
-                          fontSize: 9,
-                          fontWeight: FontWeight.w600,
-                          color: AppColors.darkGreen,
-                        ),
-                      ),
-                    ),
-                  ],
-                ],
-              ),
-              if (hasActiveFilters)
-                TextButton(
-                  onPressed: _clearAllFilters,
-                  child: Text(
-                    'Clear All',
-                    style: TextStyle(
-                      fontSize: 11,
-                      color: AppColors.darkGreen,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ),
-            ],
-          ),
-          const SizedBox(height: 12),
-
-          // First row - Animal filters
-          Row(
-            children: [
-              Expanded(
-                child: _buildFilterDropdown(
-                  label: 'Doe/Doeling',
-                  value: _selectedDoe,
-                  items: ['All Does', ..._availableDoes],
-                  onChanged: (value) {
-                    setState(() {
-                      _selectedDoe = value == 'All Does' ? null : value;
-                    });
-                    _onFilterChanged();
-                  },
-                  icon: FontAwesomeIcons.cow,
-                ),
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: _buildFilterDropdown(
-                  label: 'Buck',
-                  value: _selectedBuck,
-                  items: ['All Bucks', ..._availableBucks],
-                  onChanged: (value) {
-                    setState(() {
-                      _selectedBuck = value == 'All Bucks' ? null : value;
-                    });
-                    _onFilterChanged();
-                  },
-                  icon: Icons.male,
-                ),
-              ),
-            ],
-          ),
-
-          const SizedBox(height: 8),
-
-          // Second row - Date range filter
-          _buildDateRangeFilter(),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildFilterDropdown({
-    required String label,
-    required String? value,
-    required List<String> items,
-    required Function(String?) onChanged,
-    IconData? icon,
-  }) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          children: [
-            if (icon != null) ...[
-              icon == FontAwesomeIcons.cow
-                  ? Image.asset(
-                      'assets/images/goat-icons/goat.png',
-                      width: 10,
-                      height: 10,
-                      color: AppColors.textSecondary,
-                    )
-                  : Icon(icon, size: 10, color: AppColors.textSecondary),
-              const SizedBox(width: 4),
-            ],
-            Text(
-              label,
-              style: TextStyle(
-                fontSize: 10,
-                fontWeight: FontWeight.w500,
-                color: AppColors.textSecondary,
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 4),
-        Container(
-          height: 36, // Fixed height to match date range container
-          width: double.infinity,
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
-          decoration: BoxDecoration(
-            border: Border.all(
-              color: value != null ? AppColors.darkGreen.withValues(alpha: 0.5) : Colors.grey[300]!,
-            ),
-            borderRadius: BorderRadius.circular(6),
-            color: value != null ? AppColors.darkGreen.withValues(alpha: 0.05) : Colors.white,
-          ),
-          child: DropdownButtonHideUnderline(
-              child: DropdownButton<String>(
-              value: value,
-              hint: Text(
-                'Select $label',
-                style: const TextStyle(fontSize: 10),
-              ),
-              isExpanded: true,
-              icon: Icon(
-                Icons.keyboard_arrow_down,
-                color: AppColors.darkGreen,
-                size: 14,
-              ),
-              style: const TextStyle(fontSize: 10, color: Colors.black87),
-              dropdownColor: Colors.white,
-              menuMaxHeight: 200,
-              isDense: true,
-              underline: const SizedBox.shrink(),
-              elevation: 8,
-              items: items.map((item) {
-                return DropdownMenuItem<String>(
-                  value: item,
-                  child: Text(
-                    item,
-                    style: const TextStyle(fontSize: 10),
-                  ),
-                );
-              }).toList(),
-              onChanged: onChanged,
-              ),
-            ),
-        ),
-      ],
-    );
-  }
-
-
-  Widget _buildDateRangeFilter() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          children: [
-            Icon(Icons.date_range, size: 10, color: AppColors.textSecondary),
-            const SizedBox(width: 4),
-            Text(
-              'Date Range',
-              style: TextStyle(
-                fontSize: 10,
-                fontWeight: FontWeight.w500,
-                color: AppColors.textSecondary,
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 4),
-        InkWell(
-          onTap: () async {
-            final DateTimeRange? picked = await showDateRangePicker(
-              context: context,
-              firstDate: DateTime(2020),
-              lastDate: DateTime.now(),
-              initialDateRange: _selectedDateRange,
-              builder: (context, child) {
-                return Theme(
-                  data: Theme.of(context).copyWith(
-                    colorScheme: ColorScheme.light(
-                      primary: AppColors.darkGreen,
-                      onPrimary: Colors.white,
-                    ),
-                  ),
-                  child: child!,
-                );
-              },
-            );
-            if (picked != null) {
-              setState(() {
-                _selectedDateRange = picked;
-              });
-              _onFilterChanged();
-            }
-          },
-          child: SizedBox(
-            height: 36, // Fixed height to match dropdown containers
-            child: Container(
-              width: double.infinity,
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
-              decoration: BoxDecoration(
-                border: Border.all(
-                  color: _selectedDateRange != null
-                      ? AppColors.darkGreen.withValues(alpha: 0.5)
-                      : Colors.grey[300]!,
-                ),
-                borderRadius: BorderRadius.circular(6),
-                color: _selectedDateRange != null
-                    ? AppColors.darkGreen.withValues(alpha: 0.05)
-                    : Colors.white,
-              ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  _selectedDateRange != null
-                      ? '${_selectedDateRange!.start.day}/${_selectedDateRange!.start.month}/${_selectedDateRange!.start.year} - ${_selectedDateRange!.end.day}/${_selectedDateRange!.end.month}/${_selectedDateRange!.end.year}'
-                      : 'Select date range',
-                  style: TextStyle(
-                    fontSize: 10,
-                    color: _selectedDateRange != null
-                        ? Colors.black87
-                        : Colors.grey[600],
-                  ),
-                ),
-                Row(
-                  children: [
-                    if (_selectedDateRange != null)
-                      GestureDetector(
-                        onTap: () {
-                          setState(() {
-                            _selectedDateRange = null;
-                          });
-                          _onFilterChanged();
-                        },
-                        child: Icon(
-                          Icons.clear,
-                          size: 12,
-                          color: Colors.grey[600],
-                        ),
-                      ),
-                    const SizedBox(width: 4),
-                    Icon(
-                      Icons.calendar_today,
-                      size: 12,
-                      color: AppColors.darkGreen,
-                    ),
-                  ],
-                ),
-              ],
-            ),
-            ),
-          ),
-        ),
-      ],
-    );
-  }
 
   Widget _buildOverallStats(Map<String, dynamic> stats) {
     return Column(

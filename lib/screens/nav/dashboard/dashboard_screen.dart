@@ -1305,7 +1305,7 @@ class DashboardScreenState extends State<DashboardScreen>
       child: _buildAnimatedCard(
         delay: 300,
         child: Container(
-        padding: const EdgeInsets.all(24),
+        padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(20),
@@ -1335,75 +1335,208 @@ class DashboardScreenState extends State<DashboardScreen>
               ],
             ),
             const SizedBox(height: 20),
-            GridView.builder(
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-                             gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                 crossAxisCount: 2,
-                 crossAxisSpacing: 12,
-                 mainAxisSpacing: 12,
-                 childAspectRatio: 1.5,
-               ),
-              itemCount: statusCount.length,
-              itemBuilder: (context, index) {
-                final entry = statusCount.entries.toList()[index];
-                                 final color = _getStatusColor(entry.key);
-                 return Container(
-                   padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                   decoration: BoxDecoration(
-                     color: color.withValues(alpha: 0.05),
-                     borderRadius: BorderRadius.circular(12),
-                     border: Border.all(color: color.withValues(alpha: 0.2)),
-                   ),
-                                     child: Column(
-                     mainAxisAlignment: MainAxisAlignment.center,
-                     children: [
-                       // Label at top
-                       Row(
-                         children: [
-                           Container(
-                             width: 8,
-                             height: 8,
-                             decoration: BoxDecoration(
-                               color: color,
-                               shape: BoxShape.circle,
-                             ),
-                           ),
-                           const SizedBox(width: 8),
-                           Expanded(
-                             child: Text(
-                               entry.key,
-                               style: const TextStyle(
-                                 fontSize: 14,
-                                 fontWeight: FontWeight.w600,
-                                 color: AppColors.textPrimary,
-                               ),
-                               overflow: TextOverflow.ellipsis,
-                             ),
-                           ),
-                         ],
-                       ),
-                       const SizedBox(height: 6),
-                       // Value centered
-                       Center(
-                         child: Text(
-                           '${entry.value}',
-                           style: TextStyle(
-                             fontSize: 24,
-                             fontWeight: FontWeight.bold,
-                             color: color,
-                           ),
-                         ),
-                       ),
-                     ],
-                   ),
-                );
-              },
-            ),
+            _buildStatusChart(statusCount),
           ],
         ),
       ),
       ),
+    );
+  }
+
+  Widget _buildStatusChart(Map<String, int> statusCount) {
+    // Filter out statuses with 0 count and calculate total
+    final nonZeroStatuses = statusCount.entries
+        .where((entry) => entry.value > 0)
+        .toList();
+    
+    if (nonZeroStatuses.isEmpty) {
+      return Container(
+        padding: const EdgeInsets.all(40),
+        child: Column(
+          children: [
+            Icon(Icons.pie_chart_outline, size: 48, color: Colors.grey.shade400),
+            const SizedBox(height: 12),
+            Text(
+              'No status data available',
+              style: TextStyle(
+                color: Colors.grey.shade600,
+                fontSize: 16,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    final total = nonZeroStatuses.fold<int>(0, (sum, entry) => sum + entry.value);
+    
+    // Build pie chart sections
+    final pieChartSections = nonZeroStatuses.map((statusEntry) {
+      final status = statusEntry.key;
+      final count = statusEntry.value;
+      final percentage = (count / total * 100);
+      final color = _getStatusColor(status);
+      
+      return PieChartSectionData(
+        value: count.toDouble(),
+        title: percentage >= 5 ? '${percentage.toStringAsFixed(0)}%' : '',
+        color: color,
+        radius: 50,
+        titleStyle: const TextStyle(
+          fontSize: 12,
+          fontWeight: FontWeight.bold,
+          color: Colors.white,
+        ),
+        badgeWidget: percentage < 5
+            ? Container(
+                padding: const EdgeInsets.all(4),
+                decoration: BoxDecoration(
+                  color: color,
+                  shape: BoxShape.circle,
+                ),
+                child: Text(
+                  count.toString(),
+                  style: const TextStyle(
+                    fontSize: 10,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                  ),
+                ),
+              )
+            : null,
+      );
+    }).toList();
+
+    return Column(
+      children: [
+        SizedBox(
+          height: 200,
+          child: PieChart(
+            PieChartData(
+              sections: pieChartSections,
+              centerSpaceRadius: 40,
+              sectionsSpace: 2,
+            ),
+          ),
+        ),
+        const SizedBox(height: 20),
+        // Legend - show all statuses even if count is 0, in 2 columns with auto-height
+        LayoutBuilder(
+          builder: (context, constraints) {
+            final screenWidth = MediaQuery.of(context).size.width;
+            final isSmallScreen = screenWidth < 360;
+            final crossAxisCount = isSmallScreen ? 1 : 2;
+            final fontSize = isSmallScreen ? 11.0 : 12.0;
+            final smallFontSize = isSmallScreen ? 10.0 : 11.0;
+            
+            // Calculate item width for 2 columns (accounting for padding and spacing)
+            final padding = 16.0 * 2; // Left and right padding of parent
+            final spacing = 12.0; // Space between items
+            final itemWidth = isSmallScreen 
+                ? constraints.maxWidth 
+                : (constraints.maxWidth - padding - spacing) / 2;
+            
+            // Group entries into rows
+            final entries = statusCount.entries.toList();
+            final rows = <List<MapEntry<String, int>>>[];
+            for (int i = 0; i < entries.length; i += crossAxisCount) {
+              rows.add(entries.sublist(i, i + crossAxisCount > entries.length ? entries.length : i + crossAxisCount));
+            }
+            
+            return Column(
+              children: rows.asMap().entries.map((rowEntry) {
+                final rowIndex = rowEntry.key;
+                final rowEntries = rowEntry.value;
+                return Padding(
+                  padding: EdgeInsets.only(bottom: rowIndex < rows.length - 1 ? spacing : 0),
+                  child: IntrinsicHeight(
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: rowEntries.asMap().entries.map((entryItem) {
+                        final entryIndex = entryItem.key;
+                        final entry = entryItem.value;
+                        final status = entry.key;
+                        final count = entry.value;
+                        final percentage = total > 0 ? (count / total * 100) : 0.0;
+                        final color = _getStatusColor(status);
+                        
+                        return Expanded(
+                          child: Padding(
+                            padding: EdgeInsets.only(
+                              right: entryIndex < rowEntries.length - 1 ? spacing : 0,
+                            ),
+                            child: Container(
+                              padding: EdgeInsets.symmetric(
+                                horizontal: isSmallScreen ? 10 : 12,
+                                vertical: isSmallScreen ? 8 : 10,
+                              ),
+                              decoration: BoxDecoration(
+                                color: color.withValues(alpha: count > 0 ? 0.1 : 0.05),
+                                borderRadius: BorderRadius.circular(8),
+                                border: Border.all(color: color.withValues(alpha: count > 0 ? 0.3 : 0.15)),
+                              ),
+                              child: Row(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Padding(
+                                    padding: const EdgeInsets.only(top: 2),
+                                    child: Container(
+                                      width: isSmallScreen ? 10 : 12,
+                                      height: isSmallScreen ? 10 : 12,
+                                      decoration: BoxDecoration(
+                                        color: color,
+                                        shape: BoxShape.circle,
+                                      ),
+                                    ),
+                                  ),
+                                  SizedBox(width: isSmallScreen ? 6 : 8),
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      mainAxisAlignment: MainAxisAlignment.start,
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Text(
+                                          status,
+                                          style: TextStyle(
+                                            fontSize: fontSize,
+                                            fontWeight: FontWeight.w600,
+                                            color: count > 0 ? AppColors.textPrimary : AppColors.textSecondary,
+                                            height: 1.3,
+                                          ),
+                                          overflow: TextOverflow.visible,
+                                          softWrap: true,
+                                        ),
+                                        const SizedBox(height: 3),
+                                        Text(
+                                          '$count${total > 0 ? ' (${percentage.toStringAsFixed(1)}%)' : ''}',
+                                          style: TextStyle(
+                                            fontSize: smallFontSize,
+                                            color: AppColors.textSecondary,
+                                            fontWeight: FontWeight.w500,
+                                            height: 1.3,
+                                          ),
+                                          overflow: TextOverflow.visible,
+                                          softWrap: true,
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        );
+                      }).toList(),
+                    ),
+                  ),
+                );
+              }).toList(),
+            );
+          },
+        ),
+      ],
     );
   }
 
@@ -1938,6 +2071,10 @@ class DashboardScreenState extends State<DashboardScreen>
         return Colors.orange.shade500;
       case 'mortality':
         return Colors.grey.shade600;
+      case 'lost':
+        return Colors.amber.shade700;
+      case 'slaughtered':
+        return Colors.brown.shade600;
       default:
         return AppColors.lightGreen;
     }
@@ -2033,62 +2170,19 @@ class DashboardScreenState extends State<DashboardScreen>
   }
 
   Widget _buildBreedingAnalytics() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        // Small header widget to showcase instead of the entire large widget
-        Showcase(
-          key: _breedingAnalyticsKey,
-          title: 'Breeding Analytics',
-          description: 'Track overall breeding performance. A breeding is counted as successful when there is a kidding recorded after it (with or without a pregnancy in between), and as failed only when there is at least one abortion after breeding and no kidding recorded afterwards.',
-          targetShapeBorder: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
-          tooltipBackgroundColor: AppColors.darkGreen,
-          textColor: Colors.white,
-          tooltipPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-          titleTextStyle: const TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.bold,
-            color: Colors.white,
-          ),
-          descTextStyle: const TextStyle(
-            fontSize: 13,
-            color: Colors.white,
-            height: 1.3,
-          ),
-          overlayOpacity: 0.4,
-          disableBarrierInteraction: false,
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(
-                  Icons.analytics,
-                  color: AppColors.darkGreen,
-                  size: 20,
-                ),
-                const SizedBox(width: 8),
-                Text(
-                  'Breeding Analytics',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                    color: AppColors.textPrimary,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-        const SizedBox(height: 12),
-        // The actual widget without showcase
-        _buildAnimatedCard(
-          delay: 150,
-          child: const BreedingAnalyticsWidget(),
-        ),
-      ],
+    return Showcase(
+      key: _breedingAnalyticsKey,
+      title: 'Breeding Analytics',
+      description: 'Track overall breeding performance. A breeding is counted as successful when there is a kidding recorded after it (with or without a pregnancy in between), and as failed only when there is at least one abortion after breeding and no kidding recorded afterwards.',
+      targetShapeBorder: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(20),
+      ),
+      tooltipBackgroundColor: AppColors.darkGreen,
+      textColor: Colors.white,
+      child: _buildAnimatedCard(
+        delay: 150,
+        child: const BreedingAnalyticsWidget(),
+      ),
     );
   }
 
