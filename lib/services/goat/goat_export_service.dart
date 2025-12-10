@@ -183,13 +183,12 @@ class GoatExportService {
       String cleanedToken = token.trim();
       cleanedToken = cleanedToken.replaceAll('\r', '').replaceAll('\n', '').trim();
 
-      final queryParams = <String>[];
-      if (reportType != null && reportType.isNotEmpty) {
-        queryParams.add('format_type=${Uri.encodeQueryComponent(reportType)}');
-      }
-      final qp = queryParams.isNotEmpty ? '?${queryParams.join('&')}' : '';
+      final qp = (reportType != null && reportType.isNotEmpty)
+          ? '?report_type=${Uri.encodeQueryComponent(reportType)}'
+          : '';
       final url = Uri.parse('$_baseUrl/farmer/goats/export-excel$qp');
       log('📥 GoatExportService: Downloading goat List Excel from $url');
+      log('📥 GoatExportService: reportType parameter: $reportType, query string: $qp');
 
       final response = await http.get(
         url,
@@ -239,13 +238,12 @@ class GoatExportService {
       String cleanedToken = token.trim();
       cleanedToken = cleanedToken.replaceAll('\r', '').replaceAll('\n', '').trim();
 
-      final queryParams = <String>[];
-      if (reportType != null && reportType.isNotEmpty) {
-        queryParams.add('format_type=${Uri.encodeQueryComponent(reportType)}');
-      }
-      final qp = queryParams.isNotEmpty ? '?${queryParams.join('&')}' : '';
+      final qp = (reportType != null && reportType.isNotEmpty)
+          ? '?report_type=${Uri.encodeQueryComponent(reportType)}'
+          : '';
       final url = Uri.parse('$_baseUrl/farmer/goats/export-pdf$qp');
       log('📥 GoatExportService: Downloading goat List PDF from $url');
+      log('📥 GoatExportService: reportType parameter: $reportType, query string: $qp');
 
       final response = await http.get(
         url,

@@ -510,13 +510,13 @@ class GoatScreenState extends State<GoatScreen>
       case 'All':
         return null;
       case 'Buck':
-        return 'Buck';
+        return 'buck';
       case 'Doe':
-        return 'Doe';
+        return 'doe';
       case 'Buckling':
-        return 'Buckling';
+        return 'buckling';
       case 'Doeling':
-        return 'Doeling';
+        return 'doeling';
       case 'Growers (Male)':
         return 'growers_male';
       case 'Growers (Female)':
@@ -526,15 +526,9 @@ class GoatScreenState extends State<GoatScreen>
       case 'Weanling (Female)':
         return 'weanling_female';
       case 'Kid (Male)':
-        return 'Kid_male';
+        return 'kid_male';
       case 'Kid (Female)':
-        return 'Kid_female';
-      case 'Breeding':
-        return 'breeding';
-      case 'Pregnant':
-        return 'pregnant';
-      case 'Sick':
-        return 'sick';
+        return 'kid_female';
       default:
         return null;
     }
@@ -1249,7 +1243,7 @@ class GoatScreenState extends State<GoatScreen>
                                       Showcase(
                                         key: _reportTypeKey,
                                         title: 'Report Type Filter',
-                                        description: 'Select a specific goat type or status to filter reports. Choose from classifications like Buck, Doe, Buckling, Doeling, Growers, Weanling, Kid, or statuses like Breeding, Pregnant, or Sick.',
+                                        description: 'Select a specific goat type to filter exported reports. This does not affect the displayed list. Choose from classifications like Buck, Doe, Buckling, Doeling, Growers, Weanling, or Kid. Each classification can be filtered by sex (Male/Female) for Growers, Weanling, and Kid.',
                                         targetShapeBorder: RoundedRectangleBorder(
                                           borderRadius: BorderRadius.circular(4),
                                         ),
@@ -1271,9 +1265,6 @@ class GoatScreenState extends State<GoatScreen>
                                               DropdownMenuItem(value: 'Weanling (Female)', child: Text('Weanling (Female)')),
                                               DropdownMenuItem(value: 'Kid (Male)', child: Text('Kid (Male)')),
                                               DropdownMenuItem(value: 'Kid (Female)', child: Text('Kid (Female)')),
-                                              DropdownMenuItem(value: 'Breeding', child: Text('Breeding')),
-                                              DropdownMenuItem(value: 'Pregnant', child: Text('Pregnant')),
-                                              DropdownMenuItem(value: 'Sick', child: Text('Sick')),
                                             ],
                                             onChanged: (v) {
                                               setState(() {
@@ -1307,12 +1298,13 @@ class GoatScreenState extends State<GoatScreen>
                                                 borderRadius: BorderRadius.circular(10),
                                               ),
                                               child: IconButton(
-                                                tooltip: 'Export Excel',
                                                 icon: const FaIcon(FontAwesomeIcons.fileExcel, color: Colors.white, size: 20),
                                                 onPressed: () async {
+                                                  if (!mounted) return;
                                                   final messenger = ScaffoldMessenger.of(context);
                                                   messenger.hideCurrentSnackBar();
                                                   final rt = _mapReportTypeToParam(_selectedReportType);
+                                                  debugPrint('📊 Export Excel - Selected: $_selectedReportType, Mapped: $rt');
                                                   final ok = await GoatExportService.downloadgoatListExcel(reportType: rt);
                                                   if (!mounted) return;
                                                   messenger.showSnackBar(
@@ -1333,12 +1325,13 @@ class GoatScreenState extends State<GoatScreen>
                                                 borderRadius: BorderRadius.circular(10),
                                               ),
                                               child: IconButton(
-                                                tooltip: 'Export PDF',
                                                 icon: const Icon(Icons.picture_as_pdf_rounded, color: Colors.white, size: 20),
                                                 onPressed: () async {
+                                                  if (!mounted) return;
                                                   final messenger = ScaffoldMessenger.of(context);
                                                   messenger.hideCurrentSnackBar();
                                                   final rt = _mapReportTypeToParam(_selectedReportType);
+                                                  debugPrint('📊 Export PDF - Selected: $_selectedReportType, Mapped: $rt');
                                                   final ok = await GoatExportService.downloadgoatListPdf(reportType: rt);
                                                   if (!mounted) return;
                                                   messenger.showSnackBar(
