@@ -1,4 +1,4 @@
-﻿// lib/screens/nav/profile/modals/farm_details_modal.dart
+// lib/screens/nav/profile/modals/farm_details_modal.dart
 import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/material.dart';
@@ -389,9 +389,10 @@ class _FarmDetailsModalState extends State<FarmDetailsModal> {
   Widget _buildEditingForm() {
     return Column(
       children: [
+        const SizedBox(height: 26),
         _buildStyledTextField(
           controller: farmNameController,
-          label: 'Farm Classification',
+          label: 'Farm Name',
           icon: FontAwesomeIcons.leaf,
         ),
         const SizedBox(height: 20),
