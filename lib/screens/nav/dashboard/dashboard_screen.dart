@@ -1433,7 +1433,7 @@ class DashboardScreenState extends State<DashboardScreen>
             // Calculate item width for 2 columns (accounting for padding and spacing)
             final padding = 16.0 * 2; // Left and right padding of parent
             final spacing = 12.0; // Space between items
-            final itemWidth = isSmallScreen 
+            final _ = isSmallScreen
                 ? constraints.maxWidth 
                 : (constraints.maxWidth - padding - spacing) / 2;
             
