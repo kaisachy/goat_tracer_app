@@ -2068,7 +2068,7 @@ class DashboardScreenState extends State<DashboardScreen>
       case 'lactating & pregnant':
         return Colors.indigo.shade500;
       case 'sold':
-        return Colors.orange.shade500;
+        return Colors.yellow.shade300;
       case 'mortality':
         return Colors.grey.shade600;
       case 'lost':
