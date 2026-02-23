@@ -1,16 +1,17 @@
-﻿import 'package:goat_tracer_app/models/goat.dart';
+import 'package:goat_tracer_app/models/goat.dart';
 import 'package:flutter/foundation.dart';
 
 class GoatAgeClassification {
-  // Age ranges in months
-  static const int kidMaxAge = 2;
+  // Age ranges in months — aligned with backend (VaccinationDashboardService)
+  // Kid: 0–3, Weanling: 3–5, Grower: 5–8, Doeling/Buckling: 8–12, Doe/Buck: 12+
+  static const int kidMaxAge = 3;       // From birth to 3 months
   static const int weanlingMinAge = 3;
   static const int weanlingMaxAge = 5;
   static const int growerMinAge = 5;
-  static const int growerMaxAge = 18;
-  static const int doelingBucklingMinAge = 19;
-  static const int doelingBucklingMaxAge = 24; // Upper bound is exclusive in logic below
-  static const int doeBuckMinAge = 24; // Inclusive: >= 24 months is Doe/Buck
+  static const int growerMaxAge = 8;
+  static const int doelingBucklingMinAge = 8;
+  static const int doelingBucklingMaxAge = 12; // Upper bound exclusive
+  static const int doeBuckMinAge = 12;         // 12 months and above
 
   /// Get the expected classification based on age and sex
   static String getExpectedClassification(int ageInMonths, String sex) {
