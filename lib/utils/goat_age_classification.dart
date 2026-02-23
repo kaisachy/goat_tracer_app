@@ -2,43 +2,47 @@ import 'package:goat_tracer_app/models/goat.dart';
 import 'package:flutter/foundation.dart';
 
 class GoatAgeClassification {
-  // Age ranges in months — aligned with backend (VaccinationDashboardService)
-  // Kid: 0–3, Weanling: 3–5, Grower: 5–8, Doeling/Buckling: 8–12, Doe/Buck: 12+
-  static const int kidMaxAge = 3;       // From birth to 3 months
-  static const int weanlingMinAge = 3;
-  static const int weanlingMaxAge = 5;
-  static const int growerMinAge = 5;
-  static const int growerMaxAge = 8;
-  static const int doelingBucklingMinAge = 8;
-  static const int doelingBucklingMaxAge = 12; // Upper bound exclusive
-  static const int doeBuckMinAge = 12;         // 12 months and above
+  // Day-based age boundaries — aligned with backend (GoatClassificationService, VaccinationDashboardService)
+  // Kid: 0–91d, Weanling: 92–152d, Grower: 153–243d, Doeling/Buckling: 244–365d, Doe/Buck: 366+
+  // (≈ 30.44 days/month: 3mo=91, 5mo=152, 8mo=243, 12mo=365)
+  static const int kidMaxDays = 91;           // From birth to 3 months
+  static const int weanlingMinDays = 92;
+  static const int weanlingMaxDays = 152;
+  static const int growerMinDays = 153;
+  static const int growerMaxDays = 243;
+  static const int doelingBucklingMinDays = 244;
+  static const int doelingBucklingMaxDays = 365;
+  static const int doeBuckMinDays = 366;
 
-  /// Get the expected classification based on age and sex
-  static String getExpectedClassification(int ageInMonths, String sex) {
-    if (ageInMonths <= kidMaxAge) {
+  /// Get the expected classification from age in days (day-based; e.g. 3 months 1 day = Weanling).
+  static String getExpectedClassificationFromAgeInDays(int ageInDays, String sex) {
+    if (ageInDays <= kidMaxDays) {
       return 'Kid';
-    } else if (ageInMonths >= weanlingMinAge && ageInMonths <= weanlingMaxAge) {
-      return 'Weanling';
-    } else if (ageInMonths >= growerMinAge && ageInMonths <= growerMaxAge) {
-      return 'Growers';
-    } else if (ageInMonths >= doelingBucklingMinAge && ageInMonths < doelingBucklingMaxAge) {
-      if (sex == 'Female') {
-        return 'Doeling';
-      } else if (sex == 'Male') {
-        return 'Buckling';
-      }
-      return 'Doeling'; // Default fallback
-    } else if (ageInMonths >= doeBuckMinAge) {
-      if (sex == 'Female') {
-        return 'Doe';
-      } else if (sex == 'Male') {
-        return 'Buck';
-      }
-      return 'Doe'; // Default fallback
     }
-    
-    // Fallback for edge cases
+    if (ageInDays >= weanlingMinDays && ageInDays <= weanlingMaxDays) {
+      return 'Weanling';
+    }
+    if (ageInDays >= growerMinDays && ageInDays <= growerMaxDays) {
+      return 'Growers';
+    }
+    if (ageInDays >= doelingBucklingMinDays && ageInDays <= doelingBucklingMaxDays) {
+      if (sex == 'Female') return 'Doeling';
+      if (sex == 'Male') return 'Buckling';
+      return 'Doeling';
+    }
+    if (ageInDays >= doeBuckMinDays) {
+      if (sex == 'Female') return 'Doe';
+      if (sex == 'Male') return 'Buck';
+      return 'Doe';
+    }
     return 'Unknown';
+  }
+
+  /// Get the expected classification based on age in months (uses day-equivalent for boundaries).
+  static String getExpectedClassification(int ageInMonths, String sex) {
+    // Convert months to approximate days (30.44 days/month) so boundaries match day-based logic
+    final ageInDays = (ageInMonths * 30.44).round();
+    return getExpectedClassificationFromAgeInDays(ageInDays, sex);
   }
 
   /// Parse various age formats to months
@@ -93,35 +97,48 @@ class GoatAgeClassification {
     }
   }
 
-  /// Auto-update Goat classification if it doesn't match the age
+  /// Auto-update Goat classification if it doesn't match the age (day-based when DOB is available).
   /// Returns the Goat with updated classification, or null if no update needed
   static Goat? autoUpdateClassificationIfNeeded(Goat goat) {
-    final displayAge = goat.displayAge;
-    if (displayAge == null || displayAge.isEmpty) {
-      return null; // Can't auto-update without age information
-    }
-
     try {
-      final ageInMonths = _parseAgeToMonths(displayAge);
-      if (ageInMonths == null) {
-        return null; // Can't parse age
+      int? ageInDays;
+      if (goat.dateOfBirth != null && goat.dateOfBirth!.isNotEmpty) {
+        final birthDate = DateTime.tryParse(goat.dateOfBirth!);
+        if (birthDate != null) {
+          ageInDays = DateTime.now().difference(birthDate).inDays;
+          if (ageInDays < 0) ageInDays = 0;
+        }
+      }
+      if (ageInDays == null) {
+        final displayAge = goat.displayAge;
+        if (displayAge == null || displayAge.isEmpty) return null;
+        final ageInMonths = _parseAgeToMonths(displayAge);
+        if (ageInMonths == null) return null;
+        ageInDays = (ageInMonths * 30.44).round();
       }
 
-      final expectedClassification = getExpectedClassification(ageInMonths, goat.sex);
+      final expectedClassification = getExpectedClassificationFromAgeInDays(ageInDays, goat.sex);
 
-      // Check if current classification is accurate
       if (goat.classification == expectedClassification) {
-        return null; // No update needed
+        return null;
       }
 
-      // Classification needs to be updated
-      debugPrint('🔄 Auto-updating Goat ${goat.tagNo} classification: "${goat.classification}" -> "$expectedClassification" (Age: $ageInMonths months)');
-      
+      debugPrint('🔄 Auto-updating Goat ${goat.tagNo} classification: "${goat.classification}" -> "$expectedClassification" (Age: $ageInDays days)');
       return goat.copyWith(classification: expectedClassification);
     } catch (e) {
       debugPrint('Error in autoUpdateClassificationIfNeeded: $e');
       return null;
     }
+  }
+
+  /// Expected classification from date of birth (day-based). Use in forms for validation/suggestions.
+  static String? getExpectedClassificationFromDateOfBirth(String? dateOfBirth, String? sex) {
+    if (dateOfBirth == null || dateOfBirth.isEmpty || sex == null || sex.isEmpty) return null;
+    final birthDate = DateTime.tryParse(dateOfBirth);
+    if (birthDate == null) return null;
+    int ageInDays = DateTime.now().difference(birthDate).inDays;
+    if (ageInDays < 0) ageInDays = 0;
+    return getExpectedClassificationFromAgeInDays(ageInDays, sex);
   }
 
   /// Get all Goat with auto-updated classifications

@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:intl/intl.dart';
 import 'package:showcaseview/showcaseview.dart';
@@ -1360,7 +1360,7 @@ class _GoatFormScreenState extends State<GoatFormScreen> {
     );
   }
 
-  // Validate selected classification vs age inferred from DOB
+  // Validate selected classification vs age inferred from DOB (day-based)
   void _validateAgeClassificationMatch() {
     if (_dateOfBirth == null || _classification == null || _sex == null) {
       setState(() => _ageClassificationWarning = null);
@@ -1368,32 +1368,32 @@ class _GoatFormScreenState extends State<GoatFormScreen> {
     }
 
     try {
-      final dob = DateTime.parse(_dateOfBirth!);
-      final now = DateTime.now();
-      int months = (now.year - dob.year) * 12 + (now.month - dob.month);
-      if (now.day < dob.day) {
-        months = months - 1;
+      final expected = GoatAgeClassification.getExpectedClassificationFromDateOfBirth(_dateOfBirth, _sex);
+      if (expected == null) {
+        setState(() => _ageClassificationWarning = null);
+        return;
       }
-      if (months < 0) months = 0;
-
-      final expected = GoatAgeClassification.getExpectedClassification(months, _sex!);
       if (expected != _classification) {
+        final dob = DateTime.parse(_dateOfBirth!);
+        final now = DateTime.now();
         final diffDays = now.difference(dob).inDays;
+        final diffDaysClamped = diffDays < 0 ? 0 : diffDays;
         String ageDisplay;
-        if (diffDays < 30) {
-          ageDisplay = diffDays == 1 ? '1 day' : '$diffDays days';
-        } else if (months < 12) {
+        if (diffDaysClamped < 30) {
+          ageDisplay = diffDaysClamped == 1 ? '1 day' : '$diffDaysClamped days';
+        } else if (diffDaysClamped < 365) {
+          final months = (diffDaysClamped / 30.44).round();
           ageDisplay = months == 1 ? '1 month' : '$months months';
         } else {
-          final years = months ~/ 12;
-          final remMonths = months % 12;
+          final years = diffDaysClamped ~/ 365;
+          final remDays = diffDaysClamped % 365;
+          final remMonths = (remDays / 30.44).round();
           ageDisplay = remMonths == 0
               ? (years == 1 ? '1 year' : '$years years')
               : (years == 1
                   ? '1 year, $remMonths ${remMonths == 1 ? 'month' : 'months'}'
                   : '$years years, $remMonths ${remMonths == 1 ? 'month' : 'months'}');
         }
-
         setState(() {
           _ageClassificationWarning = 'Age of $ageDisplay suggests "$expected"';
         });
